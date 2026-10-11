@@ -1,0 +1,15 @@
+{
+	"schemaVersion": 1,
+	"id": "guildy-test",
+	"version": "1.0.0",
+	"name": "Guildy GameTests",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-gametest": [
+			"dev.guildy.test.GuildyGameTests"
+		]
+	},
+	"depends": {
+		"guildy": "*"
+	}
+}

@@ -23,6 +23,18 @@ loom {
 	}
 }
 
+fabricApi {
+	// Server GameTests in src/gametest (run automatically by `build`, or with `runGameTest`).
+	configureTests {
+		createSourceSet = true
+		modId = "guildy-test"
+		enableGameTests = true
+		enableClientGameTests = false
+		// Dev/test environment only: required to start the headless test server (Minecraft EULA).
+		eula = true
+	}
+}
+
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
