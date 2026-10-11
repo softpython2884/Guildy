@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "guildy",
+	"version": "${version}",
+	"name": "Guildy",
+	"description": "Server-side PvE guild survival: guilds, chunk territories with flags, nightly hordes, quest board, shop and working villagers. Vanilla clients supported.",
+	"authors": [
+		"Guildy"
+	],
+	"license": "MIT",
+	"environment": "server",
+	"entrypoints": {
+		"main": [
+			"dev.guildy.Guildy"
+		]
+	},
+	"mixins": [
+		"guildy.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
