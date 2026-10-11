@@ -3,6 +3,7 @@ package dev.guildy.test;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.villager.Goal;
+import dev.guildy.villager.MineMode;
 import dev.guildy.villager.StorageChest;
 import dev.guildy.villager.Task;
 import dev.guildy.villager.VillagerConfig;
@@ -94,7 +95,7 @@ public class VillagerGameTests {
 		});
 	}
 
-	/** Miner in a mine zone (fanion planted) with a quota of 5 items: brings them back, then stops (task IDLE). */
+	/** Miner in a simulated mine zone (fanion planted) with a quota of 5 items: brings them back, then stops (task IDLE). */
 	@GameTest(maxTicks = 2400)
 	public void minerStopsAfterQuota(GameTestHelper helper) throws Exception {
 		ServerLevel level = helper.getLevel();
@@ -102,6 +103,7 @@ public class VillagerGameTests {
 		Recruit recruit = recruit(helper, "Mine");
 		TestSupport.useOnTop(recruit.leader, level, recruit.ground.offset(2, 0, 2), ZoneGameTests.fanion(recruit.guild, "MINE"));
 		helper.assertTrue(recruit.guild.villagers.zones.size() == 1, "mine zone created by planting its fanion");
+		recruit.guild.villagers.zones.getFirst().mine().mode = MineMode.SIMULATED;
 		recruit.record.zoneId = recruit.guild.villagers.zones.getFirst().id;
 		recruit.record.goal = Goal.QUOTA;
 		recruit.record.goalAmount = 5;

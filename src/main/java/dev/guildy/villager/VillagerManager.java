@@ -158,6 +158,7 @@ public final class VillagerManager {
 		VillagerInteractions.clear();
 		RouteSelection.clear();
 		ZoneVisualizer.clear();
+		Mines.clear();
 		lastDay = -1;
 		int maxRadius = VillagerModule.config().zones.maxRadiusChunks;
 		Function<ZoneType, String> zoneNames = type -> Lang.strip(Lang.raw(type.langKey()));
@@ -169,6 +170,12 @@ public final class VillagerManager {
 			if (migrated > 0) {
 				Guildy.LOGGER.info("Guild {}: {} work position(s) migrated to work zones", guild.name, migrated);
 				GuildManager.markDirty();
+			}
+			for (WorkZone zone : guild.villagers.zones) {
+				if (zone.type == ZoneType.MINE && zone.mine == null) {
+					// Mines saved before the real / simulated modes existed.
+					zone.mine = new MineState(Zones.defaultMineMode());
+				}
 			}
 		}
 		ready = true;
@@ -216,6 +223,7 @@ public final class VillagerManager {
 		VillagerInteractions.clear();
 		RouteSelection.clear();
 		ZoneVisualizer.clear();
+		Mines.clear();
 	}
 
 	// ================================================================ ticking

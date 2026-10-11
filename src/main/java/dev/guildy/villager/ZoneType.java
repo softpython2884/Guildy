@@ -8,7 +8,7 @@ import java.util.Locale;
  * Kind of work zone (marked by a fanion). Persisted by name. No Minecraft classes (unit tested).
  */
 public enum ZoneType {
-	/** Simulated mining at the fanion (its height sets the depth). */
+	/** Real excavation from the fanion (staircase, galleries), or simulated mining at the fanion (see {@link MineMode}). */
 	MINE,
 	/** Lumberjacks cut the natural trees of the zone. */
 	FOREST,
@@ -49,7 +49,10 @@ public enum ZoneType {
 		};
 	}
 
-	/** The radius matters (a mine only uses its fanion: depth and meeting point). */
+	/**
+	 * The radius matters for every zone of the type (a simulated mine only uses its fanion: depth and meeting point; a
+	 * real mine digs in its square, see {@link WorkZone#usesRadius()}).
+	 */
 	public boolean usesRadius() {
 		return this != MINE;
 	}

@@ -1,6 +1,7 @@
 package dev.guildy.villager;
 
 import net.minecraft.core.BlockPos;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A work zone (persisted in {@link GuildVillagerData#zones}): a square of chunks around a fanion. Zones may lie
@@ -12,9 +13,9 @@ public class WorkZone {
 	public int id;
 	public ZoneType type = ZoneType.MINE;
 	public String name = "";
-	/** Fanion position: its chunk is the middle of the square, its height the depth of a mine. */
+	/** Fanion position: its chunk is the middle of the square, its height the depth of a simulated mine. */
 	public BlockPos pos;
-	/** Half-size in chunks: 0 = the fanion's chunk only, 1 = 3×3 chunks... (mines ignore it). */
+	/** Half-size in chunks: 0 = the fanion's chunk only, 1 = 3×3 chunks... (simulated mines ignore it). */
 	public int radius = 1;
 	public ZoneObjective objective = ZoneObjective.MIXED;
 	/**
@@ -23,6 +24,8 @@ public class WorkZone {
 	 */
 	public boolean fanion;
 	public long createdAt;
+	/** Mines only: mode and real excavation (null in older data and for other types: created on demand). */
+	public @Nullable MineState mine;
 
 	public WorkZone() {
 	}
@@ -37,9 +40,27 @@ public class WorkZone {
 		this.createdAt = createdAt;
 	}
 
-	/** Radius actually used: a mine works at its fanion only. */
+	/** Excavation state of a mine (created with the default real mode when missing). */
+	public MineState mine() {
+		if (mine == null) {
+			mine = new MineState();
+		}
+		return mine;
+	}
+
+	/** A mine whose miners really dig (staircase and galleries inside the zone square). */
+	public boolean isRealMine() {
+		return type == ZoneType.MINE && mine().mode == MineMode.REAL;
+	}
+
+	/** The square matters: always but for simulated mines (they work at their fanion only). */
+	public boolean usesRadius() {
+		return type.usesRadius() || isRealMine();
+	}
+
+	/** Radius actually used: a simulated mine works at its fanion only. */
 	public int effectiveRadius() {
-		return type.usesRadius() ? Math.max(0, radius) : 0;
+		return usesRadius() ? Math.max(0, radius) : 0;
 	}
 
 	/** Side of the square, in chunks. */
@@ -67,7 +88,12 @@ public class WorkZone {
 
 	/** Identity of the work settings: a change restarts the search of the villagers working here. */
 	public String settingsKey() {
-		return "zone:" + id + ":" + pos.asLong() + ":" + effectiveRadius() + ":" + objective;
+		String key = "zone:" + id + ":" + pos.asLong() + ":" + effectiveRadius() + ":" + objective;
+		if (type == ZoneType.MINE) {
+			MineState state = mine();
+			key += ":" + state.mode + ":" + state.targetY + ":" + state.epoch;
+		}
+		return key;
 	}
 
 	/** Fixes nulls / out-of-range values after deserialization (blank names are renamed by the guild data). */
@@ -79,6 +105,11 @@ public class WorkZone {
 		radius = Math.max(0, Math.min(maxRadius, radius));
 		if (name == null) {
 			name = "";
+		}
+		if (type != ZoneType.MINE) {
+			mine = null;
+		} else if (mine != null) {
+			mine.sanitize();
 		}
 	}
 }

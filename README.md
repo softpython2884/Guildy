@@ -143,7 +143,7 @@ permet de l'**appeler** à côté de soi (« Appeler ici », dans le territoire 
 | Tâche | Ce qu'il fait |
 |---|---|
 | **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (Bois, Pierre, Minerais, Cultures, Butin, Outils, Divers) |
-| **Mineur** | mine à sa **mine** (minage simulé) : pierre et/ou minerais selon l'objectif, meilleurs en profondeur |
+| **Mineur** | creuse vraiment sa **mine** (mode réel, voir plus bas) : escalier en colimaçon puis galeries, pierre et/ou minerais selon l'objectif ; ou minage simulé au fanion (mode simulé) |
 | **Bûcheron** | coupe les arbres naturels de sa **coupe de bois** (ou autour de lui) et replante |
 | **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui) et replante |
 | **Garde** | patrouille dans sa zone ou sur son **parcours de garde**, sinon défend le cœur ; toujours au cœur pendant les hordes |
@@ -158,7 +158,8 @@ fanion (pratique au fond d'une mine).
 - Une zone peut **sortir du territoire** (à moins de 192 blocs du cœur), jamais entrer dans celui d'une autre guilde.
   Les villageois n'y travaillent que lorsqu'elle est chargée (un joueur dans les parages).
 - **Rayon** en chunks autour du chunk du fanion : 0 = son chunk, 1 = 3×3 chunks (par défaut), jusqu'à 3 = 7×7.
-  Une mine n'utilise que son fanion : sa **hauteur fixe la profondeur** (et donc les minerais).
+  Une mine **réelle** ne creuse que dans ce carré ; une mine **simulée** n'utilise que son fanion : sa **hauteur fixe
+  la profondeur** (et donc les minerais).
 - **Objectif** : mine → *Tout venant*, *Minerais* (que des minerais, moins de tirages) ou *Pierre et variantes* (pierre,
   andésite, diorite, granite, tuf, calcite, gravier ; pierre des abîmes en profondeur) ; coupe de bois → tous les arbres ou
   une essence (chêne, sapin, bouleau, acajou, acacia, chêne noir, palétuvier, cerisier, chêne pâle, peuplier) ; champs →
@@ -173,8 +174,44 @@ fanion (pratique au fond d'une mine).
 
 **Mode automatique** (aucune zone choisie) : le bûcheron coupe les arbres naturels les plus proches de lui, le fermier
 récolte les cultures mûres les plus proches (à moins de 48 blocs de lui et de 192 blocs du cœur, jamais chez une autre
-guilde) ; le mineur va à la mine de la guilde la plus proche, sinon mine la pierre à découvert la plus proche (sinon au
-cœur) ; le garde défend le cœur. Le statut indique ce qu'il a choisi (« Coupe auto près de x y z »).
+guilde) ; le mineur va à la mine de la guilde la plus proche (sauf une mine réelle épuisée), sinon mine (en simulé) la
+pierre à découvert la plus proche (sinon au cœur) ; le garde défend le cœur. Le statut indique ce qu'il a choisi
+(« Coupe auto près de x y z »).
+
+#### Mine réelle
+Une zone **Mine** est en mode **Réel** par défaut (bouton « Mode : Réel / Simulé » de son menu ; le mode simulé garde
+l'ancien fonctionnement : aucun bloc cassé, butin tiré selon la hauteur du fanion). En mode réel, les mineurs creusent
+vraiment, uniquement dans le carré de la zone :
+1. **Escalier** : depuis le fanion, un escalier en colimaçon d'un bloc de large (3 blocs de hauteur libre par marche,
+   une marche = un bloc plus bas) descend jusqu'à la **profondeur cible**. Son sens est choisi en sondant le terrain :
+   le plus loin possible des constructions, de l'eau et de la lave. Les joueurs l'empruntent aussi ; les villageois ne
+   savent pas grimper aux échelles, ils marchent toujours par l'escalier. Une torche toutes les 8 marches (charbon du
+   sac s'il y en a, sinon gratuite).
+2. **Galeries** à la profondeur cible : une galerie principale (2 de haut) qui part de l'escalier, avec des galeries
+   latérales tous les 3 blocs. Objectifs *Minerais* et *Tout venant* : les **filons** visibles depuis la galerie sont
+   suivis (minerais reliés, 16 au plus). Objectif *Pierre* : des **salles de carrière** (5×5, 3 de haut) le long de la
+   galerie. Un niveau fini, les mineurs ouvrent le suivant (8 blocs plus bas, sinon plus haut).
+3. **Retour** : sac plein, mission atteinte ou fin de journée (ils remontent avant la nuit) → ils remontent par leurs
+   tunnels, vident le sac au coffre de dépôt, puis redescendent au front de taille.
+
+Plusieurs mineurs se partagent la mine (escalier d'abord, puis une galerie chacun : jamais deux sur les mêmes blocs).
+Les blocs cassés donnent leur vrai butin (comme une pioche en fer) ; l'objectif *Minerais* ne garde que les minerais
+et quelques blocs de pierre pour colmater.
+
+**Règles anti-casse** : le mineur ne casse que des **blocs naturels** (pierre, ardoise des abîmes, tuf, calcite, terre,
+gravier, argile, sable, grès, minerais…, liste dans `villagers.json5`) ; jamais un bloc posé par un joueur (planches,
+briques, pierre taillée, verre, laine…), un bloc à données (coffre, panneau…), un bloc chez une **autre guilde**, ni un
+bloc naturel qui **porte** un bloc non naturel (pas de sape sous une construction) ou un cadre, un tableau, un support
+d'armure. Il n'ouvre jamais sur l'eau ou la
+lave : il **colmate** d'abord avec un bloc de son sac (sinon il abandonne la galerie ; de l'eau ou de la lave au-dessus :
+galerie abandonnée). Il **comble les trous** du sol. Un escalier bloqué s'arrête au-dessus de l'obstacle et les galeries
+se creusent là (juste sous la surface : un autre escalier est essayé). Seuls les chunks chargés sont touchés.
+
+Menu de la zone (mine réelle) : **profondeur cible** (−8 / +8, entre le fond du monde + 5 et 4 blocs sous le fanion ;
+par défaut : Y -54 pour *Minerais*, Y 16 pour *Tout venant*, 12 blocs sous le fanion pour *Pierre*), **rayon**, et
+**Exploitation** : étape en cours (escalier x/y marches, galeries x/y), profondeur atteinte, blocs minés, minerais
+trouvés, dernier incident (lave, eau, construction…) et « Réinitialiser l'exploitation ». Le statut de chaque mineur dit
+ce qu'il fait (« Creuse l'escalier : Y 12 → -54 », « Galerie 3/8 », « Remonte déposer », « Bloqué : lave »…).
 
 #### Parcours de garde
 « Nouveau parcours » (menu Zones et parcours, ou `/guild villagers route new`) : faites un clic droit sur les blocs où le
@@ -311,7 +348,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
-| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, pauses, laisse), tables de minage par objectif, catégories de rangement, départs après défaite |
+| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, pauses, laisse), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
@@ -352,7 +389,9 @@ Formules par défaut (modifiables) :
   hordes (multiplicateurs appliqués à une horde normale, ou « vague d'événement » chronométrée) ; un raid ne change
   pas le palier de nuit et se termine avant la nuit.
 - **Drapeaux et plans = objets vanilla** marqués (bannière, papier) : impossible à fabriquer en survie.
-- **Mineur simulé** (pas de creusage réel, plus fiable) ; bûcheron/fermier réels et bornés ; chaque
+- **Mineur réel** et prudent (retour utilisateur) : escalier en colimaçon que les villageois savent parcourir (le
+  pathfinding vanilla ne grimpe pas aux échelles), galeries dans le carré de la zone, uniquement des blocs naturels qui
+  ne portent rien de construit, fluides colmatés ; le mode simulé reste disponible. Bûcheron/fermier réels et bornés ; chaque
   déplacement de villageois a un délai maximum et une solution de repli (jamais bloqué).
 - **Zones de travail = fanions** plantés (pas de coordonnées à taper) : elles peuvent sortir du territoire, mais les
   villageois n'y travaillent que si elles sont chargées (aucun chargement forcé de chunk) et ne touchent jamais au
@@ -369,6 +408,9 @@ Formules par défaut (modifiables) :
 - Les villageois occupés à une tâche ne réapprovisionnent plus leurs échanges (ils ne vont plus à leur poste).
 - Un fanion de zone arraché par une explosion, un piston ou la casse de son support tombe en bannière ordinaire :
   la zone continue de fonctionner (« Déplacer le fanion » pour en replanter un).
+- Mine réelle : déplacer son fanion fait creuser un nouvel escalier (l'ancien reste ouvert) ; les tunnels sont éclairés
+  mais une mine reste un lieu où des monstres peuvent attaquer les mineurs ; les blocs de minerai qui forment le sol des
+  galeries sont laissés en place.
 - Les projectiles de visiteurs peuvent encore abîmer cadres et tableaux (le corps-à-corps est bloqué) ;
   plaques de pression, fils et piétinement des cultures ne sont pas protégés.
 - Le cooldown de `/guild home` est remis à zéro au redémarrage.
