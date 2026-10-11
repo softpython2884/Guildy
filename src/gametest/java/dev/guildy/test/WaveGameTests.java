@@ -41,6 +41,26 @@ public class WaveGameTests {
 		});
 	}
 
+	/**
+	 * Real nightfall (environment "dusk": clock 12900, time advancing): with a member at the heart, the horde starts
+	 * by itself once the night window opens (13000).
+	 */
+	@GameTest(environment = "guildy-test:dusk", maxTicks = 400)
+	public void nightfallStartsTheHorde(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos ground = TestSupport.region(level, 24);
+		TestSupport.forceChunks(level, ground, 3);
+		ServerPlayer leader = TestSupport.player(helper, ground);
+		Guild guild = TestSupport.foundGuild(helper, leader, ground, "Dusk");
+		helper.assertFalse(WaveManager.isActive(guild), "no horde before nightfall");
+
+		helper.succeedWhen(() -> {
+			helper.assertTrue(WaveManager.isActive(guild), "waiting for nightfall to start the horde");
+			TestSupport.console(level, "guild admin wave stop " + guild.name);
+			GuildManager.disband(guild);
+		});
+	}
+
 	private static List<Mob> hordeAround(ServerLevel level, BlockPos heart) {
 		AABB box = new AABB(heart).inflate(96, 128, 96);
 		return level.getEntities(EntityTypeTest.forClass(Mob.class), box, mob -> mob.entityTags().contains("guildy_wave"));
