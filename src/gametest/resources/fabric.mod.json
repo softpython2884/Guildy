@@ -11,7 +11,8 @@
 		"fabric-gametest": [
 			"dev.guildy.test.GuildyGameTests",
 			"dev.guildy.test.TerritoryGameTests",
-			"dev.guildy.test.WaveGameTests"
+			"dev.guildy.test.WaveGameTests",
+			"dev.guildy.test.VillagerGameTests"
 		]
 	},
 	"depends": {
