@@ -1,0 +1,1019 @@
+// Guildy - hordes nocturnes : chaque nuit, une horde attaque les bases des guildes presentes.
+// Heure du jour = horloge de l'Overworld modulo 24000 (13000 = tombee de la nuit, 23000 = aube).
+// Victoire : survivre jusqu'a l'aube avec un coeur intact. Defaite : integrite du coeur a 0.
+// Rechargement a chaud : /guild admin reload
+{
+
+	// Activer les hordes nocturnes
+	"enabled": true,
+
+	// Horaires et conditions de declenchement
+	"timing": {
+
+		// Debut de la nuit (heure du jour en ticks)
+		"nightStart": 13000,
+
+		// Aube : fin de la nuit et de la horde (victoire si le coeur tient)
+		"nightEnd": 23000,
+
+		// Si personne n'est present a la tombee de la nuit, nouvelle tentative jusqu'a cette heure ; jamais apres
+		"lateStartUntil": 18000,
+
+		// Intervalle entre deux tentatives de demarrage (secondes)
+		"startRetrySeconds": 5,
+
+		// Distance (blocs) au coeur a laquelle un membre en ligne doit se trouver pour declencher la horde
+		"activationDistance": 96,
+
+		// Annuler la horde (sans recompense ni penalite) si aucun membre n'est present pendant ce temps (secondes)
+		"absentCancelSeconds": 120,
+
+		// Un saut d'horloge superieur a ce nombre de ticks en une seconde (sommeil, /time set) annule la horde
+		"maxClockJumpTicks": 600,
+
+		// Terminer la horde par une victoire des que tous ses monstres ont ete tues (sinon attendre l'aube)
+		"endWhenHordeDefeated": true,
+
+		// Securite : duree maximale d'une horde (minutes) ; au-dela elle se termine comme a l'aube
+		"maxWaveMinutes": 20
+	},
+
+	// Difficulte D = base + perNight * nuit + perLevel * (niveau - 1) + perExtraPlayer * (membres presents - 1),
+	// bornee a [base, max]. 'nuit' = palier de la guilde (+1 par victoire, recule apres une defaite).
+	"difficulty": {
+
+		// Difficulte de base (minimum)
+		"base": 1.0,
+
+		// Difficulte ajoutee par palier de nuit
+		"perNight": 0.5,
+
+		// Difficulte ajoutee par niveau de guilde au-dela du niveau 1
+		"perLevel": 0.5,
+
+		// Difficulte ajoutee par membre present supplementaire (au demarrage)
+		"perExtraPlayer": 0.75,
+
+		// Difficulte maximale
+		"max": 20.0,
+
+		// Nombre de monstres = arrondi(mobsBase + mobsPerDifficulty * D) borne a [minMobs, maxMobsPerWave]
+		"mobsBase": 6.0,
+		"mobsPerDifficulty": 3.0,
+		"minMobs": 5,
+		"maxMobsPerWave": 80,
+
+		// Chance qu'un monstre soit une elite = min(eliteMax, eliteBase + elitePerDifficulty * D) (+ bonus du theme)
+		"eliteBase": 0.02,
+		"elitePerDifficulty": 0.015,
+		"eliteMax": 0.35,
+
+		// Nuits de boss : a partir du palier bossMinNight, puis tous les bossEveryNights paliers (0 = jamais)
+		"bossMinNight": 5,
+		"bossEveryNights": 5
+	},
+
+	// Apparition des monstres (par groupes, en bordure du territoire)
+	"spawning": {
+
+		// Intervalle entre deux groupes de monstres (secondes)
+		"spawnGroupIntervalSeconds": 12,
+
+		// Delai avant le premier groupe (secondes)
+		"firstGroupDelaySeconds": 6,
+
+		// Duree visee pour faire apparaitre toute la horde (secondes) : determine la taille des groupes
+		"spawnPhaseSeconds": 240,
+
+		// Taille minimale / maximale d'un groupe
+		"groupSizeMin": 2,
+		"groupSizeMax": 8,
+
+		// Nombre maximum de monstres de horde vivants par base
+		"maxAliveMobsPerBase": 30,
+
+		// Nombre maximum de monstres de horde vivants sur tout le serveur
+		"globalMaxAliveMobs": 150,
+
+		// Essais de placement par base et par seconde (au-dela : nouvel essai la seconde suivante)
+		"spawnAttemptsPerSecond": 16,
+
+		// Distance minimale (blocs) entre un point d'apparition et un joueur
+		"minPlayerDistance": 12,
+
+		// Distance minimale (blocs) entre un point d'apparition et le coeur
+		"minHeartDistance": 10,
+
+		// Decalage du point d'apparition par rapport au bord exterieur du territoire (negatif = a l'interieur)
+		"edgeOffsetMin": -3,
+		"edgeOffsetMax": 6,
+
+		// Si la zone n'est pas chargee/active, le point est rapproche du coeur par pas de N blocs
+		"walkStep": 8,
+
+		// Dispersion (blocs) des monstres d'un meme groupe autour du point d'apparition
+		"groupSpread": 4,
+
+		// Le boss apparait quand cette fraction de la horde est deja apparue (0 = au debut, 1 = a la fin)
+		"bossSpawnProgress": 0.4,
+
+		// Particules et sons a l'apparition
+		"spawnEffects": true
+	},
+
+	// Renforcement et comportement des monstres de la horde
+	"mobs": {
+
+		// Multiplicateur de vie = min(maxHealthMultiplier, 1 + healthPerDifficulty * (D - base))
+		"healthPerDifficulty": 0.08,
+		"maxHealthMultiplier": 3.0,
+
+		// Multiplicateur de degats = min(maxDamageMultiplier, 1 + damagePerDifficulty * (D - base))
+		"damagePerDifficulty": 0.05,
+		"maxDamageMultiplier": 2.5,
+
+		// Distance de poursuite minimale des monstres (blocs)
+		"followRange": 48.0,
+
+		// Les monstres sans cible attaquent le joueur le plus proche DANS le territoire a moins de N blocs
+		"targetRange": 16.0,
+
+		// Portee d'agression des monstres 'alwaysHostile' (endermen...), dans ou hors du territoire
+		"aggroRange": 24.0,
+
+		// Intervalle de pilotage de chaque monstre (secondes) : cible, chemin vers le coeur, blocage
+		"steeringIntervalSeconds": 2,
+
+		// Distance des etapes intermediaires vers le coeur (blocs)
+		"waypointDistance": 24,
+
+		// Un monstre sans cible immobile (< 1 bloc) pendant ce temps est retire puis reapparait (secondes)
+		"stuckTimeoutSeconds": 30,
+
+		// Un monstre introuvable (zone dechargee) pendant ce temps est remplace (secondes)
+		"lostTimeoutSeconds": 15,
+
+		// Chance par piece d'armure = min(armorChanceMax, armorChancePerDifficulty * D) (monstres 'gear')
+		"armorChancePerDifficulty": 0.04,
+		"armorChanceMax": 0.6,
+
+		// Chance d'arme (main vide) = min(weaponChanceMax, weaponChancePerDifficulty * D)
+		"weaponChancePerDifficulty": 0.05,
+		"weaponChanceMax": 0.7,
+
+		// Chance d'equipement ajoutee pour les elites et les boss
+		"eliteGearBonus": 0.3,
+
+		// Materiaux d'armure selon la difficulte (le plus haut atteint ; 'material' + _helmet/_chestplate/_leggings/_boots)
+		"armorTiers": [
+			{
+				"minDifficulty": 0.0,
+				"material": "minecraft:leather"
+			},
+			{
+				"minDifficulty": 4.0,
+				"material": "minecraft:chainmail"
+			},
+			{
+				"minDifficulty": 8.0,
+				"material": "minecraft:iron"
+			},
+			{
+				"minDifficulty": 14.0,
+				"material": "minecraft:diamond"
+			}
+		],
+
+		// Armes selon la difficulte ('material' + _sword)
+		"weaponTiers": [
+			{
+				"minDifficulty": 0.0,
+				"material": "minecraft:wooden"
+			},
+			{
+				"minDifficulty": 3.0,
+				"material": "minecraft:stone"
+			},
+			{
+				"minDifficulty": 8.0,
+				"material": "minecraft:iron"
+			},
+			{
+				"minDifficulty": 15.0,
+				"material": "minecraft:diamond"
+			}
+		],
+
+		// Elites : multiplicateurs supplementaires de vie et de degats, contour lumineux
+		"eliteHealthMultiplier": 2.0,
+		"eliteDamageMultiplier": 1.5,
+		"eliteGlowing": true,
+
+		// Boss : taille (attribut scale), resistance au recul, contour lumineux
+		"bossScale": 1.3,
+		"bossKnockbackResistance": 0.6,
+		"bossGlowing": true
+	},
+
+	// Coeur de la base : points d'integrite et degats subis chaque seconde
+	"heart": {
+
+		// Integrite du coeur = baseIntegrity + integrityPerLevel * (niveau - 1)
+		"baseIntegrity": 150,
+		"integrityPerLevel": 30,
+
+		// Les monstres a moins de 'radius' blocs (horizontalement) et 'verticalRange' blocs (verticalement) du coeur l'endommagent
+		"radius": 3.0,
+		"verticalRange": 4.0,
+
+		// Degats par seconde : monstre normal, elite, boss
+		"damageNormal": 1,
+		"damageElite": 3,
+		"damageBoss": 8,
+
+		// Alerte (barre d'action) aux membres quand le coeur est attaque, au plus toutes les N secondes
+		"alertIntervalSeconds": 5
+	},
+
+	// Recompenses de victoire, multipliees par un facteur selon la proportion de monstres tues :
+	// facteur = minRewardFactor + (1 - minRewardFactor) * (tues / total)
+	"rewards": {
+
+		// Or verse au tresor = arrondi((goldBase + goldPerDifficulty * D) * facteur)
+		"goldBase": 4.0,
+		"goldPerDifficulty": 2.0,
+
+		// XP de guilde = arrondi((xpBase + xpPerDifficulty * D) * facteur)
+		"xpBase": 20.0,
+		"xpPerDifficulty": 10.0,
+
+		// Facteur de recompense si aucun monstre n'a ete tue (1.0 si tous l'ont ete)
+		"minRewardFactor": 0.25,
+
+		// Tirages d'objets pour chaque membre present pendant la horde =
+		// min(itemRollsMax, arrondi((itemRollsBase + itemRollsPerDifficulty * D) * tues / total))
+		"itemRollsBase": 1.0,
+		"itemRollsPerDifficulty": 0.25,
+		"itemRollsMax": 6,
+
+		// Table d'objets (item, min, max, weight, minDifficulty)
+		"items": [
+			{
+				"item": "minecraft:iron_ingot",
+				"min": 2,
+				"max": 6,
+				"weight": 30.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:gold_ingot",
+				"min": 1,
+				"max": 4,
+				"weight": 20.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:bread",
+				"min": 4,
+				"max": 8,
+				"weight": 15.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:arrow",
+				"min": 8,
+				"max": 16,
+				"weight": 15.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:emerald",
+				"min": 1,
+				"max": 4,
+				"weight": 15.0,
+				"minDifficulty": 2.0
+			},
+			{
+				"item": "minecraft:experience_bottle",
+				"min": 3,
+				"max": 8,
+				"weight": 10.0,
+				"minDifficulty": 3.0
+			},
+			{
+				"item": "minecraft:golden_apple",
+				"min": 1,
+				"max": 1,
+				"weight": 8.0,
+				"minDifficulty": 4.0
+			},
+			{
+				"item": "minecraft:ender_pearl",
+				"min": 1,
+				"max": 3,
+				"weight": 6.0,
+				"minDifficulty": 5.0
+			},
+			{
+				"item": "minecraft:name_tag",
+				"min": 1,
+				"max": 1,
+				"weight": 3.0,
+				"minDifficulty": 5.0
+			},
+			{
+				"item": "minecraft:diamond",
+				"min": 1,
+				"max": 2,
+				"weight": 8.0,
+				"minDifficulty": 6.0
+			},
+			{
+				"item": "minecraft:totem_of_undying",
+				"min": 1,
+				"max": 1,
+				"weight": 2.0,
+				"minDifficulty": 10.0
+			},
+			{
+				"item": "minecraft:netherite_scrap",
+				"min": 1,
+				"max": 1,
+				"weight": 2.0,
+				"minDifficulty": 12.0
+			},
+			{
+				"item": "minecraft:enchanted_golden_apple",
+				"min": 1,
+				"max": 1,
+				"weight": 1.0,
+				"minDifficulty": 14.0
+			}
+		]
+	},
+
+	// Consequences d'une defaite (integrite du coeur a 0) : la horde est dispersee immediatement,
+	// une partie du tresor est perdue et le palier de nuit recule (la difficulte baisse : anti-spirale).
+	// Le depart eventuel de villageois est gere par le module villageois. L'equipement des joueurs n'est jamais touche.
+	"defeat": {
+
+		// Pourcentage du tresor perdu en cas de defaite
+		"treasuryLossPercent": 25,
+
+		// Le palier de nuit recule de N (minimum 0)
+		"nightRollback": 2
+	},
+
+	// Butin supplementaire lache par les monstres de la horde a leur mort
+	"killLoot": {
+
+		// Pepites d'or : chance par monstre ; quantite entre nuggetMin et nuggetMaxBase + nuggetsPerDifficulty * D
+		"nuggetChance": 0.6,
+		"nuggetMin": 1,
+		"nuggetMaxBase": 2,
+		"nuggetsPerDifficulty": 0.25,
+
+		// Elites : lingots d'or (min-max) + un objet de la table eliteItems
+		"eliteGoldMin": 1,
+		"eliteGoldMax": 3,
+		"eliteItems": [
+			{
+				"item": "minecraft:iron_ingot",
+				"min": 1,
+				"max": 3,
+				"weight": 20.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:emerald",
+				"min": 1,
+				"max": 2,
+				"weight": 15.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:experience_bottle",
+				"min": 1,
+				"max": 3,
+				"weight": 15.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:golden_carrot",
+				"min": 2,
+				"max": 4,
+				"weight": 10.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:golden_apple",
+				"min": 1,
+				"max": 1,
+				"weight": 5.0,
+				"minDifficulty": 3.0
+			},
+			{
+				"item": "minecraft:ender_pearl",
+				"min": 1,
+				"max": 2,
+				"weight": 6.0,
+				"minDifficulty": 4.0
+			},
+			{
+				"item": "minecraft:diamond",
+				"min": 1,
+				"max": 1,
+				"weight": 6.0,
+				"minDifficulty": 5.0
+			}
+		],
+
+		// Boss : nombre de tirages dans bossItems
+		"bossItemRolls": 3,
+		"bossItems": [
+			{
+				"item": "minecraft:diamond",
+				"min": 2,
+				"max": 4,
+				"weight": 20.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:emerald",
+				"min": 4,
+				"max": 10,
+				"weight": 20.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:gold_block",
+				"min": 1,
+				"max": 3,
+				"weight": 15.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:golden_apple",
+				"min": 2,
+				"max": 4,
+				"weight": 15.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:experience_bottle",
+				"min": 8,
+				"max": 16,
+				"weight": 15.0,
+				"minDifficulty": 0.0
+			},
+			{
+				"item": "minecraft:totem_of_undying",
+				"min": 1,
+				"max": 1,
+				"weight": 6.0,
+				"minDifficulty": 6.0
+			},
+			{
+				"item": "minecraft:netherite_scrap",
+				"min": 1,
+				"max": 2,
+				"weight": 6.0,
+				"minDifficulty": 10.0
+			},
+			{
+				"item": "minecraft:enchanted_golden_apple",
+				"min": 1,
+				"max": 1,
+				"weight": 3.0,
+				"minDifficulty": 12.0
+			}
+		],
+
+		// Boss : chance de drapeau d'extension et de carte au tresor
+		"bossFlagChance": 0.35,
+		"bossMapChance": 0.5,
+
+		// Carte au tresor : point aleatoire entre mapMinDistance et mapMaxDistance blocs du coeur
+		"mapMinDistance": 200,
+		"mapMaxDistance": 600,
+
+		// Rang de la carte = 1 + D / mapTierEveryDifficulty, borne a mapMaxTier
+		"mapTierEveryDifficulty": 7.0,
+		"mapMaxTier": 3
+	},
+
+	// Vagues de test lancees par /guild admin wave start <guilde> (meme de jour)
+	"test": {
+
+		// Duree d'une vague de test (secondes) ; elle se termine aussi quand tous ses monstres sont morts
+		"durationSeconds": 300,
+
+		// Appliquer les resultats (recompenses / penalites / statistiques) des vagues de test ; false = toujours annulee
+		"applyResults": true
+	},
+
+	// Themes de horde : un theme est tire au sort chaque nuit (pondere par 'weight') parmi ceux dont minNight <= nuit
+	// (et nuit <= maxNight si maxNight >= 0). Champs d'un theme :
+	//   id, name (nom affiche, codes &), weight, minNight, maxNight (-1 = sans limite), barColor (PINK, BLUE, RED, GREEN,
+	//   YELLOW, PURPLE, WHITE), eliteBonus (chance d'elite ajoutee), mobCountMultiplier (multiplie le nombre de monstres),
+	//   forceBoss (true = toujours un boss), bosses (boss possibles), mobs (monstres possibles).
+	// Monstre : entity (id), weight, minDifficulty, maxCount (0 = illimite), gear (peut recevoir armure/arme),
+	//   alwaysHostile (attaque toujours le joueur le plus proche, ex. endermen), spawnHeight (blocs au-dessus du sol, volants).
+	// Boss : entity, name, weight, healthMultiplier, damageMultiplier, gear, alwaysHostile, spawnHeight.
+	// Les nuits de boss (voir difficulty.bossMinNight / bossEveryNights) choisissent un theme ayant des boss.
+	"themes": [
+		{
+			"id": "undead",
+			"name": "&2Mort-vivants",
+			"weight": 30.0,
+			"minNight": 0,
+			"maxNight": -1,
+			"barColor": "GREEN",
+			"eliteBonus": 0.0,
+			"mobCountMultiplier": 1.0,
+			"forceBoss": false,
+			"bosses": [
+				{
+					"entity": "minecraft:zombie",
+					"name": "&2&lSeigneur des morts",
+					"weight": 10.0,
+					"healthMultiplier": 12.0,
+					"damageMultiplier": 1.8,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:husk",
+					"name": "&6&lMomie ancestrale",
+					"weight": 6.0,
+					"healthMultiplier": 12.0,
+					"damageMultiplier": 1.8,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			],
+			"mobs": [
+				{
+					"entity": "minecraft:zombie",
+					"weight": 40.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:skeleton",
+					"weight": 25.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:zombie_villager",
+					"weight": 10.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:husk",
+					"weight": 15.0,
+					"minDifficulty": 3.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:stray",
+					"weight": 12.0,
+					"minDifficulty": 4.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			]
+		},
+		{
+			"id": "arachnids",
+			"name": "&8Arachnides",
+			"weight": 20.0,
+			"minNight": 1,
+			"maxNight": -1,
+			"barColor": "YELLOW",
+			"eliteBonus": 0.0,
+			"mobCountMultiplier": 1.0,
+			"forceBoss": false,
+			"bosses": [
+				{
+					"entity": "minecraft:spider",
+					"name": "&8&lReine des araignées",
+					"weight": 10.0,
+					"healthMultiplier": 14.0,
+					"damageMultiplier": 1.8,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			],
+			"mobs": [
+				{
+					"entity": "minecraft:spider",
+					"weight": 45.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:cave_spider",
+					"weight": 30.0,
+					"minDifficulty": 2.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:skeleton",
+					"weight": 15.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			]
+		},
+		{
+			"id": "illagers",
+			"name": "&7Illageois",
+			"weight": 15.0,
+			"minNight": 3,
+			"maxNight": -1,
+			"barColor": "WHITE",
+			"eliteBonus": 0.0,
+			"mobCountMultiplier": 1.0,
+			"forceBoss": false,
+			"bosses": [
+				{
+					"entity": "minecraft:ravager",
+					"name": "&4&lRavageur de guerre",
+					"weight": 10.0,
+					"healthMultiplier": 3.0,
+					"damageMultiplier": 1.0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			],
+			"mobs": [
+				{
+					"entity": "minecraft:pillager",
+					"weight": 40.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:vindicator",
+					"weight": 30.0,
+					"minDifficulty": 2.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:witch",
+					"weight": 8.0,
+					"minDifficulty": 4.0,
+					"maxCount": 3,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:evoker",
+					"weight": 5.0,
+					"minDifficulty": 6.0,
+					"maxCount": 2,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			]
+		},
+		{
+			"id": "nether",
+			"name": "&cCréatures du Nether",
+			"weight": 12.0,
+			"minNight": 5,
+			"maxNight": -1,
+			"barColor": "RED",
+			"eliteBonus": 0.0,
+			"mobCountMultiplier": 1.0,
+			"forceBoss": false,
+			"bosses": [
+				{
+					"entity": "minecraft:wither_skeleton",
+					"name": "&4&lSeigneur du Nether",
+					"weight": 10.0,
+					"healthMultiplier": 10.0,
+					"damageMultiplier": 1.6,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			],
+			"mobs": [
+				{
+					"entity": "minecraft:blaze",
+					"weight": 20.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:wither_skeleton",
+					"weight": 20.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:magma_cube",
+					"weight": 18.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:piglin_brute",
+					"weight": 15.0,
+					"minDifficulty": 2.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:hoglin",
+					"weight": 15.0,
+					"minDifficulty": 2.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:ghast",
+					"weight": 3.0,
+					"minDifficulty": 8.0,
+					"maxCount": 1,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 8
+				}
+			]
+		},
+		{
+			"id": "end",
+			"name": "&5Créatures de l'End",
+			"weight": 10.0,
+			"minNight": 7,
+			"maxNight": -1,
+			"barColor": "PURPLE",
+			"eliteBonus": 0.0,
+			"mobCountMultiplier": 1.0,
+			"forceBoss": false,
+			"bosses": [
+				{
+					"entity": "minecraft:enderman",
+					"name": "&5&lGardien du Vide",
+					"weight": 10.0,
+					"healthMultiplier": 6.0,
+					"damageMultiplier": 1.5,
+					"gear": false,
+					"alwaysHostile": true,
+					"spawnHeight": 0
+				}
+			],
+			"mobs": [
+				{
+					"entity": "minecraft:enderman",
+					"weight": 35.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": true,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:endermite",
+					"weight": 30.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:phantom",
+					"weight": 20.0,
+					"minDifficulty": 4.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 12
+				}
+			]
+		},
+		{
+			"id": "elite_mix",
+			"name": "&6Horde d'élite mixte",
+			"weight": 6.0,
+			"minNight": 10,
+			"maxNight": -1,
+			"barColor": "YELLOW",
+			"eliteBonus": 0.25,
+			"mobCountMultiplier": 0.8,
+			"forceBoss": false,
+			"bosses": [
+				{
+					"entity": "minecraft:vindicator",
+					"name": "&6&lChampion de la horde",
+					"weight": 10.0,
+					"healthMultiplier": 10.0,
+					"damageMultiplier": 1.4,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			],
+			"mobs": [
+				{
+					"entity": "minecraft:zombie",
+					"weight": 20.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:skeleton",
+					"weight": 18.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:spider",
+					"weight": 12.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:vindicator",
+					"weight": 12.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:wither_skeleton",
+					"weight": 10.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:blaze",
+					"weight": 8.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:enderman",
+					"weight": 6.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": true,
+					"spawnHeight": 0
+				}
+			]
+		},
+		{
+			"id": "boss_night",
+			"name": "&4Nuit du boss",
+			"weight": 4.0,
+			"minNight": 8,
+			"maxNight": -1,
+			"barColor": "PURPLE",
+			"eliteBonus": 0.0,
+			"mobCountMultiplier": 0.5,
+			"forceBoss": true,
+			"bosses": [
+				{
+					"entity": "minecraft:ravager",
+					"name": "&4&lRavageur colossal",
+					"weight": 10.0,
+					"healthMultiplier": 4.0,
+					"damageMultiplier": 1.2,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:wither_skeleton",
+					"name": "&8&lSeigneur squelette",
+					"weight": 8.0,
+					"healthMultiplier": 12.0,
+					"damageMultiplier": 1.6,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:zombie",
+					"name": "&2&lTitan putride",
+					"weight": 8.0,
+					"healthMultiplier": 15.0,
+					"damageMultiplier": 1.8,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			],
+			"mobs": [
+				{
+					"entity": "minecraft:zombie",
+					"weight": 30.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:skeleton",
+					"weight": 25.0,
+					"minDifficulty": 0.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:vindicator",
+					"weight": 15.0,
+					"minDifficulty": 5.0,
+					"maxCount": 0,
+					"gear": false,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				},
+				{
+					"entity": "minecraft:wither_skeleton",
+					"weight": 10.0,
+					"minDifficulty": 8.0,
+					"maxCount": 0,
+					"gear": true,
+					"alwaysHostile": false,
+					"spawnHeight": 0
+				}
+			]
+		}
+	]
+}

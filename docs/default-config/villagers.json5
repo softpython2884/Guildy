@@ -1,0 +1,512 @@
+// Guildy - villageois de guilde : arrivees, taches, stockage.
+// Les villageois arrivent au bureau d'accueil (construction 'reception'), puis travaillent pour la guilde.
+// Rechargement a chaud : /guild admin reload
+{
+
+	// Arrivees de nouveaux villageois
+	"arrivals": {
+
+		// Nombre maximum de villageois au niveau 1 de la guilde
+		"baseMaxVillagers": 2,
+
+		// Villageois supplementaires autorises par niveau de guilde
+		"maxVillagersPerLevel": 1,
+
+		// Chance (0 a 1) qu'un villageois se presente chaque matin (si les conditions sont reunies)
+		"arrivalChance": 0.6,
+
+		// Delai (secondes) avant le premier candidat apres la construction du bureau d'accueil
+		"firstArrivalDelaySeconds": 60,
+
+		// Duree (secondes) pendant laquelle un candidat attend une reponse avant de repartir
+		"candidateTimeoutSeconds": 600,
+
+		// Exiger au moins un lit libre dans le territoire pour qu'un villageois se presente
+		"requireFreeBed": true
+	},
+
+	// Reglages communs a toutes les taches
+	"work": {
+
+		// Nombre de piles d'objets qu'un travailleur (mineur, bucheron, fermier) transporte avant d'aller deposer
+		"carryStacks": 9,
+
+		// Temps maximum (secondes) pour atteindre une destination ; ensuite le villageois est teleporte a cote
+		"walkTimeoutSeconds": 40,
+
+		// Temps (secondes) sans progresser avant de considerer le villageois bloque (meme solution)
+		"stuckSeconds": 12,
+
+		// Intervalle minimum (secondes) entre deux recherches d'arbres / de cultures
+		"scanIntervalSeconds": 10,
+
+		// Vitesse de marche des villageois au travail (multiplicateur, vanilla = 0.5)
+		"walkSpeed": 0.6
+	},
+
+	// Tache 'Ranger la base' : vide les coffres de depot dans les coffres par categorie
+	"sorter": {
+
+		// Intervalle (secondes) entre deux verifications des coffres de depot
+		"intervalSeconds": 10,
+
+		// Nombre de piles d'objets emportees a chaque voyage
+		"stacksPerTrip": 6,
+
+		// Temps maximum (secondes) pour atteindre un coffre avant teleportation
+		"walkTimeoutSeconds": 30
+	},
+
+	// Tache 'Mineur' : minage simule, les minerais dependent de la profondeur (Y) de la zone de travail
+	"miner": {
+
+		// Duree (secondes) d'une expedition de minage dans la zone de travail
+		"tripSeconds": 120,
+
+		// Nombre de tirages dans la table de butin a la fin de chaque expedition
+		"rollsPerTrip": 5,
+
+		// Intervalle (secondes) entre deux animations de minage
+		"effectIntervalSeconds": 3,
+
+		// Tables de butin par profondeur : la premiere table dont maxY >= Y de la zone de travail est utilisee
+		// (si Y est au-dessus de toutes, la derniere). entries : item, min, max (quantite), weight (poids du tirage).
+		"depthTables": [
+			{
+				"maxY": -24,
+				"entries": [
+					{
+						"item": "minecraft:cobbled_deepslate",
+						"min": 2,
+						"max": 6,
+						"weight": 34
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 3,
+						"weight": 16
+					},
+					{
+						"item": "minecraft:raw_gold",
+						"min": 1,
+						"max": 2,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:redstone",
+						"min": 2,
+						"max": 5,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:lapis_lazuli",
+						"min": 2,
+						"max": 5,
+						"weight": 9
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 3,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:tuff",
+						"min": 1,
+						"max": 3,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:diamond",
+						"min": 1,
+						"max": 1,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"maxY": 16,
+				"entries": [
+					{
+						"item": "minecraft:cobblestone",
+						"min": 2,
+						"max": 6,
+						"weight": 34
+					},
+					{
+						"item": "minecraft:cobbled_deepslate",
+						"min": 1,
+						"max": 4,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 4,
+						"weight": 16
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 3,
+						"weight": 16
+					},
+					{
+						"item": "minecraft:raw_copper",
+						"min": 2,
+						"max": 5,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:raw_gold",
+						"min": 1,
+						"max": 2,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:redstone",
+						"min": 1,
+						"max": 4,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:lapis_lazuli",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:gravel",
+						"min": 1,
+						"max": 3,
+						"weight": 6
+					}
+				]
+			},
+			{
+				"maxY": 64,
+				"entries": [
+					{
+						"item": "minecraft:cobblestone",
+						"min": 2,
+						"max": 6,
+						"weight": 44
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 3,
+						"weight": 20
+					},
+					{
+						"item": "minecraft:raw_copper",
+						"min": 1,
+						"max": 4,
+						"weight": 14
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 2,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:gravel",
+						"min": 1,
+						"max": 3,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:flint",
+						"min": 1,
+						"max": 2,
+						"weight": 4
+					}
+				]
+			},
+			{
+				"maxY": 320,
+				"entries": [
+					{
+						"item": "minecraft:cobblestone",
+						"min": 2,
+						"max": 6,
+						"weight": 50
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 3,
+						"weight": 18
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 2,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:raw_copper",
+						"min": 1,
+						"max": 3,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:flint",
+						"min": 1,
+						"max": 2,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			}
+		]
+	},
+
+	// Tache 'Bucheron' : coupe reelle des arbres naturels du territoire autour de la zone de travail
+	"lumberjack": {
+
+		// Rayon (blocs) de recherche des arbres autour de la zone de travail
+		"radius": 16,
+
+		// Nombre maximum de buches d'un arbre (les arbres plus grands sont ignores)
+		"maxLogsPerTree": 80,
+
+		// Replanter une pousse a la base de l'arbre coupe (si le sol le permet)
+		"replant": true
+	},
+
+	// Tache 'Fermier' : recolte les cultures mures autour de la zone de travail et les replante
+	"farmer": {
+
+		// Rayon (blocs) de recolte autour de la zone de travail
+		"radius": 8,
+
+		// Hauteur (blocs) au-dessus et en dessous de la zone de travail ou chercher des cultures
+		"verticalRange": 3,
+
+		// Nombre maximum de cultures recoltees par seconde
+		"harvestPerSecond": 3
+	},
+
+	// Tache 'Garde' : attaque les monstres du territoire, defend le coeur pendant les vagues
+	"guard": {
+
+		// Rayon (blocs) de surveillance autour du point de garde (zone de travail, sinon le coeur)
+		"radius": 16,
+
+		// Degats par coup au niveau 1 de la guilde
+		"damage": 4.0,
+
+		// Degats supplementaires par niveau de guilde
+		"damagePerLevel": 0.5,
+
+		// Delai (ticks, 20 = 1 seconde) entre deux coups
+		"attackCooldownTicks": 20,
+
+		// Distance (blocs) a laquelle le garde peut frapper
+		"attackReach": 2.5,
+
+		// Abandonner une cible qu'on n'arrive pas a atteindre apres ce delai (secondes)
+		"chaseTimeoutSeconds": 20,
+
+		// Monstres ignores par les gardes
+		"ignoredMobs": [
+			"minecraft:creeper",
+			"minecraft:phantom",
+			"minecraft:ghast",
+			"minecraft:enderman"
+		]
+	},
+
+	// Stockage de la guilde (coffres de depot et coffres par categorie)
+	"storage": {
+
+		// Categories de rangement, dans l'ordre de priorite (la premiere qui correspond l'emporte).
+		// Chaque valeur est un id d'objet (minecraft:diamond) ou un tag d'objet precede de # (#minecraft:logs).
+		"categories": {
+			"Bois": [
+				"#minecraft:logs",
+				"#minecraft:planks",
+				"#minecraft:wooden_slabs",
+				"#minecraft:wooden_stairs",
+				"#minecraft:wooden_fences",
+				"#minecraft:saplings",
+				"#minecraft:leaves",
+				"minecraft:stick"
+			],
+			"Pierre & terre": [
+				"#minecraft:stone_crafting_materials",
+				"#minecraft:stone_tool_materials",
+				"#minecraft:dirt",
+				"#minecraft:sand",
+				"#minecraft:stone_bricks",
+				"minecraft:cobblestone",
+				"minecraft:stone",
+				"minecraft:cobbled_deepslate",
+				"minecraft:deepslate",
+				"minecraft:granite",
+				"minecraft:diorite",
+				"minecraft:andesite",
+				"minecraft:tuff",
+				"minecraft:calcite",
+				"minecraft:gravel",
+				"minecraft:clay_ball",
+				"minecraft:netherrack"
+			],
+			"Minerais & lingots": [
+				"#minecraft:coals",
+				"#minecraft:iron_ores",
+				"#minecraft:gold_ores",
+				"#minecraft:copper_ores",
+				"#minecraft:coal_ores",
+				"#minecraft:diamond_ores",
+				"#minecraft:emerald_ores",
+				"#minecraft:lapis_ores",
+				"#minecraft:redstone_ores",
+				"minecraft:raw_iron",
+				"minecraft:raw_gold",
+				"minecraft:raw_copper",
+				"minecraft:iron_ingot",
+				"minecraft:gold_ingot",
+				"minecraft:copper_ingot",
+				"minecraft:iron_nugget",
+				"minecraft:gold_nugget",
+				"minecraft:diamond",
+				"minecraft:emerald",
+				"minecraft:lapis_lazuli",
+				"minecraft:redstone",
+				"minecraft:quartz",
+				"minecraft:amethyst_shard",
+				"minecraft:flint"
+			],
+			"Cultures & nourriture": [
+				"#minecraft:villager_plantable_seeds",
+				"#minecraft:meat",
+				"#minecraft:fishes",
+				"minecraft:wheat",
+				"minecraft:carrot",
+				"minecraft:potato",
+				"minecraft:beetroot",
+				"minecraft:bread",
+				"minecraft:apple",
+				"minecraft:melon_slice",
+				"minecraft:pumpkin",
+				"minecraft:sugar_cane",
+				"minecraft:egg"
+			],
+			"Butin de monstres": [
+				"minecraft:rotten_flesh",
+				"minecraft:bone",
+				"minecraft:bone_meal",
+				"minecraft:string",
+				"minecraft:spider_eye",
+				"minecraft:gunpowder",
+				"minecraft:ender_pearl",
+				"minecraft:slime_ball",
+				"minecraft:phantom_membrane",
+				"minecraft:blaze_rod",
+				"minecraft:ghast_tear",
+				"minecraft:magma_cream"
+			],
+			"Outils & armes": [
+				"#minecraft:swords",
+				"#minecraft:axes",
+				"#minecraft:pickaxes",
+				"#minecraft:shovels",
+				"#minecraft:hoes",
+				"#minecraft:spears",
+				"#minecraft:head_armor",
+				"#minecraft:chest_armor",
+				"#minecraft:leg_armor",
+				"#minecraft:foot_armor",
+				"#minecraft:arrows",
+				"minecraft:bow",
+				"minecraft:crossbow",
+				"minecraft:shield",
+				"minecraft:trident",
+				"minecraft:mace",
+				"minecraft:fishing_rod",
+				"minecraft:shears",
+				"minecraft:flint_and_steel"
+			]
+		},
+
+		// Categorie implicite des objets qui ne correspondent a aucune categorie (ou sans coffre dedie)
+		"fallbackCategory": "Divers",
+
+		// Nombre maximum de conteneurs enregistres par guilde
+		"maxChests": 48
+	},
+
+	// Chance (0 a 1) que chaque villageois quitte la guilde apres une vague perdue
+	"defeatLeaveChance": 0.2,
+
+	// Prenoms donnes aux villageois qui se presentent
+	"names": [
+		"Albert",
+		"Amélie",
+		"Antoine",
+		"Arthur",
+		"Baptiste",
+		"Bernard",
+		"Camille",
+		"Céleste",
+		"Charles",
+		"Claire",
+		"Colette",
+		"Denis",
+		"Édith",
+		"Élise",
+		"Émile",
+		"Étienne",
+		"Fernand",
+		"Firmin",
+		"Gaston",
+		"Germaine",
+		"Gisèle",
+		"Hector",
+		"Henri",
+		"Hortense",
+		"Irène",
+		"Jacques",
+		"Jeanne",
+		"Joséphine",
+		"Jules",
+		"Léa",
+		"Léon",
+		"Louise",
+		"Lucien",
+		"Madeleine",
+		"Marcel",
+		"Margot",
+		"Marius",
+		"Mathilde",
+		"Maurice",
+		"Noémie",
+		"Odette",
+		"Paulette",
+		"Philibert",
+		"Raymond",
+		"René",
+		"Rose",
+		"Simone",
+		"Suzanne",
+		"Théo",
+		"Victor",
+		"Yvette",
+		"Zoé"
+	]
+}

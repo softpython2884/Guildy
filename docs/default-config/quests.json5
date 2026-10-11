@@ -1,0 +1,616 @@
+// Guildy - quetes de guilde (tableau de quetes : 6 panneaux = 6 quetes communes a toute la guilde).
+// Types : GATHER (casser des blocs : target = bloc ou #tag), KILL (tuer : target = entite ou #tag),
+// DELIVER (livrer depuis le menu : target = objet ou #tag), SURVIVE (gagner des vagues nocturnes),
+// EXPLORE (atteindre un lieu tire au hasard loin du coeur).
+// Valeurs a l'echelle du niveau de guilde : valeur = aleatoire(min..max) + perLevel x (niveau - 1).
+// rewardItems : [{item, count, chance (0..1)}] ; flagChance / treasureMapChance : chance (0..1) d'obtenir
+// un drapeau d'extension / une carte au tresor. durationDays : duree en jours de jeu (1 jour = 20 minutes).
+// weight : poids relatif du tirage ; minLevel / maxLevel (0 = sans maximum) : niveaux de guilde concernes.
+{
+
+	// Delai (secondes) avant qu'une nouvelle quete apparaisse sur un panneau libere
+	"refreshDelaySeconds": 120,
+
+	// Annoncer aux membres connectes chaque nouvelle quete affichee au tableau
+	"announceNewQuests": true,
+
+	// Quetes EXPLORE : distance minimale / maximale (blocs) entre le coeur de la guilde et le lieu a atteindre
+	"exploreMinDistance": 300,
+	"exploreMaxDistance": 800,
+
+	// Quetes EXPLORE : un membre doit passer a moins de ce nombre de blocs du lieu
+	"exploreRadius": 24,
+
+	// Cartes au tresor (recompenses de quetes)
+	"treasure": {
+
+		// Distance minimale / maximale (blocs) entre le coeur de la guilde et le tresor
+		"minDistance": 150,
+		"maxDistance": 450,
+
+		// Distance horizontale (blocs) a laquelle le tresor est deterre (carte en main)
+		"digRadius": 4,
+
+		// En dessous de cette distance (blocs), la distance restante s'affiche (carte en main)
+		"hintRadius": 64,
+
+		// Rangs de tresor (le premier element = rang 1). Rang = 1 + (niveau de guilde - 1) / 3.
+		// lootTable : table de butin vanilla du coffre ; goldMin / goldMax : lingots d'or ajoutes ;
+		// items : objets bonus [{item, count, chance}]
+		"tiers": [
+			{
+				"lootTable": "minecraft:chests/simple_dungeon",
+				"goldMin": 4,
+				"goldMax": 8,
+				"items": [
+					{
+						"item": "minecraft:emerald",
+						"count": 2,
+						"chance": 0.5
+					}
+				]
+			},
+			{
+				"lootTable": "minecraft:chests/buried_treasure",
+				"goldMin": 8,
+				"goldMax": 16,
+				"items": [
+					{
+						"item": "minecraft:diamond",
+						"count": 1,
+						"chance": 0.5
+					}
+				]
+			},
+			{
+				"lootTable": "minecraft:chests/woodland_mansion",
+				"goldMin": 16,
+				"goldMax": 28,
+				"items": [
+					{
+						"item": "minecraft:diamond",
+						"count": 2,
+						"chance": 0.6
+					},
+					{
+						"item": "minecraft:experience_bottle",
+						"count": 8,
+						"chance": 0.5
+					}
+				]
+			}
+		]
+	},
+
+	// Modeles de quetes (voir l'explication en haut du fichier)
+	"templates": [
+		{
+			"id": "bois",
+			"type": "GATHER",
+			"name": "Coupe de bois",
+			"description": "Abattez des arbres pour remplir les réserves de bois.",
+			"target": "#minecraft:logs",
+			"targetName": "Bûches",
+			"icon": "",
+			"amountMin": 32,
+			"amountMax": 48,
+			"amountPerLevel": 8.0,
+			"rewardGoldMin": 8,
+			"rewardGoldMax": 14,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 25,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 10,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "pierre",
+			"type": "GATHER",
+			"name": "Carrière",
+			"description": "Extrayez de la roche : pierre, granite, diorite, andésite, tuf...",
+			"target": "#minecraft:base_stone_overworld",
+			"targetName": "Roche",
+			"icon": "",
+			"amountMin": 64,
+			"amountMax": 96,
+			"amountPerLevel": 16.0,
+			"rewardGoldMin": 8,
+			"rewardGoldMax": 12,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 25,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.05,
+			"weight": 10,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "moisson",
+			"type": "GATHER",
+			"name": "Moisson",
+			"description": "Récoltez du blé arrivé à maturité.",
+			"target": "minecraft:wheat",
+			"targetName": "Blé mûr",
+			"icon": "minecraft:wheat",
+			"amountMin": 24,
+			"amountMax": 40,
+			"amountPerLevel": 6.0,
+			"rewardGoldMin": 8,
+			"rewardGoldMax": 14,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 25,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:bread",
+					"count": 6,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.05,
+			"weight": 8,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "charbon",
+			"type": "GATHER",
+			"name": "Filon de charbon",
+			"description": "Minez du minerai de charbon.",
+			"target": "#minecraft:coal_ores",
+			"targetName": "Minerai de charbon",
+			"icon": "",
+			"amountMin": 12,
+			"amountMax": 20,
+			"amountPerLevel": 3.0,
+			"rewardGoldMin": 10,
+			"rewardGoldMax": 16,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 30,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:torch",
+					"count": 16,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 8,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "fer",
+			"type": "GATHER",
+			"name": "Filon de fer",
+			"description": "Minez du minerai de fer.",
+			"target": "#minecraft:iron_ores",
+			"targetName": "Minerai de fer",
+			"icon": "",
+			"amountMin": 8,
+			"amountMax": 14,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 14,
+			"rewardGoldMax": 22,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 40,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:iron_ingot",
+					"count": 4,
+					"chance": 0.3
+				}
+			],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.08,
+			"weight": 7,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 4.0
+		},
+		{
+			"id": "diamant",
+			"type": "GATHER",
+			"name": "Éclats de diamant",
+			"description": "Minez du minerai de diamant dans les profondeurs.",
+			"target": "#minecraft:diamond_ores",
+			"targetName": "Minerai de diamant",
+			"icon": "",
+			"amountMin": 2,
+			"amountMax": 4,
+			"amountPerLevel": 0.5,
+			"rewardGoldMin": 30,
+			"rewardGoldMax": 45,
+			"rewardGoldPerLevel": 4.0,
+			"rewardXp": 80,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [],
+			"flagChance": 0.3,
+			"treasureMapChance": 0.25,
+			"weight": 3,
+			"minLevel": 4,
+			"maxLevel": 0,
+			"durationDays": 5.0
+		},
+		{
+			"id": "zombies",
+			"type": "KILL",
+			"name": "Chasse aux zombies",
+			"description": "Éliminez des zombies et leurs semblables.",
+			"target": "#minecraft:zombies",
+			"targetName": "Zombies",
+			"icon": "minecraft:zombie_spawn_egg",
+			"amountMin": 10,
+			"amountMax": 16,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 10,
+			"rewardGoldMax": 16,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 30,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 9,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "squelettes",
+			"type": "KILL",
+			"name": "Os brisés",
+			"description": "Éliminez des squelettes.",
+			"target": "#minecraft:skeletons",
+			"targetName": "Squelettes",
+			"icon": "",
+			"amountMin": 8,
+			"amountMax": 14,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 12,
+			"rewardGoldMax": 18,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 35,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:arrow",
+					"count": 16,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 8,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "araignees",
+			"type": "KILL",
+			"name": "Toiles et crocs",
+			"description": "Éliminez des araignées.",
+			"target": "minecraft:spider",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 8,
+			"amountMax": 12,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 10,
+			"rewardGoldMax": 16,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 30,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:string",
+					"count": 8,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 7,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "creepers",
+			"type": "KILL",
+			"name": "Désamorçage",
+			"description": "Éliminez des creepers avant qu'ils n'explosent.",
+			"target": "minecraft:creeper",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 5,
+			"amountMax": 8,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 14,
+			"rewardGoldMax": 20,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 40,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:gunpowder",
+					"count": 4,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.08,
+			"weight": 6,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "endermen",
+			"type": "KILL",
+			"name": "Regards perçants",
+			"description": "Éliminez des endermen.",
+			"target": "minecraft:enderman",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 3,
+			"amountMax": 5,
+			"amountPerLevel": 0.5,
+			"rewardGoldMin": 25,
+			"rewardGoldMax": 35,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 60,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:ender_pearl",
+					"count": 2,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.2,
+			"treasureMapChance": 0.15,
+			"weight": 4,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 5.0
+		},
+		{
+			"id": "sorcieres",
+			"type": "KILL",
+			"name": "Chasse aux sorcières",
+			"description": "Éliminez des sorcières.",
+			"target": "minecraft:witch",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 2,
+			"amountMax": 4,
+			"amountPerLevel": 0.5,
+			"rewardGoldMin": 25,
+			"rewardGoldMax": 40,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 60,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:glowstone_dust",
+					"count": 8,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.2,
+			"treasureMapChance": 0.2,
+			"weight": 3,
+			"minLevel": 4,
+			"maxLevel": 0,
+			"durationDays": 5.0
+		},
+		{
+			"id": "pain",
+			"type": "DELIVER",
+			"name": "Ravitaillement",
+			"description": "Livrez du pain pour nourrir la garnison.",
+			"target": "minecraft:bread",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 16,
+			"amountMax": 24,
+			"amountPerLevel": 4.0,
+			"rewardGoldMin": 5,
+			"rewardGoldMax": 7,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 45,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.05,
+			"weight": 8,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "forge",
+			"type": "DELIVER",
+			"name": "Commande de la forge",
+			"description": "Livrez des lingots de fer au forgeron de la guilde.",
+			"target": "minecraft:iron_ingot",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 8,
+			"amountMax": 16,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 6,
+			"rewardGoldMax": 9,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 70,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [],
+			"flagChance": 0.15,
+			"treasureMapChance": 0.08,
+			"weight": 6,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 4.0
+		},
+		{
+			"id": "tanneur",
+			"type": "DELIVER",
+			"name": "Commande du tanneur",
+			"description": "Livrez du cuir.",
+			"target": "minecraft:leather",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 8,
+			"amountMax": 12,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 4,
+			"rewardGoldMax": 5,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 50,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 6,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "tisserand",
+			"type": "DELIVER",
+			"name": "Commande du tisserand",
+			"description": "Livrez de la laine, de n'importe quelle couleur.",
+			"target": "#minecraft:wool",
+			"targetName": "Laine",
+			"icon": "",
+			"amountMin": 16,
+			"amountMax": 24,
+			"amountPerLevel": 4.0,
+			"rewardGoldMin": 4,
+			"rewardGoldMax": 5,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 45,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 6,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "combustible",
+			"type": "DELIVER",
+			"name": "Réserve de combustible",
+			"description": "Livrez du charbon pour l'hiver.",
+			"target": "minecraft:coal",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 24,
+			"amountMax": 40,
+			"amountPerLevel": 8.0,
+			"rewardGoldMin": 4,
+			"rewardGoldMax": 5,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 40,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.05,
+			"weight": 5,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		},
+		{
+			"id": "nuit",
+			"type": "SURVIVE",
+			"name": "Tenir la nuit",
+			"description": "Repoussez une vague nocturne avec succès.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 20,
+			"rewardGoldMax": 30,
+			"rewardGoldPerLevel": 4.0,
+			"rewardXp": 60,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [],
+			"flagChance": 0.25,
+			"treasureMapChance": 0.15,
+			"weight": 6,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 4.0
+		},
+		{
+			"id": "rempart",
+			"type": "SURVIVE",
+			"name": "Rempart inébranlable",
+			"description": "Remportez plusieurs vagues nocturnes.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 2,
+			"amountMax": 3,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 40,
+			"rewardGoldMax": 60,
+			"rewardGoldPerLevel": 6.0,
+			"rewardXp": 120,
+			"rewardXpPerLevel": 15.0,
+			"rewardItems": [],
+			"flagChance": 0.5,
+			"treasureMapChance": 0.3,
+			"weight": 3,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 7.0
+		},
+		{
+			"id": "expedition",
+			"type": "EXPLORE",
+			"name": "Expédition lointaine",
+			"description": "Rendez-vous au lieu indiqué, loin de la base.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 15,
+			"rewardGoldMax": 25,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 50,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.3,
+			"weight": 5,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0
+		}
+	]
+}

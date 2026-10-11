@@ -21,6 +21,8 @@ import java.util.UUID;
 public final class GuildyServer {
 	private static @Nullable MinecraftServer server;
 	private static ConfigHandle<GuildyConfig> config;
+	private static @Nullable ResourceKey<Level> cachedDimension;
+	private static @Nullable String cachedDimensionId;
 
 	private GuildyServer() {
 	}
@@ -67,8 +69,15 @@ public final class GuildyServer {
 	}
 
 	public static ResourceKey<Level> claimDimension() {
-		Identifier id = Identifier.parse(config().territory.dimension);
-		return ResourceKey.create(Registries.DIMENSION, id);
+		String configured = config().territory.dimension;
+		ResourceKey<Level> key = cachedDimension;
+		if (key == null || !configured.equals(cachedDimensionId)) {
+			Identifier id = Identifier.tryParse(configured);
+			key = ResourceKey.create(Registries.DIMENSION, id != null ? id : Identifier.withDefaultNamespace("overworld"));
+			cachedDimension = key;
+			cachedDimensionId = configured;
+		}
+		return key;
 	}
 
 	public static boolean isClaimLevel(Level level) {

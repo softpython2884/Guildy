@@ -1,0 +1,460 @@
+// Guildy - boutique du comptoir de commerce (paiement en lingots d'or de l'inventaire : 1 or = 1 lingot).
+// categories : [{id, name, icon, entries}] ; entries : [{item, amount (taille du lot), buy (prix d'achat du lot
+// par le joueur, 0 = non vendu), sell (prix de rachat du lot au joueur, 0 = non rachete), minLevel (niveau de guilde)}].
+// Regles appliquees au chargement : sell <= buy (sinon ramene a buy), un objet ne peut pas etre rachete plus cher
+// qu'il n'est vendu ailleurs dans la boutique, les objets en or (lingot, pepite, bloc, or brut, minerais d'or) et
+// les objets inconnus sont refuses. Attention aux recettes : ne rachetez pas un objet fabrique plus cher que ses
+// ingredients vendus (ex. lingots de fer vendus / blocs de fer rachetes).
+{
+
+	// La boutique ne s'ouvre que pres d'un comptoir de commerce de la guilde (sinon : partout via le menu)
+	"requireCounter": true,
+
+	// Distance maximale (blocs) entre le joueur et le panneau du comptoir pour ouvrir la boutique depuis le menu
+	"counterDistance": 8,
+
+	// Categories et articles (voir l'explication en haut du fichier)
+	"categories": [
+		{
+			"id": "blocs",
+			"name": "Blocs de construction",
+			"icon": "minecraft:bricks",
+			"entries": [
+				{
+					"item": "minecraft:cobblestone",
+					"amount": 64,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:stone",
+					"amount": 32,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:stone_bricks",
+					"amount": 32,
+					"buy": 6,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:oak_log",
+					"amount": 16,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:spruce_log",
+					"amount": 16,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:oak_planks",
+					"amount": 64,
+					"buy": 5,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:dirt",
+					"amount": 64,
+					"buy": 2,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:sand",
+					"amount": 32,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:glass",
+					"amount": 16,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:white_wool",
+					"amount": 16,
+					"buy": 6,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:bricks",
+					"amount": 16,
+					"buy": 8,
+					"sell": 2,
+					"minLevel": 2
+				},
+				{
+					"item": "minecraft:quartz_block",
+					"amount": 16,
+					"buy": 16,
+					"sell": 0,
+					"minLevel": 3
+				}
+			]
+		},
+		{
+			"id": "cultures",
+			"name": "Cultures et nourriture",
+			"icon": "minecraft:wheat",
+			"entries": [
+				{
+					"item": "minecraft:wheat",
+					"amount": 16,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:wheat_seeds",
+					"amount": 16,
+					"buy": 2,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:carrot",
+					"amount": 16,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:potato",
+					"amount": 16,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:beetroot",
+					"amount": 16,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:sugar_cane",
+					"amount": 16,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:pumpkin",
+					"amount": 8,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:melon_slice",
+					"amount": 32,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:apple",
+					"amount": 8,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:egg",
+					"amount": 16,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:bread",
+					"amount": 8,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:cooked_beef",
+					"amount": 8,
+					"buy": 6,
+					"sell": 2,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:oak_sapling",
+					"amount": 8,
+					"buy": 3,
+					"sell": 0,
+					"minLevel": 1
+				}
+			]
+		},
+		{
+			"id": "butin",
+			"name": "Butin de monstres",
+			"icon": "minecraft:bone",
+			"entries": [
+				{
+					"item": "minecraft:rotten_flesh",
+					"amount": 32,
+					"buy": 0,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:bone",
+					"amount": 16,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:string",
+					"amount": 16,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:spider_eye",
+					"amount": 8,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:feather",
+					"amount": 16,
+					"buy": 3,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:leather",
+					"amount": 8,
+					"buy": 6,
+					"sell": 2,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:gunpowder",
+					"amount": 8,
+					"buy": 6,
+					"sell": 2,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:arrow",
+					"amount": 16,
+					"buy": 3,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:slime_ball",
+					"amount": 8,
+					"buy": 8,
+					"sell": 2,
+					"minLevel": 2
+				},
+				{
+					"item": "minecraft:ender_pearl",
+					"amount": 4,
+					"buy": 16,
+					"sell": 4,
+					"minLevel": 2
+				},
+				{
+					"item": "minecraft:blaze_rod",
+					"amount": 4,
+					"buy": 16,
+					"sell": 4,
+					"minLevel": 3
+				}
+			]
+		},
+		{
+			"id": "minerais",
+			"name": "Minerais et lingots",
+			"icon": "minecraft:iron_ingot",
+			"entries": [
+				{
+					"item": "minecraft:coal",
+					"amount": 16,
+					"buy": 4,
+					"sell": 1,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:copper_ingot",
+					"amount": 16,
+					"buy": 6,
+					"sell": 2,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:iron_ingot",
+					"amount": 8,
+					"buy": 10,
+					"sell": 4,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:redstone",
+					"amount": 16,
+					"buy": 6,
+					"sell": 2,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:lapis_lazuli",
+					"amount": 16,
+					"buy": 6,
+					"sell": 2,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:quartz",
+					"amount": 16,
+					"buy": 6,
+					"sell": 2,
+					"minLevel": 2
+				},
+				{
+					"item": "minecraft:amethyst_shard",
+					"amount": 8,
+					"buy": 6,
+					"sell": 1,
+					"minLevel": 2
+				},
+				{
+					"item": "minecraft:emerald",
+					"amount": 4,
+					"buy": 12,
+					"sell": 4,
+					"minLevel": 2
+				},
+				{
+					"item": "minecraft:diamond",
+					"amount": 1,
+					"buy": 20,
+					"sell": 8,
+					"minLevel": 3
+				}
+			]
+		},
+		{
+			"id": "utilitaires",
+			"name": "Utilitaires",
+			"icon": "minecraft:torch",
+			"entries": [
+				{
+					"item": "minecraft:torch",
+					"amount": 16,
+					"buy": 3,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:chest",
+					"amount": 4,
+					"buy": 4,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:white_bed",
+					"amount": 1,
+					"buy": 6,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:bucket",
+					"amount": 1,
+					"buy": 6,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:shears",
+					"amount": 1,
+					"buy": 4,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:shield",
+					"amount": 1,
+					"buy": 6,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:compass",
+					"amount": 1,
+					"buy": 8,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:map",
+					"amount": 1,
+					"buy": 6,
+					"sell": 0,
+					"minLevel": 1
+				},
+				{
+					"item": "minecraft:lead",
+					"amount": 2,
+					"buy": 6,
+					"sell": 0,
+					"minLevel": 2
+				},
+				{
+					"item": "minecraft:name_tag",
+					"amount": 1,
+					"buy": 16,
+					"sell": 0,
+					"minLevel": 3
+				},
+				{
+					"item": "minecraft:saddle",
+					"amount": 1,
+					"buy": 20,
+					"sell": 0,
+					"minLevel": 3
+				},
+				{
+					"item": "minecraft:experience_bottle",
+					"amount": 4,
+					"buy": 12,
+					"sell": 0,
+					"minLevel": 4
+				},
+				{
+					"item": "minecraft:totem_of_undying",
+					"amount": 1,
+					"buy": 96,
+					"sell": 0,
+					"minLevel": 6
+				}
+			]
+		}
+	]
+}

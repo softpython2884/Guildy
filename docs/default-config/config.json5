@@ -1,0 +1,151 @@
+// Guildy - configuration principale (guildes, territoire, protection, economie, niveaux).
+// Les autres fichiers de ce dossier configurent les vagues, quetes, boutique, constructions et villageois.
+// Rechargement a chaud : /guild admin reload   (les commentaires sont regeneres automatiquement)
+{
+
+	// Regles des guildes
+	"guilds": {
+
+		// Longueur minimale / maximale du nom de guilde
+		"nameMinLength": 3,
+		"nameMaxLength": 16,
+
+		// Nombre maximum de membres par guilde (0 = illimite)
+		"maxMembers": 20,
+
+		// Duree de validite d'une invitation (secondes)
+		"inviteExpireSeconds": 300,
+
+		// Activer /guild home
+		"homeEnabled": true,
+
+		// Delai entre deux /guild home (secondes)
+		"homeCooldownSeconds": 60,
+
+		// Temps d'immobilite avant la teleportation (secondes, 0 = instantane)
+		"homeWarmupSeconds": 3
+	},
+
+	// Territoire, drapeaux et claims (en chunks de 16x16)
+	"territory": {
+
+		// Dimension ou les territoires peuvent exister
+		"dimension": "minecraft:overworld",
+
+		// Rayon (en chunks) claim par le drapeau fondateur : 1 => carre 3x3 = 9 chunks
+		"foundingRadius": 1,
+
+		// Rayon claim par un drapeau d'extension : 0 => 1 chunk, 1 => 3x3
+		"extensionRadius": 0,
+
+		// Les nouveaux chunks doivent toucher (4 voisins) le territoire existant
+		"requireConnected": true,
+
+		// Ecart minimum (en chunks) entre les territoires de deux guildes differentes
+		"minDistanceBetweenGuilds": 3,
+
+		// Distance minimale (en chunks) entre un territoire et le spawn du monde
+		"minDistanceFromSpawn": 4,
+
+		// Nombre maximum de chunks au niveau 1
+		"baseMaxChunks": 12,
+
+		// Chunks supplementaires autorises par niveau de guilde
+		"maxChunksPerLevel": 6,
+
+		// Prix (or, paye par le tresor) du premier drapeau d'extension
+		"extensionFlagBasePrice": 8,
+
+		// Augmentation du prix pour chaque drapeau d'extension deja achete
+		"extensionFlagPriceStep": 4,
+
+		// Prix maximum d'un drapeau d'extension
+		"extensionFlagMaxPrice": 64,
+
+		// Afficher un titre (true) ou seulement la barre d'action (false) en entrant dans un territoire
+		"enterTitle": true,
+
+		// Duree d'affichage des limites du territoire avec /guild show (secondes)
+		"borderDisplaySeconds": 15
+	},
+
+	// Protection des territoires
+	"protection": {
+
+		// Empecher les explosions de detruire des blocs dans les territoires
+		"explosions": true,
+
+		// Empecher le feu de detruire des blocs dans les territoires
+		"fire": true,
+
+		// Empecher les pistons de deplacer des blocs a travers une frontiere de territoire
+		"pistons": true,
+
+		// Empecher les liquides venant de l'exterieur de couler dans un territoire
+		"fluids": true,
+
+		// Proteger les entites (animaux, villageois, cadres, supports d'armure) contre les non-membres
+		"entities": true,
+
+		// Les non-membres peuvent ouvrir portes/portillons/trappes dans un territoire
+		"visitorsCanUseDoors": false
+	},
+
+	// Economie : l'or (lingot vanilla) est la monnaie. 1 or = 1 lingot d'or.
+	"economy": {
+
+		// Prix (or du tresor) d'une banniere decorative aux couleurs de la guilde
+		"decorativeBannerPrice": 2,
+
+		// Or dans le tresor a la creation d'une guilde
+		"startingTreasury": 0,
+
+		// Accepter les pepites (9 = 1 or) lors des depots au tresor
+		"depositNuggets": true
+	},
+
+	// Niveaux de guilde (XP gagnee via vagues et quetes)
+	"levels": {
+
+		// XP totale requise pour atteindre chaque niveau (index 0 = niveau 2, etc.). Niveau max = taille + 1
+		"xpThresholds": [
+			100,
+			250,
+			450,
+			700,
+			1000,
+			1400,
+			1900,
+			2500,
+			3200
+		]
+	},
+
+	// Role minimum (MEMBER, OFFICER, LEADER) requis pour chaque action de guilde.
+	// BUILD=casser/poser, INTERACT=portes/coffres/entites, INVITE, KICK, CLAIM=claims/drapeaux,
+	// TREASURY=retirer/depenser le tresor, VILLAGERS=gerer les villageois, STRUCTURES=constructions,
+	// BANNER=editer la banniere, SET_HOME, QUESTS=abandonner/relancer des quetes
+	"rolePermissions": {
+		"BUILD": "MEMBER",
+		"INTERACT": "MEMBER",
+		"INVITE": "OFFICER",
+		"KICK": "OFFICER",
+		"CLAIM": "OFFICER",
+		"TREASURY": "OFFICER",
+		"VILLAGERS": "OFFICER",
+		"STRUCTURES": "OFFICER",
+		"BANNER": "OFFICER",
+		"SET_HOME": "OFFICER",
+		"QUESTS": "OFFICER"
+	},
+
+	// Divers
+	"general": {
+
+		// Sauvegarde automatique des donnees de guildes (minutes, si modifiees)
+		"autosaveMinutes": 5,
+
+		// Niveau d'operateur vanilla requis pour les commandes admin si aucun gestionnaire de permissions n'est installe
+		"adminOpLevel": 2
+	}
+}

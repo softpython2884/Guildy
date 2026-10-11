@@ -1,0 +1,155 @@
+// Guildy - constructions multiblocs (murs verticaux, profondeur 1 bloc).
+// Une construction = id, name, description, tutorial (texte montre a la premiere construction), icon,
+// minLevel (niveau de guilde requis), unlockCost (or du tresor pour la debloquer, 0 = debloquee d'office),
+// maxPerGuild, rows (lignes de HAUT en BAS, caracteres de GAUCHE a DROITE vus de face, '.' = n'importe quel bloc),
+// key (caractere -> bloc 'minecraft:bookshelf' ou tag de blocs '#minecraft:logs'), keyLabels (noms affiches),
+// signCells : cases [colonne, ligne] (0 = gauche / haut) qui recoivent un panneau gere sur leur face avant ;
+// l'ordre de la liste = numero du panneau (tableau de quetes : panneau n = quete n).
+// Les blocs portant un panneau doivent etre des blocs pleins. Taille maximale : 9 de large, 4 de haut.
+// Les ids 'quest_board', 'shop' et 'reception' sont utilises par les quetes, la boutique et les villageois.
+// Validation en jeu : clic droit sur un bloc de la construction avec le Plan (menu /guild build).
+{
+
+	// Intervalle (secondes) entre deux verifications de l'integrite des constructions chargees
+	"checkIntervalSeconds": 30,
+
+	// Intervalle (secondes) de mise a jour du texte des panneaux geres
+	"signRefreshSeconds": 5,
+
+	// Panneau mural pose devant les constructions (id d'un panneau mural vanilla, ex. minecraft:spruce_wall_sign)
+	"signBlock": "minecraft:oak_wall_sign",
+
+	// Texte lumineux sur les panneaux geres
+	"glowingSignText": false,
+
+	// Liste des constructions (voir l'explication en haut du fichier)
+	"definitions": [
+		{
+			"id": "quest_board",
+			"name": "Tableau de quêtes",
+			"description": [
+				"&7Un panneau d'affichage où la guilde reçoit",
+				"&7ses quêtes : une quête par panneau (6 au total)."
+			],
+			"tutorial": [
+				"&6&lTableau de quêtes construit !",
+				"&7Chaque panneau affiche une quête commune à toute la guilde.",
+				"&7Clic droit sur un panneau : détails, livraison, récompense.",
+				"&7Une nouvelle quête apparaît peu après qu'un panneau se libère.",
+				"&7Raccourci : &e/guild quests"
+			],
+			"icon": "minecraft:writable_book",
+			"minLevel": 1,
+			"unlockCost": 0,
+			"maxPerGuild": 1,
+			"rows": [
+				"LBL",
+				"LPL"
+			],
+			"key": {
+				"L": "#minecraft:logs",
+				"B": "minecraft:bookshelf",
+				"P": "#minecraft:planks"
+			},
+			"keyLabels": {
+				"L": "Bûche (tout bois)",
+				"P": "Planches (tout bois)"
+			},
+			"signCells": [
+				[
+					0,
+					0
+				],
+				[
+					1,
+					0
+				],
+				[
+					2,
+					0
+				],
+				[
+					0,
+					1
+				],
+				[
+					1,
+					1
+				],
+				[
+					2,
+					1
+				]
+			]
+		},
+		{
+			"id": "shop",
+			"name": "Comptoir de commerce",
+			"description": [
+				"&7Un comptoir où les membres achètent et",
+				"&7vendent des marchandises contre de l'or."
+			],
+			"tutorial": [
+				"&6&lComptoir de commerce construit !",
+				"&7Clic droit sur son panneau pour ouvrir la boutique.",
+				"&7Clic gauche : acheter, clic droit : vendre (maj : par lots).",
+				"&7On paie avec les lingots d'or de son inventaire."
+			],
+			"icon": "minecraft:emerald",
+			"minLevel": 1,
+			"unlockCost": 20,
+			"maxPerGuild": 1,
+			"rows": [
+				"PGP",
+				"BBB"
+			],
+			"key": {
+				"P": "#minecraft:planks",
+				"G": "minecraft:gold_block",
+				"B": "minecraft:barrel"
+			},
+			"keyLabels": {
+				"P": "Planches (tout bois)"
+			},
+			"signCells": [
+				[
+					1,
+					0
+				]
+			]
+		},
+		{
+			"id": "reception",
+			"name": "Bureau d'accueil",
+			"description": [
+				"&7Un bureau où les villageois de passage",
+				"&7peuvent proposer leurs services à la guilde."
+			],
+			"tutorial": [
+				"&6&lBureau d'accueil construit !",
+				"&7Des villageois viendront proposer leurs services.",
+				"&7Clic droit sur le panneau pour les gérer."
+			],
+			"icon": "minecraft:bell",
+			"minLevel": 2,
+			"unlockCost": 40,
+			"maxPerGuild": 1,
+			"rows": [
+				"SHS",
+				"SCS"
+			],
+			"key": {
+				"S": "minecraft:stone_bricks",
+				"H": "minecraft:hay_block",
+				"C": "minecraft:crafting_table"
+			},
+			"keyLabels": {},
+			"signCells": [
+				[
+					1,
+					0
+				]
+			]
+		}
+	]
+}
