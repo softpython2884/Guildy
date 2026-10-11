@@ -1,8 +1,10 @@
 package dev.guildy.data;
 
 import dev.guildy.core.GuildyServer;
+import dev.guildy.event.GuildEventData;
 import dev.guildy.quest.GuildQuestData;
 import dev.guildy.structure.GuildStructureData;
+import dev.guildy.trade.GuildTradeData;
 import dev.guildy.upgrade.GuildUpgradeData;
 import dev.guildy.upgrade.UpgradeEffects;
 import dev.guildy.upgrade.Upgrades;
@@ -53,6 +55,8 @@ public final class Guild {
 	public GuildQuestData quests = new GuildQuestData();
 	public GuildVillagerData villagers = new GuildVillagerData();
 	public GuildUpgradeData upgrades = new GuildUpgradeData();
+	public GuildEventData events = new GuildEventData();
+	public GuildTradeData trade = new GuildTradeData();
 
 	public Guild() {
 	}
@@ -204,6 +208,14 @@ public final class Guild {
 			upgrades = new GuildUpgradeData();
 		}
 		upgrades.fixNulls();
+		if (events == null) {
+			events = new GuildEventData();
+		}
+		events.fixNulls();
+		if (trade == null) {
+			trade = new GuildTradeData();
+		}
+		trade.fixNulls();
 		if (level < 1) {
 			level = 1;
 		}

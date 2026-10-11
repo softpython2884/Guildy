@@ -52,8 +52,9 @@ import java.util.SplittableRandom;
 import java.util.UUID;
 
 /**
- * One running night wave for one guild (in memory only: never persisted, cancelled by a restart).
- * Driven once per second by {@link WaveManager} (staggered by {@link #slot()}).
+ * One running wave for one guild (in memory only: never persisted, cancelled by a restart): a night horde, an admin
+ * test wave or an event wave ({@link WaveManager.Kind}). Driven once per second by {@link WaveManager} (staggered by
+ * {@link #slot()}).
  */
 final class WaveSession {
 	private final Guild guild;
@@ -61,7 +62,11 @@ final class WaveSession {
 	private final double difficulty;
 	private final int night;
 	private final int nearbyAtStart;
-	private final boolean test;
+	private final WaveManager.Kind kind;
+	/** Duration of an event wave (seconds); test waves read waves.json5, night waves end at dawn. */
+	private final int eventDuration;
+	private final String eventId;
+	private final NightModifiers modifiers;
 	private final int slot;
 	private final BlockPos heart;
 	private final long heartChunk;
@@ -98,15 +103,18 @@ final class WaveSession {
 	private int mobCounter;
 	private boolean ended;
 
-	WaveSession(Guild guild, WavePlanner.Plan plan, double difficulty, int night, int nearbyAtStart, boolean test, int slot,
-			long clock, double spawnPhaseSeconds) {
+	WaveSession(Guild guild, WavePlanner.Plan plan, double difficulty, int night, int nearbyAtStart, WaveManager.Request request,
+			NightModifiers modifiers, int slot, long clock, double spawnPhaseSeconds) {
 		WaveConfig cfg = WaveModule.config();
 		this.guild = guild;
 		this.theme = plan.theme();
 		this.difficulty = difficulty;
 		this.night = night;
 		this.nearbyAtStart = nearbyAtStart;
-		this.test = test;
+		this.kind = request.kind();
+		this.eventDuration = request.durationSeconds();
+		this.eventId = request.eventId() == null ? "" : request.eventId();
+		this.modifiers = modifiers;
 		this.slot = slot;
 		this.heart = guild.heart == null ? BlockPos.ZERO : guild.heart.immutable();
 		this.heartChunk = ChunkKey.ofBlock(heart.getX(), heart.getZ());
@@ -146,7 +154,36 @@ final class WaveSession {
 	}
 
 	boolean isTest() {
-		return test;
+		return kind == WaveManager.Kind.TEST;
+	}
+
+	/** Test and event waves ignore the day/night clock and end after {@link #durationSeconds()}. */
+	boolean isTimed() {
+		return kind != WaveManager.Kind.NIGHT;
+	}
+
+	boolean isEvent() {
+		return kind == WaveManager.Kind.EVENT;
+	}
+
+	/** Event id of an event wave, "" otherwise. */
+	String eventId() {
+		return eventId;
+	}
+
+	NightModifiers modifiers() {
+		return modifiers;
+	}
+
+	/** Lifetime of a timed wave (seconds). */
+	int durationSeconds() {
+		return isTest() ? WaveModule.config().test.durationSeconds : eventDuration;
+	}
+
+	/** Theme name, prefixed with the modifiers label (blood night...). */
+	String displayName() {
+		String name = Lang.colorize(theme.name);
+		return modifiers.hasLabel() ? Lang.raw("wave.bar.label", Lang.colorize(modifiers.label()), name) : name;
 	}
 
 	int slot() {
@@ -214,11 +251,11 @@ final class WaveSession {
 		return mobs.values();
 	}
 
-	/** Remaining seconds before the wave ends by itself (dawn or test duration). */
+	/** Remaining seconds before the wave ends by itself (dawn, test or event duration). */
 	long remainingSeconds(long clock) {
 		WaveConfig cfg = WaveModule.config();
-		if (test) {
-			return Math.max(0, cfg.test.durationSeconds - seconds);
+		if (isTimed()) {
+			return Math.max(0, durationSeconds() - seconds);
 		}
 		long tod = WaveFormula.timeOfDay(clock);
 		return Math.max(0, (cfg.timing.nightEnd - tod) / 20);
@@ -294,7 +331,7 @@ final class WaveSession {
 		if (old.uuid.equals(bossUuid)) {
 			bossUuid = converted.getUUID();
 		}
-		WaveSpawner.applyBuffs(converted, old.planned, difficulty);
+		WaveSpawner.applyBuffs(converted, old.planned, difficulty, modifiers);
 		converted.setHealth(converted.getMaxHealth());
 		WaveSpawner.attachSteering(converted, this);
 	}
@@ -304,16 +341,20 @@ final class WaveSession {
 	void start(ServerLevel level) {
 		String themeName = Lang.colorize(theme.name);
 		Component title = Lang.get("wave.start.title");
-		Component subtitle = Lang.get("wave.start.subtitle", themeName);
+		Component subtitle = Lang.get("wave.start.subtitle", displayName());
 		for (ServerPlayer player : guild.onlineMembers()) {
 			Msg.title(player, title, subtitle, 10, 70, 20);
 			Msg.sound(player, SoundEvents.RAID_HORN, 1.0F, 1.0F);
 			Msg.send(player, "wave.start.chat", themeName, formatDifficulty(difficulty), total);
-			player.sendSystemMessage(Lang.get("wave.start.goal"));
+			player.sendSystemMessage(Lang.get(isEvent() ? "wave.start.goal.event" : "wave.start.goal"));
+			if (modifiers.hasLabel()) {
+				player.sendSystemMessage(Lang.get("wave.start.modifiers", Lang.colorize(modifiers.label()),
+						formatMultiplier(modifiers.goldMultiplier())));
+			}
 			if (hasBoss) {
 				player.sendSystemMessage(Lang.get("wave.start.boss"));
 			}
-			if (test) {
+			if (isTest()) {
 				player.sendSystemMessage(Lang.get("wave.start.test"));
 			}
 		}
@@ -339,9 +380,9 @@ final class WaveSession {
 			return;
 		}
 
-		// Time: dawn (victory) or skipped night (cancelled).
-		if (test) {
-			if (seconds >= cfg.test.durationSeconds) {
+		// Time: dawn (victory) or skipped night (cancelled); timed waves (test, event) end after their duration.
+		if (isTimed()) {
+			if (seconds >= durationSeconds()) {
 				finish(Result.VICTORY, null);
 				return;
 			}
@@ -435,7 +476,7 @@ final class WaveSession {
 				finish(Result.CANCELLED, "wave.reason.empty");
 				return;
 			}
-			if (test || cfg.timing.endWhenHordeDefeated) {
+			if (isTimed() || cfg.timing.endWhenHordeDefeated) {
 				finish(Result.VICTORY, null);
 				return;
 			}
@@ -760,7 +801,7 @@ final class WaveSession {
 
 	private void refreshBars(ServerLevel level) {
 		int remaining = Math.max(0, total - kills);
-		progressBar.setName(Lang.get("wave.bar.progress", Lang.colorize(theme.name), kills, total, remaining));
+		progressBar.setName(Lang.get("wave.bar.progress", displayName(), kills, total, remaining));
 		progressBar.setProgress(total <= 0 ? 0.0F : Mth.clamp((float) kills / total, 0.0F, 1.0F));
 		heartBar.setName(Lang.get("wave.bar.heart", integrity, maxIntegrity));
 		heartBar.setProgress(Mth.clamp((float) integrity / Math.max(1, maxIntegrity), 0.0F, 1.0F));
@@ -825,7 +866,7 @@ final class WaveSession {
 			result = Result.CANCELLED;
 			reason = "wave.reason.empty";
 		}
-		if (test && !cfg.test.applyResults && result != Result.CANCELLED) {
+		if (isTest() && !cfg.test.applyResults && result != Result.CANCELLED) {
 			result = Result.CANCELLED;
 			reason = "wave.reason.test";
 		}
@@ -841,13 +882,17 @@ final class WaveSession {
 		long loss = 0;
 		int rolls = 0;
 		int nightBefore = data.night;
+		// Event waves (raids...) count as hordes for the statistics but never move the night step.
+		boolean nightStep = !isEvent();
 		switch (result) {
 			case VICTORY -> {
-				gold = Upgrades.boost(guild, UpgradeEffects.WAVE_REWARD_PCT, WaveFormula.goldReward(cfg.rewards, difficulty, ratio));
-				xp = Upgrades.boost(guild, UpgradeEffects.WAVE_REWARD_PCT, WaveFormula.xpReward(cfg.rewards, difficulty, ratio));
-				rolls = WaveFormula.itemRolls(cfg.rewards, difficulty, ratio);
+				gold = modifiers.gold(Upgrades.boost(guild, UpgradeEffects.WAVE_REWARD_PCT, WaveFormula.goldReward(cfg.rewards, difficulty, ratio)));
+				xp = modifiers.xp(Upgrades.boost(guild, UpgradeEffects.WAVE_REWARD_PCT, WaveFormula.xpReward(cfg.rewards, difficulty, ratio)));
+				rolls = modifiers.itemRolls(WaveFormula.itemRolls(cfg.rewards, difficulty, ratio));
 				GuildManager.addTreasury(guild, gold);
-				data.night++;
+				if (nightStep) {
+					data.night++;
+				}
 				data.victories++;
 				data.streak++;
 				data.bestStreak = Math.max(data.bestStreak, data.streak);
@@ -860,7 +905,9 @@ final class WaveSession {
 				if (loss > 0) {
 					GuildManager.takeTreasury(guild, loss);
 				}
-				data.night = WaveFormula.nightAfterDefeat(cfg.defeat, data.night);
+				if (nightStep) {
+					data.night = WaveFormula.nightAfterDefeat(cfg.defeat, data.night);
+				}
 				data.defeats++;
 				data.streak = 0;
 				data.lastResult = "wave.result.defeat";
@@ -924,7 +971,6 @@ final class WaveSession {
 			int nightBefore, int nightAfter, WaveConfig cfg) {
 		Component title;
 		Component subtitle;
-		String themeName = Lang.colorize(theme.name);
 		switch (result) {
 			case VICTORY -> {
 				title = Lang.get("wave.end.victory.title");
@@ -953,17 +999,24 @@ final class WaveSession {
 
 		List<Component> lines = new ArrayList<>();
 		lines.add(Lang.get("wave.recap.header"));
-		lines.add(Lang.get("wave.recap.theme", themeName, formatDifficulty(difficulty), night));
+		lines.add(Lang.get("wave.recap.theme", displayName(), formatDifficulty(difficulty), night));
 		String bossState = !hasBoss() ? Lang.raw("wave.recap.boss.none")
 				: bossKilled ? Lang.raw("wave.recap.boss.killed") : Lang.raw("wave.recap.boss.alive");
 		lines.add(Lang.get("wave.recap.kills", kills, total, eliteKills, bossState));
 		switch (result) {
 			case VICTORY -> {
 				lines.add(Lang.get("wave.recap.victory", gold, xp));
+				if (modifiers.hasLabel() && Math.abs(modifiers.goldMultiplier() - 1) > 1e-6) {
+					lines.add(Lang.get("wave.recap.modifiers", Lang.colorize(modifiers.label()), formatMultiplier(modifiers.goldMultiplier())));
+				}
 				if (rolls > 0) {
 					lines.add(Lang.get("wave.recap.items", rolls));
 				}
-				lines.add(Lang.get("wave.recap.next", nightAfter, guild.waves.streak));
+				if (isEvent()) {
+					lines.add(Lang.get("wave.recap.event", guild.waves.streak));
+				} else {
+					lines.add(Lang.get("wave.recap.next", nightAfter, guild.waves.streak));
+				}
 			}
 			case DEFEAT -> {
 				lines.add(Lang.get("wave.recap.defeat", loss, UpgradeEffects.format(
@@ -1008,6 +1061,11 @@ final class WaveSession {
 		return String.format(java.util.Locale.FRANCE, "%.1f", d);
 	}
 
+	/** "2", "1,2"... */
+	static String formatMultiplier(double m) {
+		return Math.abs(m - Math.rint(m)) < 1e-6 ? String.valueOf((long) Math.rint(m)) : formatDifficulty(m);
+	}
+
 	private static BossEvent.BossBarColor barColor(String name) {
 		try {
 			return BossEvent.BossBarColor.valueOf(name.trim().toUpperCase(java.util.Locale.ROOT));
@@ -1018,8 +1076,9 @@ final class WaveSession {
 
 	/** One-line admin status. */
 	Component statusLine(ServerLevel level) {
-		return Lang.get("wave.cmd.status.active", guild.name, Lang.colorize(theme.name), kills, total, mobs.size(), queue.size(),
-				integrity, maxIntegrity, formatDifficulty(difficulty), test ? " &e[test]" : "");
+		String tag = isTest() ? " &e[test]" : isEvent() ? " &6[" + eventId + "]" : "";
+		return Lang.get("wave.cmd.status.active", guild.name, displayName(), kills, total, mobs.size(), queue.size(),
+				integrity, maxIntegrity, formatDifficulty(difficulty), tag);
 	}
 
 	int nearbyAtStart() {

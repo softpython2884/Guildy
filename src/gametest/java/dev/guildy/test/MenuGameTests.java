@@ -38,6 +38,7 @@ public class MenuGameTests {
 		menus.put("structures", p -> Hooks.openStructures.accept(p, guild));
 		menus.put("quests", p -> Hooks.openQuests.accept(p, guild));
 		menus.put("villagers", p -> Hooks.openVillagers.accept(p, guild));
+		menus.put("trade hub", p -> level.getServer().getCommands().performPrefixedCommand(p.createCommandSourceStack(), "guild trade"));
 		for (var entry : menus.entrySet()) {
 			open(helper, leader, entry.getKey(), entry.getValue());
 		}

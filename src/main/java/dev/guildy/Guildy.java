@@ -13,10 +13,12 @@ import dev.guildy.core.Lifecycle;
 import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
 import dev.guildy.data.GuildManager;
+import dev.guildy.event.EventModule;
 import dev.guildy.gui.GuildMenus;
 import dev.guildy.quest.QuestModule;
 import dev.guildy.shop.ShopModule;
 import dev.guildy.structure.StructureModule;
+import dev.guildy.trade.TradeModule;
 import dev.guildy.upgrade.UpgradeModule;
 import dev.guildy.villager.VillagerModule;
 import dev.guildy.wave.WaveModule;
@@ -52,6 +54,8 @@ public final class Guildy implements ModInitializer {
 		ShopModule.init();
 		VillagerModule.init();
 		UpgradeModule.init();
+		TradeModule.init();
+		EventModule.init(); // after the wave and trade modules (hooks into both)
 
 		List<String> errors = ConfigManager.loadAll();
 		String langError = Lang.load();

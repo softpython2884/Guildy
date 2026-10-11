@@ -9,7 +9,7 @@ ou à héberger pour les joueurs.
 
 > Fonder une base avec un drapeau → survivre aux hordes de la nuit → gagner de l'or et du butin →
 > agrandir le territoire avec des drapeaux → recruter des villageois et leur confier des tâches →
-> quêtes et boutique → se renforcer → des nuits toujours plus dures.
+> quêtes, boutique et marchands de passage → se renforcer → des nuits toujours plus dures (et parfois une nuit de sang).
 
 ---
 
@@ -86,6 +86,7 @@ les blocs et pose des **panneaux gérés** devant.
 | **Tableau de quêtes** | bûche · bibliothèque · bûche / bûche · planches · bûche | gratuit, niv. 1 | 6 panneaux = 6 quêtes |
 | **Comptoir de commerce** | planches · bloc d'or · planches / tonneau · tonneau · tonneau | 20 or, niv. 1 | la boutique |
 | **Bureau d'accueil** | pierre taillée · botte de foin · pierre taillée / pierre taillée · établi · pierre taillée | 40 or, niv. 2 | arrivée des villageois |
+| **Carrefour commercial** | laine (toute couleur) · bloc d'émeraude · laine / tonneau · table de cartographie · tonneau | 60 or, niv. 2 | marchands de passage (voir § 9) |
 
 Casser un bloc de la construction la désactive (les panneaux disparaissent) ; les plans se redemandent gratuitement.
 
@@ -143,6 +144,39 @@ niveau de guilde ; les liens deviennent verts une fois le palier précédent dé
 Les bonus d'un même effet s'additionnent. L'or des quêtes de **livraison** n'est jamais augmenté (pas de boucle d'or
 avec la boutique). Branches, paliers, coûts et effets se configurent dans `upgrades.json5`.
 
+### 9. Carrefour commercial et marchands de passage
+Une fois le **Carrefour commercial** construit (menu Constructions), un **Marchand de passage** (marchand ambulant
+vanilla, nommé avec le palier du Carrefour) peut s'y arrêter **chaque matin** : chance 50 % + 15 % par palier. Il reste
+environ **10 minutes** (il repart au plus tard à la tombée de la nuit) et arrive dès qu'un membre est à la base.
+Clic droit sur lui pour commercer : on paie en **lingots d'or** (blocs d'or + lingots au-delà de 64 or). Les marchands
+**ne rachètent rien** et ne vendent jamais moins cher que la boutique (pas de boucle d'or). Seuls les membres peuvent
+commercer dans le territoire.
+
+Clic droit sur le panneau du Carrefour (ou `/guild trade`) : palier, marchands présents (position, temps restant),
+chance de la prochaine visite, **aperçu de tous les échanges** de chaque palier, et **amélioration** :
+
+| Palier | Condition et coût (trésor + inventaire du joueur, objets simples) | Échanges par visite | Exemples |
+|---|---|---|---|
+| **I - Halte marchande** | construit (niv. 2) | 5 à 7 | toutes les pousses (cerisier, palétuvier, chêne pâle…), graines, colorants, fleurs, canne à sucre, cactus, bambou, cacao, lianes, nénuphars, baies lumineuses… |
+| **II - Comptoir prospère** | niv. 3, 150 or + 16 émeraudes | 6 à 8 | boules de slime, rayons de miel, coquilles de nautile, éclats d'améthyste, glace bleue, disques, étiquettes, selles, cornichons de mer… |
+| **III - Grand carrefour** | niv. 5, 400 or + 2 blocs de diamant | 7 à 9 | « trades de fou » : livres Raccommodage, Solidité III, Efficacité V, Fortune III, Toucher de soie, Butin III, Protection IV, totem d'immortalité, pomme dorée enchantée, modèle de forge (amélioration en netherite), cœur de la mer, trident, carapaces de shulker, et parfois des **élytres** (chères) |
+
+Un Carrefour de palier III tire surtout dans sa table, mais aussi dans celles des paliers inférieurs. Il faut le droit
+de dépenser le trésor (officier par défaut) pour l'améliorer ; impossible en créatif. Tout se règle dans `trade.json5`.
+
+### 10. Événements
+Des événements aléatoires pimentent la vie des guildes (tirage une fois par jour, configurable dans `events.json5`) :
+
+| Événement | Quand | Effet |
+|---|---|---|
+| **Nuit de sang** | au crépuscule, 7 % de chance si une guilde a atteint le palier de nuit 3, au plus une tous les 4 jours | annonce à **tout le serveur** (titre rouge « La lune rougit… »). Cette nuit-là, **toutes les hordes** ont 60 % de monstres en plus, +15 % de chance d'élite (plafonnée), +25 % de vie et de dégâts, souvent un boss… mais **or et XP ×2** et plus d'objets. La barre de progression porte « ☾ Nuit de sang ». |
+| **Raid de pillards** | le matin, 5 % (guilde niv. 2+, au plus un tous les 3 jours) | les pillards attendent qu'un membre soit près du cœur, préviennent (« ils attaquent dans 2 minutes »), puis une horde d'**illageois** (pillards, vindicateurs, évocateur rare, **ravageur** en boss) attaque **en plein jour**. Mêmes règles que les hordes (cœur, victoire, défaite), récompenses ×1,2, fin quand tous sont morts ou après 10 min (victoire si le cœur tient), sans changer le palier de nuit. Personne à la base : ils renoncent au crépuscule. |
+| **Caravane marchande** | le matin, 15 % (au plus une tous les 2 jours) | un marchand et deux lamas s'installent au Carrefour commercial (ou près du cœur) ~10 min avec des marchandises de caravane. |
+| **Marchand de livres enchantés** | le matin, 6 % (guilde niv. 3+, au plus un tous les 4 jours) | l'**Érudit itinérant** vend 3 à 5 livres enchantés tirés dans une liste pondérée (Raccommodage, Solidité III, Efficacité V, Fortune III, Toucher de soie, Butin III, Protection IV, Tranchant V, Chute amortie IV…). |
+
+L'événement en cours ou à venir (nuit de sang, raid, marchands à la base) s'affiche dans le bouton « Hordes » du menu
+principal et dans le menu des hordes (« Prochaine nuit »).
+
 ### Rôles
 **Chef**, **Officier**, **Membre**. Par défaut les membres construisent et interagissent ; les officiers
 invitent, excluent, gèrent le territoire, le trésor, les villageois, les constructions, la bannière et les
@@ -175,6 +209,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild quests` | Quêtes |
 | `/guild villagers [accept\|refuse]` | Villageois |
 | `/guild upgrades` | Arbre d'évolution (améliorations permanentes) |
+| `/guild trade` | Carrefour commercial : palier, marchands présents, échanges possibles, amélioration |
 
 ### Administration
 Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions : opérateurs niveau 2
@@ -192,6 +227,9 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin quest reroll <guilde>` · `quest complete <guilde> <slot>` · `quest map <guilde>` | Quêtes |
 | `/guild admin villager spawn <guilde>` | Faire venir un candidat villageois |
 | `/guild admin upgrade unlock\|lock <guilde> <id>` | Arbre d'évolution : `unlock` débloque gratuitement (avec les prérequis manquants), `lock` retire l'amélioration et celles qui en dépendent |
+| `/guild admin event list` | Événements : réglages, nuit de sang prévue, raids en attente, marchands présents par guilde |
+| `/guild admin event start\|stop <événement> [guilde]` | `blood_night` (tout le serveur : la nuit en cours ou la prochaine), `pillager_raid` (immédiat si un membre est au cœur, sinon dès qu'il y en a un), `caravan`, `book_merchant`, `merchant` (visite du Carrefour) ; `stop` annule / renvoie le marchand |
+| `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
 
 ---
 
@@ -209,6 +247,8 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, tables de minage, catégories de rangement, départs après défaite |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
+| `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
+| `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
 Une copie des fichiers par défaut (commentés) se trouve dans [`docs/default-config/`](docs/default-config/).
@@ -227,6 +267,9 @@ Formules par défaut (modifiables) :
   5 minutes si nécessaire et à l'arrêt. En cas de fichier illisible, la sauvegarde `.bak` est utilisée.
 - Les hordes ne sont pas sauvegardées : après un arrêt (même brutal), les monstres de horde restants sont
   supprimés au chargement et la horde est simplement annulée.
+- `<monde>/guildy/events.json` : état global des événements (nuit de sang prévue, dernier tirage). Les marchands de
+  passage restent dans le monde avec leurs échanges et repartent à l'heure prévue ; un marchand tagué `guildy_merchant`
+  sans fiche dans la guilde est supprimé à son chargement.
 
 ## Choix de conception
 
@@ -236,7 +279,11 @@ Formules par défaut (modifiables) :
   ça pique sans spirale infernale, et l'équipement des joueurs n'est jamais perdu.
 - **Pas de horde sans défenseur** : il faut un membre près du cœur à la tombée de la nuit (pas de raid hors ligne).
 - **Monnaie = lingot d'or vanilla**, trésor de guilde = compteur ; aucun objet custom, prix de vente toujours
-  inférieurs aux prix d'achat et récompenses de livraison sous les prix boutique (pas de boucle d'or).
+  inférieurs aux prix d'achat et récompenses de livraison sous les prix boutique (pas de boucle d'or). Les marchands
+  de passage ne font que vendre, jamais moins cher que la boutique (prix relevé au chargement sinon).
+- **Événements sans logique de horde dupliquée** : la nuit de sang et le raid de pillards passent par le moteur des
+  hordes (multiplicateurs appliqués à une horde normale, ou « vague d'événement » chronométrée) ; un raid ne change
+  pas le palier de nuit et se termine avant la nuit.
 - **Drapeaux et plans = objets vanilla** marqués (bannière, papier) : impossible à fabriquer en survie.
 - **Mineur simulé** (pas de creusage réel, plus fiable) ; bûcheron/fermier réels et bornés ; chaque
   déplacement de villageois a un délai maximum et une solution de repli (jamais bloqué).
@@ -255,6 +302,9 @@ Formules par défaut (modifiables) :
 - Le cooldown de `/guild home` est remis à zéro au redémarrage.
 - Un panneau de construction arraché par une explosion/un piston peut tomber en objet (la construction est
   retirée à la vérification suivante, 30 s).
+- Un `structures.json5` existant reçoit automatiquement une seule fois les nouvelles constructions par défaut (liste
+  `knownDefaults`) ; pour ne pas utiliser le Carrefour commercial, retirez-le de `definitions` (pas de `knownDefaults`).
+- Les vagues de test admin lancées pendant une nuit de sang prévue en reçoivent les multiplicateurs (pratique pour tester).
 
 ---
 

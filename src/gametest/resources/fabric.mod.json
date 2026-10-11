@@ -16,7 +16,8 @@
 			"dev.guildy.test.StructureGameTests",
 			"dev.guildy.test.MenuGameTests",
 			"dev.guildy.test.BannerGameTests",
-			"dev.guildy.test.UpgradeGameTests"
+			"dev.guildy.test.UpgradeGameTests",
+			"dev.guildy.test.EventGameTests"
 		]
 	},
 	"depends": {

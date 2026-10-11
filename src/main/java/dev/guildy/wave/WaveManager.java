@@ -221,12 +221,39 @@ public final class WaveManager {
 		return count;
 	}
 
+	/** How a wave was started. TEST and EVENT waves are "timed": they ignore the day/night clock and end after a duration. */
+	enum Kind {
+		/** Natural night horde. */
+		NIGHT,
+		/** Admin test wave (waves.json5 test settings). */
+		TEST,
+		/** Started by another module through {@link WaveApi#startEventWave} (fixed theme, never changes the night step). */
+		EVENT
+	}
+
+	/**
+	 * Start request. {@code theme == null}: drawn among the night themes; {@code modifiers == null}: asked to
+	 * {@link WaveApi#nightModifiers} (night and test waves).
+	 */
+	record Request(Kind kind, WaveConfig.@Nullable Theme theme, int durationSeconds, @Nullable NightModifiers modifiers, String eventId) {
+		static final Request NIGHT = new Request(Kind.NIGHT, null, 0, null, "");
+		static final Request TEST = new Request(Kind.TEST, null, 0, null, "");
+
+		static Request event(WaveApi.EventWave wave) {
+			return new Request(Kind.EVENT, wave.theme(), Math.max(10, wave.durationSeconds()), wave.modifiers(), wave.eventId());
+		}
+	}
+
 	/**
 	 * Starts a wave now. Test waves (admin) ignore the time of day and end after test.durationSeconds.
 	 *
 	 * @return the session, or null when no valid theme / mob could be planned
 	 */
 	static @Nullable WaveSession startWave(ServerLevel level, Guild guild, int nearby, boolean test, long clock) {
+		return startWave(level, guild, nearby, test ? Request.TEST : Request.NIGHT, clock);
+	}
+
+	static @Nullable WaveSession startWave(ServerLevel level, Guild guild, int nearby, Request request, long clock) {
 		if (guild.heart == null || SESSIONS.containsKey(guild.id)) {
 			return null;
 		}
@@ -234,16 +261,25 @@ public final class WaveManager {
 		int night = guild.waves.night;
 		int players = Math.max(1, nearby);
 		double difficulty = WaveFormula.difficulty(cfg.difficulty, night, guild.level, players);
-		boolean bossNight = WaveFormula.isScheduledBossNight(cfg.difficulty, night);
 		long day = WaveFormula.dayIndex(clock);
 		long timeOfDay = WaveFormula.timeOfDay(clock);
 		boolean inNight = WaveFormula.inNight(cfg.timing, timeOfDay);
+		NightModifiers modifiers = request.modifiers() != null ? request.modifiers()
+				: Safe.get("wave.modifiers", () -> WaveApi.nightModifiers.apply(guild, clock), NightModifiers.NONE);
+		if (modifiers == null) {
+			modifiers = NightModifiers.NONE;
+		}
+		// Event modifiers may add a boss (blood night: high boss chance); event themes ignore the boss-night schedule.
+		boolean bossNight = request.theme() == null && WaveFormula.isScheduledBossNight(cfg.difficulty, night)
+				|| modifiers.bossChance() > 0 && RANDOM.nextDouble() < modifiers.bossChance();
 
-		WaveConfig.Theme theme = WavePlanner.pickTheme(cfg.themes, night, bossNight, RANDOM);
-		WavePlanner.Plan plan = theme == null ? null : WavePlanner.plan(cfg, theme, difficulty, bossNight, WaveSpawner::isValidEntity, RANDOM);
+		WaveConfig.Theme theme = request.theme() != null ? request.theme() : WavePlanner.pickTheme(cfg.themes, night, bossNight, RANDOM);
+		WavePlanner.Plan plan = theme == null ? null
+				: WavePlanner.plan(cfg, theme, difficulty, bossNight, WaveSpawner::isValidEntity, RANDOM, modifiers);
 		if (plan == null || plan.mobs().isEmpty()) {
-			Guildy.LOGGER.warn("[waves] No valid theme/mob for guild {} at night step {} (check waves.json5)", guild.name, night);
-			if (!test) {
+			Guildy.LOGGER.warn("[waves] No valid theme/mob for guild {} at night step {} (check the theme of {})", guild.name, night,
+					request.kind() == Kind.EVENT ? "event '" + request.eventId() + "'" : "waves.json5");
+			if (request.kind() == Kind.NIGHT) {
 				guild.waves.lastWaveDay = day; // do not retry every few seconds
 				GuildManager.markDirty();
 			}
@@ -251,15 +287,16 @@ public final class WaveManager {
 		}
 
 		double phaseSeconds;
-		if (test) {
-			phaseSeconds = Math.min(cfg.spawning.spawnPhaseSeconds, cfg.test.durationSeconds * 0.6);
+		if (request.kind() != Kind.NIGHT) {
+			int duration = request.kind() == Kind.TEST ? cfg.test.durationSeconds : request.durationSeconds();
+			phaseSeconds = Math.min(cfg.spawning.spawnPhaseSeconds, duration * 0.6);
 		} else {
 			double nightLeft = Math.max(20, cfg.timing.nightEnd - timeOfDay) / 20.0;
 			phaseSeconds = Math.min(cfg.spawning.spawnPhaseSeconds, nightLeft * 0.7);
 		}
-		WaveSession session = new WaveSession(guild, plan, difficulty, night, players, test, nextSlot(), clock, phaseSeconds);
+		WaveSession session = new WaveSession(guild, plan, difficulty, night, players, request, modifiers, nextSlot(), clock, phaseSeconds);
 		SESSIONS.put(guild.id, session);
-		if (!test || inNight) {
+		if (request.kind() == Kind.NIGHT || request.kind() == Kind.TEST && inNight) {
 			guild.waves.lastWaveDay = day;
 		}
 		GuildManager.markDirty();
@@ -394,28 +431,31 @@ public final class WaveManager {
 		return WaveFormula.difficulty(WaveModule.config().difficulty, guild.waves.night, guild.level, players);
 	}
 
-	/** 2-3 lines for the main menu "waves" button. */
+	/** 2-3 lines for the main menu "waves" button (+ the event lines of {@link WaveApi#eventLore}). */
 	static List<Component> statusLore(Guild guild) {
 		List<Component> lines = new ArrayList<>();
 		WaveSession session = SESSIONS.get(guild.id);
-		if (session != null) {
-			lines.add(Lang.get("wave.lore.active", Lang.colorize(session.theme().name)));
-			lines.add(Lang.get("wave.lore.progress", session.kills(), session.total(), session.heartPercent()));
-			return lines;
-		}
 		WaveConfig cfg = WaveModule.config();
-		if (!cfg.enabled) {
+		if (session != null) {
+			lines.add(Lang.get("wave.lore.active", session.displayName()));
+			lines.add(Lang.get("wave.lore.progress", session.kills(), session.total(), session.heartPercent()));
+		} else if (!cfg.enabled) {
 			lines.add(Lang.get("wave.lore.disabled"));
-			return lines;
-		}
-		if (!guild.isFounded()) {
+		} else if (!guild.isFounded()) {
 			lines.add(Lang.get("wave.lore.notfounded"));
-			return lines;
+		} else {
+			double difficulty = estimateDifficulty(guild);
+			lines.add(Lang.get("wave.lore.idle", WaveSession.formatDifficulty(difficulty)));
+			lines.add(Lang.get("wave.lore.expected", WaveFormula.mobCount(cfg.difficulty, difficulty, 1.0)));
+			lines.add(Lang.get("wave.lore.stats", guild.waves.victories, guild.waves.defeats));
 		}
-		double difficulty = estimateDifficulty(guild);
-		lines.add(Lang.get("wave.lore.idle", WaveSession.formatDifficulty(difficulty)));
-		lines.add(Lang.get("wave.lore.expected", WaveFormula.mobCount(cfg.difficulty, difficulty, 1.0)));
-		lines.add(Lang.get("wave.lore.stats", guild.waves.victories, guild.waves.defeats));
+		lines.addAll(eventLore(guild));
 		return lines;
+	}
+
+	/** Event lines from the event module (never fails). */
+	static List<Component> eventLore(Guild guild) {
+		List<Component> lines = Safe.get("wave.event_lore", () -> WaveApi.eventLore.apply(guild), List.of());
+		return lines == null ? List.of() : lines;
 	}
 }

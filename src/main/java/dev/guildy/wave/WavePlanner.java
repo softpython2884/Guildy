@@ -116,9 +116,15 @@ public final class WavePlanner {
 
 	public static Plan plan(WaveConfig config, WaveConfig.Theme theme, double difficulty, boolean scheduledBossNight,
 			Predicate<String> validEntity, RandomGenerator random) {
+		return plan(config, theme, difficulty, scheduledBossNight, validEntity, random, NightModifiers.NONE);
+	}
+
+	/** Same, with event modifiers: horde size x mobCountMultiplier, elite chance + eliteBonus (capped). */
+	public static Plan plan(WaveConfig config, WaveConfig.Theme theme, double difficulty, boolean scheduledBossNight,
+			Predicate<String> validEntity, RandomGenerator random, NightModifiers modifiers) {
 		List<WaveConfig.MobEntry> pool = entryPool(theme, difficulty, validEntity);
-		int count = WaveFormula.mobCount(config.difficulty, difficulty, theme.mobCountMultiplier);
-		double eliteChance = WaveFormula.eliteChance(config.difficulty, difficulty, theme.eliteBonus);
+		int count = WaveFormula.mobCount(config.difficulty, difficulty, theme.mobCountMultiplier * modifiers.mobCountMultiplier());
+		double eliteChance = modifiers.eliteChance(WaveFormula.eliteChance(config.difficulty, difficulty, theme.eliteBonus));
 		Map<WaveConfig.MobEntry, Integer> counts = new IdentityHashMap<>();
 		List<PlannedMob> mobs = new ArrayList<>(count + 1);
 		for (int i = 0; i < count && !pool.isEmpty(); i++) {

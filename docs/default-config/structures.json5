@@ -6,7 +6,8 @@
 // signCells : cases [colonne, ligne] (0 = gauche / haut) qui recoivent un panneau gere sur leur face avant ;
 // l'ordre de la liste = numero du panneau (tableau de quetes : panneau n = quete n).
 // Les blocs portant un panneau doivent etre des blocs pleins. Taille maximale : 9 de large, 4 de haut.
-// Les ids 'quest_board', 'shop' et 'reception' sont utilises par les quetes, la boutique et les villageois.
+// Les ids 'quest_board', 'shop', 'reception' et 'trade_hub' sont utilises par les quetes, la boutique, les villageois
+// et le commerce (Carrefour commercial).
 // Validation en jeu : clic droit sur un bloc de la construction avec le Plan (menu /guild build).
 {
 
@@ -150,6 +151,54 @@
 					0
 				]
 			]
+		},
+		{
+			"id": "trade_hub",
+			"name": "Carrefour commercial",
+			"description": [
+				"&7Un carrefour où des marchands de passage",
+				"&7viennent vendre des marchandises rares.",
+				"&7Plus il est développé, plus les échanges sont fous."
+			],
+			"tutorial": [
+				"&6&lCarrefour commercial construit !",
+				"&7Certains matins, un &eMarchand de passage&7 s'y arrête quelques minutes.",
+				"&7Clic droit sur son panneau : palier, marchands présents, échanges possibles.",
+				"&7Améliorez le Carrefour pour attirer de meilleurs marchands.",
+				"&7Raccourci : &e/guild trade"
+			],
+			"icon": "minecraft:emerald_block",
+			"minLevel": 2,
+			"unlockCost": 60,
+			"maxPerGuild": 1,
+			"rows": [
+				"WEW",
+				"BTB"
+			],
+			"key": {
+				"W": "#minecraft:wool",
+				"E": "minecraft:emerald_block",
+				"B": "minecraft:barrel",
+				"T": "minecraft:cartography_table"
+			},
+			"keyLabels": {
+				"W": "Laine (toute couleur)"
+			},
+			"signCells": [
+				[
+					1,
+					0
+				]
+			]
 		}
+	],
+
+	// Constructions par defaut deja proposees. Une construction ajoutee par une mise a jour du mod est ajoutee
+	// automatiquement a 'definitions' une seule fois ; pour ne pas l'utiliser, retirez-la de 'definitions' (pas d'ici).
+	"knownDefaults": [
+		"quest_board",
+		"shop",
+		"reception",
+		"trade_hub"
 	]
 }
