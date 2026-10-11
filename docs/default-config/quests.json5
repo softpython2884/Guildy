@@ -1,11 +1,21 @@
 // Guildy - quetes de guilde (tableau de quetes : 6 panneaux = 6 quetes communes a toute la guilde).
-// Types : GATHER (casser des blocs : target = bloc ou #tag), KILL (tuer : target = entite ou #tag),
-// DELIVER (livrer depuis le menu : target = objet ou #tag), SURVIVE (gagner des vagues nocturnes),
-// EXPLORE (atteindre un lieu tire au hasard loin du coeur).
+// Seules les actions des membres comptent, jamais en mode creatif. Types (target = id ou #tag) :
+//   GATHER casser des blocs (bloc), KILL tuer (entite), DELIVER livrer depuis le menu (objet), SURVIVE gagner des
+//   vagues nocturnes, EXPLORE atteindre un lieu tire au hasard loin du coeur,
+//   CRAFT fabriquer (objet), SMELT cuire/fondre au four, au fumoir ou au haut-fourneau (objet obtenu),
+//   FISH pecher (objet, vide = toute prise), BREED faire naitre des animaux (entite, vide = tous), TAME apprivoiser
+//   (entite, vide = tous), TRADE echanger avec des villageois ou des marchands (objet obtenu, vide = tout echange),
+//   ENCHANT enchanter a la table (objet, vide = tous), ELITE tuer des elites de horde, BOSS vaincre des boss de horde,
+//   NIGHT_HUNT tuer des monstres la nuit (entite, vide = tout monstre), BIOME entrer dans un biome (biome ou #tag),
+//   COLLECTION livrer un assortiment : collection = {min, max, items: [{item, name, amountMin, amountMax, amountPerLevel}]}
+//   (entre min et max objets differents tires parmi items, chacun avec sa propre progression).
 // Valeurs a l'echelle du niveau de guilde : valeur = aleatoire(min..max) + perLevel x (niveau - 1).
 // rewardItems : [{item, count, chance (0..1)}] ; flagChance / treasureMapChance : chance (0..1) d'obtenir
 // un drapeau d'extension / une carte au tresor. durationDays : duree en jours de jeu (1 jour = 20 minutes).
-// weight : poids relatif du tirage ; minLevel / maxLevel (0 = sans maximum) : niveaux de guilde concernes.
+// weight : poids relatif du tirage ; minLevel / maxLevel (0 = sans maximum) : niveaux de guilde concernes ;
+// legendary : peut devenir un contrat legendaire (jamais EXPLORE / BIOME).
+// Economie : l'or des quetes DELIVER / COLLECTION doit rester sous le prix boutique des objets demandes (et n'est
+// jamais augmente par l'arbre d'evolution) ; pour CRAFT, choisissez des objets qu'on ne peut pas re-decomposer.
 {
 
 	// Delai (secondes) avant qu'une nouvelle quete apparaisse sur un panneau libere
@@ -20,6 +30,35 @@
 
 	// Quetes EXPLORE : un membre doit passer a moins de ce nombre de blocs du lieu
 	"exploreRadius": 24,
+
+	// Chance (0..1) qu'une quete ordinaire rapporte aussi une arme unique, tiree au moment de recuperer la recompense
+	// (module des armes uniques ; rien si aucune n'est disponible)
+	"uniqueChance": 0.03,
+
+	// Contrats legendaires : une quete plus dure et plus longue, recompensee par une arme unique en plus de l'or et de l'XP
+	"legendary": {
+
+		// Activer les contrats legendaires
+		"enabled": true,
+
+		// Niveau de guilde minimum
+		"minLevel": 3,
+
+		// Chance (0..1) qu'une nouvelle quete du tableau soit un contrat legendaire (un seul a la fois)
+		"chance": 0.08,
+
+		// Delai minimum (jours de jeu) entre deux contrats legendaires d'une meme guilde
+		"cooldownDays": 2.0,
+
+		// Multiplicateurs appliques a la quete tiree : quantite (arrondie au-dessus), duree, or, XP (minimum 1).
+		"amountMultiplier": 2.0,
+		"durationMultiplier": 2.0,
+		"goldMultiplier": 2.5,
+		"xpMultiplier": 3.0,
+
+		// Or verse au tresor a la place de l'arme unique si aucune n'est disponible
+		"fallbackGold": 60
+	},
 
 	// Cartes au tresor (recompenses de quetes)
 	"treasure": {
@@ -106,7 +145,8 @@
 			"weight": 10,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "pierre",
@@ -130,7 +170,8 @@
 			"weight": 10,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "moisson",
@@ -160,7 +201,8 @@
 			"weight": 8,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "charbon",
@@ -190,7 +232,8 @@
 			"weight": 8,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "fer",
@@ -220,7 +263,8 @@
 			"weight": 7,
 			"minLevel": 2,
 			"maxLevel": 0,
-			"durationDays": 4.0
+			"durationDays": 4.0,
+			"legendary": true
 		},
 		{
 			"id": "diamant",
@@ -244,7 +288,8 @@
 			"weight": 3,
 			"minLevel": 4,
 			"maxLevel": 0,
-			"durationDays": 5.0
+			"durationDays": 5.0,
+			"legendary": true
 		},
 		{
 			"id": "zombies",
@@ -268,7 +313,8 @@
 			"weight": 9,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "squelettes",
@@ -298,7 +344,8 @@
 			"weight": 8,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "araignees",
@@ -328,7 +375,8 @@
 			"weight": 7,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "creepers",
@@ -358,7 +406,8 @@
 			"weight": 6,
 			"minLevel": 2,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "endermen",
@@ -388,7 +437,8 @@
 			"weight": 4,
 			"minLevel": 3,
 			"maxLevel": 0,
-			"durationDays": 5.0
+			"durationDays": 5.0,
+			"legendary": true
 		},
 		{
 			"id": "sorcieres",
@@ -418,7 +468,39 @@
 			"weight": 3,
 			"minLevel": 4,
 			"maxLevel": 0,
-			"durationDays": 5.0
+			"durationDays": 5.0,
+			"legendary": true
+		},
+		{
+			"id": "pillards",
+			"type": "KILL",
+			"name": "Chasse aux pillards",
+			"description": "Pillards, vindicateurs et évocateurs rôdent autour de la base : chassez-les avant le prochain raid.",
+			"target": "#minecraft:illager",
+			"targetName": "Illageois",
+			"icon": "minecraft:crossbow",
+			"amountMin": 5,
+			"amountMax": 8,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 18,
+			"rewardGoldMax": 26,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 70,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:emerald",
+					"count": 2,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.15,
+			"treasureMapChance": 0.1,
+			"weight": 5,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
 		},
 		{
 			"id": "pain",
@@ -442,7 +524,8 @@
 			"weight": 8,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "forge",
@@ -466,7 +549,8 @@
 			"weight": 6,
 			"minLevel": 2,
 			"maxLevel": 0,
-			"durationDays": 4.0
+			"durationDays": 4.0,
+			"legendary": true
 		},
 		{
 			"id": "tanneur",
@@ -490,7 +574,8 @@
 			"weight": 6,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "tisserand",
@@ -514,7 +599,8 @@
 			"weight": 6,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "combustible",
@@ -538,7 +624,8 @@
 			"weight": 5,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
 		},
 		{
 			"id": "nuit",
@@ -562,7 +649,8 @@
 			"weight": 6,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 4.0
+			"durationDays": 4.0,
+			"legendary": true
 		},
 		{
 			"id": "rempart",
@@ -586,7 +674,8 @@
 			"weight": 3,
 			"minLevel": 3,
 			"maxLevel": 0,
-			"durationDays": 7.0
+			"durationDays": 7.0,
+			"legendary": true
 		},
 		{
 			"id": "expedition",
@@ -610,7 +699,1129 @@
 			"weight": 5,
 			"minLevel": 1,
 			"maxLevel": 0,
-			"durationDays": 3.0
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "torches",
+			"type": "CRAFT",
+			"name": "Que la lumière soit",
+			"description": "Fabriquez des torches : une base bien éclairée est une base où les monstres n'apparaissent pas.",
+			"target": "minecraft:torch",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 32,
+			"amountMax": 48,
+			"amountPerLevel": 8.0,
+			"rewardGoldMin": 3,
+			"rewardGoldMax": 4,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 30,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [],
+			"flagChance": 0.04,
+			"treasureMapChance": 0.03,
+			"weight": 8,
+			"minLevel": 1,
+			"maxLevel": 5,
+			"durationDays": 2.0,
+			"legendary": true
+		},
+		{
+			"id": "boulanger",
+			"type": "CRAFT",
+			"name": "La fournée du boulanger",
+			"description": "Pétrissez le blé de la guilde : fabriquez du pain pour nourrir les défenseurs.",
+			"target": "minecraft:bread",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 16,
+			"amountMax": 24,
+			"amountPerLevel": 4.0,
+			"rewardGoldMin": 4,
+			"rewardGoldMax": 6,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 35,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.03,
+			"weight": 8,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "rails",
+			"type": "CRAFT",
+			"name": "Le chemin de fer",
+			"description": "Fabriquez des rails pour relier la base à la mine et aux champs.",
+			"target": "minecraft:rail",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 32,
+			"amountMax": 48,
+			"amountPerLevel": 8.0,
+			"rewardGoldMin": 10,
+			"rewardGoldMax": 15,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 55,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:minecart",
+					"count": 1,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 6,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "gateau",
+			"type": "CRAFT",
+			"name": "Le gâteau de la victoire",
+			"description": "Lait, sucre, œufs et blé : fabriquez des gâteaux pour fêter les victoires de la guilde.",
+			"target": "minecraft:cake",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 2,
+			"amountMax": 3,
+			"amountPerLevel": 0.5,
+			"rewardGoldMin": 10,
+			"rewardGoldMax": 14,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 60,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:cookie",
+					"count": 8,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.06,
+			"treasureMapChance": 0.05,
+			"weight": 5,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "lanternes",
+			"type": "CRAFT",
+			"name": "Les lanternes du rempart",
+			"description": "Fabriquez des lanternes : les remparts doivent rester éclairés pendant les nuits de horde.",
+			"target": "minecraft:lantern",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 8,
+			"amountMax": 12,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 16,
+			"rewardGoldMax": 22,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 75,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:experience_bottle",
+					"count": 2,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.1,
+			"weight": 5,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
+		},
+		{
+			"id": "fonderie",
+			"type": "SMELT",
+			"name": "La fonderie",
+			"description": "Faites fondre du minerai de fer au fourneau ou au haut-fourneau, puis récupérez les lingots.",
+			"target": "minecraft:iron_ingot",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 12,
+			"amountMax": 20,
+			"amountPerLevel": 3.0,
+			"rewardGoldMin": 6,
+			"rewardGoldMax": 10,
+			"rewardGoldPerLevel": 1.5,
+			"rewardXp": 45,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [],
+			"flagChance": 0.06,
+			"treasureMapChance": 0.04,
+			"weight": 7,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "banquet",
+			"type": "SMELT",
+			"name": "Le grand banquet",
+			"description": "Faites cuire de la viande au fourneau ou au fumoir : ce soir, la guilde festoie !",
+			"target": "#minecraft:meat",
+			"targetName": "Viande cuite",
+			"icon": "minecraft:cooked_beef",
+			"amountMin": 16,
+			"amountMax": 24,
+			"amountPerLevel": 4.0,
+			"rewardGoldMin": 5,
+			"rewardGoldMax": 8,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 40,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.03,
+			"weight": 7,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "verrier",
+			"type": "SMELT",
+			"name": "Le souffleur de verre",
+			"description": "Faites fondre du sable pour obtenir du verre : la guilde veut des fenêtres !",
+			"target": "minecraft:glass",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 32,
+			"amountMax": 48,
+			"amountPerLevel": 8.0,
+			"rewardGoldMin": 3,
+			"rewardGoldMax": 5,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 35,
+			"rewardXpPerLevel": 5.0,
+			"rewardItems": [],
+			"flagChance": 0.04,
+			"treasureMapChance": 0.03,
+			"weight": 6,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 2.0,
+			"legendary": true
+		},
+		{
+			"id": "peche",
+			"type": "FISH",
+			"name": "Jour de pêche",
+			"description": "Sortez la canne à pêche et ramenez du poisson frais.",
+			"target": "#minecraft:fishes",
+			"targetName": "Poissons",
+			"icon": "minecraft:cod",
+			"amountMin": 8,
+			"amountMax": 12,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 6,
+			"rewardGoldMax": 10,
+			"rewardGoldPerLevel": 1.5,
+			"rewardXp": 40,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.08,
+			"weight": 7,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "peche_miraculeuse",
+			"type": "FISH",
+			"name": "Pêche miraculeuse",
+			"description": "Poissons, trésors ou vieilles bottes : chaque prise compte. La patience est une vertu !",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 24,
+			"amountMax": 32,
+			"amountPerLevel": 4.0,
+			"rewardGoldMin": 14,
+			"rewardGoldMax": 20,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 70,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:name_tag",
+					"count": 1,
+					"chance": 0.15
+				}
+			],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.25,
+			"weight": 5,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
+		},
+		{
+			"id": "elevage",
+			"type": "BREED",
+			"name": "Le petit élevage",
+			"description": "Nourrissez les animaux de la ferme pour qu'ils aient des petits.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 4,
+			"amountMax": 6,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 6,
+			"rewardGoldMax": 10,
+			"rewardGoldPerLevel": 1.5,
+			"rewardXp": 40,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.03,
+			"weight": 7,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "vaches",
+			"type": "BREED",
+			"name": "Le troupeau",
+			"description": "Agrandissez le troupeau : faites naître des veaux avec du blé.",
+			"target": "minecraft:cow",
+			"targetName": "Vaches",
+			"icon": "",
+			"amountMin": 5,
+			"amountMax": 8,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 8,
+			"rewardGoldMax": 12,
+			"rewardGoldPerLevel": 1.5,
+			"rewardXp": 50,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:leather",
+					"count": 4,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.06,
+			"treasureMapChance": 0.04,
+			"weight": 5,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "compagnon",
+			"type": "TAME",
+			"name": "Le meilleur ami",
+			"description": "Apprivoisez des loups avec des os : de fidèles compagnons pour les nuits de horde.",
+			"target": "minecraft:wolf",
+			"targetName": "Loups",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 2,
+			"amountPerLevel": 0.25,
+			"rewardGoldMin": 8,
+			"rewardGoldMax": 12,
+			"rewardGoldPerLevel": 1.5,
+			"rewardXp": 45,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:bone",
+					"count": 8,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.05,
+			"weight": 5,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
+		},
+		{
+			"id": "cavalerie",
+			"type": "TAME",
+			"name": "La cavalerie",
+			"description": "Domptez des chevaux sauvages : la guilde a besoin de montures rapides.",
+			"target": "minecraft:horse",
+			"targetName": "Chevaux",
+			"icon": "",
+			"amountMin": 2,
+			"amountMax": 3,
+			"amountPerLevel": 0.5,
+			"rewardGoldMin": 14,
+			"rewardGoldMax": 20,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 65,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:saddle",
+					"count": 1,
+					"chance": 0.35
+				},
+				{
+					"item": "minecraft:lead",
+					"count": 2,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.05,
+			"weight": 4,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
+		},
+		{
+			"id": "negoce",
+			"type": "TRADE",
+			"name": "Jour de marché",
+			"description": "Faites des affaires : échangez avec des villageois ou des marchands de passage.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 6,
+			"amountMax": 10,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 8,
+			"rewardGoldMax": 12,
+			"rewardGoldPerLevel": 1.5,
+			"rewardXp": 50,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.05,
+			"weight": 5,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "emeraudes",
+			"type": "TRADE",
+			"name": "La bourse aux émeraudes",
+			"description": "Vendez vos marchandises aux villageois : seuls les échanges qui rapportent des émeraudes comptent.",
+			"target": "minecraft:emerald",
+			"targetName": "Émeraudes",
+			"icon": "",
+			"amountMin": 8,
+			"amountMax": 12,
+			"amountPerLevel": 2.0,
+			"rewardGoldMin": 14,
+			"rewardGoldMax": 20,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 75,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.08,
+			"weight": 4,
+			"minLevel": 4,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
+		},
+		{
+			"id": "enchanteur",
+			"type": "ENCHANT",
+			"name": "L'apprenti enchanteur",
+			"description": "Enchantez des objets à la table d'enchantement.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 2,
+			"amountMax": 3,
+			"amountPerLevel": 0.5,
+			"rewardGoldMin": 12,
+			"rewardGoldMax": 16,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 65,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:lapis_lazuli",
+					"count": 8,
+					"chance": 0.6
+				}
+			],
+			"flagChance": 0.06,
+			"treasureMapChance": 0.05,
+			"weight": 5,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
+		},
+		{
+			"id": "arcanes",
+			"type": "ENCHANT",
+			"name": "Les arcanes interdites",
+			"description": "Maîtrisez la magie : enchantez de nombreux objets à la table d'enchantement.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 5,
+			"amountMax": 7,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 22,
+			"rewardGoldMax": 30,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 120,
+			"rewardXpPerLevel": 12.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:experience_bottle",
+					"count": 4,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.15,
+			"treasureMapChance": 0.2,
+			"weight": 4,
+			"minLevel": 5,
+			"maxLevel": 0,
+			"durationDays": 5.0,
+			"legendary": true
+		},
+		{
+			"id": "elites",
+			"type": "ELITE",
+			"name": "Chasseurs d'élite",
+			"description": "Les élites de la horde brillent dans la nuit : abattez-les avant qu'elles n'atteignent le cœur.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 2,
+			"amountPerLevel": 0.5,
+			"rewardGoldMin": 16,
+			"rewardGoldMax": 22,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 70,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [],
+			"flagChance": 0.15,
+			"treasureMapChance": 0.1,
+			"weight": 5,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 5.0,
+			"legendary": true
+		},
+		{
+			"id": "champions",
+			"type": "ELITE",
+			"name": "Le tableau de chasse",
+			"description": "Accumulez les trophées : abattez de nombreuses élites de horde.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 5,
+			"amountMax": 7,
+			"amountPerLevel": 1.0,
+			"rewardGoldMin": 30,
+			"rewardGoldMax": 40,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 140,
+			"rewardXpPerLevel": 12.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:golden_apple",
+					"count": 1,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.3,
+			"treasureMapChance": 0.15,
+			"weight": 4,
+			"minLevel": 5,
+			"maxLevel": 0,
+			"durationDays": 6.0,
+			"legendary": true
+		},
+		{
+			"id": "boss",
+			"type": "BOSS",
+			"name": "La tête du chef de guerre",
+			"description": "Un boss mène parfois la horde : terrassez-le pour l'honneur de la guilde.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 40,
+			"rewardGoldMax": 55,
+			"rewardGoldPerLevel": 4.0,
+			"rewardXp": 180,
+			"rewardXpPerLevel": 15.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:golden_apple",
+					"count": 1,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.6,
+			"treasureMapChance": 0.3,
+			"weight": 3,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 8.0,
+			"legendary": true
+		},
+		{
+			"id": "nuit_blanche",
+			"type": "NIGHT_HUNT",
+			"name": "Nuit blanche",
+			"description": "Quand la lune se lève, partez à la chasse : seuls les monstres tués de nuit comptent.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 15,
+			"amountMax": 20,
+			"amountPerLevel": 3.0,
+			"rewardGoldMin": 10,
+			"rewardGoldMax": 14,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 45,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:arrow",
+					"count": 16,
+					"chance": 0.4
+				}
+			],
+			"flagChance": 0.06,
+			"treasureMapChance": 0.05,
+			"weight": 7,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true
+		},
+		{
+			"id": "veilleurs",
+			"type": "NIGHT_HUNT",
+			"name": "Les veilleurs de minuit",
+			"description": "Montez la garde nuit après nuit et éliminez tout ce qui rôde dans l'obscurité.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 40,
+			"amountMax": 50,
+			"amountPerLevel": 5.0,
+			"rewardGoldMin": 22,
+			"rewardGoldMax": 30,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 100,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [],
+			"flagChance": 0.2,
+			"treasureMapChance": 0.1,
+			"weight": 4,
+			"minLevel": 4,
+			"maxLevel": 0,
+			"durationDays": 5.0,
+			"legendary": true
+		},
+		{
+			"id": "desert",
+			"type": "BIOME",
+			"name": "Mirage",
+			"description": "Rejoignez un désert, admirez les dunes... et revenez raconter.",
+			"target": "minecraft:desert",
+			"targetName": "Désert",
+			"icon": "minecraft:cactus",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 10,
+			"rewardGoldMax": 14,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 45,
+			"rewardXpPerLevel": 6.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.2,
+			"weight": 4,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true
+		},
+		{
+			"id": "jungle",
+			"type": "BIOME",
+			"name": "Au cœur de la jungle",
+			"description": "Trouvez une jungle et entrez-y : perroquets, ocelots et temples oubliés vous attendent.",
+			"target": "#minecraft:is_jungle",
+			"targetName": "Jungle",
+			"icon": "minecraft:jungle_sapling",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 14,
+			"rewardGoldMax": 20,
+			"rewardGoldPerLevel": 2.0,
+			"rewardXp": 60,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.25,
+			"weight": 4,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 5.0,
+			"legendary": true
+		},
+		{
+			"id": "champignons",
+			"type": "BIOME",
+			"name": "L'île aux champignons",
+			"description": "Une île couverte de mycélium où aucun monstre n'apparaît... encore faut-il la trouver.",
+			"target": "minecraft:mushroom_fields",
+			"targetName": "Champs de champignons",
+			"icon": "minecraft:red_mushroom",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 35,
+			"rewardGoldMax": 45,
+			"rewardGoldPerLevel": 3.0,
+			"rewardXp": 130,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [],
+			"flagChance": 0.3,
+			"treasureMapChance": 0.3,
+			"weight": 2,
+			"minLevel": 4,
+			"maxLevel": 0,
+			"durationDays": 7.0,
+			"legendary": true
+		},
+		{
+			"id": "abysses",
+			"type": "BIOME",
+			"name": "Les abysses",
+			"description": "Descendez dans les profondeurs sombres... et surtout, ne réveillez pas le gardien.",
+			"target": "minecraft:deep_dark",
+			"targetName": "Abîmes",
+			"icon": "minecraft:sculk",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 45,
+			"rewardGoldMax": 60,
+			"rewardGoldPerLevel": 4.0,
+			"rewardXp": 170,
+			"rewardXpPerLevel": 12.0,
+			"rewardItems": [],
+			"flagChance": 0.4,
+			"treasureMapChance": 0.2,
+			"weight": 2,
+			"minLevel": 6,
+			"maxLevel": 0,
+			"durationDays": 6.0,
+			"legendary": true
+		},
+		{
+			"id": "provisions",
+			"type": "COLLECTION",
+			"name": "Provisions pour l'hiver",
+			"description": "Remplissez le garde-manger de la guilde avec un assortiment de vivres.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 3,
+			"rewardGoldMax": 4,
+			"rewardGoldPerLevel": 0.5,
+			"rewardXp": 70,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.05,
+			"treasureMapChance": 0.05,
+			"weight": 6,
+			"minLevel": 1,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true,
+			"collection": {
+				"min": 2,
+				"max": 3,
+				"items": [
+					{
+						"item": "minecraft:bread",
+						"name": "",
+						"amountMin": 8,
+						"amountMax": 12,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:carrot",
+						"name": "",
+						"amountMin": 12,
+						"amountMax": 16,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:potato",
+						"name": "",
+						"amountMin": 12,
+						"amountMax": 16,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:apple",
+						"name": "",
+						"amountMin": 4,
+						"amountMax": 6,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:cooked_beef",
+						"name": "",
+						"amountMin": 4,
+						"amountMax": 6,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:pumpkin_pie",
+						"name": "",
+						"amountMin": 3,
+						"amountMax": 5,
+						"amountPerLevel": 1.0
+					}
+				]
+			}
+		},
+		{
+			"id": "trophees",
+			"type": "COLLECTION",
+			"name": "Trophées de chasse",
+			"description": "Rapportez les dépouilles des monstres : le cabinet des curiosités de la guilde s'agrandit.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 3,
+			"rewardGoldMax": 4,
+			"rewardGoldPerLevel": 0.5,
+			"rewardXp": 75,
+			"rewardXpPerLevel": 8.0,
+			"rewardItems": [],
+			"flagChance": 0.08,
+			"treasureMapChance": 0.05,
+			"weight": 6,
+			"minLevel": 2,
+			"maxLevel": 0,
+			"durationDays": 3.0,
+			"legendary": true,
+			"collection": {
+				"min": 3,
+				"max": 3,
+				"items": [
+					{
+						"item": "minecraft:bone",
+						"name": "",
+						"amountMin": 8,
+						"amountMax": 12,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:string",
+						"name": "",
+						"amountMin": 8,
+						"amountMax": 12,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:rotten_flesh",
+						"name": "",
+						"amountMin": 16,
+						"amountMax": 24,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:gunpowder",
+						"name": "",
+						"amountMin": 3,
+						"amountMax": 5,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:spider_eye",
+						"name": "",
+						"amountMin": 3,
+						"amountMax": 5,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:arrow",
+						"name": "",
+						"amountMin": 16,
+						"amountMax": 24,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:feather",
+						"name": "",
+						"amountMin": 8,
+						"amountMax": 12,
+						"amountPerLevel": 1.0
+					}
+				]
+			}
+		},
+		{
+			"id": "alchimiste",
+			"type": "COLLECTION",
+			"name": "Le cabinet de l'alchimiste",
+			"description": "L'alchimiste de la guilde prépare ses potions : réunissez les ingrédients qu'il réclame.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 2,
+			"rewardGoldMax": 3,
+			"rewardGoldPerLevel": 0.5,
+			"rewardXp": 95,
+			"rewardXpPerLevel": 10.0,
+			"rewardItems": [
+				{
+					"item": "minecraft:experience_bottle",
+					"count": 3,
+					"chance": 0.5
+				}
+			],
+			"flagChance": 0.1,
+			"treasureMapChance": 0.1,
+			"weight": 5,
+			"minLevel": 3,
+			"maxLevel": 0,
+			"durationDays": 4.0,
+			"legendary": true,
+			"collection": {
+				"min": 2,
+				"max": 3,
+				"items": [
+					{
+						"item": "minecraft:spider_eye",
+						"name": "",
+						"amountMin": 3,
+						"amountMax": 5,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:gunpowder",
+						"name": "",
+						"amountMin": 3,
+						"amountMax": 5,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:redstone",
+						"name": "",
+						"amountMin": 10,
+						"amountMax": 16,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:glowstone_dust",
+						"name": "",
+						"amountMin": 8,
+						"amountMax": 12,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:sugar",
+						"name": "",
+						"amountMin": 8,
+						"amountMax": 12,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:nether_wart",
+						"name": "",
+						"amountMin": 6,
+						"amountMax": 10,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:blaze_powder",
+						"name": "",
+						"amountMin": 2,
+						"amountMax": 4,
+						"amountPerLevel": 0.5
+					}
+				]
+			}
+		},
+		{
+			"id": "tresor_royal",
+			"type": "COLLECTION",
+			"name": "Le trésor de la couronne",
+			"description": "Pierres précieuses et curiosités rares : constituez un trésor digne d'une grande guilde.",
+			"target": "",
+			"targetName": "",
+			"icon": "",
+			"amountMin": 1,
+			"amountMax": 1,
+			"amountPerLevel": 0.0,
+			"rewardGoldMin": 12,
+			"rewardGoldMax": 18,
+			"rewardGoldPerLevel": 1.0,
+			"rewardXp": 220,
+			"rewardXpPerLevel": 15.0,
+			"rewardItems": [],
+			"flagChance": 0.5,
+			"treasureMapChance": 0.4,
+			"weight": 3,
+			"minLevel": 6,
+			"maxLevel": 0,
+			"durationDays": 6.0,
+			"legendary": true,
+			"collection": {
+				"min": 3,
+				"max": 4,
+				"items": [
+					{
+						"item": "minecraft:emerald",
+						"name": "",
+						"amountMin": 6,
+						"amountMax": 10,
+						"amountPerLevel": 1.0
+					},
+					{
+						"item": "minecraft:diamond",
+						"name": "",
+						"amountMin": 2,
+						"amountMax": 3,
+						"amountPerLevel": 0.5
+					},
+					{
+						"item": "minecraft:amethyst_shard",
+						"name": "",
+						"amountMin": 12,
+						"amountMax": 16,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:lapis_lazuli",
+						"name": "",
+						"amountMin": 16,
+						"amountMax": 24,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:quartz",
+						"name": "",
+						"amountMin": 16,
+						"amountMax": 24,
+						"amountPerLevel": 2.0
+					},
+					{
+						"item": "minecraft:ender_pearl",
+						"name": "",
+						"amountMin": 2,
+						"amountMax": 4,
+						"amountPerLevel": 0.5
+					}
+				]
+			}
 		}
+	],
+
+	// Modeles par defaut deja proposes. Un modele ajoute par une mise a jour du mod est ajoute automatiquement a
+	// 'templates' une seule fois ; pour ne pas l'utiliser, retirez-le de 'templates' (pas d'ici) ou mettez weight a 0.
+	"knownTemplates": [
+		"bois",
+		"pierre",
+		"moisson",
+		"charbon",
+		"fer",
+		"diamant",
+		"zombies",
+		"squelettes",
+		"araignees",
+		"creepers",
+		"endermen",
+		"sorcieres",
+		"pillards",
+		"pain",
+		"forge",
+		"tanneur",
+		"tisserand",
+		"combustible",
+		"nuit",
+		"rempart",
+		"expedition",
+		"torches",
+		"boulanger",
+		"rails",
+		"gateau",
+		"lanternes",
+		"fonderie",
+		"banquet",
+		"verrier",
+		"peche",
+		"peche_miraculeuse",
+		"elevage",
+		"vaches",
+		"compagnon",
+		"cavalerie",
+		"negoce",
+		"emeraudes",
+		"enchanteur",
+		"arcanes",
+		"elites",
+		"champions",
+		"boss",
+		"nuit_blanche",
+		"veilleurs",
+		"desert",
+		"jungle",
+		"champignons",
+		"abysses",
+		"provisions",
+		"trophees",
+		"alchimiste",
+		"tresor_royal"
 	]
 }

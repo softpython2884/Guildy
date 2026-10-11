@@ -42,4 +42,14 @@ public final class QuestFormat {
 	public static long minutesCeil(long ticks) {
 		return Math.max(0, (ticks + 1199) / 1200);
 	}
+
+	/** A chance (0..1) as a French percentage without the sign: 0.03 → "3", 0.025 → "2,5", 0.001 → "0,1". */
+	public static String percent(double chance) {
+		double value = Double.isFinite(chance) ? Math.max(0, Math.min(1, chance)) * 100.0 : 0;
+		long tenths = Math.round(value * 10);
+		if (tenths % 10 == 0) {
+			return String.valueOf(tenths / 10);
+		}
+		return (tenths / 10) + "," + (tenths % 10);
+	}
 }

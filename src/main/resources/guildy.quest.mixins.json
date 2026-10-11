@@ -1,0 +1,20 @@
+{
+	"required": true,
+	"package": "dev.guildy.quest.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"BredAnimalsTriggerMixin",
+		"EnchantedItemTriggerMixin",
+		"FishingRodHookedTriggerMixin",
+		"FurnaceResultSlotMixin",
+		"ResultSlotMixin",
+		"TameAnimalTriggerMixin",
+		"TradeTriggerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

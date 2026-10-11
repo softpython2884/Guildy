@@ -91,11 +91,41 @@ les blocs et pose des **panneaux gérés** devant.
 Casser un bloc de la construction la désactive (les panneaux disparaissent) ; les plans se redemandent gratuitement.
 
 ### 5. Quêtes
-Le tableau affiche **6 quêtes communes** à toute la guilde, mises à jour en direct sur les panneaux :
-récolter, tuer des monstres, livrer des objets, survivre à des hordes, explorer un lieu. Clic droit sur un
-panneau (ou `/guild quests`) : détail, progression, **Livrer**, **Récupérer la récompense** (or au trésor,
-XP de guilde, objets, drapeaux, **cartes au trésor**). Une nouvelle quête remplace chaque quête terminée ou
-expirée. Carte au trésor : allez aux coordonnées indiquées, carte en main, pour déterrer un coffre.
+Le tableau affiche **6 quêtes communes** à toute la guilde, mises à jour en direct sur les panneaux (type, objectif,
+progression, récompense). Clic droit sur un panneau (ou `/guild quests`) : détail, progression, contributions,
+**Livrer**, **Récupérer la récompense** (or au trésor, XP de guilde, objets, drapeaux, **cartes au trésor**, parfois une
+**arme unique**). Une nouvelle quête remplace chaque quête terminée ou expirée. Seules les actions des **membres**
+comptent, jamais en mode créatif.
+
+| Type (panneau) | Objectif | Exemples |
+|---|---|---|
+| **Récolte** | casser des blocs (une même position ne compte qu'une fois) | Coupe de bois, Filon de fer, Éclats de diamant |
+| **Chasse** | tuer des créatures | Chasse aux zombies, Désamorçage, Chasse aux pillards |
+| **Livraison** | livrer des objets depuis le menu | Ravitaillement, Commande de la forge |
+| **Défense** | remporter des hordes | Tenir la nuit, Rempart inébranlable |
+| **Exploration** | passer près d'un lieu tiré au hasard, loin de la base | Expédition lointaine |
+| **Fabrication** | fabriquer des objets (établi ou grille de l'inventaire) | Que la lumière soit (torches), Le chemin de fer, Le gâteau de la victoire |
+| **Fourneau** | cuire ou fondre au fourneau, au fumoir ou au haut-fourneau (compté en retirant le résultat) | La fonderie, Le grand banquet, Le souffleur de verre |
+| **Pêche** | pêcher des poissons, ou n'importe quelle prise | Jour de pêche, Pêche miraculeuse |
+| **Élevage** | faire naître des animaux | Le petit élevage, Le troupeau |
+| **Dressage** | apprivoiser ou dompter des animaux | Le meilleur ami (loups), La cavalerie (chevaux) |
+| **Commerce** | échanger avec des villageois ou des marchands de passage | Jour de marché, La bourse aux émeraudes |
+| **Enchantement** | enchanter des objets à la table d'enchantement | L'apprenti enchanteur, Les arcanes interdites |
+| **Élites** / **Boss** | abattre des élites de horde (elles brillent, titre « Élite ») / vaincre des boss de horde | Chasseurs d'élite, La tête du chef de guerre |
+| **☾ Chasse** | tuer des monstres de nuit | Nuit blanche, Les veilleurs de minuit |
+| **Découverte** | entrer dans un biome (vérifié toutes les 5 s) | Mirage (désert), Au cœur de la jungle, L'île aux champignons, Les abysses |
+| **Assortiment** | livrer 2 à 4 objets différents, chacun avec sa propre progression | Provisions pour l'hiver, Le cabinet de l'alchimiste, Le trésor de la couronne |
+
+52 modèles par défaut, débloqués du niveau 1 au niveau 6 de la guilde (quantités et récompenses montent avec le niveau).
+Un **assortiment** affiche ses objets à tour de rôle sur le panneau ; dans le menu, chaque objet a son bouton (clic =
+livrer cet objet) et « Livrer l'assortiment » prend tout ce qui manque.
+
+**Contrats légendaires** (guilde niveau 3+) : de temps en temps (8 % de chance par nouvelle quête, un seul à la fois, au
+moins 2 jours de jeu entre deux), un panneau affiche un contrat **en or** (cadre doré dans le menu) : quantité ×2,
+durée ×2, or ×2,5, XP ×3 et une **arme unique** à la remise (60 or au trésor si aucune n'est disponible). Les quêtes
+ordinaires ont aussi 3 % de chance d'en donner une, tirée au moment de récupérer la récompense.
+
+Carte au trésor : allez aux coordonnées indiquées, carte en main, pour déterrer un coffre.
 
 ### 6. Boutique et or
 L'**or** est la monnaie : **1 lingot d'or = 1 or** (un bloc d'or = 9). Clic droit sur le panneau du comptoir :
@@ -260,7 +290,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin giveflag <joueur> extension [n]` · `giveflag <joueur> founding <guilde>` · `tp <guilde>` | Drapeaux, téléport au cœur |
 | `/guild admin wave start\|stop\|status <guilde>` · `wave setnight <guilde> <n>` | Hordes (start = horde de test immédiate) |
 | `/guild admin structure unlock <guilde> <id>` · `structure check <guilde>` | Constructions |
-| `/guild admin quest reroll <guilde>` · `quest complete <guilde> <slot>` · `quest map <guilde>` | Quêtes |
+| `/guild admin quest reroll <guilde>` · `quest complete <guilde> <slot>` · `quest map <guilde>` · `quest legendary <guilde> <slot>` | Quêtes (`legendary` : remplace la quête du panneau par un contrat légendaire) |
 | `/guild admin villager spawn <guilde>` | Faire venir un candidat villageois |
 | `/guild admin upgrade unlock\|lock <guilde> <id>` | Arbre d'évolution : `unlock` débloque gratuitement (avec les prérequis manquants), `lock` retire l'amélioration et celles qui en dépendent |
 | `/guild admin event list` | Événements : réglages, nuit de sang prévue, raids en attente, marchands présents par guilde |
@@ -279,7 +309,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, seuils d'XP des niveaux, bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles |
 | `waves.json5` | Horaires, formule de difficulté, taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`), coûts, niveaux, panneaux |
-| `quests.json5` | Modèles de quêtes (type, cible, quantités, récompenses, durée, poids, niveau) |
+| `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, pauses, laisse), tables de minage par objectif, catégories de rangement, départs après défaite |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
@@ -315,8 +345,9 @@ Formules par défaut (modifiables) :
   ça pique sans spirale infernale, et l'équipement des joueurs n'est jamais perdu.
 - **Pas de horde sans défenseur** : il faut un membre près du cœur à la tombée de la nuit (pas de raid hors ligne).
 - **Monnaie = lingot d'or vanilla**, trésor de guilde = compteur ; aucun objet custom, prix de vente toujours
-  inférieurs aux prix d'achat et récompenses de livraison sous les prix boutique (pas de boucle d'or). Les marchands
-  de passage ne font que vendre, jamais moins cher que la boutique (prix relevé au chargement sinon).
+  inférieurs aux prix d'achat et récompenses de livraison et d'assortiment sous les prix boutique, contrats légendaires
+  compris (pas de boucle d'or). Les marchands de passage ne font que vendre, jamais moins cher que la boutique (prix
+  relevé au chargement sinon).
 - **Événements sans logique de horde dupliquée** : la nuit de sang et le raid de pillards passent par le moteur des
   hordes (multiplicateurs appliqués à une horde normale, ou « vague d'événement » chronométrée) ; un raid ne change
   pas le palier de nuit et se termine avant la nuit.

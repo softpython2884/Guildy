@@ -12,7 +12,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * {@code /guild quests} and {@code /guild admin quest reroll|complete}.
+ * {@code /guild quests} and {@code /guild admin quest reroll|complete|map|legendary}.
  */
 final class QuestCommands {
 	private QuestCommands() {
@@ -67,6 +67,22 @@ final class QuestCommands {
 							}
 							TreasureMaps.giveMap(player, guild);
 							return 1;
-						})))));
+						})))
+				.then(Commands.literal("legendary")
+						.then(GuildArgument.guild("guild")
+								.then(Commands.argument("slot", IntegerArgumentType.integer(1, GuildQuestData.SLOTS)).executes(ctx -> {
+									Guild guild = GuildArgument.resolve(ctx, "guild");
+									if (guild == null) {
+										return 0;
+									}
+									int slot = IntegerArgumentType.getInteger(ctx, "slot");
+									QuestInstance quest = QuestManager.forceLegendary(guild, slot - 1);
+									if (quest == null) {
+										ctx.getSource().sendFailure(Msg.prefixed(Lang.get("quest.admin.legendary_failed", guild.name)));
+										return 0;
+									}
+									ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("quest.admin.legendary", slot, guild.name, quest.name)), true);
+									return 1;
+								}))))));
 	}
 }

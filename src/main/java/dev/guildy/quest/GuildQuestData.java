@@ -21,6 +21,9 @@ public class GuildQuestData {
 	public int abandonedTotal;
 	/** Game time from which each empty slot may receive a new quest (index = slot). */
 	public long[] slotReadyAt = new long[SLOTS];
+	/** Game time of the last legendary contract put on the board (0 = never): cooldown between two of them. */
+	public long lastLegendaryAt;
+	public int legendaryCompleted;
 
 	public @Nullable QuestInstance bySlot(int slot) {
 		for (QuestInstance quest : active) {
@@ -29,6 +32,16 @@ public class GuildQuestData {
 			}
 		}
 		return null;
+	}
+
+	/** True when a legendary contract is on the board (active or waiting for its reward). */
+	public boolean hasLegendary() {
+		for (QuestInstance quest : active) {
+			if (quest.legendary) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public @Nullable QuestInstance byId(String id) {

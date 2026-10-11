@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** quests.json5 survives the Json5 writer (comments, sections) + lenient reader unchanged. */
@@ -23,6 +24,12 @@ class QuestConfigRoundTripTest {
 		QuestConfig read = Json5.read(file, QuestConfig.class);
 		assertEquals(written.refreshDelaySeconds, read.refreshDelaySeconds);
 		assertEquals(written.exploreMinDistance, read.exploreMinDistance);
+		assertEquals(written.uniqueChance, read.uniqueChance);
+		assertEquals(written.legendary.minLevel, read.legendary.minLevel);
+		assertEquals(written.legendary.chance, read.legendary.chance);
+		assertEquals(written.legendary.goldMultiplier, read.legendary.goldMultiplier);
+		assertTrue(text.contains("\"collection\""), "assortments written");
+		assertFalse(text.contains("\"usable\""), "transient validation data never written");
 		assertEquals(written.treasure.tiers.size(), read.treasure.tiers.size());
 		assertEquals(written.treasure.tiers.get(1).lootTable, read.treasure.tiers.get(1).lootTable);
 		assertEquals(written.templates.size(), read.templates.size());
@@ -42,6 +49,16 @@ class QuestConfigRoundTripTest {
 			assertEquals(a.flagChance, b.flagChance);
 			assertEquals(a.durationDays, b.durationDays);
 			assertEquals(a.rewardItems.size(), b.rewardItems.size());
+			assertEquals(a.maxLevel, b.maxLevel);
+			assertEquals(a.legendary, b.legendary);
+			assertEquals(a.collection == null, b.collection == null, a.id + ": collection only where defined");
+			if (a.collection != null) {
+				assertEquals(a.collection.min, b.collection.min);
+				assertEquals(a.collection.max, b.collection.max);
+				assertEquals(a.collection.items.size(), b.collection.items.size());
+				assertEquals(a.collection.items.get(0).item, b.collection.items.get(0).item);
+				assertEquals(a.collection.items.get(0).amountPerLevel, b.collection.items.get(0).amountPerLevel);
+			}
 			assertTrue(b.check().isEmpty(), b.id);
 		}
 	}

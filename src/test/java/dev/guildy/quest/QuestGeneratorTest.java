@@ -180,16 +180,30 @@ class QuestGeneratorTest {
 	@Test
 	void defaultTemplates() {
 		List<QuestTemplate> defaults = QuestConfig.defaults();
-		assertTrue(defaults.size() >= 15 && defaults.size() <= 25, "count " + defaults.size());
+		assertTrue(defaults.size() >= 40 && defaults.size() <= 60, "count " + defaults.size());
 		Set<String> ids = new HashSet<>();
 		EnumSet<QuestType> types = EnumSet.noneOf(QuestType.class);
 		for (QuestTemplate t : defaults) {
 			assertTrue(t.check().isEmpty(), t.id + " " + t.check());
 			assertTrue(ids.add(t.id), "duplicate id " + t.id);
+			assertFalse(t.name.isBlank() || t.description.isBlank(), t.id + ": name and description");
 			types.add(t.type);
 		}
 		assertEquals(EnumSet.allOf(QuestType.class), types);
-		// A level 1 guild must always be able to fill the 6 slots.
-		assertTrue(QuestGenerator.eligible(defaults, 1, Set.of(), false).size() >= 6);
+		// A level 1 guild must always be able to fill the 6 slots, with variety, even without a base (no EXPLORE).
+		assertTrue(QuestGenerator.eligible(defaults, 1, Set.of(), false).size() >= 12);
+		// Content spread over levels 1 to 6: every level unlocks something new.
+		for (int level = 1; level <= 6; level++) {
+			int min = level;
+			assertTrue(defaults.stream().anyMatch(t -> t.minLevel == min), "nothing unlocked at level " + level);
+		}
+		// Every level offers several types (no monotonous board).
+		for (int level = 1; level <= 10; level++) {
+			EnumSet<QuestType> offered = EnumSet.noneOf(QuestType.class);
+			for (QuestTemplate t : QuestGenerator.eligible(defaults, level, Set.of(), true)) {
+				offered.add(t.type);
+			}
+			assertTrue(offered.size() >= 12, "level " + level + " offers " + offered);
+		}
 	}
 }
