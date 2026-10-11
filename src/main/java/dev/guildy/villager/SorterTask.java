@@ -50,7 +50,7 @@ final class SorterTask extends TaskHandler {
 			}
 			return;
 		}
-		nextCheck = ctx.now + WorkContext.ticks(ctx.config.sorter.intervalSeconds);
+		nextCheck = ctx.now + ctx.workTicks(ctx.config.sorter.intervalSeconds);
 		if (!ctx.record.carried.isEmpty()) {
 			phase = Phase.DELIVER;
 			deliverStep(ctx);
@@ -122,7 +122,7 @@ final class SorterTask extends TaskHandler {
 				// Nowhere to put anything: keep the items and retry later.
 				ctx.status("villager.status.sorter.no_destination");
 				phase = Phase.WAIT;
-				nextCheck = ctx.now + WorkContext.ticks(ctx.config.sorter.intervalSeconds);
+				nextCheck = ctx.now + ctx.workTicks(ctx.config.sorter.intervalSeconds);
 				return;
 			}
 		}

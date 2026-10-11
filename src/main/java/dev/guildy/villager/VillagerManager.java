@@ -13,6 +13,8 @@ import dev.guildy.data.GuildEvents;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildPermission;
 import dev.guildy.structure.BuiltStructure;
+import dev.guildy.upgrade.UpgradeEffects;
+import dev.guildy.upgrade.Upgrades;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.ChatFormatting;
@@ -109,7 +111,7 @@ public final class VillagerManager {
 	// ================================================================ queries
 
 	public static int maxVillagers(Guild guild) {
-		return VillagerModule.config().maxVillagers(guild.level);
+		return VillagerModule.config().maxVillagers(guild.level) + Upgrades.count(guild, UpgradeEffects.EXTRA_VILLAGERS);
 	}
 
 	static @Nullable Candidate candidate(Guild guild) {
@@ -790,7 +792,7 @@ public final class VillagerManager {
 			return;
 		}
 		Guild guild = outcome.guild();
-		double chance = VillagerModule.config().defeatLeaveChance;
+		double chance = Upgrades.reduce(guild, UpgradeEffects.VILLAGER_LOYALTY_PCT, VillagerModule.config().defeatLeaveChance);
 		for (VillagerRecord record : List.copyOf(guild.villagers.members.values())) {
 			if (ThreadLocalRandom.current().nextDouble() < chance) {
 				leave(guild, record, "villager.left.defeat");

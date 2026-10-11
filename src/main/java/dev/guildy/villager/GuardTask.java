@@ -2,6 +2,8 @@ package dev.guildy.villager;
 
 import dev.guildy.core.Hooks;
 import dev.guildy.data.GuildManager;
+import dev.guildy.upgrade.UpgradeEffects;
+import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -98,7 +100,7 @@ final class GuardTask extends TaskHandler {
 		}
 		lastAttack = ctx.now;
 		WorldUtil.swing(ctx.villager);
-		float damage = (float) ctx.config.guardDamage(ctx.guild.level);
+		float damage = (float) Upgrades.boost(ctx.guild, UpgradeEffects.GUARD_DAMAGE_PCT, ctx.config.guardDamage(ctx.guild.level));
 		boolean hurt = target.hurtServer(level, level.damageSources().mobAttack(ctx.villager), damage);
 		if (hurt) {
 			level.sendParticles(ParticleTypes.CRIT, target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ(), 8, 0.3, 0.3, 0.3, 0.1);

@@ -12,6 +12,8 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildPermission;
 import dev.guildy.data.GuildRole;
+import dev.guildy.upgrade.UpgradeEffects;
+import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -306,9 +308,9 @@ public final class ClaimService {
 		return null;
 	}
 
-	/** Current price (treasury gold) of the next extension flag. */
+	/** Current price (treasury gold) of the next extension flag, after the guild's upgrade discount. */
 	public static int extensionFlagPrice(Guild guild) {
-		return GuildyServer.config().extensionFlagPrice(guild.extensionFlagsBought);
+		return Upgrades.discount(guild, UpgradeEffects.FLAG_DISCOUNT_PCT, GuildyServer.config().extensionFlagPrice(guild.extensionFlagsBought));
 	}
 
 	/** Buys an extension flag with treasury gold (TREASURY permission) and gives it to the player. */

@@ -3,6 +3,9 @@ package dev.guildy.data;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.quest.GuildQuestData;
 import dev.guildy.structure.GuildStructureData;
+import dev.guildy.upgrade.GuildUpgradeData;
+import dev.guildy.upgrade.UpgradeEffects;
+import dev.guildy.upgrade.Upgrades;
 import dev.guildy.villager.GuildVillagerData;
 import dev.guildy.wave.GuildWaveData;
 import net.minecraft.core.BlockPos;
@@ -49,6 +52,7 @@ public final class Guild {
 	public GuildStructureData structures = new GuildStructureData();
 	public GuildQuestData quests = new GuildQuestData();
 	public GuildVillagerData villagers = new GuildVillagerData();
+	public GuildUpgradeData upgrades = new GuildUpgradeData();
 
 	public Guild() {
 	}
@@ -131,7 +135,7 @@ public final class Guild {
 	}
 
 	public int maxChunks() {
-		return GuildyServer.config().maxChunks(level);
+		return GuildyServer.config().maxChunks(level) + Upgrades.count(this, UpgradeEffects.EXTRA_CHUNKS);
 	}
 
 	/** Chunk key of the heart, or 0 when not founded. */
@@ -196,6 +200,10 @@ public final class Guild {
 		if (villagers == null) {
 			villagers = new GuildVillagerData();
 		}
+		if (upgrades == null) {
+			upgrades = new GuildUpgradeData();
+		}
+		upgrades.fixNulls();
 		if (level < 1) {
 			level = 1;
 		}

@@ -3,6 +3,7 @@ package dev.guildy.villager;
 import dev.guildy.core.Scheduler;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
+import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -85,5 +86,10 @@ final class WorkContext {
 	/** Seconds → ticks. */
 	static long ticks(int seconds) {
 		return seconds * 20L;
+	}
+
+	/** Work duration (seconds → ticks) shortened by the guild's work speed upgrade. */
+	long workTicks(int seconds) {
+		return ticks(Upgrades.workSeconds(guild, seconds));
 	}
 }

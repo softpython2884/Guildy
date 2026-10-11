@@ -16,6 +16,9 @@ import dev.guildy.data.GuildPermission;
 import dev.guildy.shop.PlainItems;
 import dev.guildy.structure.StructureManager;
 import dev.guildy.structure.TextUtil;
+import dev.guildy.upgrade.UpgradeEffects;
+import dev.guildy.upgrade.UpgradeMath;
+import dev.guildy.upgrade.Upgrades;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -439,7 +442,9 @@ public final class QuestManager {
 		guild.quests.completedTotal++;
 		GuildManager.markDirty();
 
-		GuildManager.addTreasury(guild, quest.rewardGold);
+		long gold = rewardGold(guild, quest);
+		long xp = rewardXp(guild, quest);
+		GuildManager.addTreasury(guild, gold);
 		for (RewardStack stack : quest.rewardItems) {
 			Item item = ItemUtil.item(stack.item);
 			if (item != null) {
@@ -452,12 +457,22 @@ public final class QuestManager {
 		if (quest.rewardMap) {
 			TreasureMaps.giveMap(player, guild);
 		}
-		Msg.guildRaw(guild, TextUtil.lang("quest.claimed", player.getName().getString(), quest.name, quest.rewardGold, quest.rewardXp));
+		Msg.guildRaw(guild, TextUtil.lang("quest.claimed", player.getName().getString(), quest.name, gold, xp));
 		Msg.sound(player, SoundEvents.PLAYER_LEVELUP, 0.7f, 1.2f);
 		StructureManager.requestSignRefresh(guild);
 		// Last: may trigger level-up announcements.
-		GuildManager.addXp(guild, quest.rewardXp);
+		GuildManager.addXp(guild, xp);
 		return null;
+	}
+
+	/** Treasury gold paid by the quest, with the guild's upgrade bonus (never for deliveries: no shop gold loop). */
+	public static long rewardGold(Guild guild, QuestInstance quest) {
+		return UpgradeMath.questGold(quest.rewardGold, Upgrades.value(guild, UpgradeEffects.QUEST_REWARD_PCT), quest.type == QuestType.DELIVER);
+	}
+
+	/** Guild XP of the quest, with the guild's upgrade bonus. */
+	public static long rewardXp(Guild guild, QuestInstance quest) {
+		return Upgrades.boost(guild, UpgradeEffects.QUEST_REWARD_PCT, (long) quest.rewardXp);
 	}
 
 	/** Abandons an active quest (QUESTS permission); its slot gets a new quest after the refresh delay. */

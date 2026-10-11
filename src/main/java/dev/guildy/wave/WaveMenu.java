@@ -6,6 +6,8 @@ import dev.guildy.core.Lang;
 import dev.guildy.core.Safe;
 import dev.guildy.data.Guild;
 import dev.guildy.gui.GuiUtil;
+import dev.guildy.upgrade.UpgradeEffects;
+import dev.guildy.upgrade.Upgrades;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.SimpleGui;
 import net.minecraft.network.chat.Component;
@@ -124,7 +126,7 @@ final class WaveMenu {
 			int expected = WaveFormula.mobCount(cfg.difficulty, difficulty, 1.0);
 			long elite = Math.round(WaveFormula.eliteChance(cfg.difficulty, difficulty, 0) * 100);
 			List<Component> lore = GuiUtil.lines("wave.gui.next.lore", night, WaveSession.formatDifficulty(difficulty), expected, elite,
-					WaveFormula.heartIntegrity(cfg.heart, guild.level));
+					Upgrades.boost(guild, UpgradeEffects.HEART_INTEGRITY_PCT, WaveFormula.heartIntegrity(cfg.heart, guild.level)));
 			lore.addAll(GuiUtil.lines("wave.gui.next.players", players, WaveSession.formatDifficulty(cfg.difficulty.perExtraPlayer)));
 			int untilBoss = WaveFormula.nightsUntilBoss(cfg.difficulty, night);
 			if (untilBoss == 0) {
@@ -174,8 +176,8 @@ final class WaveMenu {
 
 		private GuiElementBuilder rules() {
 			WaveConfig cfg = WaveModule.config();
-			List<Component> lore = GuiUtil.lines("wave.gui.rules.lore", cfg.timing.activationDistance, cfg.defeat.treasuryLossPercent,
-					cfg.defeat.nightRollback);
+			String loss = UpgradeEffects.format(Upgrades.reduce(guild, UpgradeEffects.DEFEAT_LOSS_REDUCTION_PCT, (double) cfg.defeat.treasuryLossPercent));
+			List<Component> lore = GuiUtil.lines("wave.gui.rules.lore", cfg.timing.activationDistance, loss, cfg.defeat.nightRollback);
 			return GuiUtil.item(Items.LECTERN, Lang.get("wave.gui.rules.name"), lore);
 		}
 	}

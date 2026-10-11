@@ -2,6 +2,7 @@ package dev.guildy.villager;
 
 import dev.guildy.data.ChunkKey;
 import dev.guildy.data.GuildManager;
+import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -58,6 +59,8 @@ final class LumberjackTask extends TaskHandler {
 	private @Nullable Tree tree;
 	private long nextScan;
 	private long retryAt;
+	/** Extra logs earned by the work speed upgrade (fractional rate accumulated across steps). */
+	private double bonusCuts;
 	private final DepositFlow deposit = new DepositFlow();
 
 	@Override
@@ -68,7 +71,17 @@ final class LumberjackTask extends TaskHandler {
 		switch (phase) {
 			case SEARCH -> search(ctx);
 			case GO_TREE -> goTree(ctx);
-			case CUT -> cut(ctx);
+			case CUT -> {
+				cut(ctx);
+				bonusCuts += Upgrades.workRate(ctx.guild) - 1;
+				while (bonusCuts >= 1 && phase == Phase.CUT) {
+					bonusCuts -= 1;
+					cut(ctx);
+				}
+				if (phase != Phase.CUT) {
+					bonusCuts = 0;
+				}
+			}
 			case DEPOSIT -> depositStep(ctx);
 			case BLOCKED -> {
 				if (ctx.now >= retryAt) {
@@ -94,7 +107,7 @@ final class LumberjackTask extends TaskHandler {
 			}
 			return;
 		}
-		nextScan = ctx.now + WorkContext.ticks(ctx.config.work.scanIntervalSeconds);
+		nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
 		BlockPos zone = ctx.record.workPos;
 		if (!ctx.loaded(zone)) {
 			ctx.status("villager.status.workpos_unloaded");
