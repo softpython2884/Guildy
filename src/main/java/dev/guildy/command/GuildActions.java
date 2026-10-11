@@ -162,7 +162,8 @@ public final class GuildActions {
 		String name = GuildRules.normalizeName(rawName);
 		String error = GuildManager.validateName(name);
 		if (error != null) {
-			Msg.send(player, error);
+			var guilds = GuildyServer.config().guilds;
+			Msg.send(player, error, guilds.nameMinLength, guilds.nameMaxLength);
 			return false;
 		}
 		Guild guild = GuildManager.create(name, player);

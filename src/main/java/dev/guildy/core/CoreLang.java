@@ -22,7 +22,7 @@ public final class CoreLang {
 		m.put("error.not_enough_treasury", "&cLe trésor de la guilde ne contient pas assez d'or (&e{0}&c requis).");
 		m.put("error.player_only", "&cCommande réservée aux joueurs.");
 		m.put("error.unknown_guild", "&cGuilde introuvable : &e{0}");
-		m.put("error.name.length", "&cLe nom doit faire entre 3 et 16 caractères.");
+		m.put("error.name.length", "&cLe nom doit faire entre {0} et {1} caractères.");
 		m.put("error.name.chars", "&cLe nom contient des caractères interdits (lettres, chiffres, espaces, - _ ' uniquement).");
 		m.put("error.name.taken", "&cCe nom de guilde est déjà pris.");
 		m.put("error.internal", "&cUne erreur interne est survenue (voir la console).");

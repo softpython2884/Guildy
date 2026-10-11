@@ -129,16 +129,21 @@ public final class GuiUtil {
 	 * Text input via an anvil: the player types in the name field and clicks the result item to validate.
 	 */
 	public static void textInput(ServerPlayer player, Component title, String defaultText, Consumer<String> onSubmit, Runnable onCancel) {
+		boolean[] submitted = {false};
 		AnvilInputGui gui = new AnvilInputGui(player, false) {
+			// Esc / closing by the player = cancel (SGUI calls onPlayerClose for player-initiated closes).
 			@Override
-			public void onManualClose() {
-				Safe.run("gui.input.cancel", onCancel);
+			public void onPlayerClose(boolean success) {
+				if (success && !submitted[0]) {
+					Safe.run("gui.input.cancel", onCancel);
+				}
 			}
 		};
 		gui.setTitle(title);
 		gui.setDefaultInputValue(defaultText);
 		gui.setSlot(2, item(Items.DYE.pick(DyeColor.LIME), Lang.get("gui.input.confirm"), List.of()).setCallback((i, t, a, g) -> {
 			String input = ((AnvilInputGui) g).getInput();
+			submitted[0] = true;
 			g.close();
 			clickSound(player);
 			Safe.run("gui.input", () -> onSubmit.accept(input == null ? "" : input.trim()));
