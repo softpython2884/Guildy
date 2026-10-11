@@ -10,6 +10,8 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildEvents;
 import dev.guildy.data.GuildEvents.WaveOutcome.Result;
 import dev.guildy.data.GuildManager;
+import dev.guildy.upgrade.UpgradeEffects;
+import dev.guildy.upgrade.Upgrades;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -113,7 +115,7 @@ final class WaveSession {
 		this.queue = new ArrayDeque<>(plan.mobs());
 		this.total = plan.mobs().size();
 		this.hasBoss = plan.hasBoss();
-		this.maxIntegrity = WaveFormula.heartIntegrity(cfg.heart, guild.level);
+		this.maxIntegrity = Upgrades.boost(guild, UpgradeEffects.HEART_INTEGRITY_PCT, WaveFormula.heartIntegrity(cfg.heart, guild.level));
 		this.integrity = maxIntegrity;
 		this.groupSize = WaveFormula.groupSize(cfg.spawning, total, spawnPhaseSeconds);
 		this.nextGroupIn = Math.max(1, cfg.spawning.firstGroupDelaySeconds);
@@ -841,8 +843,8 @@ final class WaveSession {
 		int nightBefore = data.night;
 		switch (result) {
 			case VICTORY -> {
-				gold = WaveFormula.goldReward(cfg.rewards, difficulty, ratio);
-				xp = WaveFormula.xpReward(cfg.rewards, difficulty, ratio);
+				gold = Upgrades.boost(guild, UpgradeEffects.WAVE_REWARD_PCT, WaveFormula.goldReward(cfg.rewards, difficulty, ratio));
+				xp = Upgrades.boost(guild, UpgradeEffects.WAVE_REWARD_PCT, WaveFormula.xpReward(cfg.rewards, difficulty, ratio));
 				rolls = WaveFormula.itemRolls(cfg.rewards, difficulty, ratio);
 				GuildManager.addTreasury(guild, gold);
 				data.night++;
@@ -854,7 +856,7 @@ final class WaveSession {
 				data.lastXp = xp;
 			}
 			case DEFEAT -> {
-				loss = WaveFormula.treasuryLoss(cfg.defeat, guild.treasury);
+				loss = Upgrades.reduce(guild, UpgradeEffects.DEFEAT_LOSS_REDUCTION_PCT, WaveFormula.treasuryLoss(cfg.defeat, guild.treasury));
 				if (loss > 0) {
 					GuildManager.takeTreasury(guild, loss);
 				}
@@ -964,7 +966,8 @@ final class WaveSession {
 				lines.add(Lang.get("wave.recap.next", nightAfter, guild.waves.streak));
 			}
 			case DEFEAT -> {
-				lines.add(Lang.get("wave.recap.defeat", loss, cfg.defeat.treasuryLossPercent));
+				lines.add(Lang.get("wave.recap.defeat", loss, UpgradeEffects.format(
+						Upgrades.reduce(guild, UpgradeEffects.DEFEAT_LOSS_REDUCTION_PCT, (double) cfg.defeat.treasuryLossPercent))));
 				if (nightAfter != nightBefore) {
 					lines.add(Lang.get("wave.recap.rollback", nightBefore, nightAfter));
 				}

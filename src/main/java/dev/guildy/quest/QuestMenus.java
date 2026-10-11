@@ -51,7 +51,7 @@ public final class QuestMenus {
 			if (quest != null) {
 				String id = quest.id;
 				List<Component> extra = List.of(Component.empty(), Lang.get("quest.gui.click"));
-				gui.setSlot(SLOT_POSITIONS[slot], questIcon(player, quest, extra).setCallback((index, type, action, g) -> Safe.run("quest.gui", () -> {
+				gui.setSlot(SLOT_POSITIONS[slot], questIcon(player, guild, quest, extra).setCallback((index, type, action, g) -> Safe.run("quest.gui", () -> {
 					GuiUtil.clickSound(player);
 					openDetail(player, guild, id);
 				})));
@@ -93,7 +93,7 @@ public final class QuestMenus {
 			return;
 		}
 		SimpleGui gui = GuiUtil.chest(player, 4, Lang.get("quest.gui.detail.title", Lang.strip(Lang.colorize(quest.name))));
-		gui.setSlot(4, questIcon(player, quest, List.of()));
+		gui.setSlot(4, questIcon(player, guild, quest, List.of()));
 		gui.setSlot(13, contributionsIcon(quest));
 
 		if (quest.isActive() && quest.type == QuestType.DELIVER) {
@@ -115,7 +115,7 @@ public final class QuestMenus {
 					})));
 		}
 		if (quest.isCompleted()) {
-			gui.setSlot(22, GuiUtil.item(Items.EMERALD, Lang.get("quest.gui.claim.name"), rewardLines(quest)).glow().setCallback((i, t, a, g) ->
+			gui.setSlot(22, GuiUtil.item(Items.EMERALD, Lang.get("quest.gui.claim.name"), rewardLines(guild, quest)).glow().setCallback((i, t, a, g) ->
 					Safe.run("quest.gui.claim", () -> {
 						Component error = QuestManager.claim(player, guild, quest);
 						if (error != null) {
@@ -204,7 +204,7 @@ public final class QuestMenus {
 		};
 	}
 
-	static GuiElementBuilder questIcon(ServerPlayer player, QuestInstance quest, List<Component> extra) {
+	static GuiElementBuilder questIcon(ServerPlayer player, Guild guild, QuestInstance quest, List<Component> extra) {
 		List<Component> lore = new ArrayList<>();
 		lore.add(Lang.get("quest.gui.type." + quest.type.key()));
 		if (!quest.description.isBlank()) {
@@ -221,7 +221,7 @@ public final class QuestMenus {
 			lore.add(Lang.get("quest.gui.explore.distance", (int) Math.sqrt(dx * dx + dz * dz)));
 		}
 		lore.add(Component.empty());
-		lore.addAll(rewardLines(quest));
+		lore.addAll(rewardLines(guild, quest));
 		lore.add(Component.empty());
 		if (quest.isCompleted()) {
 			lore.add(Lang.get("quest.gui.completed"));
@@ -237,14 +237,14 @@ public final class QuestMenus {
 		return builder;
 	}
 
-	static List<Component> rewardLines(QuestInstance quest) {
+	static List<Component> rewardLines(Guild guild, QuestInstance quest) {
 		List<Component> lines = new ArrayList<>();
 		lines.add(Lang.get("quest.gui.rewards"));
 		if (quest.rewardGold > 0) {
-			lines.add(Lang.get("quest.gui.reward.gold", quest.rewardGold));
+			lines.add(Lang.get("quest.gui.reward.gold", QuestManager.rewardGold(guild, quest)));
 		}
 		if (quest.rewardXp > 0) {
-			lines.add(Lang.get("quest.gui.reward.xp", quest.rewardXp));
+			lines.add(Lang.get("quest.gui.reward.xp", QuestManager.rewardXp(guild, quest)));
 		}
 		for (RewardStack stack : quest.rewardItems) {
 			Item item = ItemUtil.item(stack.item);

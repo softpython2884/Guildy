@@ -29,6 +29,8 @@ public final class Hooks {
 	public static BiConsumer<ServerPlayer, Guild> openShop = UNAVAILABLE;
 	/** Villager management. */
 	public static BiConsumer<ServerPlayer, Guild> openVillagers = UNAVAILABLE;
+	/** Upgrade tree ("Arbre d'evolution"). */
+	public static BiConsumer<ServerPlayer, Guild> openUpgrades = UNAVAILABLE;
 
 	/** True while a night wave is running for this guild. Set by the wave module. */
 	public static Predicate<Guild> isWaveActive = guild -> false;

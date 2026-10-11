@@ -2,6 +2,7 @@ package dev.guildy.villager;
 
 import dev.guildy.core.ItemUtil;
 import dev.guildy.data.GuildManager;
+import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
@@ -76,7 +77,7 @@ final class MinerTask extends TaskHandler {
 		}
 		Movement.hold(ctx, null);
 		elapsed++;
-		int trip = ctx.config.miner.tripSeconds;
+		int trip = Upgrades.workSeconds(ctx.guild, ctx.config.miner.tripSeconds);
 		if (ctx.now >= nextEffect) {
 			nextEffect = ctx.now + WorkContext.ticks(ctx.config.miner.effectIntervalSeconds);
 			miningEffect(ctx);

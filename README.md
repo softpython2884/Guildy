@@ -116,6 +116,22 @@ Coffres : menu Villageois → Stockage → « Ajouter un coffre », puis clic dr
 La nuit, les travailleurs vont se coucher ; les gardes restent dehors. Les villageois peuvent **mourir**
 pendant les hordes : protégez-les ! Seuls les membres peuvent commercer avec eux.
 
+### 8. Arbre d'évolution
+Menu « Arbre d'évolution » (`/guild upgrades`, ou le bouton du menu principal) : la guilde dépense l'**or du
+trésor** et des **matériaux** pour des **bonus permanents**. Les matériaux sont pris dans l'inventaire du joueur qui
+débloque (objets simples : ni renommés, ni enchantés, ni abîmés ; impossible en créatif). Il faut le droit de dépenser
+le trésor (officier par défaut). Chaque branche se lit de gauche à droite : un palier demande le précédent et un
+niveau de guilde ; les liens deviennent verts une fois le palier précédent débloqué.
+
+| Branche | Palier 1 | Palier 2 | Palier 3 | Palier 4 |
+|---|---|---|---|---|
+| **Défense** | Cœur renforcé (niv. 1, 30 or + 8 lingots de fer) : cœur +25 % | Gardes aguerris (niv. 2, 60 or + 2 blocs de fer) : dégâts des gardes +50 % | Bannière de ralliement (niv. 3, 100 or + 2 pommes dorées) : Régénération I dans le territoire pendant les hordes | Bastion (niv. 5, 200 or + 4 diamants) : cœur +50 %, or perdu en défaite −50 %, plus aucun départ de villageois après une défaite |
+| **Économie** | Primes de quêtes (niv. 1, 25 or) : or et XP des quêtes +20 % | Butin de guerre (niv. 2, 50 or + 8 émeraudes) : or et XP des victoires +25 % | Cartographes (niv. 3, 80 or + 16 papiers) : drapeaux d'extension −30 % | Âge d'or (niv. 5, 200 or + 1 bloc de diamant) : quêtes +20 %, victoires +25 % |
+| **Expansion** | Frontières élargies (niv. 1, 30 or) : +4 chunks | Logements (niv. 2, 60 or + 3 lits blancs) : +2 villageois | Artisans efficaces (niv. 3, 100 or + 16 lingots de fer) : tâches des villageois 30 % plus courtes | Grand domaine (niv. 5, 200 or + 4 diamants) : +8 chunks, +2 villageois, Célérité I dans le territoire |
+
+Les bonus d'un même effet s'additionnent. L'or des quêtes de **livraison** n'est jamais augmenté (pas de boucle d'or
+avec la boutique). Branches, paliers, coûts et effets se configurent dans `upgrades.json5`.
+
 ### Rôles
 **Chef**, **Officier**, **Membre**. Par défaut les membres construisent et interagissent ; les officiers
 invitent, excluent, gèrent le territoire, le trésor, les villageois, les constructions, la bannière et les
@@ -147,6 +163,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild build` | Constructions et plans |
 | `/guild quests` | Quêtes |
 | `/guild villagers [accept\|refuse]` | Villageois |
+| `/guild upgrades` | Arbre d'évolution (améliorations permanentes) |
 
 ### Administration
 Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions : opérateurs niveau 2
@@ -163,6 +180,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin structure unlock <guilde> <id>` · `structure check <guilde>` | Constructions |
 | `/guild admin quest reroll <guilde>` · `quest complete <guilde> <slot>` · `quest map <guilde>` | Quêtes |
 | `/guild admin villager spawn <guilde>` | Faire venir un candidat villageois |
+| `/guild admin upgrade unlock\|lock <guilde> <id>` | Arbre d'évolution : `unlock` débloque gratuitement (avec les prérequis manquants), `lock` retire l'amélioration et celles qui en dépendent |
 
 ---
 
@@ -179,6 +197,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `quests.json5` | Modèles de quêtes (type, cible, quantités, récompenses, durée, poids, niveau) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, tables de minage, catégories de rangement, départs après défaite |
+| `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
 Une copie des fichiers par défaut (commentés) se trouve dans [`docs/default-config/`](docs/default-config/).

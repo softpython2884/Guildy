@@ -2,6 +2,7 @@ package dev.guildy.villager;
 
 import dev.guildy.data.ChunkKey;
 import dev.guildy.data.GuildManager;
+import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -73,7 +74,7 @@ final class FarmerTask extends TaskHandler {
 		}
 		target = pollValid(ctx);
 		if (target == null && ctx.now >= nextScan) {
-			nextScan = ctx.now + WorkContext.ticks(ctx.config.work.scanIntervalSeconds);
+			nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
 			if (!ctx.loaded(ctx.record.workPos)) {
 				ctx.status("villager.status.workpos_unloaded");
 				return;
@@ -113,7 +114,7 @@ final class FarmerTask extends TaskHandler {
 	}
 
 	private void harvest(WorkContext ctx) {
-		int budget = ctx.config.farmer.harvestPerSecond;
+		int budget = (int) Math.max(1, Math.round(ctx.config.farmer.harvestPerSecond * Upgrades.workRate(ctx.guild)));
 		int done = 0;
 		if (target != null && harvestOne(ctx, target)) {
 			done++;
@@ -196,7 +197,7 @@ final class FarmerTask extends TaskHandler {
 				} else {
 					phase = Phase.SEARCH;
 					// Nothing else to do until crops grow: don't retry the deposit every second.
-					nextScan = Math.max(nextScan, ctx.now + WorkContext.ticks(ctx.config.work.scanIntervalSeconds));
+					nextScan = Math.max(nextScan, ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds));
 				}
 			}
 		}

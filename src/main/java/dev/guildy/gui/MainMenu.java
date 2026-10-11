@@ -9,6 +9,7 @@ import dev.guildy.core.Hooks;
 import dev.guildy.core.Lang;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildRole;
+import dev.guildy.upgrade.Upgrades;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -68,6 +69,13 @@ final class MainMenu extends GuildGui {
 			waves.glow();
 		}
 		button(34, waves, null, () -> Hooks.openWaves.accept(player, guild));
+
+		GuiElementBuilder upgrades = icon(Items.ENCHANTING_TABLE, "menu.main.upgrades.name",
+				GuiUtil.lines("menu.main.upgrades.lore", Upgrades.unlockedCount(guild), Upgrades.tree().nodes().size()));
+		if (Upgrades.hasAffordable(guild)) {
+			upgrades.glow();
+		}
+		button(40, upgrades, null, () -> Hooks.openUpgrades.accept(player, guild));
 
 		if (guild.role(player.getUUID()) == GuildRole.LEADER) {
 			button(45, icon(Items.TNT, "menu.main.disband.name", GuiUtil.lines("menu.main.disband.lore")),

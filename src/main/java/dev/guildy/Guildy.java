@@ -17,6 +17,7 @@ import dev.guildy.gui.GuildMenus;
 import dev.guildy.quest.QuestModule;
 import dev.guildy.shop.ShopModule;
 import dev.guildy.structure.StructureModule;
+import dev.guildy.upgrade.UpgradeModule;
 import dev.guildy.villager.VillagerModule;
 import dev.guildy.wave.WaveModule;
 import net.fabricmc.api.ModInitializer;
@@ -50,6 +51,7 @@ public final class Guildy implements ModInitializer {
 		QuestModule.init();
 		ShopModule.init();
 		VillagerModule.init();
+		UpgradeModule.init();
 
 		List<String> errors = ConfigManager.loadAll();
 		String langError = Lang.load();

@@ -1,0 +1,336 @@
+// Guildy - arbre d'evolution : ameliorations permanentes de la guilde (menu /guild upgrades).
+// branches : [{id, name, icon}] = une ligne du menu chacune (4 par page).
+// nodes : [{id, branch, tier (palier 1 a 8, un seul noeud par palier dans une branche), name, description (lignes,
+// codes couleur &), icon, minLevel (niveau de guilde requis), requires (ids des ameliorations a debloquer avant),
+// costGold (or du tresor), costItems [{item, count}] (pris dans l'inventaire du joueur qui debloque : objets simples,
+// ni renommes, ni enchantes, ni abimes), effects {effet: valeur}}. Les valeurs d'un meme effet s'additionnent ;
+// une amelioration retiree du fichier ne compte plus (elle revient si on la remet avec le meme id).
+// Effets : heart_integrity_pct (+% d'integrite du coeur pendant les hordes), guard_damage_pct (+% de degats des gardes),
+// wave_regen (niveau de Regeneration des membres dans le territoire pendant une horde), defeat_loss_reduction_pct
+// (-% d'or perdu en cas de defaite), villager_loyalty_pct (-% de chance de depart des villageois apres une defaite),
+// quest_reward_pct (+% d'or et d'XP des quetes ; l'or des quetes de livraison n'est jamais augmente : pas de boucle
+// d'or avec la boutique), wave_reward_pct (+% d'or et d'XP des victoires), flag_discount_pct (-% sur le prix des
+// drapeaux d'extension), extra_chunks (+chunks maximum), extra_villagers (+villageois maximum), work_speed_pct
+// (-% de duree des taches des villageois, 75 maximum), territory_haste (niveau de Celerite des membres dans le territoire).
+// Les objets, effets et prerequis inconnus sont ignores (voir la console), les prerequis circulaires sont refuses.
+{
+
+	// Effets de territoire (Celerite : territory_haste, Regeneration : wave_regen)
+	"buffs": {
+
+		// Duree (secondes, 3 a 60) des effets, renouveles toutes les 2 secondes tant que le membre reste dans le territoire
+		"durationSeconds": 5
+	},
+
+	// Branches de l'arbre (voir l'explication en haut du fichier)
+	"branches": [
+		{
+			"id": "defense",
+			"name": "Défense",
+			"icon": "minecraft:shield"
+		},
+		{
+			"id": "economie",
+			"name": "Économie",
+			"icon": "minecraft:gold_ingot"
+		},
+		{
+			"id": "expansion",
+			"name": "Expansion",
+			"icon": "minecraft:map"
+		}
+	],
+
+	// Ameliorations (voir l'explication en haut du fichier)
+	"nodes": [
+		{
+			"id": "coeur_renforce",
+			"branch": "defense",
+			"tier": 1,
+			"name": "Cœur renforcé",
+			"description": [
+				"&7Des renforts de fer consolident",
+				"&7le cœur de la base."
+			],
+			"icon": "minecraft:heart_of_the_sea",
+			"minLevel": 1,
+			"requires": [],
+			"costGold": 30,
+			"costItems": [
+				{
+					"item": "minecraft:iron_ingot",
+					"count": 8
+				}
+			],
+			"effects": {
+				"heart_integrity_pct": 25.0
+			}
+		},
+		{
+			"id": "gardes_aguerris",
+			"branch": "defense",
+			"tier": 2,
+			"name": "Gardes aguerris",
+			"description": [
+				"&7Les gardes villageois s'entraînent",
+				"&7au maniement des armes."
+			],
+			"icon": "minecraft:iron_sword",
+			"minLevel": 2,
+			"requires": [
+				"coeur_renforce"
+			],
+			"costGold": 60,
+			"costItems": [
+				{
+					"item": "minecraft:iron_block",
+					"count": 2
+				}
+			],
+			"effects": {
+				"guard_damage_pct": 50.0
+			}
+		},
+		{
+			"id": "banniere_ralliement",
+			"branch": "defense",
+			"tier": 3,
+			"name": "Bannière de ralliement",
+			"description": [
+				"&7La bannière galvanise les membres",
+				"&7qui défendent le territoire la nuit."
+			],
+			"icon": "minecraft:red_banner",
+			"minLevel": 3,
+			"requires": [
+				"gardes_aguerris"
+			],
+			"costGold": 100,
+			"costItems": [
+				{
+					"item": "minecraft:golden_apple",
+					"count": 2
+				}
+			],
+			"effects": {
+				"wave_regen": 1.0
+			}
+		},
+		{
+			"id": "bastion",
+			"branch": "defense",
+			"tier": 4,
+			"name": "Bastion",
+			"description": [
+				"&7La base devient une forteresse :",
+				"&7même vaincue, elle ne plie pas."
+			],
+			"icon": "minecraft:totem_of_undying",
+			"minLevel": 5,
+			"requires": [
+				"banniere_ralliement"
+			],
+			"costGold": 200,
+			"costItems": [
+				{
+					"item": "minecraft:diamond",
+					"count": 4
+				}
+			],
+			"effects": {
+				"heart_integrity_pct": 50.0,
+				"defeat_loss_reduction_pct": 50.0,
+				"villager_loyalty_pct": 100.0
+			}
+		},
+		{
+			"id": "primes_quetes",
+			"branch": "economie",
+			"tier": 1,
+			"name": "Primes de quêtes",
+			"description": [
+				"&7Les commanditaires paient mieux",
+				"&7les guildes de confiance."
+			],
+			"icon": "minecraft:writable_book",
+			"minLevel": 1,
+			"requires": [],
+			"costGold": 25,
+			"costItems": [],
+			"effects": {
+				"quest_reward_pct": 20.0
+			}
+		},
+		{
+			"id": "butin_guerre",
+			"branch": "economie",
+			"tier": 2,
+			"name": "Butin de guerre",
+			"description": [
+				"&7Les hordes repoussées laissent",
+				"&7davantage de richesses."
+			],
+			"icon": "minecraft:chest",
+			"minLevel": 2,
+			"requires": [
+				"primes_quetes"
+			],
+			"costGold": 50,
+			"costItems": [
+				{
+					"item": "minecraft:emerald",
+					"count": 8
+				}
+			],
+			"effects": {
+				"wave_reward_pct": 25.0
+			}
+		},
+		{
+			"id": "cartographes",
+			"branch": "economie",
+			"tier": 3,
+			"name": "Cartographes",
+			"description": [
+				"&7Des cartographes négocient le prix",
+				"&7des drapeaux d'extension."
+			],
+			"icon": "minecraft:cartography_table",
+			"minLevel": 3,
+			"requires": [
+				"butin_guerre"
+			],
+			"costGold": 80,
+			"costItems": [
+				{
+					"item": "minecraft:paper",
+					"count": 16
+				}
+			],
+			"effects": {
+				"flag_discount_pct": 30.0
+			}
+		},
+		{
+			"id": "age_or",
+			"branch": "economie",
+			"tier": 4,
+			"name": "Âge d'or",
+			"description": [
+				"&7La renommée de la guilde attire",
+				"&7l'or de tout le royaume."
+			],
+			"icon": "minecraft:gold_block",
+			"minLevel": 5,
+			"requires": [
+				"cartographes"
+			],
+			"costGold": 200,
+			"costItems": [
+				{
+					"item": "minecraft:diamond_block",
+					"count": 1
+				}
+			],
+			"effects": {
+				"quest_reward_pct": 20.0,
+				"wave_reward_pct": 25.0
+			}
+		},
+		{
+			"id": "frontieres_elargies",
+			"branch": "expansion",
+			"tier": 1,
+			"name": "Frontières élargies",
+			"description": [
+				"&7Les frontières de la guilde",
+				"&7repoussent l'horizon."
+			],
+			"icon": "minecraft:oak_fence",
+			"minLevel": 1,
+			"requires": [],
+			"costGold": 30,
+			"costItems": [],
+			"effects": {
+				"extra_chunks": 4.0
+			}
+		},
+		{
+			"id": "logements",
+			"branch": "expansion",
+			"tier": 2,
+			"name": "Logements",
+			"description": [
+				"&7De nouveaux logis pour accueillir",
+				"&7plus de villageois."
+			],
+			"icon": "minecraft:red_bed",
+			"minLevel": 2,
+			"requires": [
+				"frontieres_elargies"
+			],
+			"costGold": 60,
+			"costItems": [
+				{
+					"item": "minecraft:white_bed",
+					"count": 3
+				}
+			],
+			"effects": {
+				"extra_villagers": 2.0
+			}
+		},
+		{
+			"id": "artisans_efficaces",
+			"branch": "expansion",
+			"tier": 3,
+			"name": "Artisans efficaces",
+			"description": [
+				"&7Outils affûtés et méthodes éprouvées :",
+				"&7les villageois travaillent plus vite."
+			],
+			"icon": "minecraft:iron_pickaxe",
+			"minLevel": 3,
+			"requires": [
+				"logements"
+			],
+			"costGold": 100,
+			"costItems": [
+				{
+					"item": "minecraft:iron_ingot",
+					"count": 16
+				}
+			],
+			"effects": {
+				"work_speed_pct": 30.0
+			}
+		},
+		{
+			"id": "grand_domaine",
+			"branch": "expansion",
+			"tier": 4,
+			"name": "Grand domaine",
+			"description": [
+				"&7Un domaine immense où chacun",
+				"&7œuvre avec ardeur."
+			],
+			"icon": "minecraft:beacon",
+			"minLevel": 5,
+			"requires": [
+				"artisans_efficaces"
+			],
+			"costGold": 200,
+			"costItems": [
+				{
+					"item": "minecraft:diamond",
+					"count": 4
+				}
+			],
+			"effects": {
+				"extra_chunks": 8.0,
+				"extra_villagers": 2.0,
+				"territory_haste": 1.0
+			}
+		}
+	]
+}

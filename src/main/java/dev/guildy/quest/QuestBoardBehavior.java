@@ -46,6 +46,6 @@ final class QuestBoardBehavior implements StructureBehavior {
 		}
 		return List.of(Lang.get("quest.sign.type." + quest.type.key()), target,
 				Lang.get("quest.sign.progress", quest.progress, quest.amount),
-				Lang.get("quest.sign.reward", quest.rewardGold));
+				Lang.get("quest.sign.reward", QuestManager.rewardGold(guild, quest)));
 	}
 }
