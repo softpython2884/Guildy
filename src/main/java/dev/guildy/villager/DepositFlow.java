@@ -3,10 +3,12 @@ package dev.guildy.villager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Shared "bring the carried items to a deposit chest" sub-state machine (miner, lumberjack, farmer).
@@ -30,7 +32,12 @@ final class DepositFlow {
 	private long fullResetAt;
 
 	State tick(WorkContext ctx) {
-		if (ctx.record.carried.isEmpty()) {
+		return tick(ctx, stack -> false);
+	}
+
+	/** Same, but stacks matching {@code keep} stay in the bag (a miner's filler reserve): DONE once only they are left. */
+	State tick(WorkContext ctx, Predicate<ItemStack> keep) {
+		if (!depositable(ctx, keep)) {
 			target = null;
 			return State.DONE;
 		}
@@ -60,18 +67,28 @@ final class DepositFlow {
 			}
 		}
 		Container container = Storage.container(ctx.level, target);
-		int moved = container == null ? 0 : Storage.insertCarried(ctx, container, stack -> true);
+		int moved = container == null ? 0 : Storage.insertCarried(ctx, container, stack -> !keep.test(stack));
 		if (moved > 0) {
 			Movement.hold(ctx, target);
 			WorldUtil.swing(ctx.villager);
 			WorldUtil.playSound(ctx.level, ctx.villager, SoundEvents.BUNDLE_INSERT, 0.8f, 1.0f);
 			ctx.status("villager.status.deposited", moved);
 		}
-		if (!ctx.record.carried.isEmpty()) {
+		boolean left = depositable(ctx, keep);
+		if (left) {
 			full.add(target);
 		}
 		target = null;
-		return ctx.record.carried.isEmpty() ? State.DONE : State.WORKING;
+		return left ? State.WORKING : State.DONE;
+	}
+
+	private static boolean depositable(WorkContext ctx, Predicate<ItemStack> keep) {
+		for (ItemStack stack : ctx.record.carried) {
+			if (!keep.test(stack)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void reset() {

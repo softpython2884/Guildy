@@ -41,10 +41,20 @@ public final class VillagerConfig implements Validatable {
 	public Routes routes = new Routes();
 
 	@Comment({
-			"Tache 'Mineur' : minage simule a sa zone (fanion), le butin depend de l'objectif de la zone et de la",
-			"profondeur (Y) du fanion. Sans zone : la mine la plus proche, sinon la pierre naturelle a decouvert la plus proche."
+			"Tache 'Mineur', mode 'Simule' : minage simule au fanion de sa zone, le butin depend de l'objectif de la zone et",
+			"de la profondeur (Y) du fanion. Sans zone : la mine la plus proche, sinon la pierre naturelle a decouvert la plus proche."
 	})
 	public Miner miner = new Miner();
+
+	@Comment({
+			"Tache 'Mineur', mode 'Reel' (zones de mine) : le mineur creuse vraiment. Depuis le fanion, un escalier en colimacon",
+			"(1 bloc de large, 3 de haut) descend jusqu'a la profondeur cible, puis il creuse des galeries : une galerie",
+			"principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : des salles de carriere), toujours dans",
+			"le carre de la zone. Il ne casse que des blocs naturels (listes ci-dessous) : jamais un bloc pose par un joueur, un",
+			"bloc a donnees (coffre...), un bloc d'une autre guilde, ni un bloc naturel qui porte un bloc non naturel. Il colmate",
+			"l'eau et la lave avec un bloc de son sac (sinon il abandonne la galerie) et comble les trous du sol."
+	})
+	public RealMining realMining = new RealMining();
 
 	@Comment("Tache 'Bucheron' : coupe reelle des arbres naturels de sa zone (sans zone : les plus proches de lui)")
 	public Lumberjack lumberjack = new Lumberjack();
@@ -189,6 +199,73 @@ public final class VillagerConfig implements Validatable {
 				default -> rollsPerTrip;
 			};
 		}
+	}
+
+	@Json5.Section
+	public static final class RealMining {
+		@Comment("Mode des nouvelles zones de mine (et des anciennes sans reglage) : true = reel, false = simule")
+		public boolean defaultReal = true;
+		@Comment("Temps (ticks, 20 = 1 seconde) pour casser un bloc ; le bonus de vitesse de travail s'applique (4 blocs/s max)")
+		public int ticksPerBlock = 20;
+		@Comment("Objectif 'Minerais' : profondeur cible par defaut (Y du sol des galeries ; -54 = couche des diamants)")
+		public int oresTargetY = -54;
+		@Comment("Objectif 'Tout venant' : profondeur cible par defaut (Y)")
+		public int mixedTargetY = 16;
+		@Comment("Objectif 'Pierre et variantes' : profondeur par defaut des galeries sous le fanion (blocs)")
+		public int stoneDepth = 12;
+		@Comment("Profondeur minimum des galeries sous le fanion (blocs) : jamais de tranchee a la surface")
+		public int minDepthBelowFanion = 4;
+		@Comment("Pas des boutons de profondeur (menu de la zone) et ecart entre deux niveaux de galeries (blocs)")
+		public int levelSpacing = 8;
+		@Comment("Niveau termine : ouvrir automatiquement le niveau suivant (8 blocs plus bas, sinon plus haut)")
+		public boolean autoNextLevel = true;
+		@Comment("Cote (blocs) du carre de l'escalier en colimacon (3 a 6) : une marche = 1 bloc plus bas")
+		public int stairSide = 4;
+		@Comment("Longueur maximum de la galerie principale (blocs ; coupee au bord de la zone)")
+		public int mainTunnelLength = 32;
+		@Comment("Ecart entre deux galeries laterales (blocs, 2 minimum)")
+		public int branchSpacing = 3;
+		@Comment("Longueur de chaque galerie laterale (blocs ; coupee au bord de la zone)")
+		public int branchLength = 12;
+		@Comment("Objectif 'Pierre' : largeur des salles de carriere (blocs, impair)")
+		public int roomWidth = 5;
+		@Comment("Objectif 'Pierre' : longueur des salles de carriere (blocs)")
+		public int roomLength = 5;
+		@Comment("Objectif 'Pierre' : hauteur des salles de carriere (blocs)")
+		public int roomHeight = 3;
+		@Comment("Objectif 'Pierre' : couloir entre deux salles (blocs)")
+		public int roomGap = 2;
+		@Comment("Objectifs 'Minerais' et 'Tout venant' : blocs de minerai suivis au plus par filon visible depuis la galerie")
+		public int maxVeinBlocks = 16;
+		@Comment({
+				"Blocs de remplissage (pierre taillee...) gardes dans le sac pour colmater et combler : ils restent dans le sac au",
+				"coffre de depot (sauf fin de mission). Objectif 'Minerais' : le reste des gravats est laisse sur place."
+		})
+		public int fillerReserve = 32;
+		@Comment("Une torche toutes les N marches / N blocs de galerie (0 = pas de torche)")
+		public int torchInterval = 8;
+		@Comment("Les torches utilisent le charbon du sac quand il y en a (1 charbon = 4 torches, + 1 baton s'il y en a)")
+		public boolean torchesUseCoal = true;
+		@Comment("Sans charbon dans le sac : torche gratuite (true) ou pas de torche (false)")
+		public boolean freeTorches = true;
+		@Comment("Trou dans le sol et aucun bloc de remplissage dans le sac : pierre taillee gratuite (true) ou galerie abandonnee")
+		public boolean freeFloorBlocks = true;
+		@Comment("Heure (ticks du jour, 0 a 24000) a partir de laquelle le mineur remonte avant la nuit (-1 = jamais)")
+		public int surfaceAtTime = 10500;
+		@Comment("Blocs naturels que le mineur peut casser (id ou #tag ; les blocs a donnees ne sont jamais casses)")
+		public List<String> naturalBlocks = new ArrayList<>(List.of(
+				"#minecraft:base_stone_overworld", "#minecraft:substrate_overworld", "#minecraft:sand", "minecraft:gravel",
+				"minecraft:clay", "minecraft:sandstone", "minecraft:red_sandstone", "minecraft:calcite", "minecraft:dripstone_block",
+				"minecraft:pointed_dripstone", "minecraft:smooth_basalt", "minecraft:magma_block", "minecraft:snow_block",
+				"minecraft:infested_stone", "minecraft:infested_deepslate"));
+		@Comment("Minerais (cassables, suivis en filon ; seuls gardes avec l'objectif 'Minerais')")
+		public List<String> oreBlocks = new ArrayList<>(List.of(
+				"#minecraft:ores", "#minecraft:gold_ores", "minecraft:raw_iron_block", "minecraft:raw_copper_block"));
+		@Comment("Objets du sac utilisables pour colmater l'eau et la lave et combler les trous (blocs pleins, jamais de sable)")
+		public List<String> fillerItems = new ArrayList<>(List.of(
+				"minecraft:cobblestone", "minecraft:cobbled_deepslate", "minecraft:dirt", "minecraft:stone", "minecraft:deepslate",
+				"minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:tuff", "minecraft:calcite",
+				"minecraft:netherrack"));
 	}
 
 	@Json5.Section
@@ -527,6 +604,10 @@ public final class VillagerConfig implements Validatable {
 		if (miner == null) {
 			miner = new Miner();
 		}
+		if (realMining == null) {
+			realMining = new RealMining();
+		}
+		validateRealMining(realMining);
 		if (lumberjack == null) {
 			lumberjack = new Lumberjack();
 		}
@@ -615,6 +696,44 @@ public final class VillagerConfig implements Validatable {
 		if (names.isEmpty()) {
 			names = new ArrayList<>(new VillagerConfig().names);
 		}
+	}
+
+	private static void validateRealMining(RealMining real) {
+		real.ticksPerBlock = clamp(real.ticksPerBlock, 5, 200);
+		real.oresTargetY = clamp(real.oresTargetY, -2048, 2048);
+		real.mixedTargetY = clamp(real.mixedTargetY, -2048, 2048);
+		real.stoneDepth = clamp(real.stoneDepth, 1, 256);
+		real.minDepthBelowFanion = clamp(real.minDepthBelowFanion, 3, 64);
+		real.levelSpacing = clamp(real.levelSpacing, 4, 64);
+		real.stairSide = clamp(real.stairSide, 3, 6);
+		real.mainTunnelLength = clamp(real.mainTunnelLength, 0, 128);
+		real.branchSpacing = clamp(real.branchSpacing, 2, 16);
+		real.branchLength = clamp(real.branchLength, 0, 64);
+		real.roomWidth = clamp(real.roomWidth, 1, 9);
+		real.roomLength = clamp(real.roomLength, 1, 16);
+		real.roomHeight = clamp(real.roomHeight, 2, 5);
+		real.roomGap = clamp(real.roomGap, 1, 16);
+		real.maxVeinBlocks = clamp(real.maxVeinBlocks, 0, 64);
+		real.fillerReserve = clamp(real.fillerReserve, 0, 256);
+		real.torchInterval = clamp(real.torchInterval, 0, 64);
+		real.surfaceAtTime = real.surfaceAtTime < 0 ? -1 : clamp(real.surfaceAtTime, 0, 24000);
+		real.naturalBlocks = cleanIds(real.naturalBlocks, new RealMining().naturalBlocks);
+		real.oreBlocks = cleanIds(real.oreBlocks, new RealMining().oreBlocks);
+		real.fillerItems = cleanIds(real.fillerItems, new RealMining().fillerItems);
+	}
+
+	/** Copy without blank entries (trimmed); the defaults when the list is missing. */
+	private static List<String> cleanIds(List<String> ids, List<String> defaults) {
+		if (ids == null) {
+			return defaults;
+		}
+		List<String> cleaned = new ArrayList<>();
+		for (String id : ids) {
+			if (id != null && !id.isBlank()) {
+				cleaned.add(id.trim());
+			}
+		}
+		return cleaned;
 	}
 
 	/** Copy without empty / invalid entries, sorted by maxY; the defaults when nothing usable is left. */

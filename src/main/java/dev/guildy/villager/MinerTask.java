@@ -18,10 +18,14 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Simulated mining (design decision 13): the villager walks to its mine (the fanion of its MINE zone; without zone the
- * nearest mine of the guild where a player is around, else the nearest exposed natural stone, else the heart), "mines"
- * there for the trip duration (swing + block-break particles/sounds on a nearby block), gets loot from the tables of
- * the mine's objective at the fanion's depth, then brings it back to a deposit chest. No block is ever broken.
+ * Miner. Its mine: the MINE zone it is assigned to; without zone the nearest mine of the guild where a player is around,
+ * else the nearest exposed natural stone, else the heart.
+ * <ul>
+ * <li>Mine in "real" mode: real excavation, see {@link RealMiner} (staircase and galleries really dug).</li>
+ * <li>Mine in "simulated" mode and automatic stone spots (design decision 13): the villager "mines" at the spot for the
+ * trip duration (swing + block-break particles/sounds on a nearby block), gets loot from the tables of the objective at
+ * the spot's depth, then brings it back to a deposit chest. No block is ever broken.</li>
+ * </ul>
  */
 final class MinerTask extends TaskHandler {
 	private enum Phase {
@@ -51,6 +55,8 @@ final class MinerTask extends TaskHandler {
 	private @Nullable Site autoSite;
 	private long autoSiteUntil;
 	private final DepositFlow deposit = new DepositFlow();
+	/** Real excavation of the current site's zone (real mines only). */
+	private @Nullable RealMiner real;
 
 	@Override
 	void tick(WorkContext ctx) {
@@ -72,13 +78,39 @@ final class MinerTask extends TaskHandler {
 		if (site == null || !site.key().equals(wanted.key())) {
 			elapsed = 0;
 			phase = Phase.GO_WORK;
+			stopReal(ctx);
 		}
 		site = wanted;
+		WorkZone zone = wanted.zone();
+		if (zone != null && zone.isRealMine()) {
+			if (real == null || real.zone != zone) {
+				stopReal(ctx);
+				real = new RealMiner(zone);
+			}
+			if (real.tick(ctx)) {
+				// Trip over (bag emptied): an automatic miner may pick a closer mine for the next one.
+				reevaluate = true;
+			}
+			return;
+		}
+		stopReal(ctx);
 		switch (phase) {
 			case GO_WORK -> goWork(ctx, wanted);
 			case MINING -> mine(ctx, wanted);
 			default -> {
 			}
+		}
+	}
+
+	@Override
+	void stop(WorkContext ctx) {
+		stopReal(ctx);
+	}
+
+	private void stopReal(WorkContext ctx) {
+		if (real != null) {
+			real.stop(ctx);
+			real = null;
 		}
 	}
 

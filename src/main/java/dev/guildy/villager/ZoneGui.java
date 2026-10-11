@@ -117,10 +117,16 @@ public final class ZoneGui {
 		BlockPos pos = zone.pos;
 		boolean outside = level != null && GuildManager.at(level, pos) != guild;
 		lore.add(Lang.get(outside ? "villager.gui.zone.lore.pos_outside" : "villager.gui.zone.lore.pos", pos.getX(), pos.getY(), pos.getZ()));
-		if (zone.type.usesRadius()) {
+		if (zone.type == ZoneType.MINE) {
+			lore.add(Lang.get("villager.gui.zone.lore.mode", Lang.raw(zone.mine().mode.langKey())));
+		}
+		if (zone.usesRadius()) {
 			lore.add(Lang.get("villager.gui.zone.lore.size", zone.sizeChunks(), zone.effectiveRadius(), zone.sizeChunks() * 16));
 		} else {
 			lore.add(Lang.get("villager.gui.zone.lore.depth", pos.getY()));
+		}
+		if (zone.isRealMine()) {
+			lore.add(Lang.get("villager.gui.zone.lore.target", Mines.shownTarget(level, zone)));
 		}
 		lore.add(Lang.get("villager.gui.zone.lore.villagers", Zones.assignedCount(guild, zone)));
 		lore.add(Lang.get(switch (Zones.fanionState(level, zone)) {
@@ -214,10 +220,12 @@ public final class ZoneGui {
 		}
 		ServerLevel level = GuildyServer.claimLevel();
 		VillagerConfig config = config();
-		SimpleGui gui = VillagerGui.chest(player, 4, Lang.get("villager.gui.zone.title", zone.name));
+		boolean mine = zone.type == ZoneType.MINE;
+		int rows = mine ? 5 : 4;
+		SimpleGui gui = VillagerGui.chest(player, rows, Lang.get("villager.gui.zone.title", zone.name));
 		gui.setSlot(4, zoneIcon(level, guild, zone, false));
 
-		if (zone.type.usesRadius()) {
+		if (zone.usesRadius()) {
 			gui.setSlot(10, GuiUtil.item(Items.CONCRETE.pick(DyeColor.RED), Lang.get("villager.gui.zone.radius.minus"),
 					GuiUtil.lines("villager.gui.zone.radius.lore")).setCallback((s, type, action, g) -> changeRadius(player, guild, zone, -1)));
 			gui.setSlot(11, GuiUtil.item(Items.MAP, Lang.get("villager.gui.zone.radius", zone.effectiveRadius(), zone.sizeChunks()),
@@ -315,10 +323,91 @@ public final class ZoneGui {
 							},
 							() -> openZone(player, guild, zone.id));
 				}));
-		gui.setSlot(27, GuiUtil.back(() -> openZones(player, guild)));
-		gui.setSlot(35, GuiUtil.close());
+		if (mine) {
+			mineControls(gui, player, guild, zone, level);
+		}
+		gui.setSlot(rows * 9 - 9, GuiUtil.back(() -> openZones(player, guild)));
+		gui.setSlot(rows * 9 - 1, GuiUtil.close());
 		GuiUtil.fill(gui);
 		gui.open();
+	}
+
+	/** Mines (row 4): mode, then for real mines the target depth −/+ and the excavation (progress, reset). */
+	private static void mineControls(SimpleGui gui, ServerPlayer player, Guild guild, WorkZone zone, @Nullable ServerLevel level) {
+		MineState state = zone.mine();
+		boolean real = state.mode == MineMode.REAL;
+		List<Component> modeLore = new ArrayList<>(GuiUtil.lines(real ? "villager.gui.mine.mode.real.lore" : "villager.gui.mine.mode.simulated.lore"));
+		modeLore.add(Component.empty());
+		modeLore.add(Lang.get("villager.gui.mine.mode.click"));
+		gui.setSlot(28, GuiUtil.item(real ? Items.DIAMOND_PICKAXE : Items.STONE_PICKAXE, Lang.get("villager.gui.mine.mode", Lang.raw(state.mode.langKey())),
+				modeLore).setCallback((s, type, action, g) -> {
+			if (!VillagerGui.checkPermission(player, guild) || !stillZone(player, guild, zone)) {
+				return;
+			}
+			MineMode mode = zone.mine().mode.next();
+			Zones.setMineMode(guild, zone, mode);
+			Msg.send(player, "villager.mine.mode_set", zone.name, Lang.raw(mode.langKey()));
+			GuiUtil.clickSound(player);
+			openZone(player, guild, zone.id);
+		}));
+		if (!real) {
+			return;
+		}
+		VillagerConfig.RealMining settings = config().realMining;
+		int step = settings.levelSpacing;
+		gui.setSlot(30, GuiUtil.item(Items.CONCRETE.pick(DyeColor.RED), Lang.get("villager.gui.mine.deeper", step),
+				GuiUtil.lines("villager.gui.mine.depth.lore")).setCallback((s, type, action, g) -> changeTarget(player, guild, zone, -step)));
+		int target = Mines.shownTarget(level, zone);
+		List<Component> targetLore = new ArrayList<>(level == null || state.targetY == null ? GuiUtil.lines("villager.gui.mine.target.default")
+				: GuiUtil.lines("villager.gui.mine.target.custom",
+				MineRules.clampLevel(Integer.MIN_VALUE / 2, zone.pos.getY(), level.getMinY(), settings.minDepthBelowFanion),
+				MineRules.clampLevel(Integer.MAX_VALUE / 2, zone.pos.getY(), level.getMinY(), settings.minDepthBelowFanion)));
+		if (settings.autoNextLevel) {
+			targetLore.addAll(GuiUtil.lines("villager.gui.mine.target.next", step));
+		}
+		gui.setSlot(31, GuiUtil.item(Items.DEEPSLATE, Lang.get("villager.gui.mine.target", target), targetLore));
+		gui.setSlot(32, GuiUtil.item(Items.CONCRETE.pick(DyeColor.LIME), Lang.get("villager.gui.mine.higher", step),
+				GuiUtil.lines("villager.gui.mine.depth.lore")).setCallback((s, type, action, g) -> changeTarget(player, guild, zone, step)));
+		List<Component> info = new ArrayList<>(Mines.describe(level, zone));
+		info.add(Component.empty());
+		info.addAll(GuiUtil.lines("villager.gui.mine.reset.click"));
+		gui.setSlot(34, GuiUtil.item(Items.IRON_PICKAXE, Lang.get("villager.gui.mine.info"), info).setCallback((s, type, action, g) -> {
+			if (!VillagerGui.checkPermission(player, guild) || !stillZone(player, guild, zone)) {
+				return;
+			}
+			GuiUtil.confirm(player, Lang.get("villager.gui.mine.reset.confirm", zone.name), GuiUtil.lines("villager.gui.mine.reset.lore"),
+					() -> {
+						if (VillagerGui.checkPermission(player, guild) && guild.villagers.zones.contains(zone)) {
+							Zones.resetMine(guild, zone);
+							Msg.guild(guild, "villager.mine.reset", player.getName().getString(), zone.name);
+						}
+						openZone(player, guild, zone.id);
+					},
+					() -> openZone(player, guild, zone.id));
+		}));
+	}
+
+	/** Target depth of a real mine ± one level, kept in the allowed range. */
+	private static void changeTarget(ServerPlayer player, Guild guild, WorkZone zone, int delta) {
+		if (!VillagerGui.checkPermission(player, guild) || !stillZone(player, guild, zone)) {
+			return;
+		}
+		ServerLevel level = GuildyServer.claimLevel();
+		if (level == null) {
+			GuiUtil.errorSound(player);
+			return;
+		}
+		VillagerConfig.RealMining settings = config().realMining;
+		int current = Mines.targetLevel(level, zone, settings);
+		int wanted = MineRules.clampLevel(current + delta, zone.pos.getY(), level.getMinY(), settings.minDepthBelowFanion);
+		if (wanted == current) {
+			GuiUtil.errorSound(player);
+			return;
+		}
+		Zones.setMineTarget(guild, zone, wanted);
+		Msg.send(player, "villager.mine.target_set", zone.name, wanted);
+		GuiUtil.clickSound(player);
+		openZone(player, guild, zone.id);
 	}
 
 	private static void changeRadius(ServerPlayer player, Guild guild, WorkZone zone, int delta) {

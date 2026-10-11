@@ -99,12 +99,15 @@ final class Zones {
 		return Lang.raw("villager.assign.auto");
 	}
 
-	/** Nearest zone of the type whose fanion is in an entity-ticking chunk (automatic miners), or null. */
+	/**
+	 * Nearest zone of the type whose fanion is in an entity-ticking chunk (automatic miners), or null. Real mines with
+	 * nothing left to dig are skipped.
+	 */
 	static @Nullable WorkZone nearestActive(ServerLevel level, Guild guild, ZoneType type, BlockPos from) {
 		WorkZone best = null;
 		double bestDist = Double.MAX_VALUE;
 		for (WorkZone zone : guild.villagers.zones) {
-			if (zone.type != type || !level.isPositionEntityTicking(zone.pos)) {
+			if (zone.type != type || !level.isPositionEntityTicking(zone.pos) || (zone.isRealMine() && zone.mine().exhausted)) {
 				continue;
 			}
 			double dist = zone.pos.distSqr(from);
@@ -203,14 +206,23 @@ final class Zones {
 		int radius = Math.min(config().zones.defaultRadiusChunks, config().zones.maxRadiusChunks);
 		WorkZone zone = new WorkZone(data.nextZoneId++, type, name, pos.immutable(), radius, System.currentTimeMillis());
 		zone.fanion = fanion;
+		if (type == ZoneType.MINE) {
+			zone.mine = new MineState(defaultMineMode());
+		}
 		data.zones.add(zone);
 		GuildManager.markDirty();
 		return zone;
 	}
 
+	/** Mode of a new mine (and of mines saved before the modes existed). */
+	static MineMode defaultMineMode() {
+		return config().realMining.defaultReal ? MineMode.REAL : MineMode.SIMULATED;
+	}
+
 	/** Deletes the zone: its fanion disappears (no drop), its villagers go back to the automatic mode. */
 	static void deleteZone(@Nullable ServerLevel level, Guild guild, WorkZone zone) {
 		guild.villagers.zones.remove(zone);
+		Mines.forgetZone(guild, zone);
 		if (zone.fanion) {
 			removeFanion(level, guild, zone.pos, zone.name);
 		}
@@ -230,6 +242,8 @@ final class Zones {
 		}
 		zone.pos = pos.immutable();
 		zone.fanion = true;
+		// A real mine plans a new staircase from the new fanion (its plan follows the fanion position).
+		Mines.forgetZone(guild, zone);
 		restart(guild, zone);
 		GuildManager.markDirty();
 	}
@@ -250,6 +264,40 @@ final class Zones {
 
 	static void setObjective(Guild guild, WorkZone zone, ZoneObjective objective) {
 		zone.objective = ZoneObjective.validFor(zone.type, objective);
+		if (zone.type == ZoneType.MINE) {
+			// Other galleries (branches / quarry rooms) and maybe another default depth.
+			zone.mine().resetLevel();
+		}
+		restart(guild, zone);
+		GuildManager.markDirty();
+	}
+
+	// ================================================================ mines
+
+	static void setMineMode(Guild guild, WorkZone zone, MineMode mode) {
+		zone.mine().mode = mode;
+		Mines.forgetZone(guild, zone);
+		restart(guild, zone);
+		GuildManager.markDirty();
+	}
+
+	/** New gallery depth: the level is chosen again (the staircase goes on or stops higher). */
+	static void setMineTarget(Guild guild, WorkZone zone, int targetY) {
+		MineState state = zone.mine();
+		state.targetY = targetY;
+		state.resetLevel();
+		restart(guild, zone);
+		GuildManager.markDirty();
+	}
+
+	/** "Réinitialiser l'exploitation": a new staircase is chosen, the galleries start over (dug tunnels stay). */
+	static void resetMine(Guild guild, WorkZone zone) {
+		MineState state = zone.mine();
+		state.resetPlan();
+		state.rejected.clear();
+		state.issue("", null);
+		state.epoch++;
+		Mines.forgetZone(guild, zone);
 		restart(guild, zone);
 		GuildManager.markDirty();
 	}
