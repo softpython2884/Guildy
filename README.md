@@ -4,6 +4,9 @@ Mod **Fabric 100 % serveur** pour Minecraft **26.3** : survie coopérative en gu
 Les joueurs se connectent avec un **client vanilla**, sans mod ni resource pack : tout passe par des menus
 (inventaires), des titres, la barre d'action, des bossbars et du chat cliquable.
 
+Guide du joueur (HTML) : [`docs/guide-standalone.html`](docs/guide-standalone.html) — à ouvrir dans un navigateur
+ou à héberger pour les joueurs.
+
 > Fonder une base avec un drapeau → survivre aux hordes de la nuit → gagner de l'or et du butin →
 > agrandir le territoire avec des drapeaux → recruter des villageois et leur confier des tâches →
 > quêtes et boutique → se renforcer → des nuits toujours plus dures.

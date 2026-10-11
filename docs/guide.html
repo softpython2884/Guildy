@@ -1,0 +1,676 @@
+<title>Guide de Guildy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: sticky table of contents rail beside one reading column; light = day, dark = night (the horde comes at night). */
+:root {
+	--bg: #edf0f5;
+	--surface: #ffffff;
+	--sunk: #e2e7ef;
+	--fg: #172033;
+	--muted: #55607a;
+	--line: #cdd4e1;
+	--gold: #8f6300;
+	--gold-soft: #f5e6bd;
+	--grass: #2d7a30;
+	--grass-soft: #dbeed8;
+	--blood: #b0261d;
+	--blood-soft: #f7dbd7;
+	--void: #5a3ea3;
+	--void-soft: #e7e0f7;
+	--slot: #8b8b8b;
+	--slot-hi: #f4f4f4;
+	--slot-lo: #373737;
+	--font-display: "Pixelify Sans", "Atkinson Hyperlegible", system-ui, sans-serif;
+	--font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+	--font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+	--radius: 6px;
+	--b-log: repeating-linear-gradient(90deg, #6b5032 0 3px, #7d5f3b 3px 7px, #5c4329 7px 9px);
+	--b-planks: repeating-linear-gradient(180deg, #b48a52 0 9px, #8f6a3a 9px 11px);
+	--b-books: linear-gradient(180deg, #b48a52 0 18%, transparent 18% 82%, #b48a52 82%), repeating-linear-gradient(90deg, #8a2a22 0 5px, #2d5a8a 5px 10px, #6b8a2d 10px 14px, #c9a24a 14px 18px);
+	--b-gold: linear-gradient(135deg, #fff2a0 0 20%, #f2cf3a 20% 70%, #c99a14 70%);
+	--b-barrel: linear-gradient(180deg, #5b3a1c 0 14%, #8b5a2b 14% 46%, #5b3a1c 46% 54%, #8b5a2b 54% 86%, #5b3a1c 86%);
+	--b-stonebricks: linear-gradient(180deg, #8a8a8a 0 46%, #5f5f5f 46% 54%, #8a8a8a 54%), linear-gradient(90deg, transparent 0 46%, #5f5f5f 46% 54%, transparent 54%);
+	--b-hay: repeating-linear-gradient(90deg, #c9a227 0 4px, #a8851c 4px 6px), linear-gradient(180deg, #8a6a12 0 12%, transparent 12% 88%, #8a6a12 88%);
+	--b-craft: linear-gradient(180deg, #a06c34 0 30%, #6e4a24 30% 36%, #b47c40 36%);
+	--b-heart: linear-gradient(180deg, #b0261d 0 70%, #7a1712 70%);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #0d1220;
+		--surface: #141b2f;
+		--sunk: #0a0e19;
+		--fg: #e5e9f3;
+		--muted: #9aa5bf;
+		--line: #26304d;
+		--gold: #e9b949;
+		--gold-soft: #33290f;
+		--grass: #7cc571;
+		--grass-soft: #16301a;
+		--blood: #ff8c80;
+		--blood-soft: #3a1613;
+		--void: #b9a2ff;
+		--void-soft: #241a40;
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #0d1220;
+	--surface: #141b2f;
+	--sunk: #0a0e19;
+	--fg: #e5e9f3;
+	--muted: #9aa5bf;
+	--line: #26304d;
+	--gold: #e9b949;
+	--gold-soft: #33290f;
+	--grass: #7cc571;
+	--grass-soft: #16301a;
+	--blood: #ff8c80;
+	--blood-soft: #3a1613;
+	--void: #b9a2ff;
+	--void-soft: #241a40;
+	color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font-body);
+	font-size: 1.0625rem;
+	line-height: 1.6;
+}
+.page { padding-inline: 16px; padding-block: 0 4rem; max-width: 1180px; margin: 0 auto; }
+
+a { color: var(--gold); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.2; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.85rem; margin: 0 0 .6rem; letter-spacing: .01em; }
+h3 { font-size: 1.15rem; margin: 1.6rem 0 .5rem; }
+p { margin: 0 0 .9rem; }
+.lede { color: var(--muted); max-width: 62ch; }
+.eyebrow { font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2rem; align-items: center; padding-block: 3rem 2rem; border-bottom: 1px solid var(--line); }
+.hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(3rem, 9vw, 5.5rem); margin: .2rem 0 .4rem; letter-spacing: .02em; line-height: 1; }
+.hero p { max-width: 58ch; font-size: 1.15rem; }
+.cta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.4rem; }
+.btn { display: inline-block; padding: .65rem 1.1rem; border-radius: var(--radius); text-decoration: none; font-weight: 700; border: 2px solid var(--gold); color: var(--gold); }
+.btn.primary { background: var(--gold); color: var(--bg); }
+.banner-art { width: 120px; height: 190px; position: relative; justify-self: end; }
+.banner-art .pole { position: absolute; left: 50%; top: 0; width: 8px; height: 100%; margin-left: -4px; background: linear-gradient(90deg, #5b3e22, #8a6236); border-radius: 2px; }
+.banner-art .bar { position: absolute; left: 6px; right: 6px; top: 10px; height: 8px; background: #5b3e22; border-radius: 2px; }
+.banner-art .cloth { position: absolute; left: 14px; right: 14px; top: 18px; height: 150px; background: var(--blood); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); }
+.banner-art .cloth::before { content: ""; position: absolute; inset: 22% 22% 34%; background: var(--gold); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+
+.loop { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: 1.4rem; font-size: .92rem; }
+.loop span { padding: .25rem .6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.loop i { font-style: normal; color: var(--muted); }
+
+/* ---------- layout ---------- */
+.layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 2.5rem; padding-top: 2rem; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 1rem); align-self: start; max-height: calc(100vh - 2rem); overflow-y: auto; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .1rem; }
+.toc a { display: block; padding: .35rem .7rem; color: var(--muted); text-decoration: none; border-left: 3px solid transparent; font-size: .95rem; }
+.toc a:hover { color: var(--fg); }
+.toc a.active { color: var(--fg); border-left-color: var(--gold); background: var(--surface); }
+main { min-width: 0; display: flex; flex-direction: column; gap: 3.2rem; }
+section { scroll-margin-top: 1.2rem; min-width: 0; }
+section > p, section > ul, section > ol { max-width: 68ch; }
+
+/* ---------- steps ---------- */
+.steps { list-style: none; margin: 1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .8rem; max-width: none; counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: .9rem; padding: 1rem 1.1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.steps li::before { counter-increment: step; content: counter(step); font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--gold); line-height: 1.1; }
+.steps h3 { margin: 0 0 .25rem; font-size: 1.08rem; }
+.steps p { margin: 0 0 .4rem; }
+.steps p:last-child { margin-bottom: 0; }
+
+/* ---------- commands ---------- */
+.cmd { font-family: var(--font-mono); font-size: .86em; background: var(--sunk); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: .08em .4em; cursor: copy; white-space: nowrap; }
+button.cmd { font-size: .86em; line-height: inherit; }
+.cmd:hover { border-color: var(--gold); }
+.hint { font-size: .85rem; color: var(--muted); }
+
+/* ---------- callouts ---------- */
+.note { border-left: 4px solid var(--gold); background: var(--gold-soft); padding: .8rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; max-width: 68ch; }
+.note.danger { border-left-color: var(--blood); background: var(--blood-soft); }
+.note.good { border-left-color: var(--grass); background: var(--grass-soft); }
+.note p:last-child { margin-bottom: 0; }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+th, td { text-align: left; padding: .55rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); background: var(--sunk); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; font-size: .75rem; font-weight: 700; padding: .1rem .5rem; border-radius: 999px; white-space: nowrap; }
+.pill.gold { background: var(--gold-soft); color: var(--gold); }
+.pill.red { background: var(--blood-soft); color: var(--blood); }
+.pill.green { background: var(--grass-soft); color: var(--grass); }
+.pill.void { background: var(--void-soft); color: var(--void); }
+
+/* ---------- structures (inventory slots) ---------- */
+.builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.build { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; display: flex; flex-direction: column; gap: .7rem; min-width: 0; }
+.build h3 { margin: 0; }
+.build .meta { display: flex; flex-wrap: wrap; gap: .4rem; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 64px); gap: 4px; padding: 6px; background: #c6c6c6; border: 3px solid; border-color: var(--slot-lo) var(--slot-hi) var(--slot-hi) var(--slot-lo); width: max-content; }
+.slot { width: 64px; height: 64px; background: var(--slot); border: 3px solid; border-color: var(--slot-lo) var(--slot-hi) var(--slot-hi) var(--slot-lo); padding: 7px; position: relative; }
+.slot b { display: block; width: 100%; height: 100%; image-rendering: pixelated; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.slot .sign { position: absolute; right: 2px; bottom: 2px; width: 14px; height: 10px; background: #c9a36a; border: 1px solid #6e5232; }
+.legend { list-style: none; margin: 0; padding: 0; font-size: .9rem; display: flex; flex-direction: column; gap: .15rem; }
+.legend li { display: flex; gap: .5rem; align-items: center; }
+.legend b { width: 14px; height: 14px; display: inline-block; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.3); }
+.b-log { background: var(--b-log); }
+.b-planks { background: var(--b-planks); }
+.b-books { background: var(--b-books); }
+.b-gold { background: var(--b-gold); }
+.b-barrel { background: var(--b-barrel); }
+.b-stonebricks { background: var(--b-stonebricks); }
+.b-hay { background: var(--b-hay); }
+.b-craft { background: var(--b-craft); }
+
+/* ---------- cards ---------- */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .9rem; margin: 1rem 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1rem; min-width: 0; }
+.card h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.card p { margin: 0; font-size: .95rem; color: var(--muted); }
+
+/* ---------- faq / details ---------- */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .2rem 1rem; margin: .6rem 0; max-width: 72ch; }
+summary { cursor: pointer; font-weight: 700; padding: .6rem 0; }
+details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: .6rem; }
+details > :last-child { margin-bottom: .8rem; }
+
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 1.2rem); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: .45rem .9rem; border-radius: 999px; font-size: .9rem; font-weight: 700; }
+
+footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+
+@media (max-width: 860px) {
+	.layout { grid-template-columns: minmax(0, 1fr); gap: 1.2rem; padding-top: 1rem; }
+	.toc { position: sticky; top: env(safe-area-inset-top, 0px); max-height: none; overflow-x: auto; background: var(--bg); z-index: 2; padding-block: .5rem; border-bottom: 1px solid var(--line); }
+	.toc ol { flex-direction: row; gap: .3rem; width: max-content; }
+	.toc a { border-left: 0; border-bottom: 3px solid transparent; padding: .3rem .6rem; white-space: nowrap; }
+	.toc a.active { border-bottom-color: var(--gold); background: transparent; }
+	.hero { grid-template-columns: minmax(0, 1fr); padding-block: 2rem 1.5rem; }
+	.banner-art { display: none; }
+	section { scroll-margin-top: 3.6rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+	html { scroll-behavior: smooth; }
+}
+</style>
+
+<div class="page">
+	<header class="hero">
+		<div>
+			<div class="eyebrow">Mod du serveur · Minecraft 26.3 · aucun mod à installer</div>
+			<h1>Guildy</h1>
+			<p>Fondez une guilde, plantez votre drapeau, survivez aux hordes qui attaquent votre base chaque nuit, puis agrandissez-la avec des quêtes, une boutique, des villageois qui travaillent pour vous et un arbre d'évolution.</p>
+			<p class="hint">Tout se fait avec <button class="cmd" type="button">/guild</button> (ou <button class="cmd" type="button">/gld</button>) : un menu s'ouvre, pas besoin de retenir les commandes.</p>
+			<div class="loop" aria-label="Boucle de jeu">
+				<span>Fonder la base</span><i>→</i><span>Survivre à la nuit</span><i>→</i><span>Or et butin</span><i>→</i><span>Agrandir</span><i>→</i><span>Recruter des villageois</span><i>→</i><span>Évoluer</span><i>↺ nuits plus dures</i>
+			</div>
+			<div class="cta">
+				<a class="btn primary" href="#demarrage">Démarrer en 9 étapes</a>
+				<a class="btn" href="#commandes">Toutes les commandes</a>
+			</div>
+		</div>
+		<div class="banner-art" aria-hidden="true"><div class="pole"></div><div class="bar"></div><div class="cloth"></div></div>
+	</header>
+
+	<div class="layout">
+		<nav class="toc" aria-label="Sommaire">
+			<ol>
+				<li><a href="#demarrage">Démarrage rapide</a></li>
+				<li><a href="#guilde">La guilde</a></li>
+				<li><a href="#territoire">Drapeau et territoire</a></li>
+				<li><a href="#nuits">Les hordes de la nuit</a></li>
+				<li><a href="#constructions">Constructions</a></li>
+				<li><a href="#quetes">Quêtes</a></li>
+				<li><a href="#boutique">Or et boutique</a></li>
+				<li><a href="#villageois">Villageois</a></li>
+				<li><a href="#evolution">Arbre d'évolution</a></li>
+				<li><a href="#niveaux">Niveaux de guilde</a></li>
+				<li><a href="#commandes">Commandes</a></li>
+				<li><a href="#faq">Problèmes fréquents</a></li>
+				<li><a href="#admin">Pour les admins</a></li>
+			</ol>
+		</nav>
+
+		<main>
+			<!-- ================================================================ QUICK START -->
+			<section id="demarrage">
+				<div class="eyebrow">Par où commencer</div>
+				<h2>Démarrage rapide</h2>
+				<p class="lede">Suivez ces étapes dans l'ordre pour votre première soirée. Seul, vous êtes une guilde d'une personne : tout marche pareil.</p>
+				<ol class="steps">
+					<li><div><h3>Créez votre guilde</h3>
+						<p>Tapez <button class="cmd" type="button">/guild create MaGuilde</button>, ou ouvrez <button class="cmd" type="button">/guild</button> et cliquez sur « Créer une guilde ». Vous recevez le <strong>drapeau fondateur</strong>, une bannière qui brille.</p>
+						<p>Pour faire venir des amis : <button class="cmd" type="button">/guild invite Pseudo</button>. Ils cliquent sur [Rejoindre] dans le chat.</p></div></li>
+					<li><div><h3>Tissez votre drapeau (facultatif mais conseillé)</h3>
+						<p>Passez le drapeau fondateur dans un <strong>métier à tisser</strong> avec vos colorants pour y ajouter des motifs : il garde son pouvoir. Ce dessin devient celui de toute la guilde.</p></div></li>
+					<li><div><h3>Choisissez où fonder la base, puis plantez le drapeau</h3>
+						<p>Clic droit sur le sol avec le drapeau fondateur. Il devient le <strong>cœur</strong> de votre base et protège un carré de <strong>3 × 3 chunks</strong> autour (48 × 48 blocs).</p>
+						<p class="hint">Il faut être dans l'Overworld, à au moins 4 chunks du spawn et à plus de 3 chunks du territoire d'une autre guilde. Un terrain dégagé autour du cœur facilite la défense.</p></div></li>
+					<li><div><h3>Préparez la première nuit</h3>
+						<p>À la tombée de la nuit, si un membre est à moins de <strong>96 blocs du cœur</strong>, une horde sort des frontières du territoire et marche vers le cœur. Murets, lumière, fossés et une épée suffisent pour les premières nuits.</p>
+						<p>Si le cœur tient jusqu'à l'aube (ou si vous tuez toute la horde), c'est gagné : <strong>or au trésor, XP de guilde et objets</strong>.</p></div></li>
+					<li><div><h3>Construisez le tableau de quêtes (gratuit)</h3>
+						<p><button class="cmd" type="button">/guild build</button> → Tableau de quêtes → Recevoir le plan. Construisez le petit mur de 3 × 2 blocs <a href="#constructions">montré plus bas</a>, puis faites clic droit dessus avec le plan, sur sa face avant. Six panneaux apparaissent, un par quête.</p></div></li>
+					<li><div><h3>Faites rentrer de l'or</h3>
+						<p>L'or (lingots) vient des hordes, des quêtes et de la boutique. Déposez-le au <strong>trésor de guilde</strong> (menu Trésor ou <button class="cmd" type="button">/guild deposit</button>) : il sert à agrandir le territoire, débloquer les constructions et évoluer.</p></div></li>
+					<li><div><h3>Agrandissez le territoire</h3>
+						<p>Achetez un <strong>drapeau d'extension</strong> avec le trésor (menu Territoire ou <button class="cmd" type="button">/guild flag buy</button>) et plantez-le dans un chunk qui touche votre territoire par un côté.</p></div></li>
+					<li><div><h3>Recrutez des villageois (niveau 2)</h3>
+						<p>Débloquez et construisez le <strong>bureau d'accueil</strong>, posez un lit libre dans le territoire : un candidat se présente certains matins. Acceptez-le, puis donnez-lui une tâche (rangement, minage, bûcheron, fermier, garde, expéditions).</p></div></li>
+					<li><div><h3>Faites évoluer la guilde</h3>
+						<p><button class="cmd" type="button">/guild upgrades</button> ouvre l'arbre d'évolution : cœur plus solide, plus de chunks, plus de villageois, meilleures récompenses…</p></div></li>
+				</ol>
+				<div class="note"><p><strong>Astuce :</strong> chaque fois que vous êtes perdu, tapez <button class="cmd" type="button">/guild</button>. Le menu principal mène à tout : membres, territoire, trésor, bannière, constructions, quêtes, villageois, hordes et évolutions.</p></div>
+			</section>
+
+			<!-- ================================================================ GUILD -->
+			<section id="guilde">
+				<div class="eyebrow">Les bases</div>
+				<h2>La guilde</h2>
+				<p>Une guilde a un nom, un drapeau, un trésor commun, un niveau et un territoire. Chaque joueur ne peut être que dans une seule guilde. Le PvP n'existe pas entre guildes : le danger vient des monstres.</p>
+				<h3>Rôles</h3>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Rôle</th><th>Ce qu'il peut faire</th></tr></thead>
+					<tbody>
+						<tr><td><span class="pill gold">Chef</span></td><td>Tout, plus promouvoir et rétrograder, transférer la direction, dissoudre la guilde, abandonner le territoire.</td></tr>
+						<tr><td><span class="pill void">Officier</span></td><td>Inviter et exclure, claims et drapeaux, dépenser le trésor, gérer les villageois, les constructions, la bannière, le point de retour et les quêtes.</td></tr>
+						<tr><td><span class="pill green">Membre</span></td><td>Construire et interagir dans le territoire, déposer de l'or, faire les quêtes, utiliser la boutique.</td></tr>
+					</tbody>
+				</table></div>
+				<p class="hint">Le serveur peut modifier ces droits (fichier de configuration).</p>
+				<h3>Trésor</h3>
+				<p>1 or = 1 lingot d'or (un bloc d'or vaut 9). Tout le monde peut déposer : « Déposer tout mon or » prend aussi les pépites par paquets de 9. Seuls les officiers peuvent retirer.</p>
+				<h3>Point de retour</h3>
+				<p><button class="cmd" type="button">/guild sethome</button> dans votre territoire, puis <button class="cmd" type="button">/guild home</button> : 3 secondes sans bouger, puis téléportation (une fois par minute).</p>
+			</section>
+
+			<!-- ================================================================ TERRITORY -->
+			<section id="territoire">
+				<div class="eyebrow">Votre base</div>
+				<h2>Drapeau et territoire</h2>
+				<p>Le territoire se compte en <strong>chunks</strong> (carrés de 16 × 16 blocs, sur toute la hauteur). Dedans, seuls les membres peuvent casser, poser et utiliser coffres, portes, animaux ou villageois. Les explosions, le feu, les pistons et les liquides venant de l'extérieur n'abîment rien. Les monstres hostiles peuvent être attaqués par tout le monde.</p>
+				<div class="cards">
+					<div class="card"><h3>Le cœur</h3><p>Le drapeau fondateur planté. Indestructible, il porte le nom de la guilde. Les hordes cherchent à l'atteindre.</p></div>
+					<div class="card"><h3>Drapeau d'extension</h3><p>8 or le premier, puis +4 or à chaque achat (64 max). Planté dans un chunk voisin (par un côté, pas en diagonale), il l'ajoute au territoire.</p></div>
+					<div class="card"><h3>Limite de chunks</h3><p>12 au niveau 1, puis +6 par niveau de guilde (et plus avec l'arbre d'évolution).</p></div>
+					<div class="card"><h3>Sur les cartes</h3><p>Tenez une carte qui couvre une base : le cœur y apparaît comme une bannière, avec le nom de la guilde.</p></div>
+				</div>
+				<h3>Le drapeau se crée au métier à tisser</h3>
+				<p>Tissez le drapeau fondateur lui-même, ou n'importe quelle bannière, avec de vrais colorants. Ensuite, tenez la bannière en main et cliquez sur « Adopter la bannière en main » dans le menu Bannière (ou <button class="cmd" type="button">/guild banner adopt</button>). Le cœur est repeint, et les prochains drapeaux, les bannières décoratives et les icônes des menus suivent le nouveau dessin.</p>
+				<h3>Commandes utiles</h3>
+				<ul>
+					<li><button class="cmd" type="button">/guild show</button> : affiche les limites du territoire en particules pendant 15 secondes.</li>
+					<li><button class="cmd" type="button">/guild claim</button> : utilise un drapeau d'extension de votre inventaire sur le chunk où vous êtes.</li>
+					<li><button class="cmd" type="button">/guild unclaim</button> : rend le chunk où vous êtes et vous redonne un drapeau. Impossible pour le chunk du cœur, ou si le territoire serait coupé en deux.</li>
+					<li><button class="cmd" type="button">/guild flag</button> : redonne le drapeau fondateur tant que la base n'est pas fondée.</li>
+				</ul>
+				<div class="note"><p><strong>Déménager :</strong> le chef peut utiliser « Abandonner le territoire » dans le menu Territoire. Tous les chunks sont libérés et le drapeau fondateur est rendu. Impossible pendant une horde.</p></div>
+			</section>
+
+			<!-- ================================================================ NIGHTS -->
+			<section id="nuits">
+				<div class="eyebrow">Le cœur du jeu</div>
+				<h2>Les hordes de la nuit</h2>
+				<p>Chaque nuit (heure 13000 du jeu), chaque base dont au moins un membre est à moins de <strong>96 blocs du cœur</strong> subit une horde. Les monstres arrivent par groupes depuis les bords du territoire pendant environ 4 minutes, puis marchent vers le cœur. Si personne n'est là, la horde peut encore se déclencher quand un membre arrive, jusqu'au milieu de la nuit. Une base vide n'est jamais attaquée.</p>
+				<div class="cards">
+					<div class="card"><h3>Victoire</h3><p>Le cœur tient jusqu'à l'aube, ou toute la horde est tuée. Gains : or au trésor, XP de guilde, objets pour les membres présents, selon la part de monstres tués.</p></div>
+					<div class="card"><h3>Défaite</h3><p>Les monstres au contact du cœur l'abîment chaque seconde. À 0 : la horde repart, la guilde perd 25 % du trésor et 2 paliers de difficulté, et chaque villageois a 20 % de chance de partir.</p></div>
+					<div class="card"><h3>Ce qui n'est jamais perdu</h3><p>Votre équipement et vos objets. Une défaite ne touche ni vos inventaires ni vos coffres.</p></div>
+				</div>
+				<h3>Le cœur</h3>
+				<p>Il a <strong>150 points</strong> d'intégrité, plus 30 par niveau de guilde, visibles dans la barre rouge en haut de l'écran. Chaque seconde, un monstre à moins de 3 blocs lui retire 1 point, une élite 3, un boss 8. Une deuxième barre montre la progression de la horde.</p>
+				<h3>Les thèmes</h3>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Thème</th><th>Monstres</th><th class="num">À partir du palier</th></tr></thead>
+					<tbody>
+						<tr><td>Mort-vivants</td><td>zombies, squelettes, zombies villageois, momies, vagabonds</td><td class="num">0</td></tr>
+						<tr><td>Arachnides</td><td>araignées, araignées venimeuses, squelettes</td><td class="num">1</td></tr>
+						<tr><td>Illageois</td><td>pillards, vindicateurs, sorcières, évocateurs</td><td class="num">3</td></tr>
+						<tr><td>Créatures du Nether</td><td>blazes, squelettes wither, cubes de magma, brutes piglins, hoglins, parfois un ghast</td><td class="num">5</td></tr>
+						<tr><td>Créatures de l'End</td><td>endermen (agressifs), endermites, phantoms</td><td class="num">7</td></tr>
+						<tr><td>Nuit du boss</td><td>un boss et son escorte</td><td class="num">8</td></tr>
+						<tr><td>Horde d'élite mixte</td><td>un peu de tout, beaucoup d'élites</td><td class="num">10</td></tr>
+					</tbody>
+				</table></div>
+				<p>Les <strong>élites</strong> brillent et sont plus résistantes. Un <strong>boss</strong> nommé apparaît au palier 5 puis tous les 5 paliers, avec sa propre barre de vie. Il peut lâcher un drapeau d'extension ou une carte au trésor. Les monstres de la horde lâchent des pépites d'or, et les élites des lingots.</p>
+				<h3>Difficulté</h3>
+				<p>Chaque victoire fait monter la guilde d'un <strong>palier</strong>, et une défaite la fait reculer de 2. Le niveau de la guilde et le nombre de membres présents augmentent aussi la difficulté : plus de monstres (une dizaine au début, jusqu'à 80), plus d'élites, des monstres mieux équipés. Le menu <button class="cmd" type="button">/guild waves</button> montre la prochaine nuit, vos statistiques et les règles.</p>
+				<div class="note danger"><p><strong>Pas de sommeil pendant une horde.</strong> Si la nuit est sautée avant (sommeil, commande), la horde est simplement annulée : pas de gain, pas de perte. Une base désertée plus de 2 minutes annule aussi la horde.</p></div>
+				<div class="note good"><p><strong>Pour bien défendre :</strong> entourez le cœur de murs (les monstres doivent le toucher pour l'abîmer), éclairez les frontières, mettez des <a href="#villageois">villageois gardes</a> et débloquez « Cœur renforcé » dans l'<a href="#evolution">arbre d'évolution</a>.</p></div>
+			</section>
+
+			<!-- ================================================================ STRUCTURES -->
+			<section id="constructions">
+				<div class="eyebrow">Bâtir</div>
+				<h2>Constructions</h2>
+				<p>Trois petits murs de 3 blocs de large × 2 de haut × 1 d'épaisseur donnent accès à des fonctions. Les plans ci-dessous sont vus <strong>de face</strong>. Dans <button class="cmd" type="button">/guild build</button>, débloquez la construction, prenez le plan (un papier brillant, gratuit), bâtissez le mur dans votre territoire, puis faites <strong>clic droit avec le plan sur sa face avant</strong>.</p>
+				<div class="builds">
+					<article class="build">
+						<h3>Tableau de quêtes</h3>
+						<div class="meta"><span class="pill green">Gratuit</span><span class="pill gold">Niveau 1</span></div>
+						<div class="grid3" role="img" aria-label="Haut : bûche, bibliothèque, bûche. Bas : bûche, planches, bûche. Un panneau sur chaque bloc.">
+							<div class="slot"><b class="b-log"></b><i class="sign"></i></div><div class="slot"><b class="b-books"></b><i class="sign"></i></div><div class="slot"><b class="b-log"></b><i class="sign"></i></div>
+							<div class="slot"><b class="b-log"></b><i class="sign"></i></div><div class="slot"><b class="b-planks"></b><i class="sign"></i></div><div class="slot"><b class="b-log"></b><i class="sign"></i></div>
+						</div>
+						<ul class="legend">
+							<li><b class="b-log"></b> Bûche (n'importe quel bois)</li>
+							<li><b class="b-books"></b> Bibliothèque</li>
+							<li><b class="b-planks"></b> Planches (n'importe quel bois)</li>
+						</ul>
+						<p class="hint">6 panneaux posés devant, un par quête. Laissez l'espace devant le mur vide.</p>
+					</article>
+					<article class="build">
+						<h3>Comptoir de commerce</h3>
+						<div class="meta"><span class="pill gold">20 or</span><span class="pill gold">Niveau 1</span></div>
+						<div class="grid3" role="img" aria-label="Haut : planches, bloc d'or, planches. Bas : trois tonneaux. Un panneau sur le bloc d'or.">
+							<div class="slot"><b class="b-planks"></b></div><div class="slot"><b class="b-gold"></b><i class="sign"></i></div><div class="slot"><b class="b-planks"></b></div>
+							<div class="slot"><b class="b-barrel"></b></div><div class="slot"><b class="b-barrel"></b></div><div class="slot"><b class="b-barrel"></b></div>
+						</div>
+						<ul class="legend">
+							<li><b class="b-planks"></b> Planches</li>
+							<li><b class="b-gold"></b> Bloc d'or</li>
+							<li><b class="b-barrel"></b> Tonneau</li>
+						</ul>
+						<p class="hint">Clic droit sur son panneau : la boutique.</p>
+					</article>
+					<article class="build">
+						<h3>Bureau d'accueil</h3>
+						<div class="meta"><span class="pill gold">40 or</span><span class="pill gold">Niveau 2</span></div>
+						<div class="grid3" role="img" aria-label="Haut : pierre taillée, botte de foin, pierre taillée. Bas : pierre taillée, établi, pierre taillée. Un panneau sur la botte de foin.">
+							<div class="slot"><b class="b-stonebricks"></b></div><div class="slot"><b class="b-hay"></b><i class="sign"></i></div><div class="slot"><b class="b-stonebricks"></b></div>
+							<div class="slot"><b class="b-stonebricks"></b></div><div class="slot"><b class="b-craft"></b></div><div class="slot"><b class="b-stonebricks"></b></div>
+						</div>
+						<ul class="legend">
+							<li><b class="b-stonebricks"></b> Pierre taillée</li>
+							<li><b class="b-hay"></b> Botte de foin</li>
+							<li><b class="b-craft"></b> Établi</li>
+						</ul>
+						<p class="hint">Les villageois candidats arrivent ici. Clic droit sur son panneau : gestion des villageois.</p>
+					</article>
+				</div>
+				<p>Si le plan refuse, le message dit quel bloc est attendu et où. Casser un bloc d'une construction la désactive (ses panneaux disparaissent) : il suffit de la réparer et de la revalider. Les panneaux eux-mêmes ne se cassent pas.</p>
+			</section>
+
+			<!-- ================================================================ QUESTS -->
+			<section id="quetes">
+				<div class="eyebrow">Objectifs</div>
+				<h2>Quêtes</h2>
+				<p>Le tableau affiche <strong>6 quêtes communes</strong> à toute la guilde, mises à jour en direct sur les panneaux. Clic droit sur un panneau (ou <button class="cmd" type="button">/guild quests</button>) pour voir le détail, livrer ou récupérer la récompense. Une quête terminée ou expirée est remplacée 2 minutes plus tard.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Type</th><th>Comment l'avancer</th></tr></thead>
+					<tbody>
+						<tr><td>Récolter</td><td>Casser les blocs demandés (bois, pierre, blé mûr, charbon, fer, diamant…), n'importe où.</td></tr>
+						<tr><td>Chasser</td><td>Tuer les monstres demandés (zombies, squelettes, araignées, creepers, endermen, sorcières).</td></tr>
+						<tr><td>Livrer</td><td>Bouton « Livrer » dans le détail de la quête : les objets sont pris dans votre inventaire. On peut livrer en plusieurs fois.</td></tr>
+						<tr><td>Survivre</td><td>Gagner une ou plusieurs hordes.</td></tr>
+						<tr><td>Explorer</td><td>Aller à un point situé à 300–800 blocs de la base (coordonnées dans la quête).</td></tr>
+					</tbody>
+				</table></div>
+				<p>Récompenses : <strong>or au trésor, XP de guilde</strong>, des objets pour celui qui récupère, parfois un drapeau d'extension ou une <strong>carte au trésor</strong>. Pour la carte : allez aux coordonnées indiquées en la tenant en main, un coffre apparaît.</p>
+				<p class="hint">Les joueurs en créatif ne font pas avancer les quêtes.</p>
+			</section>
+
+			<!-- ================================================================ SHOP -->
+			<section id="boutique">
+				<div class="eyebrow">Économie</div>
+				<h2>Or et boutique</h2>
+				<p>La monnaie est le <strong>lingot d'or</strong> vanilla. La boutique s'ouvre au <a href="#constructions">comptoir de commerce</a> et paie avec l'or de votre inventaire.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Dans la boutique</th><th>Effet</th></tr></thead>
+					<tbody>
+						<tr><td>Clic gauche</td><td>Acheter un lot</td></tr>
+						<tr><td>Maj + clic gauche</td><td>Acheter 8 lots</td></tr>
+						<tr><td>Clic droit</td><td>Vendre un lot</td></tr>
+						<tr><td>Maj + clic droit</td><td>Vendre tous les lots que vous avez</td></tr>
+					</tbody>
+				</table></div>
+				<p>Rayons : blocs de construction, cultures et nourriture, butin de monstres, minerais et lingots, utilitaires. Certains articles demandent un niveau de guilde minimum. On revend toujours moins cher qu'on achète.</p>
+				<p class="hint">Les objets enchantés, renommés ou abîmés ne se vendent pas, et la vente est refusée en créatif.</p>
+			</section>
+
+			<!-- ================================================================ VILLAGERS -->
+			<section id="villageois">
+				<div class="eyebrow">Main-d'œuvre</div>
+				<h2>Villageois</h2>
+				<h3>Les faire venir</h3>
+				<ol>
+					<li>Atteignez le <strong>niveau 2</strong>, débloquez et construisez le <a href="#constructions">bureau d'accueil</a>.</li>
+					<li>Posez au moins un <strong>lit libre</strong> dans le territoire.</li>
+					<li>Un premier candidat arrive environ une minute après la construction, puis les autres certains matins (6 chances sur 10).</li>
+					<li>Cliquez sur [Accepter] dans le chat, ou utilisez <button class="cmd" type="button">/guild villagers accept</button>. Le candidat repart au bout de 10 minutes sans réponse.</li>
+				</ol>
+				<p>Limite : 2 villageois au niveau 1, +1 par niveau (et plus avec l'arbre d'évolution). Seuls les membres peuvent commercer avec eux.</p>
+				<p>Pour gérer un villageois : <button class="cmd" type="button">/guild villagers</button>, ou <strong>accroupi + clic droit</strong> dessus.</p>
+				<h3>Tâches</h3>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Tâche</th><th>Ce qu'il fait</th><th>Il faut</th></tr></thead>
+					<tbody>
+						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de sa catégorie.</td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
+						<tr><td>Mineur</td><td>Va à sa zone et en rapporte des minerais. Plus la zone est profonde, meilleur est le butin (diamants seulement tout en bas).</td><td>Une zone de travail et un coffre de dépôt</td></tr>
+						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois) et replante.</td><td>Une zone de travail et un coffre de dépôt</td></tr>
+						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone et replante.</td><td>Une zone de travail et un coffre de dépôt</td></tr>
+						<tr><td>Garde</td><td>Reste à son poste et tue les monstres du territoire, défend le cœur pendant les hordes. Ne dort pas, ne fuit pas.</td><td>Facultatif : un poste (zone de travail)</td></tr>
+						<tr><td>Exploration</td><td>Quitte la base pendant 8 minutes et revient avec graines, pousses, cuir, émeraudes, parfois une carte au trésor. <span class="pill red">5 % de risque de perte</span></td><td>Le bureau d'accueil (sinon il part du cœur)</td></tr>
+						<tr><td>Expédition au Nether</td><td>Passe par votre portail pendant 12 minutes et revient avec quartz, or, poudre lumineuse, bâtons de blaze… <span class="pill red">12 % de risque de perte</span></td><td>Un portail du Nether dans le territoire</td></tr>
+					</tbody>
+				</table></div>
+				<p><strong>Zone de travail :</strong> placez-vous à l'endroit voulu, dans votre territoire, puis cliquez sur « Définir la zone de travail ici » dans le menu du villageois. Pour un mineur, descendez au fond de votre mine.</p>
+				<h3>Missions</h3>
+				<p>Pour le mineur, le bûcheron, le fermier et les expéditions, le bouton cible du menu choisit quand il s'arrête :</p>
+				<div class="cards">
+					<div class="card"><h3>Travail continu</h3><p>Il travaille sans fin et vide son sac au coffre de dépôt dès qu'il est plein.</p></div>
+					<div class="card"><h3>Remplir son sac et rentrer</h3><p>Un sac plein (ou une expédition), vidé au coffre, puis il s'arrête.</p></div>
+					<div class="card"><h3>Rapporter une quantité</h3><p>Par exemple 64 fer brut : réglez la quantité, tenez l'objet en main et cliquez sur « Objet recherché ». Il s'arrête une fois le compte atteint.</p></div>
+				</div>
+				<h3>Coffres de stockage</h3>
+				<p>Menu Villageois → Stockage → « Ajouter un coffre », puis clic droit sur un coffre (ou tonneau) du territoire dans les 30 secondes. Choisissez son rôle : <strong>dépôt</strong> (les travailleurs y vident leur sac) ou une <strong>catégorie</strong> : Bois, Pierre &amp; terre, Minerais &amp; lingots, Cultures &amp; nourriture, Butin de monstres, Outils &amp; armes, Divers.</p>
+				<div class="note"><p>La nuit et pendant les hordes, les travailleurs vont se coucher (statut « Repos »), et les gardes restent dehors. Un villageois peut <strong>mourir</strong> dans une horde : protégez-les.</p></div>
+			</section>
+
+			<!-- ================================================================ UPGRADES -->
+			<section id="evolution">
+				<div class="eyebrow">Progression</div>
+				<h2>Arbre d'évolution</h2>
+				<p><button class="cmd" type="button">/guild upgrades</button> (ou la table d'enchantement du menu principal). Chaque évolution coûte de l'or du <strong>trésor</strong> et des matériaux pris dans l'inventaire de celui qui clique (un officier). Chaque palier demande le précédent de sa branche et un niveau de guilde.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Branche</th><th>Évolution</th><th class="num">Niveau</th><th>Coût</th><th>Effet</th></tr></thead>
+					<tbody>
+						<tr><td rowspan="4"><span class="pill red">Défense</span></td><td>Cœur renforcé</td><td class="num">1</td><td>30 or + 8 lingots de fer</td><td>Cœur +25 %</td></tr>
+						<tr><td>Gardes aguerris</td><td class="num">2</td><td>60 or + 2 blocs de fer</td><td>Dégâts des gardes +50 %</td></tr>
+						<tr><td>Bannière de ralliement</td><td class="num">3</td><td>100 or + 2 pommes dorées</td><td>Régénération I pour les membres dans le territoire pendant une horde</td></tr>
+						<tr><td>Bastion</td><td class="num">5</td><td>200 or + 4 diamants</td><td>Cœur +50 %, pertes de défaite −50 %, les villageois ne partent plus après une défaite</td></tr>
+						<tr><td rowspan="4"><span class="pill gold">Économie</span></td><td>Primes de quêtes</td><td class="num">1</td><td>25 or</td><td>Récompenses de quêtes +20 %</td></tr>
+						<tr><td>Butin de guerre</td><td class="num">2</td><td>50 or + 8 émeraudes</td><td>Récompenses de hordes +25 %</td></tr>
+						<tr><td>Cartographes</td><td class="num">3</td><td>80 or + 16 papiers</td><td>Drapeaux d'extension −30 %</td></tr>
+						<tr><td>Âge d'or</td><td class="num">5</td><td>200 or + 1 bloc de diamant</td><td>Quêtes +20 % et hordes +25 % de plus</td></tr>
+						<tr><td rowspan="4"><span class="pill green">Expansion</span></td><td>Frontières élargies</td><td class="num">1</td><td>30 or</td><td>+4 chunks</td></tr>
+						<tr><td>Logements</td><td class="num">2</td><td>60 or + 3 lits blancs</td><td>+2 villageois</td></tr>
+						<tr><td>Artisans efficaces</td><td class="num">3</td><td>100 or + 16 lingots de fer</td><td>Villageois 30 % plus rapides (mineur, rangement, expéditions…)</td></tr>
+						<tr><td>Grand domaine</td><td class="num">5</td><td>200 or + 4 diamants</td><td>+8 chunks, +2 villageois, Célérité I dans votre territoire</td></tr>
+					</tbody>
+				</table></div>
+				<p class="hint">L'or gagné en livrant des objets pour les quêtes n'est jamais augmenté (sinon on pourrait acheter à la boutique et livrer à profit). Les joueurs en créatif ne peuvent pas payer les matériaux.</p>
+			</section>
+
+			<!-- ================================================================ LEVELS -->
+			<section id="niveaux">
+				<div class="eyebrow">Progression</div>
+				<h2>Niveaux de guilde</h2>
+				<p>La guilde gagne de l'XP avec les hordes gagnées et les quêtes. Chaque niveau donne 6 chunks de plus et 1 place de villageois en plus, et débloque des quêtes, des articles de boutique et des évolutions.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Niveau</th><th class="num">2</th><th class="num">3</th><th class="num">4</th><th class="num">5</th><th class="num">6</th><th class="num">7</th><th class="num">8</th><th class="num">9</th><th class="num">10</th></tr></thead>
+					<tbody><tr><td>XP totale</td><td class="num">100</td><td class="num">250</td><td class="num">450</td><td class="num">700</td><td class="num">1 000</td><td class="num">1 400</td><td class="num">1 900</td><td class="num">2 500</td><td class="num">3 200</td></tr></tbody>
+				</table></div>
+				<p class="hint">À noter : le niveau 2 débloque le bureau d'accueil (villageois), le niveau 5 les dernières évolutions de chaque branche.</p>
+			</section>
+
+			<!-- ================================================================ COMMANDS -->
+			<section id="commandes">
+				<div class="eyebrow">Référence</div>
+				<h2>Commandes</h2>
+				<p><button class="cmd" type="button">/gld</button> marche partout à la place de <button class="cmd" type="button">/guild</button>. La touche Tab complète les noms. Cliquez sur une commande pour la copier.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
+					<tbody>
+						<tr><td><button class="cmd" type="button">/guild</button></td><td>Menu principal (tout est faisable depuis là)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild create &lt;nom&gt;</button></td><td>Créer une guilde et recevoir le drapeau fondateur</td></tr>
+						<tr><td><button class="cmd" type="button">/guild invite &lt;joueur&gt;</button></td><td>Inviter un joueur</td></tr>
+						<tr><td><button class="cmd" type="button">/guild join</button> · <button class="cmd" type="button">/guild deny</button></td><td>Accepter ou refuser une invitation</td></tr>
+						<tr><td><button class="cmd" type="button">/guild leave</button></td><td>Quitter la guilde</td></tr>
+						<tr><td><button class="cmd" type="button">/guild kick &lt;membre&gt;</button></td><td>Exclure un membre</td></tr>
+						<tr><td><button class="cmd" type="button">/guild promote &lt;membre&gt;</button> · <button class="cmd" type="button">/guild demote &lt;membre&gt;</button></td><td>Changer de rôle (chef)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild transfer &lt;membre&gt;</button></td><td>Donner la direction (chef)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild disband</button></td><td>Dissoudre la guilde (chef, avec confirmation)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild info</button> · <button class="cmd" type="button">/guild list</button> · <button class="cmd" type="button">/guild help</button></td><td>Informations, classement des guildes, aide</td></tr>
+						<tr><td><button class="cmd" type="button">/guild deposit</button> · <button class="cmd" type="button">/guild withdraw &lt;montant&gt;</button></td><td>Déposer tout son or au trésor, retirer (officier)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild banner</button> · <button class="cmd" type="button">/guild banner adopt</button></td><td>Menu bannière, adopter la bannière tenue en main</td></tr>
+						<tr><td><button class="cmd" type="button">/guild flag</button> · <button class="cmd" type="button">/guild flag buy</button></td><td>Drapeau fondateur, acheter un drapeau d'extension</td></tr>
+						<tr><td><button class="cmd" type="button">/guild claim</button> · <button class="cmd" type="button">/guild unclaim</button> · <button class="cmd" type="button">/guild show</button></td><td>Ajouter ou rendre le chunk actuel, voir les limites</td></tr>
+						<tr><td><button class="cmd" type="button">/guild sethome</button> · <button class="cmd" type="button">/guild home</button></td><td>Point de retour de la guilde</td></tr>
+						<tr><td><button class="cmd" type="button">/guild waves</button></td><td>Hordes : état, prochaine nuit, statistiques, règles</td></tr>
+						<tr><td><button class="cmd" type="button">/guild build</button></td><td>Constructions et plans</td></tr>
+						<tr><td><button class="cmd" type="button">/guild quests</button></td><td>Quêtes</td></tr>
+						<tr><td><button class="cmd" type="button">/guild villagers</button></td><td>Villageois (et <code>accept</code> / <code>refuse</code> pour un candidat)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild upgrades</button></td><td>Arbre d'évolution</td></tr>
+					</tbody>
+				</table></div>
+			</section>
+
+			<!-- ================================================================ FAQ -->
+			<section id="faq">
+				<div class="eyebrow">Dépannage</div>
+				<h2>Problèmes fréquents</h2>
+				<details><summary>Je n'arrive pas à planter mon drapeau</summary>
+					<p>Le message en rouge donne la raison. Les plus courantes : trop près du spawn (4 chunks minimum) ou d'une autre guilde (il faut plus de 3 chunks d'écart), vous n'êtes pas dans l'Overworld, votre rôle ne le permet pas (officier ou chef). Pour une extension : le chunk doit toucher le territoire par un côté, et la limite de chunks ne doit pas être atteinte.</p></details>
+				<details><summary>Il n'y a pas eu de horde cette nuit</summary>
+					<p>Il faut une base fondée et un membre à moins de 96 blocs du cœur avant le milieu de la nuit. Si la nuit a été sautée, il n'y a pas de horde non plus.</p></details>
+				<details><summary>Je ne peux pas dormir</summary>
+					<p>Une horde attaque votre base : le sommeil est interdit jusqu'à la fin. Défendez le cœur !</p></details>
+				<details><summary>Le plan ne valide pas ma construction</summary>
+					<p>Faites clic droit sur la <strong>face avant</strong> du mur. L'espace devant doit être libre pour les panneaux. Tout le mur doit être dans votre territoire, la construction débloquée et la guilde au bon niveau. Si un bloc est faux, le message donne le bloc attendu et ses coordonnées.</p></details>
+				<details><summary>Mon villageois ne fait rien</summary>
+					<p>Regardez son statut dans <button class="cmd" type="button">/guild villagers</button>. La nuit et pendant une horde, il se repose. Les causes habituelles sont ensuite : pas de zone de travail, pas de coffre de dépôt, zone hors de votre territoire ou non chargée, ou tâche « Inactif ». S'il est bloqué en chemin, il finit par se téléporter à côté de sa destination.</p></details>
+				<details><summary>La boutique refuse de m'acheter un objet</summary>
+					<p>Seuls les objets « normaux » se vendent (pas enchantés, renommés ni abîmés), jamais en créatif, et certains articles demandent un niveau de guilde.</p></details>
+				<details><summary>Nous avons perdu une horde, qu'est-ce qu'on perd ?</summary>
+					<p>25 % du trésor, 2 paliers de difficulté (les nuits suivantes sont plus faciles), et chaque villageois a 20 % de chance de partir. Les joueurs ne perdent aucun objet à cause de la défaite.</p></details>
+				<details><summary>Où sont les limites de mon territoire ?</summary>
+					<p><button class="cmd" type="button">/guild show</button> les dessine en particules. En marchant, un titre s'affiche quand vous entrez dans un territoire, et « Zone sauvage » quand vous en sortez.</p></details>
+			</section>
+
+			<!-- ================================================================ ADMIN -->
+			<section id="admin">
+				<div class="eyebrow">Serveur</div>
+				<h2>Pour les admins</h2>
+				<p>Installation : <code>guildy-1.0.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<details><summary>Commandes d'administration</summary>
+					<div class="table-wrap"><table>
+						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
+						<tbody>
+							<tr><td><button class="cmd" type="button">/guild admin reload</button> · <button class="cmd" type="button">/guild admin save</button></td><td>Recharger la configuration, sauvegarder les guildes</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin bypass</button></td><td>Ignorer les protections des territoires</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin info &lt;guilde&gt;</button> · <button class="cmd" type="button">/guild admin disband &lt;guilde&gt;</button></td><td>Voir ou dissoudre une guilde</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin forcejoin &lt;joueur&gt; &lt;guilde&gt;</button></td><td>Mettre un joueur dans une guilde</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin setlevel|addxp|addgold &lt;guilde&gt; &lt;valeur&gt;</button></td><td>Niveau, XP et trésor</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin giveflag &lt;joueur&gt; extension [n]</button></td><td>Donner des drapeaux d'extension</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin tp &lt;guilde&gt;</button></td><td>Aller au cœur d'une guilde</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin wave start|stop|status &lt;guilde&gt;</button></td><td>Lancer une horde de test (même de jour), l'arrêter, son état</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin wave setnight &lt;guilde&gt; &lt;palier&gt;</button></td><td>Régler le palier de difficulté</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin structure unlock &lt;guilde&gt; &lt;id&gt;</button></td><td>Débloquer une construction</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin quest reroll|complete|map &lt;guilde&gt;</button></td><td>Quêtes : tout renouveler, terminer un emplacement, donner une carte au trésor</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin villager spawn &lt;guilde&gt;</button></td><td>Faire venir un candidat villageois</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin upgrade unlock|lock &lt;guilde&gt; &lt;id&gt;</button></td><td>Donner ou retirer une évolution</td></tr>
+						</tbody>
+					</table></div>
+					<p class="hint">Les noms de guilde avec des espaces se mettent entre guillemets quand un autre argument suit.</p>
+				</details>
+				<details><summary>Fichiers de configuration</summary>
+					<div class="table-wrap"><table>
+						<thead><tr><th>Fichier</th><th>Contenu</th></tr></thead>
+						<tbody>
+							<tr><td><code>config.json5</code></td><td>Guildes, territoire, protections, économie, niveaux, bannière et cartes, rôles</td></tr>
+							<tr><td><code>waves.json5</code></td><td>Horaires, difficulté, thèmes, boss, cœur, récompenses, défaite</td></tr>
+							<tr><td><code>structures.json5</code></td><td>Plans, coûts et niveaux des constructions</td></tr>
+							<tr><td><code>quests.json5</code></td><td>Modèles de quêtes et récompenses</td></tr>
+							<tr><td><code>shop.json5</code></td><td>Catalogue de la boutique</td></tr>
+							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches, expéditions, catégories de rangement</td></tr>
+							<tr><td><code>upgrades.json5</code></td><td>Arbre d'évolution</td></tr>
+							<tr><td><code>lang.json</code></td><td>Tous les textes affichés aux joueurs</td></tr>
+						</tbody>
+					</table></div>
+				</details>
+			</section>
+
+			<footer>Guide de Guildy · valeurs par défaut du serveur (le serveur peut les modifier).</footer>
+		</main>
+	</div>
+</div>
+<div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+	var toast = document.getElementById("toast");
+	var timer = null;
+	function show(message) {
+		toast.textContent = message;
+		toast.hidden = false;
+		clearTimeout(timer);
+		timer = setTimeout(function () { toast.hidden = true; }, 1400);
+	}
+	function selectText(el) {
+		try {
+			var range = document.createRange();
+			range.selectNodeContents(el);
+			var sel = window.getSelection();
+			sel.removeAllRanges();
+			sel.addRange(range);
+			show("Sélectionné : Ctrl+C pour copier");
+		} catch (e) { /* nothing */ }
+	}
+	document.addEventListener("click", function (event) {
+		var el = event.target.closest(".cmd");
+		if (!el || el.tagName !== "BUTTON") { return; }
+		var text = el.textContent.trim();
+		try {
+			navigator.clipboard.writeText(text).then(function () { show("Copié : " + text); }, function () { selectText(el); });
+		} catch (e) {
+			selectText(el);
+		}
+	});
+
+	// Highlight the current section in the table of contents.
+	var toc = document.querySelector(".toc");
+	var links = Array.prototype.slice.call(document.querySelectorAll(".toc a"));
+	var byId = {};
+	links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+	if ("IntersectionObserver" in window) {
+		var observer = new IntersectionObserver(function (entries) {
+			entries.forEach(function (entry) {
+				if (entry.isIntersecting) {
+					links.forEach(function (a) { a.classList.remove("active"); });
+					var link = byId[entry.target.id];
+					if (link) {
+						link.classList.add("active");
+						if (toc.scrollWidth > toc.clientWidth) {
+							// Phone: the table of contents is a horizontal strip; keep the current entry visible.
+							toc.scrollLeft = link.offsetLeft - toc.clientWidth / 2 + link.clientWidth / 2;
+						}
+					}
+				}
+			});
+		}, { rootMargin: "-20% 0px -70% 0px" });
+		document.querySelectorAll("main section").forEach(function (s) { observer.observe(s); });
+	}
+})();
+</script>
