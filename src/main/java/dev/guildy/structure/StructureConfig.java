@@ -12,9 +12,11 @@ import net.minecraft.world.level.block.WallSignBlock;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Comment({
 		"Guildy - constructions multiblocs (murs verticaux, profondeur 1 bloc).",
@@ -25,10 +27,13 @@ import java.util.Map;
 		"signCells : cases [colonne, ligne] (0 = gauche / haut) qui recoivent un panneau gere sur leur face avant ;",
 		"l'ordre de la liste = numero du panneau (tableau de quetes : panneau n = quete n).",
 		"Les blocs portant un panneau doivent etre des blocs pleins. Taille maximale : 9 de large, 4 de haut.",
-		"Les ids 'quest_board', 'shop' et 'reception' sont utilises par les quetes, la boutique et les villageois.",
+		"Les ids 'quest_board', 'shop', 'reception' et 'trade_hub' sont utilises par les quetes, la boutique, les villageois",
+		"et le commerce (Carrefour commercial).",
 		"Validation en jeu : clic droit sur un bloc de la construction avec le Plan (menu /guild build)."
 })
 public final class StructureConfig implements Validatable {
+	/** Defaults that existed before {@link #knownDefaults}: never re-added (an admin may have removed them on purpose). */
+	private static final Set<String> ORIGINAL_DEFAULTS = Set.of("quest_board", "shop", "reception");
 
 	@Comment("Intervalle (secondes) entre deux verifications de l'integrite des constructions chargees")
 	public int checkIntervalSeconds = 30;
@@ -44,6 +49,12 @@ public final class StructureConfig implements Validatable {
 
 	@Comment("Liste des constructions (voir l'explication en haut du fichier)")
 	public List<StructureDefinition> definitions = defaults();
+
+	@Comment({
+			"Constructions par defaut deja proposees. Une construction ajoutee par une mise a jour du mod est ajoutee",
+			"automatiquement a 'definitions' une seule fois ; pour ne pas l'utiliser, retirez-la de 'definitions' (pas d'ici)."
+	})
+	public List<String> knownDefaults = new ArrayList<>();
 
 	/** Usable structure types by id (built by validate()). */
 	private transient Map<String, StructureType> types = new LinkedHashMap<>();
@@ -74,6 +85,12 @@ public final class StructureConfig implements Validatable {
 			definitions = defaults();
 		}
 		definitions.removeIf(d -> d == null);
+		if (knownDefaults == null) {
+			knownDefaults = new ArrayList<>();
+		}
+		for (String added : mergeNewDefaults(definitions, knownDefaults)) {
+			Guildy.LOGGER.info("[structures.json5] new default structure '{}' added", added);
+		}
 		Map<String, StructureType> result = new LinkedHashMap<>();
 		for (StructureDefinition def : definitions) {
 			List<String> errors = def.check();
@@ -109,6 +126,31 @@ public final class StructureConfig implements Validatable {
 			result.put(def.id, new StructureType(def, pattern, keys));
 		}
 		types = result;
+	}
+
+	/**
+	 * Existing files keep their own 'definitions' list: default structures added by a mod update (not yet in
+	 * {@code known}) are appended once, then remembered in {@code known} (pure, unit-tested).
+	 *
+	 * @return ids appended to {@code definitions}
+	 */
+	static List<String> mergeNewDefaults(List<StructureDefinition> definitions, List<String> known) {
+		List<String> added = new ArrayList<>();
+		Set<String> present = new HashSet<>();
+		for (StructureDefinition def : definitions) {
+			present.add(def.id);
+		}
+		for (StructureDefinition def : defaults()) {
+			if (known.contains(def.id)) {
+				continue;
+			}
+			known.add(def.id);
+			if (!present.contains(def.id) && !ORIGINAL_DEFAULTS.contains(def.id)) {
+				definitions.add(def);
+				added.add(def.id);
+			}
+		}
+		return added;
 	}
 
 	// ------------------------------------------------------------------ defaults
@@ -174,6 +216,28 @@ public final class StructureConfig implements Validatable {
 		reception.key = map("S", "minecraft:stone_bricks", "H", "minecraft:hay_block", "C", "minecraft:crafting_table");
 		reception.signCells = cells(1, 0);
 		list.add(reception);
+
+		StructureDefinition hub = new StructureDefinition();
+		hub.id = "trade_hub";
+		hub.name = "Carrefour commercial";
+		hub.icon = "minecraft:emerald_block";
+		hub.description = new ArrayList<>(List.of(
+				"&7Un carrefour où des marchands de passage",
+				"&7viennent vendre des marchandises rares.",
+				"&7Plus il est développé, plus les échanges sont fous."));
+		hub.tutorial = new ArrayList<>(List.of(
+				"&6&lCarrefour commercial construit !",
+				"&7Certains matins, un &eMarchand de passage&7 s'y arrête quelques minutes.",
+				"&7Clic droit sur son panneau : palier, marchands présents, échanges possibles.",
+				"&7Améliorez le Carrefour pour attirer de meilleurs marchands.",
+				"&7Raccourci : &e/guild trade"));
+		hub.minLevel = 2;
+		hub.unlockCost = 60;
+		hub.rows = new ArrayList<>(List.of("WEW", "BTB"));
+		hub.key = map("W", "#minecraft:wool", "E", "minecraft:emerald_block", "B", "minecraft:barrel", "T", "minecraft:cartography_table");
+		hub.keyLabels = map("W", "Laine (toute couleur)");
+		hub.signCells = cells(1, 0);
+		list.add(hub);
 		return list;
 	}
 

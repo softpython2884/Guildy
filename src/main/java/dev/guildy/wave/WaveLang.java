@@ -19,10 +19,13 @@ final class WaveLang {
 		m.put("wave.start.subtitle", "{0}");
 		m.put("wave.start.chat", "&c☠ &lLa horde approche ! &r&7Thème : {0}&7 - difficulté &f{1}&7 - &f{2}&7 monstres.");
 		m.put("wave.start.goal", "&7Défendez le &ccœur de la base&7 jusqu'à l'aube !");
+		m.put("wave.start.goal.event", "&7Défendez le &ccœur de la base&7 jusqu'à ce que l'assaut soit repoussé !");
+		m.put("wave.start.modifiers", "{0}&7 : la horde est renforcée, mais les récompenses sont multipliées par &6{1}&7 !");
 		m.put("wave.start.boss", "&4Un boss accompagne la horde cette nuit !");
 		m.put("wave.start.test", "&e[Test] &7Vague de test lancée par un administrateur.");
 		// boss bars
 		m.put("wave.bar.progress", "{0} &7- &f{1}&7/&f{2} &7tués &8(&7{3} restants&8)");
+		m.put("wave.bar.label", "{0} &8» {1}");
 		m.put("wave.bar.heart", "&cCœur de la base &7- &f{0}&7/&f{1}");
 		m.put("wave.bar.boss", "{0} &7- &f{1}&7/&f{2} ❤");
 		// heart
@@ -52,6 +55,8 @@ final class WaveLang {
 		m.put("wave.recap.victory", "&a✔ Victoire ! &7Trésor : &6+{0} or&7, XP de guilde : &b+{1}");
 		m.put("wave.recap.items", "&7Butin : &f{0}&7 tirage(s) d'objets pour chaque défenseur présent.");
 		m.put("wave.recap.next", "&7Nouveau palier de nuit : &f{0}&7 (série de victoires : &f{1}&7)");
+		m.put("wave.recap.event", "&7Assaut repoussé : le palier de nuit ne change pas (série de victoires : &f{0}&7)");
+		m.put("wave.recap.modifiers", "{0}&7 : récompenses multipliées par &6{1}");
 		m.put("wave.recap.defeat", "&4✘ Défaite... &7Pertes : &c-{0} or&7 du trésor (&c{1}%&7).");
 		m.put("wave.recap.rollback", "&7La difficulté recule : palier de nuit &f{0}&7 → &f{1}&7.");
 		m.put("wave.recap.cancelled", "&7Horde annulée (&f{0}&7) : aucune récompense ni pénalité.");

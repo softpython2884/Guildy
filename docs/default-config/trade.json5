@@ -1,0 +1,1218 @@
+// Guildy - Carrefour commercial : des marchands de passage (marchands ambulants vanilla) viennent certains matins
+// vendre des marchandises contre de l'or (lingots ; au-dela de 64 or : blocs d'or + lingots). Ils ne rachetent rien.
+// tiers : paliers du Carrefour (index 0 = palier 1) : name, minLevel (niveau de guilde), costGold (or du tresor),
+// costItems [{item, count}] (objets simples pris dans l'inventaire du joueur qui ameliore), offersMin / offersMax
+// (nombre d'echanges par visite), trades (table du palier). Un Carrefour de palier N tire ses echanges dans sa table
+// (poids visits.ownTierWeight) et dans celles des paliers inferieurs (poids visits.lowerTierWeight chacune).
+// Echange : {item, count (lot), price (or), maxUses (echanges possibles pendant la visite), weight (chance relative),
+// enchantment (optionnel, ex. minecraft:mending : livre enchante ou objet enchante), level}.
+// Regles appliquees au chargement : objets en or et objets inconnus refuses ; un marchand ne vend jamais moins cher
+// (a l'unite) que la boutique ni que le prix de rachat de la boutique (pas de boucle d'or ; prix releve sinon).
+{
+
+	// Visites des marchands au Carrefour commercial
+	"visits": {
+
+		// Activer les visites naturelles (les commandes admin fonctionnent toujours)
+		"enabled": true,
+
+		// Chance de visite chaque matin = chanceBase + chancePerTier * (palier - 1)
+		"chanceBase": 0.5,
+		"chancePerTier": 0.15,
+
+		// Heure du jour (ticks) du tirage du matin ; tirage possible pendant rollWindowTicks ticks (une fois par jour)
+		"morningTime": 1000,
+		"rollWindowTicks": 2000,
+
+		// Duree du sejour d'un marchand (secondes)
+		"staySeconds": 600,
+
+		// Les marchands arrives de jour repartent au plus tard a la tombee de la nuit
+		"leaveAtNight": true,
+
+		// Poids du palier du Carrefour et de chaque palier inferieur dans le tirage des echanges
+		"ownTierWeight": 3.0,
+		"lowerTierWeight": 1.0,
+
+		// Rayon (blocs) autour de son point d'arrivee dans lequel le marchand reste
+		"homeRadius": 6
+	},
+
+	// Paliers du Carrefour (voir l'explication en haut du fichier)
+	"tiers": [
+		{
+			"name": "Halte marchande",
+			"minLevel": 2,
+			"costGold": 0,
+			"costItems": [],
+			"offersMin": 5,
+			"offersMax": 7,
+			"trades": [
+				{
+					"item": "minecraft:oak_sapling",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 10.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:spruce_sapling",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 10.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:birch_sapling",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 10.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:jungle_sapling",
+					"count": 4,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 10.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:acacia_sapling",
+					"count": 4,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 10.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:dark_oak_sapling",
+					"count": 4,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 10.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:cherry_sapling",
+					"count": 2,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 10.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:mangrove_propagule",
+					"count": 2,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:pale_oak_sapling",
+					"count": 2,
+					"price": 4,
+					"maxUses": 6,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:azalea",
+					"count": 2,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:flowering_azalea",
+					"count": 2,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:wheat_seeds",
+					"count": 16,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:beetroot_seeds",
+					"count": 16,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:melon_seeds",
+					"count": 8,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:pumpkin_seeds",
+					"count": 8,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:torchflower_seeds",
+					"count": 4,
+					"price": 4,
+					"maxUses": 6,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:pitcher_pod",
+					"count": 2,
+					"price": 4,
+					"maxUses": 6,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:white_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:light_gray_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:gray_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:black_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:brown_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:red_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:orange_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:yellow_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:lime_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:green_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:cyan_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:light_blue_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:blue_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:purple_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:magenta_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:pink_dye",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:dandelion",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:poppy",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:pink_petals",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:wildflowers",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:blue_orchid",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:allium",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:azure_bluet",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:red_tulip",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:orange_tulip",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:white_tulip",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:pink_tulip",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:oxeye_daisy",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:cornflower",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:lily_of_the_valley",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:sunflower",
+					"count": 2,
+					"price": 2,
+					"maxUses": 6,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:lilac",
+					"count": 2,
+					"price": 2,
+					"maxUses": 6,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:rose_bush",
+					"count": 2,
+					"price": 2,
+					"maxUses": 6,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:peony",
+					"count": 2,
+					"price": 2,
+					"maxUses": 6,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:torchflower",
+					"count": 2,
+					"price": 3,
+					"maxUses": 4,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:open_eyeblossom",
+					"count": 2,
+					"price": 3,
+					"maxUses": 4,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:cactus_flower",
+					"count": 2,
+					"price": 3,
+					"maxUses": 4,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:spore_blossom",
+					"count": 1,
+					"price": 4,
+					"maxUses": 4,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:sugar_cane",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:cactus",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:bamboo",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:cocoa_beans",
+					"count": 8,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:vine",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:lily_pad",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:glow_berries",
+					"count": 8,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:sweet_berries",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:kelp",
+					"count": 8,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:moss_block",
+					"count": 4,
+					"price": 3,
+					"maxUses": 8,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:brown_mushroom",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:red_mushroom",
+					"count": 4,
+					"price": 2,
+					"maxUses": 8,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:big_dripleaf",
+					"count": 2,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:small_dripleaf",
+					"count": 2,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:glow_lichen",
+					"count": 8,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:firefly_bush",
+					"count": 2,
+					"price": 3,
+					"maxUses": 6,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				}
+			]
+		},
+		{
+			"name": "Comptoir prospère",
+			"minLevel": 3,
+			"costGold": 150,
+			"costItems": [
+				{
+					"item": "minecraft:emerald",
+					"count": 16
+				}
+			],
+			"offersMin": 6,
+			"offersMax": 8,
+			"trades": [
+				{
+					"item": "minecraft:slime_ball",
+					"count": 4,
+					"price": 5,
+					"maxUses": 4,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:honeycomb",
+					"count": 6,
+					"price": 6,
+					"maxUses": 4,
+					"weight": 8.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:honey_bottle",
+					"count": 4,
+					"price": 6,
+					"maxUses": 4,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:nautilus_shell",
+					"count": 1,
+					"price": 8,
+					"maxUses": 4,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:amethyst_shard",
+					"count": 8,
+					"price": 8,
+					"maxUses": 4,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:blue_ice",
+					"count": 4,
+					"price": 10,
+					"maxUses": 4,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:packed_ice",
+					"count": 8,
+					"price": 8,
+					"maxUses": 4,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:sea_pickle",
+					"count": 4,
+					"price": 5,
+					"maxUses": 4,
+					"weight": 6.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:prismarine_shard",
+					"count": 8,
+					"price": 6,
+					"maxUses": 4,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:prismarine_crystals",
+					"count": 8,
+					"price": 6,
+					"maxUses": 4,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:turtle_scute",
+					"count": 2,
+					"price": 12,
+					"maxUses": 2,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:armadillo_scute",
+					"count": 2,
+					"price": 10,
+					"maxUses": 2,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:ink_sac",
+					"count": 8,
+					"price": 4,
+					"maxUses": 4,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:glow_ink_sac",
+					"count": 4,
+					"price": 6,
+					"maxUses": 4,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:rabbit_foot",
+					"count": 1,
+					"price": 8,
+					"maxUses": 2,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:phantom_membrane",
+					"count": 2,
+					"price": 8,
+					"maxUses": 2,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:ghast_tear",
+					"count": 1,
+					"price": 12,
+					"maxUses": 2,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:ender_pearl",
+					"count": 2,
+					"price": 10,
+					"maxUses": 2,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:experience_bottle",
+					"count": 4,
+					"price": 14,
+					"maxUses": 2,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:name_tag",
+					"count": 1,
+					"price": 20,
+					"maxUses": 1,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:saddle",
+					"count": 1,
+					"price": 24,
+					"maxUses": 1,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:lead",
+					"count": 2,
+					"price": 7,
+					"maxUses": 2,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:bell",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:iron_horse_armor",
+					"count": 1,
+					"price": 12,
+					"maxUses": 1,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:turtle_egg",
+					"count": 1,
+					"price": 12,
+					"maxUses": 2,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_13",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_cat",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_blocks",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_chirp",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_far",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_mall",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_mellohi",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_stal",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_strad",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_ward",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_11",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:music_disc_wait",
+					"count": 1,
+					"price": 16,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				}
+			]
+		},
+		{
+			"name": "Grand carrefour",
+			"minLevel": 5,
+			"costGold": 400,
+			"costItems": [
+				{
+					"item": "minecraft:diamond_block",
+					"count": 2
+				}
+			],
+			"offersMin": 7,
+			"offersMax": 9,
+			"trades": [
+				{
+					"item": "minecraft:enchanted_book",
+					"count": 1,
+					"price": 48,
+					"maxUses": 1,
+					"weight": 5.0,
+					"enchantment": "minecraft:mending",
+					"level": 1
+				},
+				{
+					"item": "minecraft:enchanted_book",
+					"count": 1,
+					"price": 30,
+					"maxUses": 1,
+					"weight": 6.0,
+					"enchantment": "minecraft:unbreaking",
+					"level": 3
+				},
+				{
+					"item": "minecraft:enchanted_book",
+					"count": 1,
+					"price": 36,
+					"maxUses": 1,
+					"weight": 6.0,
+					"enchantment": "minecraft:efficiency",
+					"level": 5
+				},
+				{
+					"item": "minecraft:enchanted_book",
+					"count": 1,
+					"price": 40,
+					"maxUses": 1,
+					"weight": 5.0,
+					"enchantment": "minecraft:fortune",
+					"level": 3
+				},
+				{
+					"item": "minecraft:enchanted_book",
+					"count": 1,
+					"price": 32,
+					"maxUses": 1,
+					"weight": 5.0,
+					"enchantment": "minecraft:silk_touch",
+					"level": 1
+				},
+				{
+					"item": "minecraft:enchanted_book",
+					"count": 1,
+					"price": 40,
+					"maxUses": 1,
+					"weight": 5.0,
+					"enchantment": "minecraft:looting",
+					"level": 3
+				},
+				{
+					"item": "minecraft:enchanted_book",
+					"count": 1,
+					"price": 30,
+					"maxUses": 1,
+					"weight": 6.0,
+					"enchantment": "minecraft:protection",
+					"level": 4
+				},
+				{
+					"item": "minecraft:totem_of_undying",
+					"count": 1,
+					"price": 99,
+					"maxUses": 1,
+					"weight": 5.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:enchanted_golden_apple",
+					"count": 1,
+					"price": 64,
+					"maxUses": 1,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:netherite_upgrade_smithing_template",
+					"count": 1,
+					"price": 48,
+					"maxUses": 1,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:heart_of_the_sea",
+					"count": 1,
+					"price": 40,
+					"maxUses": 1,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:trident",
+					"count": 1,
+					"price": 64,
+					"maxUses": 1,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:shulker_shell",
+					"count": 2,
+					"price": 40,
+					"maxUses": 2,
+					"weight": 4.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:diamond_horse_armor",
+					"count": 1,
+					"price": 24,
+					"maxUses": 1,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:echo_shard",
+					"count": 2,
+					"price": 16,
+					"maxUses": 2,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:sniffer_egg",
+					"count": 1,
+					"price": 32,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:wither_skeleton_skull",
+					"count": 1,
+					"price": 48,
+					"maxUses": 1,
+					"weight": 2.0,
+					"enchantment": "",
+					"level": 1
+				},
+				{
+					"item": "minecraft:elytra",
+					"count": 1,
+					"price": 270,
+					"maxUses": 1,
+					"weight": 1.0,
+					"enchantment": "",
+					"level": 1
+				}
+			]
+		}
+	]
+}

@@ -293,7 +293,7 @@ final class WaveSpawner {
 			reinforcements.setBaseValue(0); // reinforcements would be untracked
 		}
 
-		applyBuffs(mob, planned, session.difficulty());
+		applyBuffs(mob, planned, session.difficulty(), session.modifiers());
 		if (planned.gear()) {
 			equip(mob, cfg.mobs, session.difficulty(), planned.isElite() || planned.isBoss(), random);
 		}
@@ -304,9 +304,9 @@ final class WaveSpawner {
 			mob.setCustomName(Component.literal(Lang.colorize(planned.boss().name)));
 			mob.setCustomNameVisible(true);
 		}
-		if (session.isTest() && level.isBrightOutside()) {
-			// Admin test waves by day: undead would burn before reaching the base.
-			mob.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, cfg.test.durationSeconds * 20 + 200, 0, false, false));
+		if (session.isTimed() && level.isBrightOutside()) {
+			// Admin test / event waves by day: undead would burn before reaching the base.
+			mob.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, session.durationSeconds() * 20 + 200, 0, false, false));
 		}
 		mob.setHealth(mob.getMaxHealth());
 
@@ -349,13 +349,13 @@ final class WaveSpawner {
 	}
 
 	/**
-	 * Difficulty / elite / boss attribute modifiers (+ glowing). Idempotent (fixed modifier ids): also re-applied to a
-	 * mob created by a conversion (zombie drowning...), which does not inherit attribute modifiers.
+	 * Difficulty / elite / boss / event attribute modifiers (+ glowing). Idempotent (fixed modifier ids): also re-applied to
+	 * a mob created by a conversion (zombie drowning...), which does not inherit attribute modifiers.
 	 */
-	static void applyBuffs(Mob mob, WavePlanner.PlannedMob planned, double difficulty) {
+	static void applyBuffs(Mob mob, WavePlanner.PlannedMob planned, double difficulty, NightModifiers modifiers) {
 		WaveConfig cfg = WaveModule.config();
-		double health = WaveFormula.healthMultiplier(cfg.mobs, cfg.difficulty.base, difficulty);
-		double damage = WaveFormula.damageMultiplier(cfg.mobs, cfg.difficulty.base, difficulty);
+		double health = WaveFormula.healthMultiplier(cfg.mobs, cfg.difficulty.base, difficulty) * modifiers.healthMultiplier();
+		double damage = WaveFormula.damageMultiplier(cfg.mobs, cfg.difficulty.base, difficulty) * modifiers.damageMultiplier();
 		if (planned.isElite()) {
 			health *= cfg.mobs.eliteHealthMultiplier;
 			damage *= cfg.mobs.eliteDamageMultiplier;

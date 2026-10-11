@@ -76,7 +76,7 @@ final class WaveMenu {
 			long clock = WaveManager.clock();
 			WaveSession session = WaveManager.session(guild);
 			if (session != null) {
-				List<Component> lore = GuiUtil.lines("wave.gui.current.lore", Lang.colorize(session.theme().name),
+				List<Component> lore = GuiUtil.lines("wave.gui.current.lore", session.displayName(),
 						WaveSession.formatDifficulty(session.difficulty()), session.kills(), session.total(),
 						Math.max(0, session.total() - session.kills()), session.eliteKills(), session.integrity(), session.maxIntegrity(),
 						duration(session.remainingSeconds(clock)));
@@ -137,6 +137,11 @@ final class WaveMenu {
 			lore.add(Lang.get("wave.gui.next.themes"));
 			for (WaveConfig.Theme theme : WavePlanner.availableThemes(cfg.themes, night)) {
 				lore.add(Lang.get("wave.gui.next.theme", Lang.colorize(theme.name)));
+			}
+			List<Component> events = WaveManager.eventLore(guild);
+			if (!events.isEmpty()) {
+				lore.add(Component.empty());
+				lore.addAll(events);
 			}
 			return GuiUtil.item(Items.CLOCK, Lang.get("wave.gui.next.name"), lore);
 		}
