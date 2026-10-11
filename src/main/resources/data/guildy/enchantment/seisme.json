@@ -1,0 +1,73 @@
+{
+  "description": {
+    "text": "Séisme",
+    "color": "#D4A373"
+  },
+  "supported_items": "#guildy:enchantable/unique_melee",
+  "weight": 1,
+  "max_level": 2,
+  "min_cost": {
+    "base": 60,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 8,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {
+    "minecraft:post_attack": [
+      {
+        "enchanted": "attacker",
+        "affected": "attacker",
+        "effect": {
+          "type": "minecraft:explode",
+          "attribute_to_user": true,
+          "radius": {
+            "type": "minecraft:linear",
+            "base": 2.0,
+            "per_level_above_first": 0.5
+          },
+          "knockback_multiplier": {
+            "type": "minecraft:linear",
+            "base": 1.2,
+            "per_level_above_first": 0.4
+          },
+          "block_interaction": "none",
+          "small_particle": {
+            "type": "minecraft:dust_plume"
+          },
+          "large_particle": {
+            "type": "minecraft:explosion_emitter"
+          },
+          "sound": "minecraft:item.mace.smash_ground"
+        },
+        "requirements": {
+          "type": "minecraft:all_of",
+          "terms": [
+            {
+              "type": "minecraft:damage_source_properties",
+              "predicate": {
+                "is_direct": true
+              }
+            },
+            {
+              "type": "minecraft:random_chance",
+              "chance": {
+                "type": "minecraft:enchantment_level",
+                "amount": {
+                  "type": "minecraft:linear",
+                  "base": 0.2,
+                  "per_level_above_first": 0.1
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -71,6 +71,10 @@ public final class TradeValidator {
 	 */
 	public static String check(TradeEntry entry, Predicate<String> itemExists, Map<String, Double> shopSells, Map<String, Double> shopBuys,
 			List<String> warnings) {
+		if (entry.isUnique()) {
+			return checkUnique(entry, itemExists, warnings);
+		}
+		entry.unique = "";
 		if (entry.item == null || entry.item.isBlank()) {
 			return "missing item";
 		}
@@ -114,6 +118,29 @@ public final class TradeValidator {
 				warnings.add(id + ": price " + entry.price + " for " + entry.count + " is below the shop price -> " + min);
 				entry.price = min;
 			}
+		}
+		return null;
+	}
+
+	/**
+	 * A unique weapon offer (uniques.json5): one weapon, sold once per visit; its item is only the menu icon (nether star when
+	 * unknown). Never compared with the shop: unique weapons cannot be sold to it.
+	 */
+	private static String checkUnique(TradeEntry entry, Predicate<String> itemExists, List<String> warnings) {
+		entry.unique = entry.unique.trim().toLowerCase(Locale.ROOT);
+		String icon = entry.item == null ? "" : ShopValidator.normalizeId(entry.item);
+		entry.item = icon.isEmpty() || !itemExists.test(icon) ? TradeEntry.UNIQUE_ICON : icon;
+		entry.count = 1;
+		entry.maxUses = 1;
+		entry.enchantment = "";
+		entry.level = 1;
+		if (entry.price < 1 || entry.price > TradeRolls.MAX_PRICE) {
+			int fixed = Math.max(1, Math.min(TradeRolls.MAX_PRICE, entry.price));
+			warnings.add("unique '" + entry.unique + "': price " + entry.price + " -> " + fixed);
+			entry.price = fixed;
+		}
+		if (!Double.isFinite(entry.weight) || entry.weight < 0) {
+			entry.weight = 0;
 		}
 		return null;
 	}

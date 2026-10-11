@@ -46,6 +46,10 @@ dependencies {
 	implementation "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
 	include "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
 
+	// Optional: when the Polymer resource pack mod is installed, the unique weapon models are added to its pack
+	// (dev.guildy.unique.PolymerBridge is only loaded when it is present). Never embedded.
+	compileOnly "eu.pb4:polymer-resource-pack:0.18.4+26.3"
+
 	testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.11.4"
 }
@@ -80,4 +84,21 @@ jar {
 	from("LICENSE") {
 		rename { "${it}_$projectName" }
 	}
+}
+
+// Optional resource pack (unique weapon models and textures) for servers without Polymer:
+// build/libs/guildy-resourcepack-<version>.zip, to host and declare with resource-pack= in server.properties.
+def resourcePackZip = tasks.register('resourcePackZip', Zip) {
+	group = 'build'
+	description = 'Zips the optional Guildy resource pack (unique weapon models).'
+	archiveFileName = "guildy-resourcepack-${project.version}.zip"
+	destinationDirectory = layout.buildDirectory.dir('libs')
+	from('tools/resourcepack')
+	from('src/main/resources/assets') {
+		into 'assets'
+	}
+}
+
+tasks.named('assemble') {
+	dependsOn resourcePackZip
 }

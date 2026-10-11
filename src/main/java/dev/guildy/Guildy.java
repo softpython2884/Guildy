@@ -19,6 +19,7 @@ import dev.guildy.quest.QuestModule;
 import dev.guildy.shop.ShopModule;
 import dev.guildy.structure.StructureModule;
 import dev.guildy.trade.TradeModule;
+import dev.guildy.unique.UniqueModule;
 import dev.guildy.upgrade.UpgradeModule;
 import dev.guildy.villager.VillagerModule;
 import dev.guildy.wave.WaveModule;
@@ -56,6 +57,7 @@ public final class Guildy implements ModInitializer {
 		UpgradeModule.init();
 		TradeModule.init();
 		EventModule.init(); // after the wave and trade modules (hooks into both)
+		UniqueModule.init(); // unique weapons: implements the core UniqueDrops hook
 
 		List<String> errors = ConfigManager.loadAll();
 		String langError = Lang.load();

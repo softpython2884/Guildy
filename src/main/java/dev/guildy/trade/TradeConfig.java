@@ -25,11 +25,18 @@ import java.util.function.Predicate;
 		"(nombre d'echanges par visite), trades (table du palier). Un Carrefour de palier N tire ses echanges dans sa table",
 		"(poids visits.ownTierWeight) et dans celles des paliers inferieurs (poids visits.lowerTierWeight chacune).",
 		"Echange : {item, count (lot), price (or), maxUses (echanges possibles pendant la visite), weight (chance relative),",
-		"enchantment (optionnel, ex. minecraft:mending : livre enchante ou objet enchante), level}.",
+		"enchantment (optionnel, ex. minecraft:mending : livre enchante ou objet enchante), level, unique (optionnel : arme",
+		"unique vendue a la place de l'objet : \"random\" = tiree dans la table \"trade\" d'uniques.json5 a l'arrivee du",
+		"marchand, ou l'id d'une arme ; item n'est alors que l'icone des menus ; une seule par visite)}.",
 		"Regles appliquees au chargement : objets en or et objets inconnus refuses ; un marchand ne vend jamais moins cher",
 		"(a l'unite) que la boutique ni que le prix de rachat de la boutique (pas de boucle d'or ; prix releve sinon)."
 })
 public final class TradeConfig implements Validatable {
+	/** Current file format; older files get the new default offers in {@link #rebuild}. */
+	public static final int CURRENT_VERSION = 2;
+
+	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
+	public int configVersion = 0;
 
 	@Comment("Visites des marchands au Carrefour commercial")
 	public Visits visits = new Visits();
@@ -139,6 +146,10 @@ public final class TradeConfig implements Validatable {
 		if (tiers.isEmpty()) {
 			tiers = defaultTiers();
 		}
+		if (configVersion < 2) {
+			addUniqueOffer();
+		}
+		configVersion = CURRENT_VERSION;
 		int minLevel = 1;
 		for (int i = 0; i < tiers.size(); i++) {
 			Tier tier = tiers.get(i);
@@ -165,6 +176,28 @@ public final class TradeConfig implements Validatable {
 			tier.usable = TradeValidator.clean("tier " + (i + 1), tier.trades, itemExists, shopSells, shopBuys, warnings);
 		}
 		return warnings;
+	}
+
+	/** Version 2 (unique weapons): files written before get the unique weapon offer in their third tier (once). */
+	private void addUniqueOffer() {
+		if (tiers.size() < 3) {
+			return;
+		}
+		for (Tier tier : tiers) {
+			if (tier.trades != null && tier.trades.stream().anyMatch(e -> e != null && e.isUnique())) {
+				return;
+			}
+		}
+		Tier third = tiers.get(2);
+		if (third.trades == null) {
+			third.trades = new ArrayList<>();
+		}
+		third.trades.add(uniqueOffer());
+	}
+
+	/** Tier 3: one unique weapon of the "trade" table of uniques.json5, at a high price (40 gold blocks). */
+	static TradeEntry uniqueOffer() {
+		return TradeEntry.unique(TradeEntry.RANDOM_UNIQUE, 360, 3);
 	}
 
 	private static double clamp(double value, double min, double max) {
@@ -284,7 +317,7 @@ public final class TradeConfig implements Validatable {
 		return list;
 	}
 
-	/** Tier 3 ("trades de fou"): enchanted books, totem, enchanted golden apple, rare treasures. */
+	/** Tier 3 ("trades de fou"): enchanted books, totem, enchanted golden apple, rare treasures, a unique weapon. */
 	static List<TradeEntry> tier3() {
 		List<TradeEntry> list = new ArrayList<>();
 		list.add(TradeEntry.book("minecraft:mending", 1, 48, 5));
@@ -305,6 +338,7 @@ public final class TradeConfig implements Validatable {
 		list.add(e("sniffer_egg", 1, 32, 1, 2));
 		list.add(e("wither_skeleton_skull", 1, 48, 1, 2));
 		list.add(e("elytra", 1, 270, 1, 1));
+		list.add(uniqueOffer());
 		return list;
 	}
 

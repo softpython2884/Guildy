@@ -2,6 +2,7 @@ package dev.guildy.trade;
 
 import dev.guildy.Guildy;
 import dev.guildy.core.ItemUtil;
+import dev.guildy.core.UniqueDrops;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
@@ -65,6 +66,9 @@ public final class TradeOffers {
 
 	/** The sold stack (enchanted when the entry has an enchantment), or null when the item / enchantment is unknown. */
 	public static @Nullable ItemStack result(HolderLookup.Provider registries, TradeEntry entry) {
+		if (entry.isUnique()) {
+			return unique(entry);
+		}
 		Item item = ItemUtil.item(entry.item);
 		if (item == null) {
 			warnOnce(entry.item, "unknown item");
@@ -79,6 +83,19 @@ public final class TradeOffers {
 				return null;
 			}
 			stack.enchant(enchantment, Math.max(1, entry.level));
+		}
+		return stack;
+	}
+
+	/**
+	 * A unique weapon for a unique offer: drawn from the "trade" table of uniques.json5 ("random") or the given unique id.
+	 * Null (offer skipped) when the unique module gives nothing (unknown id, drops disabled).
+	 */
+	private static @Nullable ItemStack unique(TradeEntry entry) {
+		ItemStack stack = TradeEntry.RANDOM_UNIQUE.equals(entry.unique) ? UniqueDrops.roll("trade") : UniqueDrops.create(entry.unique);
+		if (stack.isEmpty()) {
+			warnOnce("unique:" + entry.unique, "unique weapon unavailable");
+			return null;
 		}
 		return stack;
 	}

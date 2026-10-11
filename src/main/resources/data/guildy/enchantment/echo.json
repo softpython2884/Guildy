@@ -1,0 +1,90 @@
+{
+  "description": {
+    "text": "Écho",
+    "color": "#B388FF"
+  },
+  "supported_items": "#guildy:enchantable/unique_weapon",
+  "weight": 1,
+  "max_level": 3,
+  "min_cost": {
+    "base": 60,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 8,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 1.5,
+            "per_level_above_first": 1.0
+          }
+        }
+      }
+    ],
+    "minecraft:post_attack": [
+      {
+        "enchanted": "attacker",
+        "affected": "victim",
+        "effect": {
+          "type": "minecraft:all_of",
+          "effects": [
+            {
+              "type": "minecraft:play_sound",
+              "sound": "minecraft:block.amethyst_block.resonate",
+              "volume": 0.5,
+              "pitch": {
+                "type": "minecraft:uniform",
+                "min_inclusive": 1.4,
+                "max_exclusive": 1.9
+              }
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:sculk_charge_pop"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {},
+              "vertical_velocity": {
+                "base": 0.05
+              },
+              "speed": 1.0
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:sculk_charge_pop"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {},
+              "vertical_velocity": {
+                "base": 0.05
+              },
+              "speed": 1.0
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

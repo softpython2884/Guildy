@@ -195,7 +195,7 @@ chance de la prochaine visite, **aperçu de tous les échanges** de chaque palie
 |---|---|---|---|
 | **I - Halte marchande** | construit (niv. 2) | 5 à 7 | toutes les pousses (cerisier, palétuvier, chêne pâle…), graines, colorants, fleurs, canne à sucre, cactus, bambou, cacao, lianes, nénuphars, baies lumineuses… |
 | **II - Comptoir prospère** | niv. 3, 150 or + 16 émeraudes | 6 à 8 | boules de slime, rayons de miel, coquilles de nautile, éclats d'améthyste, glace bleue, disques, étiquettes, selles, cornichons de mer… |
-| **III - Grand carrefour** | niv. 5, 400 or + 2 blocs de diamant | 7 à 9 | « trades de fou » : livres Raccommodage, Solidité III, Efficacité V, Fortune III, Toucher de soie, Butin III, Protection IV, totem d'immortalité, pomme dorée enchantée, modèle de forge (amélioration en netherite), cœur de la mer, trident, carapaces de shulker, et parfois des **élytres** (chères) |
+| **III - Grand carrefour** | niv. 5, 400 or + 2 blocs de diamant | 7 à 9 | « trades de fou » : livres Raccommodage, Solidité III, Efficacité V, Fortune III, Toucher de soie, Butin III, Protection IV, totem d'immortalité, pomme dorée enchantée, modèle de forge (amélioration en netherite), cœur de la mer, trident, carapaces de shulker, parfois des **élytres** (chères) et une **arme unique** (360 or, voir § 11) |
 
 Un Carrefour de palier III tire surtout dans sa table, mais aussi dans celles des paliers inférieurs. Il faut le droit
 de dépenser le trésor (officier par défaut) pour l'améliorer ; impossible en créatif. Tout se règle dans `trade.json5`.
@@ -212,6 +212,90 @@ Des événements aléatoires pimentent la vie des guildes (tirage une fois par j
 
 L'événement en cours ou à venir (nuit de sang, raid, marchands à la base) s'affiche dans le bouton « Hordes » du menu
 principal et dans le menu des hordes (« Prochaine nuit »).
+
+### 11. Armes uniques
+Des **armes et outils légendaires**, chacun en un seul modèle : nom coloré selon la rareté (**Rare**, **Épique**,
+**Légendaire**, **Mythique**), histoire dans la description, **enchantements de fou** (niveaux au-delà du maximum
+vanilla, combinaisons impossibles autrement, enchantements Guildy), attributs bonus, brillance, souvent incassables, et
+surtout un **pouvoir**. Ce sont des objets vanilla (clients vanilla, sans mod) : ils se rangent, s'échangent et se
+réparent comme leur objet de base.
+
+**Où les trouver** (chances par défaut, `uniques.json5`) :
+
+| Source | Chance | Armes possibles |
+|---|---|---|
+| Boss d'une horde | 4 % | surtout Rares et Épiques, parfois une Légendaire |
+| Boss pendant une **nuit de sang** | 20 % | Épiques, Légendaires et les deux **Mythiques** |
+| Récompense de quête | 1 % | Rares et Épiques |
+| Quête légendaire | 35 % | Épiques, Légendaires, rarement Mythiques |
+| Expédition d'un villageois | 0,5 % | Rares et Épiques |
+| Carrefour commercial palier III | une offre « Arme unique » de temps en temps, **360 or** (40 blocs d'or) | Épiques et Légendaires |
+
+L'arme d'un boss tombe à sa mort, **brille** et ne disparaît jamais (insensible au feu, à la lave et aux explosions).
+Le premier joueur qui obtient une arme **Légendaire** ou **Mythique** est **annoncé à tout le serveur** (« ✦ Steve a obtenu
+[Foudrelame] (butin d'un boss de horde) ! », l'arme s'affiche au survol).
+
+| Arme | Rareté | Base | Pouvoir |
+|---|---|---|---|
+| **Foudrelame** | Légendaire | épée en netherite (Tranchant VI, Foudroiement III) | **Appel de la foudre** : clic droit, la foudre s'abat sur 4 monstres autour du point visé (5 ❤ chacun), recharge 12 s |
+| **Croc-de-Givre** | Épique | épée en diamant (Givre II) | **Onde de givre** : clic droit, gèle et ralentit les monstres à 6 blocs, recharge 18 s |
+| **Murmure du Néant** | Légendaire | épée en netherite rapide (Écho III) | **Pas de l'ombre** : clic droit, téléportation derrière le monstre visé et coup de 5 ❤, recharge 8 s |
+| **Hache de l'Ancien Forestier** | Épique | hache en netherite (Efficacité V) | **Abattage** : coupe tout l'arbre naturel d'un coup |
+| **Pioche du Titan** | Légendaire | pioche en netherite (Efficacité VI, portée +1) | **Excavation** : creuse en 3×3 dans la roche naturelle |
+| **Pic du Filon** | Rare | pioche en diamant (Fortune II) | **Filon** : extrait tout le filon de minerai (32 blocs au plus) |
+| **Bottes de Zéphyr** | Légendaire | bottes en netherite (Apesanteur) | **Double saut** (appuyer deux fois sur Sauter), plus aucun dégât de chute |
+| **Bottes du Coursier** | Rare | bottes en cuir teint | vitesse +20 %, monte les marches d'un bloc sans sauter |
+| **Marteau du Séisme** | Légendaire | masse (Densité V **et** Brèche II, Séisme II) | **Onde de choc** : une attaque écrasante frappe aussi les monstres à 5 blocs |
+| **Arc du Phénix** | Légendaire | arc (Puissance V, Infinité, Brasier II) | **Flèches du phénix** : la cible et les monstres autour s'embrasent |
+| **Arbalète du Traqueur** | Épique | arbalète (Tir multiple **et** Perforation IV, Marque du chasseur II) | aucun (les monstres touchés brillent à travers les murs) |
+| **Trident du Léviathan** | Mythique | trident (Empalement V, Loyauté III, Foudroiement III, Écho II) | **Colère des abysses** : lancé, il foudroie sa cible et l'éclair rebondit sur 3 monstres |
+| **Faux des Âmes** | Mythique | houe en netherite devenue faux (+8 dégâts, Vampirisme III, Moisson III) | **Moisson des âmes** : chaque monstre tué rend 1,5 ❤ et donne de la vitesse |
+| **Coutelas du Contrebandier** | Rare | épée en fer (Butin III, Écho I, chance +1) | aucun |
+
+Les pouvoirs ne touchent **que les monstres** (jamais les joueurs, villageois, animaux ou familiers) et ont tous une
+recharge (affichée sur l'objet comme celle d'une perle de l'Ender pour les pouvoirs au clic droit). La foudre est
+**visuelle** : aucun feu, aucun bloc modifié, aucun villageois changé en sorcière (les dégâts viennent du pouvoir).
+Les pouvoirs de minage passent par le minage normal du joueur (protections, usure, butin) : **jamais dans le territoire
+d'une autre guilde**, jamais le cœur, seulement les arbres naturels (feuilles non posées par un joueur) et la roche ou
+les minerais naturels ; **accroupi**, l'outil mine un seul bloc.
+
+**Enchantements Guildy** (data pack intégré, compatibles clients vanilla ; absents de la table d'enchantement, des
+échanges villageois et du butin aléatoire : on ne les trouve que sur les armes uniques) :
+
+| Enchantement | Niv. max | Effet |
+|---|---|---|
+| **Foudroiement** | III | 15 à 35 % de chance par coup : décharge de foudre (dégâts, étincelles, tonnerre, cible lumineuse) |
+| **Vampirisme** | III | 8 à 20 % de chance par coup au corps à corps : rend 2 ❤ |
+| **Givre** | III | ralentit la cible à chaque coup, parfois des dégâts de froid |
+| **Brasier** | III | embrase la cible, parfois une gerbe de flammes (dégâts de feu) |
+| **Écho** | III | +1,5 à +3,5 dégâts, chaque coup résonne |
+| **Séisme** | II | 20 à 30 % de chance : onde qui repousse tout autour du porteur (aucun dégât, aucun bloc touché) |
+| **Apesanteur** | I | immunité aux dégâts de chute |
+| **Salve** | II | l'arc tire 3 (ou 5) flèches |
+| **Moisson** | III | ×1,5 à ×2,5 d'expérience des monstres tués |
+| **Marque du chasseur** | II | la cible brille (visible à travers les murs) et est affaiblie |
+
+Foudroiement, Givre et Brasier sont exclusifs entre eux (enclume, `/enchant`).
+
+#### Apparence : pack de ressources optionnel (Polymer)
+Sans pack de ressources, chaque arme garde **l'apparence de son objet de base** (nom, description, brillance) : tout
+fonctionne. Guildy fournit aussi des **textures originales** (16×16, certaines **animées** : Foudrelame, Croc-de-Givre,
+Murmure du Néant, Marteau du Séisme, Trident du Léviathan, Faux des Âmes, Arc du Phénix avec ses états de tension), qui ne
+sont utilisées que lorsqu'un pack est garanti (réglage `customModels` d'`uniques.json5`) :
+
+- **Avec Polymer** (`customModels: "auto"`, par défaut) : installez [Polymer](https://modrinth.com/mod/polymer)
+  (`polymer-resource-pack`, et `polymer-autohost` pour l'envoyer automatiquement aux joueurs : `"enabled": true` dans
+  `config/polymer/auto-host.json`). Guildy ajoute ses modèles au pack généré par Polymer et le marque obligatoire
+  (`polymerRequired`).
+- **Sans Polymer** : récupérez `guildy-resourcepack-<version>.zip` (produit par `./gradlew build` ou
+  `./gradlew resourcePackZip` dans `build/libs/`), hébergez-le (lien de téléchargement direct) et déclarez-le dans
+  `server.properties` : `resource-pack=<url>`, `resource-pack-sha1=<sha1 du zip>`, `require-resource-pack=true` ; puis
+  `customModels: "on"` dans `uniques.json5`.
+- `customModels: "off"` : jamais de modèle personnalisé. Les armes déjà en circulation se mettent à jour dans l'inventaire
+  des joueurs au changement de réglage.
+
+Les textures sont générées par `tools/gen_textures.py` (Python 3, sans dépendance) : modifiez-le puis relancez-le pour
+retoucher l'art.
 
 ### Rôles
 **Chef**, **Officier**, **Membre**. Par défaut les membres construisent et interagissent ; les officiers
@@ -266,6 +350,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin event list` | Événements : réglages, nuit de sang prévue, raids en attente, marchands présents par guilde |
 | `/guild admin event start\|stop <événement> [guilde]` | `blood_night` (tout le serveur : la nuit en cours ou la prochaine), `pillager_raid` (immédiat si un membre est au cœur, sinon dès qu'il y en a un), `caravan`, `book_merchant`, `merchant` (visite du Carrefour) ; `stop` annule / renvoie le marchand |
 | `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
+| `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme |
 
 ---
 
@@ -285,6 +370,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
+| `uniques.json5` | Armes uniques : définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
 Une copie des fichiers par défaut (commentés) se trouve dans [`docs/default-config/`](docs/default-config/).
@@ -346,6 +432,9 @@ Formules par défaut (modifiables) :
 - Un `structures.json5` existant reçoit automatiquement une seule fois les nouvelles constructions par défaut (liste
   `knownDefaults`) ; pour ne pas utiliser le Carrefour commercial, retirez-le de `definitions` (pas de `knownDefaults`).
 - Les vagues de test admin lancées pendant une nuit de sang prévue en reçoivent les multiplicateurs (pratique pour tester).
+- Le double saut des Bottes de Zéphyr repose sur l'autorisation de vol vanilla (rendue à l'atterrissage) : un anticheat
+  externe pourrait le signaler. Une arme unique déjà obtenue garde le nom, la description et les enchantements de sa
+  création (son pouvoir et son modèle suivent la config).
 
 ---
 
@@ -356,6 +445,7 @@ Formules par défaut (modifiables) :
 ./gradlew test         # tests unitaires (logique pure)
 ./gradlew runGameTest  # GameTests serveur (scénarios en jeu avec joueurs simulés)
 ./gradlew runServer    # serveur de développement dans ./run
+./gradlew resourcePackZip  # pack de ressources optionnel des armes uniques : build/libs/guildy-resourcepack-<version>.zip
 ```
 
 Java 25 requis (`JAVA_HOME`).

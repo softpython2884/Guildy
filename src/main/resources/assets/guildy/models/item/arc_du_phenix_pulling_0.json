@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/bow",
+  "textures": {
+    "layer0": "guildy:item/arc_du_phenix_pulling_0"
+  }
+}
