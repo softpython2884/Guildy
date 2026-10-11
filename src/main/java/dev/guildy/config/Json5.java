@@ -1,5 +1,6 @@
 package dev.guildy.config;
 
+import com.google.gson.FormattingStyle;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -25,7 +26,7 @@ import java.util.Map;
  */
 public final class Json5 {
 	public static final Gson GSON = new GsonBuilder()
-			.setPrettyPrinting()
+			.setFormattingStyle(FormattingStyle.PRETTY.withIndent("\t"))
 			.disableHtmlEscaping()
 			.setStrictness(Strictness.LENIENT)
 			.create();
@@ -107,7 +108,7 @@ public final class Json5 {
 		String json = GSON.toJson(tree);
 		// Re-indent nested pretty-printed JSON
 		String pad = "\t".repeat(indent);
-		sb.append(json.replace("\n", "\n" + pad).replace("  ", "\t"));
+		sb.append(json.replace("\n", "\n" + pad));
 	}
 
 	/** A "section" is a plain config POJO (not a JDK type, collection, map, enum or record). */
