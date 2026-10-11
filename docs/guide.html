@@ -19,6 +19,8 @@
 	--blood-soft: #f7dbd7;
 	--void: #5a3ea3;
 	--void-soft: #e7e0f7;
+	--sky: #1f5fa8;
+	--sky-soft: #dbe7f7;
 	--slot: #8b8b8b;
 	--slot-hi: #f4f4f4;
 	--slot-lo: #373737;
@@ -55,6 +57,8 @@
 		--blood-soft: #3a1613;
 		--void: #b9a2ff;
 		--void-soft: #241a40;
+		--sky: #8dbcf2;
+		--sky-soft: #142a44;
 		color-scheme: dark;
 	}
 }
@@ -73,6 +77,8 @@
 	--blood-soft: #3a1613;
 	--void: #b9a2ff;
 	--void-soft: #241a40;
+	--sky: #8dbcf2;
+	--sky-soft: #142a44;
 	color-scheme: dark;
 }
 
@@ -155,6 +161,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .pill.red { background: var(--blood-soft); color: var(--blood); }
 .pill.green { background: var(--grass-soft); color: var(--grass); }
 .pill.void { background: var(--void-soft); color: var(--void); }
+.pill.sky { background: var(--sky-soft); color: var(--sky); }
 
 /* ---------- structures (inventory slots) ---------- */
 .builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; margin-top: 1rem; }
@@ -216,7 +223,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 		<div>
 			<div class="eyebrow">Mod du serveur · Minecraft 26.3 · aucun mod à installer</div>
 			<h1>Guildy</h1>
-			<p>Fondez une guilde, plantez votre drapeau, survivez aux hordes qui attaquent votre base chaque nuit, puis agrandissez-la avec des quêtes, une boutique, des villageois qui travaillent pour vous et un arbre d'évolution.</p>
+			<p>Fondez une guilde, plantez votre drapeau, survivez aux hordes qui attaquent votre base chaque nuit, puis agrandissez-la avec des quêtes, une boutique, des villageois qui travaillent pour vous, des armes uniques à arracher aux boss et un arbre d'évolution.</p>
 			<p class="hint">Tout se fait avec <button class="cmd" type="button">/guild</button> (ou <button class="cmd" type="button">/gld</button>) : un menu s'ouvre, pas besoin de retenir les commandes.</p>
 			<div class="loop" aria-label="Boucle de jeu">
 				<span>Fonder la base</span><i>→</i><span>Survivre à la nuit</span><i>→</i><span>Or et butin</span><i>→</i><span>Agrandir</span><i>→</i><span>Recruter des villageois</span><i>→</i><span>Évoluer</span><i>↺ nuits plus dures</i>
@@ -242,6 +249,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<li><a href="#boutique">Or et boutique</a></li>
 				<li><a href="#carrefour">Carrefour commercial</a></li>
 				<li><a href="#villageois">Villageois</a></li>
+				<li><a href="#uniques">Armes uniques</a></li>
 				<li><a href="#evolution">Arbre d'évolution</a></li>
 				<li><a href="#niveaux">Niveaux de guilde</a></li>
 				<li><a href="#commandes">Commandes</a></li>
@@ -351,7 +359,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Horde d'élite mixte</td><td>un peu de tout, beaucoup d'élites</td><td class="num">10</td></tr>
 					</tbody>
 				</table></div>
-				<p>Les <strong>élites</strong> brillent et sont plus résistantes. Un <strong>boss</strong> nommé apparaît au palier 5 puis tous les 5 paliers, avec sa propre barre de vie. Il peut lâcher un drapeau d'extension ou une carte au trésor. Les monstres de la horde lâchent des pépites d'or, et les élites des lingots.</p>
+				<p>Les <strong>élites</strong> brillent et sont plus résistantes. Un <strong>boss</strong> nommé apparaît au palier 5 puis tous les 5 paliers, avec sa propre barre de vie. Il peut lâcher un drapeau d'extension, une carte au trésor ou, plus rarement, une <a href="#uniques">arme unique</a>. Les monstres de la horde lâchent des pépites d'or, et les élites des lingots.</p>
 				<h3>Difficulté</h3>
 				<p>Chaque victoire fait monter la guilde d'un <strong>palier</strong>, et une défaite la fait reculer de 2. Le niveau de la guilde et le nombre de membres présents augmentent aussi la difficulté : plus de monstres (une dizaine au début, jusqu'à 80), plus d'élites, des monstres mieux équipés. Le menu <button class="cmd" type="button">/guild waves</button> montre la prochaine nuit, vos statistiques et les règles.</p>
 				<div class="note danger"><p><strong>Pas de sommeil pendant une horde.</strong> Si la nuit est sautée avant (sommeil, commande), la horde est simplement annulée : pas de gain, pas de perte. Une base désertée plus de 2 minutes annule aussi la horde.</p></div>
@@ -463,8 +471,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Explorer · Découvrir</td><td>Aller à un point situé à 300–800 blocs de la base, ou entrer dans un biome précis (jungle, désert, toundra…).</td></tr>
 					</tbody>
 				</table></div>
-				<p>Récompenses : <strong>or au trésor, XP de guilde</strong>, des objets pour celui qui récupère, parfois un drapeau d'extension ou une <strong>carte au trésor</strong> (allez aux coordonnées indiquées en la tenant en main : un coffre apparaît), et très rarement une <strong>arme unique</strong>.</p>
-				<div class="note"><p><strong>Contrat légendaire :</strong> à partir du niveau 3, une nouvelle quête a parfois une bordure dorée. Elle est deux fois plus longue et plus dure, paie bien plus d'or et d'XP, et sa récompense contient une <strong>arme unique</strong>. Un seul contrat légendaire à la fois.</p></div>
+				<p>Récompenses : <strong>or au trésor, XP de guilde</strong>, des objets pour celui qui récupère, parfois un drapeau d'extension ou une <strong>carte au trésor</strong> (allez aux coordonnées indiquées en la tenant en main : un coffre apparaît), et très rarement une <a href="#uniques"><strong>arme unique</strong></a>.</p>
+				<div class="note"><p><strong>Contrat légendaire :</strong> à partir du niveau 3, une nouvelle quête a parfois une bordure dorée. Elle est deux fois plus longue et plus dure, paie bien plus d'or et d'XP, et elle a 35 % de chance de rapporter une <a href="#uniques"><strong>arme unique</strong></a>. Un seul contrat légendaire à la fois.</p></div>
 				<p class="hint">Les joueurs en créatif ne font pas avancer les quêtes.</p>
 			</section>
 
@@ -521,7 +529,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<thead><tr><th>Tâche</th><th>Ce qu'il fait</th><th>Il faut</th></tr></thead>
 					<tbody>
 						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de sa catégorie.</td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
-						<tr><td>Mineur</td><td>Va à sa mine et en rapporte minerais ou pierre selon l'objectif de la zone. Plus le fanion est profond, meilleur est le butin (diamants seulement tout en bas).</td><td>Un coffre de dépôt ; une zone de mine (sinon : la pierre à nu la plus proche)</td></tr>
+						<tr><td>Mineur</td><td>Creuse vraiment sa mine : un escalier en colimaçon jusqu'à la profondeur choisie, puis des galeries qui suivent les filons (ou des salles de carrière pour la pierre). Il remonte vider son sac et ne casse jamais vos constructions. <a href="#mine">Détails</a></td><td>Un coffre de dépôt ; une zone de mine (sinon : la pierre à nu la plus proche, en minage simulé)</td></tr>
 						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois), seulement l'essence choisie si vous en choisissez une, et replante.</td><td>Un coffre de dépôt ; une zone de coupe (sinon : les arbres les plus proches)</td></tr>
 						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes ») et replante.</td><td>Un coffre de dépôt ; une zone de champs (sinon : les cultures les plus proches)</td></tr>
 						<tr><td>Garde</td><td>Patrouille dans sa zone ou suit son parcours de garde, tue les monstres, défend le cœur pendant les hordes. Ne dort pas, ne fuit pas.</td><td>Facultatif : une zone de patrouille ou un parcours (sinon : autour du cœur)</td></tr>
@@ -529,15 +537,31 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Expédition au Nether</td><td>Passe par votre portail pendant 12 minutes et revient avec quartz, or, poudre lumineuse, bâtons de blaze… <span class="pill red">12 % de risque de perte</span></td><td>Un portail du Nether dans le territoire</td></tr>
 					</tbody>
 				</table></div>
+				<p class="hint">Chaque expédition, exploration ou Nether, a aussi 2 % de chance de rapporter une <a href="#uniques">arme unique</a>.</p>
 				<h3>Zones de travail et fanions</h3>
 				<p>Une zone dit à vos villageois <strong>où</strong> travailler et <strong>quoi</strong> chercher. Elle peut être dans le territoire ou <strong>en dehors</strong> (jusqu'à 192 blocs du cœur, jamais chez une autre guilde, 12 zones maximum).</p>
 				<ol>
 					<li><button class="cmd" type="button">/guild villagers zones</button> (ou menu Villageois → Zones et parcours) → « Créer une zone » → choisissez le type : <strong>Mine</strong>, <strong>Coupe de bois</strong>, <strong>Champs</strong> ou <strong>Patrouille</strong>. Vous recevez un <strong>fanion</strong>.</li>
-					<li>Plantez le fanion (clic droit au sol) au centre de la zone. Pour une mine, plantez-le au fond : sa hauteur fixe la profondeur. Clic droit sur le type crée la zone directement à vos pieds, sans fanion.</li>
+					<li>Plantez le fanion (clic droit au sol) au centre de la zone. Pour une mine, plantez-le en surface sur un sol naturel : l'escalier des mineurs partira de là. Clic droit sur le type crée la zone directement à vos pieds, sans fanion.</li>
 					<li>Dans le menu de la zone, réglez le <strong>rayon en chunks</strong> (0 = le chunk du fanion, 1 = 3 × 3 chunks, jusqu'à 3) et l'<strong>objectif</strong> : minerais, pierre et variantes ou tout venant pour une mine ; toutes essences ou une seule (chêne, sapin, bouleau, cerisier…) pour la coupe ; toutes cultures ou une seule pour les champs.</li>
 					<li>Dans le menu du villageois, « Zone de travail » → choisissez la zone. « Automatique » le laisse chercher tout seul autour de lui (arbres ou cultures dans un rayon de 48 blocs, mine la plus proche).</li>
 				</ol>
 				<p>« Afficher » dessine la zone en particules pendant 20 secondes. Un membre qui gère les villageois peut casser le fanion pour supprimer la zone ; les autres joueurs ne peuvent pas y toucher. Les villageois ne travaillent une zone que lorsqu'un joueur est dans les parages (zone chargée).</p>
+				<h3 id="mine">Mine réelle</h3>
+				<p>Une zone de mine est en mode <strong>Réel</strong> par défaut : les mineurs creusent vraiment, et seulement dans le carré de la zone.</p>
+				<div class="cards">
+					<div class="card"><h3>1. L'escalier</h3><p>Depuis le fanion, un escalier en colimaçon (1 bloc de large, 3 de haut) descend jusqu'à la <strong>profondeur cible</strong>, avec une torche toutes les 8 marches. Il passe loin des constructions, de l'eau et de la lave, et vous pouvez l'emprunter aussi.</p></div>
+					<div class="card"><h3>2. Les galeries</h3><p>Au fond, une galerie principale et des galeries latérales tous les 3 blocs. Les filons visibles sont suivis jusqu'au bout ; pour l'objectif Pierre, ce sont des salles de carrière de 5 × 5. Quand un niveau est fini, le suivant s'ouvre 8 blocs plus bas.</p></div>
+					<div class="card"><h3>3. Le retour</h3><p>Sac plein, mission atteinte ou fin de journée : il remonte par ses tunnels, vide son sac au coffre de dépôt, puis redescend au front de taille.</p></div>
+				</div>
+				<p><strong>Il ne casse jamais vos constructions.</strong> Il ne prend que des blocs naturels (pierre, ardoise des abîmes, terre, gravier, minerais…). Il ne touche jamais à un bloc posé (planches, briques, verre…), à un coffre ou un panneau, à un bloc qui soutient une construction, ni au territoire d'une autre guilde. S'il tombe sur de l'eau ou de la lave, il bouche avec un bloc de son sac ; sinon, il abandonne la galerie. Plusieurs mineurs se partagent la mine sans jamais creuser les mêmes blocs.</p>
+				<p>Le menu de la zone propose trois réglages :</p>
+				<ul>
+					<li><strong>Mode</strong> : Réel, ou Simulé (l'ancien minage, sans bloc cassé, où la hauteur du fanion fixe le butin) ;</li>
+					<li><strong>Profondeur cible</strong> : −8 / +8 ; par défaut Y −54 pour les minerais et Y 16 pour le tout venant ;</li>
+					<li><strong>Exploitation</strong> : étape en cours, profondeur atteinte, blocs minés, minerais trouvés, dernier incident, et « Réinitialiser l'exploitation ».</li>
+				</ul>
+				<p class="hint">Les villageois ne savent pas monter aux échelles : ils passent toujours par l'escalier. Une mine réelle n'avance que si un joueur est dans les parages (zone chargée).</p>
 				<h3>Parcours de garde</h3>
 				<p>Menu Zones et parcours → « Nouveau parcours » (ou <button class="cmd" type="button">/guild villagers route new</button>). Faites clic droit sur les endroits par où passer (jusqu'à 16 points, un aperçu en particules suit votre tracé), puis <strong>accroupi + clic droit</strong> pour terminer. Assignez des gardes au parcours : ils le suivent en boucle ou en aller-retour, s'arrêtent à chaque point, combattent les monstres proches puis reprennent leur ronde.</p>
 				<p><strong>Appeler ici :</strong> le bouton du menu du villageois le fait venir à côté de vous, si vous êtes dans le territoire ou dans une de ses zones.</p>
@@ -551,6 +575,66 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<h3>Coffres de stockage</h3>
 				<p>Menu Villageois → Stockage → « Ajouter un coffre », puis clic droit sur un coffre (ou tonneau) du territoire dans les 30 secondes. Choisissez son rôle : <strong>dépôt</strong> (les travailleurs y vident leur sac) ou une <strong>catégorie</strong> : Bois, Pierre &amp; terre, Minerais &amp; lingots, Cultures &amp; nourriture, Butin de monstres, Outils &amp; armes, Divers.</p>
 				<div class="note"><p>La nuit et pendant les hordes, les travailleurs vont se coucher (statut « Repos »), et les gardes restent dehors. Un villageois peut <strong>mourir</strong> dans une horde : protégez-les.</p></div>
+			</section>
+
+			<!-- ================================================================ UNIQUE WEAPONS -->
+			<section id="uniques">
+				<div class="eyebrow">Butin</div>
+				<h2>Armes uniques</h2>
+				<p>Des armes et outils légendaires, chacun avec son nom, son histoire, des <strong>enchantements hors normes</strong> (au-delà du maximum vanilla, ou des combinaisons normalement impossibles) et souvent un <strong>pouvoir</strong>. Rien à installer : ce sont des objets du jeu, qui se rangent, s'échangent et se réparent comme leur objet de base.</p>
+				<h3>Où les trouver</h3>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Source</th><th class="num">Chance</th><th>Ce qui peut tomber</th></tr></thead>
+					<tbody>
+						<tr><td>Boss d'une horde</td><td class="num">4 %</td><td>Surtout Rares et Épiques, parfois une Légendaire</td></tr>
+						<tr><td>Boss pendant une <a href="#evenements">nuit de sang</a></td><td class="num">20 %</td><td>Épiques, Légendaires et les deux Mythiques</td></tr>
+						<tr><td>Récompense de quête</td><td class="num">1 %</td><td>Rares et Épiques</td></tr>
+						<tr><td>Contrat légendaire</td><td class="num">35 %</td><td>Épiques, Légendaires, rarement une Mythique</td></tr>
+						<tr><td>Expédition d'un villageois</td><td class="num">2 %</td><td>Rares et Épiques, très rarement les Bottes de Zéphyr</td></tr>
+						<tr><td>Carrefour commercial, palier III</td><td class="num">parfois</td><td>Une offre « Arme unique » à 360 or : Épique ou Légendaire</td></tr>
+					</tbody>
+				</table></div>
+				<p>L'arme d'un boss tombe au sol, brille et ne disparaît jamais : ni le feu, ni la lave, ni les explosions ne la détruisent. Le premier joueur qui obtient une arme Légendaire ou Mythique est annoncé à tout le serveur.</p>
+				<h3>Les 14 armes</h3>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Arme</th><th>Rareté</th><th>Base</th><th>Pouvoir</th></tr></thead>
+					<tbody>
+						<tr><td><strong>Foudrelame</strong></td><td><span class="pill gold">Légendaire</span></td><td>Épée en netherite</td><td>Clic droit : la foudre s'abat sur 4 monstres autour du point visé (recharge 12 s)</td></tr>
+						<tr><td><strong>Croc-de-Givre</strong></td><td><span class="pill void">Épique</span></td><td>Épée en diamant</td><td>Clic droit : une onde de givre gèle et ralentit les monstres à 6 blocs (recharge 18 s)</td></tr>
+						<tr><td><strong>Murmure du Néant</strong></td><td><span class="pill gold">Légendaire</span></td><td>Épée en netherite</td><td>Clic droit : téléportation derrière le monstre visé, qui est frappé (recharge 8 s)</td></tr>
+						<tr><td><strong>Hache de l'Ancien Forestier</strong></td><td><span class="pill void">Épique</span></td><td>Hache en netherite</td><td>Abat tout un arbre naturel d'un coup</td></tr>
+						<tr><td><strong>Pioche du Titan</strong></td><td><span class="pill gold">Légendaire</span></td><td>Pioche en netherite</td><td>Creuse en 3 × 3 dans la roche naturelle</td></tr>
+						<tr><td><strong>Pic du Filon</strong></td><td><span class="pill sky">Rare</span></td><td>Pioche en diamant</td><td>Extrait tout un filon de minerai (32 blocs au plus)</td></tr>
+						<tr><td><strong>Bottes de Zéphyr</strong></td><td><span class="pill gold">Légendaire</span></td><td>Bottes en netherite</td><td>Double saut (sauter deux fois) et plus aucun dégât de chute</td></tr>
+						<tr><td><strong>Bottes du Coursier</strong></td><td><span class="pill sky">Rare</span></td><td>Bottes en cuir</td><td>Vitesse +20 %, monte les marches d'un bloc sans sauter</td></tr>
+						<tr><td><strong>Marteau du Séisme</strong></td><td><span class="pill gold">Légendaire</span></td><td>Masse</td><td>Une attaque écrasante frappe aussi les monstres à 5 blocs</td></tr>
+						<tr><td><strong>Arc du Phénix</strong></td><td><span class="pill gold">Légendaire</span></td><td>Arc</td><td>La cible et les monstres autour s'embrasent</td></tr>
+						<tr><td><strong>Arbalète du Traqueur</strong></td><td><span class="pill void">Épique</span></td><td>Arbalète</td><td>Tir multiple et Perforation IV ensemble ; les monstres touchés brillent à travers les murs</td></tr>
+						<tr><td><strong>Trident du Léviathan</strong></td><td><span class="pill red">Mythique</span></td><td>Trident</td><td>Lancé, il foudroie sa cible et l'éclair rebondit sur 3 monstres</td></tr>
+						<tr><td><strong>Faux des Âmes</strong></td><td><span class="pill red">Mythique</span></td><td>Houe en netherite devenue faux</td><td>Chaque monstre tué rend 1,5 ❤ et donne de la vitesse</td></tr>
+						<tr><td><strong>Coutelas du Contrebandier</strong></td><td><span class="pill sky">Rare</span></td><td>Épée en fer</td><td>Aucun pouvoir, mais Butin III et de la chance en plus</td></tr>
+					</tbody>
+				</table></div>
+				<p class="hint">Les pouvoirs ne touchent que les <strong>monstres</strong> : jamais les joueurs, les villageois, les animaux ni les familiers. La foudre ne met pas le feu et ne modifie aucun bloc. Les outils (abattage, 3 × 3, filon) respectent les territoires et ne touchent jamais au cœur ; accroupi, ils ne minent qu'un seul bloc.</p>
+				<h3>Enchantements Guildy</h3>
+				<p>On ne les trouve que sur les armes uniques : ni table d'enchantement, ni échanges, ni coffres.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Enchantement</th><th class="num">Niv. max</th><th>Effet</th></tr></thead>
+					<tbody>
+						<tr><td>Foudroiement</td><td class="num">III</td><td>15 à 35 % de chance par coup : décharge de foudre</td></tr>
+						<tr><td>Vampirisme</td><td class="num">III</td><td>8 à 20 % de chance par coup : rend 2 ❤</td></tr>
+						<tr><td>Givre</td><td class="num">III</td><td>Ralentit la cible, parfois des dégâts de froid</td></tr>
+						<tr><td>Brasier</td><td class="num">III</td><td>Embrase la cible, parfois une gerbe de flammes</td></tr>
+						<tr><td>Écho</td><td class="num">III</td><td>+1,5 à +3,5 dégâts, chaque coup résonne</td></tr>
+						<tr><td>Séisme</td><td class="num">II</td><td>Parfois une onde qui repousse tout autour du porteur</td></tr>
+						<tr><td>Apesanteur</td><td class="num">I</td><td>Aucun dégât de chute</td></tr>
+						<tr><td>Salve</td><td class="num">II</td><td>L'arc tire 3 (ou 5) flèches</td></tr>
+						<tr><td>Moisson</td><td class="num">III</td><td>×1,5 à ×2,5 d'expérience sur les monstres tués</td></tr>
+						<tr><td>Marque du chasseur</td><td class="num">II</td><td>La cible brille à travers les murs et est affaiblie</td></tr>
+					</tbody>
+				</table></div>
+				<p class="hint">Foudroiement, Givre et Brasier ne se combinent pas entre eux.</p>
+				<div class="note"><p><strong>Apparence :</strong> si le serveur active le pack de ressources de Guildy, les armes ont leurs propres textures, dont 7 animées. Sinon, elles gardent l'apparence de leur objet de base, avec leur nom coloré et leur brillance.</p></div>
 			</section>
 
 			<!-- ================================================================ UPGRADES -->
@@ -637,6 +721,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Faites clic droit sur la <strong>face avant</strong> du mur. L'espace devant doit être libre pour les panneaux. Tout le mur doit être dans votre territoire, la construction débloquée et la guilde au bon niveau. Si un bloc est faux, le message donne le bloc attendu et ses coordonnées.</p></details>
 				<details><summary>Mon villageois ne fait rien</summary>
 					<p>Regardez son statut dans <button class="cmd" type="button">/guild villagers</button>. La nuit et pendant une horde, il se repose. Les causes habituelles sont ensuite : pas de coffre de dépôt, zone de travail non chargée (aucun joueur à proximité), rien à faire dans la zone (pas d'arbre de l'essence choisie, pas de culture mûre), ou tâche « Inactif ». En mode automatique, son statut dit ce qu'il a choisi. S'il est bloqué en chemin, il finit par se téléporter à côté de sa destination.</p></details>
+				<details><summary>Mon mineur ne creuse pas</summary>
+					<p>Ouvrez le menu de sa zone, puis « Exploitation » : le dernier incident (lave, eau, construction…) dit ce qui bloque. Le fanion doit être planté sur un sol naturel avec de la roche dessous, la zone doit être chargée (un joueur à proximité) et il faut un coffre de dépôt. Si l'escalier est coincé, changez la profondeur cible ou utilisez « Réinitialiser l'exploitation ».</p></details>
 				<details><summary>La boutique refuse de m'acheter un objet</summary>
 					<p>Seuls les objets « normaux » se vendent (pas enchantés, renommés ni abîmés), jamais en créatif, et certains articles demandent un niveau de guilde.</p></details>
 				<details><summary>Nous avons perdu une horde, qu'est-ce qu'on perd ?</summary>
@@ -649,7 +735,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.0.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.1.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -670,6 +756,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin event list</button></td><td>Événements en cours et prévus</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin event start|stop &lt;événement&gt; [guilde]</button></td><td>Déclencher ou arrêter <code>blood_night</code>, <code>pillager_raid</code>, <code>caravan</code>, <code>book_merchant</code>, <code>merchant</code></td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin trade tier &lt;guilde&gt; &lt;palier&gt;</button></td><td>Régler le palier du carrefour commercial</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin unique list</button> · <button class="cmd" type="button">/guild admin unique give &lt;joueur&gt; &lt;id&gt;</button></td><td>Lister les armes uniques, en donner une</td></tr>
 						</tbody>
 					</table></div>
 					<p class="hint">Les noms de guilde avec des espaces se mettent entre guillemets quand un autre argument suit.</p>
@@ -683,13 +770,22 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><code>structures.json5</code></td><td>Plans, coûts et niveaux des constructions</td></tr>
 							<tr><td><code>quests.json5</code></td><td>Modèles de quêtes et récompenses</td></tr>
 							<tr><td><code>shop.json5</code></td><td>Catalogue de la boutique</td></tr>
-							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches, expéditions, catégories de rangement</td></tr>
+							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches, expéditions, mine réelle (<code>realMining</code>), catégories de rangement</td></tr>
 							<tr><td><code>upgrades.json5</code></td><td>Arbre d'évolution</td></tr>
 							<tr><td><code>events.json5</code></td><td>Événements : chances, délais, effets (dont <code>randomEvents</code> pour tout couper)</td></tr>
 							<tr><td><code>trade.json5</code></td><td>Carrefour commercial : paliers, visites, tables d'offres</td></tr>
+							<tr><td><code>uniques.json5</code></td><td>Armes uniques : objets, pouvoirs, chances de butin par source, apparence (<code>customModels</code>)</td></tr>
 							<tr><td><code>lang.json</code></td><td>Tous les textes affichés aux joueurs</td></tr>
 						</tbody>
 					</table></div>
+				</details>
+				<details><summary>Pack de ressources des armes uniques (facultatif)</summary>
+					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
+					<ul>
+						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.1.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
+					</ul>
 				</details>
 			</section>
 

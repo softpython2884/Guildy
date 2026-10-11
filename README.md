@@ -1,8 +1,9 @@
 # Guildy
 
 Mod **Fabric 100 % serveur** pour Minecraft **26.3** : survie coopérative en guildes (**PvE uniquement**).
-Les joueurs se connectent avec un **client vanilla**, sans mod ni resource pack : tout passe par des menus
-(inventaires), des titres, la barre d'action, des bossbars et du chat cliquable.
+Les joueurs se connectent avec un **client vanilla**, sans mod : tout passe par des menus (inventaires), des titres,
+la barre d'action, des bossbars et du chat cliquable. Un pack de ressources **facultatif** donne leurs textures aux
+armes uniques.
 
 Guide du joueur (HTML) : [`docs/guide-standalone.html`](docs/guide-standalone.html) — à ouvrir dans un navigateur
 ou à héberger pour les joueurs.
@@ -10,6 +11,25 @@ ou à héberger pour les joueurs.
 > Fonder une base avec un drapeau → survivre aux hordes de la nuit → gagner de l'or et du butin →
 > agrandir le territoire avec des drapeaux → recruter des villageois et leur confier des tâches →
 > quêtes, boutique et marchands de passage → se renforcer → des nuits toujours plus dures (et parfois une nuit de sang).
+
+## Fonctionnalités
+
+- **Guildes** : chef, officiers et membres, invitations, trésor en lingots d'or, point de retour.
+- **Territoire** : drapeau fondateur (le cœur de la base) et drapeaux d'extension par chunk, protections (explosions,
+  feu, pistons, fluides), limites affichées en particules, bannière tissée au métier à tisser et visible sur les cartes.
+- **Hordes nocturnes** : 7 thèmes (morts-vivants, arachnides, illageois, Nether, End, boss, élites), difficulté
+  progressive, élites et boss avec bossbar ; il faut défendre le cœur jusqu'à l'aube.
+- **Événements** : nuit de sang, raid de pillards en plein jour, caravane marchande, marchand de livres enchantés.
+- **Constructions multiblocs** : tableau de quêtes, comptoir de commerce, bureau d'accueil, carrefour commercial.
+- **Quêtes** : 17 types (chasse, minage, livraison, artisanat, pêche, élevage, exploration, boss…), contrats légendaires,
+  cartes au trésor.
+- **Économie** : boutique de guilde, carrefour commercial à 3 paliers avec marchands de passage.
+- **Villageois** : rangement des coffres, **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier,
+  garde avec parcours de ronde, expéditions (exploration, Nether), zones de travail par fanions, missions.
+- **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
+- **Armes uniques** : 14 armes et outils à pouvoirs (foudre, givre, téléportation, double saut, minage 3×3…),
+  10 enchantements inédits, textures animées facultatives.
+- **Tout est configurable** : fichiers JSON5 commentés en français, rechargeables à chaud ; permissions LuckPerms.
 
 ---
 
@@ -22,9 +42,12 @@ ou à héberger pour les joueurs.
 | Fabric Loader | ≥ 0.19.5 |
 | [Fabric API](https://modrinth.com/mod/fabric-api) | 0.162.0+26.3 (ou plus récent pour 26.3) |
 
-1. Déposer `guildy-1.0.0.jar` **et** Fabric API dans le dossier `mods/` du serveur.
+1. Télécharger `guildy-<version>.jar` depuis les [Releases](../../releases), le déposer **avec** Fabric API dans le
+   dossier `mods/` du serveur (retirer l'ancienne version de Guildy s'il y en a une).
 2. Démarrer le serveur : les fichiers de configuration sont créés dans `config/guildy/`.
 3. Rien à installer côté client.
+4. Facultatif : [Polymer](https://modrinth.com/mod/polymer) pour envoyer aux joueurs les textures des armes uniques
+   (voir [§ 11](#11-armes-uniques)).
 
 Bibliothèques **embarquées** dans le jar (rien à installer) : [SGUI](https://github.com/Patbox/sgui) (menus serveur)
 et [fabric-permissions-api](https://github.com/lucko/fabric-permissions-api) (compatible LuckPerms).
@@ -295,7 +318,7 @@ réparent comme leur objet de base.
 | Boss pendant une **nuit de sang** | 20 % | Épiques, Légendaires et les deux **Mythiques** |
 | Récompense de quête | 1 % | Rares et Épiques |
 | Quête légendaire | 35 % | Épiques, Légendaires, rarement Mythiques |
-| Expédition d'un villageois | 0,5 % | Rares et Épiques |
+| Expédition d'un villageois | 2 % | Rares et Épiques (très rarement les Bottes de Zéphyr) |
 | Carrefour commercial palier III | une offre « Arme unique » de temps en temps, **360 or** (40 blocs d'or) | Épiques et Légendaires |
 
 L'arme d'un boss tombe à sa mort, **brille** et ne disparaît jamais (insensible au feu, à la lave et aux explosions).
@@ -514,11 +537,16 @@ Formules par défaut (modifiables) :
 ## Développement
 
 ```bash
-./gradlew build        # jar : build/libs/guildy-1.0.0.jar (+ tests unitaires et GameTests serveur)
+./gradlew build        # jar : build/libs/guildy-<version>.jar (+ tests unitaires et GameTests serveur)
 ./gradlew test         # tests unitaires (logique pure)
 ./gradlew runGameTest  # GameTests serveur (scénarios en jeu avec joueurs simulés)
 ./gradlew runServer    # serveur de développement dans ./run
 ./gradlew resourcePackZip  # pack de ressources optionnel des armes uniques : build/libs/guildy-resourcepack-<version>.zip
 ```
 
-Java 25 requis (`JAVA_HOME`).
+Java 25 requis (`JAVA_HOME`). Architecture, décisions de conception et notes techniques :
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
+## Licence
+
+[MIT](LICENSE).
