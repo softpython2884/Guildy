@@ -6,7 +6,8 @@
 	"environment": "*",
 	"entrypoints": {
 		"fabric-gametest": [
-			"dev.guildy.test.GuildyGameTests"
+			"dev.guildy.test.GuildyGameTests",
+			"dev.guildy.test.TerritoryGameTests"
 		]
 	},
 	"depends": {

@@ -15,6 +15,7 @@ import java.util.List;
 /**
  * In-world integration tests (headless server). Run with `gradlew build` or `gradlew runGameTest`.
  */
+@SuppressWarnings("removal")
 public class GuildyGameTests {
 
 	/** Core: guild creation, indexes, claims lookup, XP level-up, treasury and JSON persistence round-trip. */
