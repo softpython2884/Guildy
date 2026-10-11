@@ -3,6 +3,12 @@
 	"package": "dev.guildy.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"BannerBlockMixin",
+		"FireBlockMixin",
+		"FlowingFluidMixin",
+		"PistonStructureResolverMixin",
+		"ProjectileMixin",
+		"ServerExplosionMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
