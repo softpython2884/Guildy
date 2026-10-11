@@ -104,8 +104,10 @@
 		// Distance minimale (blocs) entre un point d'apparition et le coeur
 		"minHeartDistance": 10,
 
-		// Decalage du point d'apparition par rapport au bord exterieur du territoire (negatif = a l'interieur)
-		"edgeOffsetMin": -3,
+		// Decalage du point d'apparition par rapport au bord du territoire, en blocs : 1 = premier bloc a l'exterieur.
+		// Avec un minimum >= 1, les monstres apparaissent toujours dehors, jamais sur les remparts construits au bord.
+		// 0 ou negatif = peut apparaitre a l'interieur du territoire.
+		"edgeOffsetMin": 1,
 		"edgeOffsetMax": 6,
 
 		// Si la zone n'est pas chargee/active, le point est rapproche du coeur par pas de N blocs

@@ -143,8 +143,12 @@ public final class WaveConfig implements Validatable {
 		public int minPlayerDistance = 12;
 		@Comment("Distance minimale (blocs) entre un point d'apparition et le coeur")
 		public int minHeartDistance = 10;
-		@Comment("Decalage du point d'apparition par rapport au bord exterieur du territoire (negatif = a l'interieur)")
-		public int edgeOffsetMin = -3;
+		@Comment({
+				"Decalage du point d'apparition par rapport au bord du territoire, en blocs : 1 = premier bloc a l'exterieur.",
+				"Avec un minimum >= 1, les monstres apparaissent toujours dehors, jamais sur les remparts construits au bord.",
+				"0 ou negatif = peut apparaitre a l'interieur du territoire."
+		})
+		public int edgeOffsetMin = 1;
 		public int edgeOffsetMax = 6;
 		@Comment("Si la zone n'est pas chargee/active, le point est rapproche du coeur par pas de N blocs")
 		public int walkStep = 8;
