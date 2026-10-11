@@ -18,6 +18,11 @@ import java.util.Locale;
 		"Rechargement a chaud : /guild admin reload"
 })
 public final class WaveConfig implements Validatable {
+	/** Current file format; older files get their untouched old defaults migrated in {@link #validate()}. */
+	public static final int CURRENT_VERSION = 2;
+
+	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
+	public int configVersion = 0;
 
 	@Comment("Activer les hordes nocturnes")
 	public boolean enabled = true;
@@ -536,6 +541,12 @@ public final class WaveConfig implements Validatable {
 		if (spawning == null) {
 			spawning = new Spawning();
 		}
+		// Migrations: only values still equal to the old default change (admin edits are kept).
+		if (configVersion < 2 && spawning.edgeOffsetMin == -3) {
+			// v2: hordes spawn just outside the territory (never on top of border walls).
+			spawning.edgeOffsetMin = 1;
+		}
+		configVersion = CURRENT_VERSION;
 		if (mobs == null) {
 			mobs = new MobSettings();
 		}
