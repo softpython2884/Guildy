@@ -1,6 +1,14 @@
 package dev.guildy.test;
 
+import com.mojang.authlib.GameProfile;
 import dev.guildy.core.GuildyItems;
+import io.netty.channel.embedded.EmbeddedChannel;
+import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.world.level.GameType;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -19,7 +27,11 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -28,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @SuppressWarnings("removal")
 final class TestSupport {
+	private static final Logger LOGGER = LoggerFactory.getLogger("GuildyTest");
 	private static final AtomicInteger REGIONS = new AtomicInteger();
 	/** Random per run: the test world is reused, so avoid the blocks left by previous runs. */
 	private static final int BASE_X = 40000 + (int) (Math.random() * 400) * 65536;
@@ -90,8 +103,31 @@ final class TestSupport {
 
 	/** Connected mock player (creative) standing at {@code pos}. */
 	static ServerPlayer player(GameTestHelper helper, BlockPos pos) {
-		ServerPlayer player = helper.makeMockServerPlayerInLevel();
-		player.teleportTo(helper.getLevel(), pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, Set.of(), 0, 0, true);
+		return connected(helper, pos, GameType.CREATIVE, "test-creative");
+	}
+
+	/** Connected mock player in SURVIVAL mode. */
+	static ServerPlayer survivor(GameTestHelper helper, BlockPos pos) {
+		return connected(helper, pos, GameType.SURVIVAL, "test-survivor");
+	}
+
+	/** Mock player with an embedded connection; its chat messages are written to the log (handy to debug tests). */
+	private static ServerPlayer connected(GameTestHelper helper, BlockPos pos, GameType mode, String name) {
+		ServerLevel level = helper.getLevel();
+		MinecraftServer server = level.getServer();
+		CommonListenerCookie cookie = CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(), name), false);
+		ServerPlayer player = new ServerPlayer(server, level, cookie.gameProfile(), cookie.clientInformation()) {
+			@Override
+			public void sendSystemMessage(Component message, boolean overlay) {
+				LOGGER.info("[{}] {}", name, message.getString());
+				super.sendSystemMessage(message, overlay);
+			}
+		};
+		Connection connection = new Connection(PacketFlow.SERVERBOUND);
+		new EmbeddedChannel(connection);
+		server.getPlayerList().placeNewPlayer(connection, player, cookie);
+		player.setGameMode(mode);
+		player.teleportTo(level, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, Set.of(), 0, 0, true);
 		return player;
 	}
 
