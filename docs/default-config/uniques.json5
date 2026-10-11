@@ -1,0 +1,678 @@
+// Guildy - armes uniques : armes et outils legendaires (enchantements de fou, pouvoirs, modeles optionnels).
+// Ils tombent des boss des hordes (bien plus souvent pendant une nuit de sang), des quetes, des expeditions des
+// villageois et se vendent parfois au Carrefour commercial palier III (trade.json5).
+// Commandes admin : /guild admin unique list | give <joueur> <id>.
+{
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 1,
+
+	// Butin : les armes uniques tombent des boss, des quetes, des expeditions et se vendent au Carrefour (false = plus aucune)
+	"dropsEnabled": true,
+
+	// Pouvoirs des armes uniques (foudre, double saut, abattage...). false = elles ne gardent que leurs enchantements
+	"powersEnabled": true,
+
+	// Modeles et textures personnalises (pack de ressources) :
+	// "auto" = seulement si le mod Polymer (polymer-resource-pack) est installe : Guildy ajoute ses textures a son pack ;
+	// "on" = toujours (l'admin heberge guildy-resourcepack-<version>.zip : resource-pack= dans server.properties) ;
+	// "off" = jamais : les armes gardent l'apparence de leur objet de base (nom, description et brillance)
+	"customModels": "auto",
+
+	// Avec Polymer : pack de ressources obligatoire (sinon un joueur qui le refuse verrait des textures manquantes)
+	"polymerRequired": true,
+
+	// Annonce a tout le serveur quand un joueur obtient une arme unique
+	"announce": {
+
+		// Raretes annoncees a tout le serveur (RARE, EPIC, LEGENDARY, MYTHIC)
+		"rarities": [
+			"LEGENDARY",
+			"MYTHIC"
+		],
+
+		// Son joue a tous les joueurs lors de l'annonce
+		"sound": true
+	},
+
+	// Tables de butin par source : chance (0 a 1) qu'une arme unique tombe, puis tirage pondere dans items {id: poids}.
+	// Sources : boss (boss des hordes), blood_boss (boss pendant une nuit de sang), quest (recompense de quete, rare),
+	// legendary_quest (quete legendaire), expedition (expeditions des villageois), trade (Carrefour commercial : l'offre
+	// "arme unique" de trade.json5 tire ici l'arme proposee). announce : annoncer l'obtention (raretes de "announce").
+	"drops": {
+		"boss": {
+			"chance": 0.04,
+			"announce": true,
+			"items": {
+				"coutelas_du_contrebandier": 10.0,
+				"bottes_du_coursier": 10.0,
+				"pic_du_filon": 8.0,
+				"croc_de_givre": 6.0,
+				"hache_sylvestre": 6.0,
+				"arbalete_du_traqueur": 5.0,
+				"murmure_du_neant": 4.0,
+				"foudrelame": 2.0,
+				"pioche_du_titan": 2.0,
+				"bottes_de_zephyr": 2.0,
+				"arc_du_phenix": 2.0,
+				"marteau_du_seisme": 2.0
+			}
+		},
+		"blood_boss": {
+			"chance": 0.2,
+			"announce": true,
+			"items": {
+				"croc_de_givre": 6.0,
+				"hache_sylvestre": 5.0,
+				"arbalete_du_traqueur": 5.0,
+				"murmure_du_neant": 5.0,
+				"foudrelame": 5.0,
+				"pioche_du_titan": 4.0,
+				"bottes_de_zephyr": 4.0,
+				"arc_du_phenix": 4.0,
+				"marteau_du_seisme": 4.0,
+				"trident_du_leviathan": 2.0,
+				"faux_des_ames": 2.0
+			}
+		},
+		"quest": {
+			"chance": 0.01,
+			"announce": true,
+			"items": {
+				"coutelas_du_contrebandier": 10.0,
+				"bottes_du_coursier": 10.0,
+				"pic_du_filon": 8.0,
+				"croc_de_givre": 4.0,
+				"hache_sylvestre": 4.0,
+				"arbalete_du_traqueur": 3.0
+			}
+		},
+		"legendary_quest": {
+			"chance": 0.35,
+			"announce": true,
+			"items": {
+				"croc_de_givre": 5.0,
+				"hache_sylvestre": 5.0,
+				"arbalete_du_traqueur": 5.0,
+				"murmure_du_neant": 5.0,
+				"foudrelame": 4.0,
+				"pioche_du_titan": 4.0,
+				"bottes_de_zephyr": 4.0,
+				"arc_du_phenix": 4.0,
+				"marteau_du_seisme": 4.0,
+				"trident_du_leviathan": 1.0,
+				"faux_des_ames": 1.0
+			}
+		},
+		"expedition": {
+			"chance": 0.02,
+			"announce": true,
+			"items": {
+				"coutelas_du_contrebandier": 10.0,
+				"bottes_du_coursier": 10.0,
+				"pic_du_filon": 8.0,
+				"hache_sylvestre": 4.0,
+				"croc_de_givre": 3.0,
+				"arbalete_du_traqueur": 3.0,
+				"bottes_de_zephyr": 1.0
+			}
+		},
+		"trade": {
+			"chance": 1.0,
+			"announce": false,
+			"items": {
+				"croc_de_givre": 6.0,
+				"hache_sylvestre": 6.0,
+				"arbalete_du_traqueur": 6.0,
+				"murmure_du_neant": 5.0,
+				"pic_du_filon": 5.0,
+				"foudrelame": 3.0,
+				"pioche_du_titan": 3.0,
+				"bottes_de_zephyr": 3.0,
+				"arc_du_phenix": 3.0,
+				"marteau_du_seisme": 3.0
+			}
+		}
+	},
+
+	// Reglages des pouvoirs (recharges en secondes, degats en points de vie : 2 = 1 coeur, distances en blocs)
+	"powers": {
+
+		// Foudrelame (storm_call) - clic droit : la foudre frappe les monstres autour du point vise
+		"stormCall": {
+			"cooldownSeconds": 12.0,
+
+			// Portee de visee, rayon autour du point vise, nombre maximum de monstres foudroyes, degats par eclair
+			"range": 32.0,
+			"radius": 4.5,
+			"maxTargets": 4,
+			"damage": 10.0
+		},
+
+		// Croc-de-Givre (frost_nova) - clic droit : onde de givre autour du joueur
+		"frostNova": {
+			"cooldownSeconds": 18.0,
+
+			// Rayon, degats de froid, duree (secondes) et niveau de la lenteur
+			"radius": 6.0,
+			"damage": 4.0,
+			"slowSeconds": 6,
+			"slowLevel": 3
+		},
+
+		// Murmure du Neant (blink_strike) - clic droit : se teleporte derriere le monstre vise et le frappe
+		"blinkStrike": {
+			"cooldownSeconds": 8.0,
+
+			// Portee de visee et degats du coup porte apres la teleportation
+			"range": 20.0,
+			"damage": 10.0
+		},
+
+		// Hache de l'Ancien Forestier (tree_feller) - abat tout l'arbre naturel (accroupi : une seule buche)
+		"treeFeller": {
+
+			// Buches maximum par arbre, buches coupees par tick, feuilles naturelles minimum autour (sinon : construction)
+			"maxLogs": 128,
+			"logsPerTick": 12,
+			"minLeaves": 4,
+
+			// Accroupi : pouvoir desactive
+			"sneakDisables": true
+		},
+
+		// Pioche du Titan (excavate) - creuse en 3x3 dans la roche naturelle (accroupi : un seul bloc)
+		"excavate": {
+
+			// Accroupi : pouvoir desactive
+			"sneakDisables": true,
+
+			// Blocs creuses en 3x3 (ids ou #tags). Jamais chez une autre guilde, jamais le coeur.
+			"blocks": [
+				"#minecraft:base_stone_overworld",
+				"#minecraft:base_stone_nether",
+				"#minecraft:ores",
+				"minecraft:calcite",
+				"minecraft:dripstone_block",
+				"minecraft:smooth_basalt",
+				"minecraft:end_stone",
+				"minecraft:magma_block"
+			]
+		},
+
+		// Pic du Filon (vein_miner) - extrait tout le filon de minerai (accroupi : un seul bloc)
+		"veinMiner": {
+
+			// Blocs maximum par filon
+			"maxBlocks": 32,
+
+			// Accroupi : pouvoir desactive
+			"sneakDisables": true,
+
+			// Minerais concernes (ids ou #tags). Jamais chez une autre guilde.
+			"blocks": [
+				"#minecraft:ores",
+				"minecraft:ancient_debris"
+			]
+		},
+
+		// Bottes de Zephyr (double_jump) - double saut (appuyer deux fois sur saut), pas de degats de chute
+		"doubleJump": {
+
+			// Delai minimum entre deux doubles sauts (secondes), elan vertical et vers l'avant
+			"cooldownSeconds": 0.5,
+			"upward": 0.75,
+			"forward": 0.45
+		},
+
+		// Marteau du Seisme (shockwave) - une attaque ecrasante (en tombant) frappe aussi les monstres autour
+		"shockwave": {
+			"cooldownSeconds": 4.0,
+
+			// Rayon autour de la cible, degats aux autres monstres, elan vers le haut
+			"radius": 5.0,
+			"damage": 8.0,
+			"lift": 0.45
+		},
+
+		// Arc du Phenix (phoenix_arrows) - la fleche embrase les monstres autour de sa cible
+		"phoenixArrows": {
+			"cooldownSeconds": 2.0,
+
+			// Rayon autour de la cible, degats de feu, duree d'embrasement (secondes)
+			"radius": 3.5,
+			"damage": 4.0,
+			"fireSeconds": 5
+		},
+
+		// Trident du Leviathan (tide_call) - lance, il appelle la foudre qui rebondit sur les monstres proches
+		"tideCall": {
+			"cooldownSeconds": 6.0,
+
+			// Degats de l'eclair sur la cible, nombre de rebonds, rayon et degats des rebonds
+			"damage": 8.0,
+			"chainTargets": 3,
+			"chainRadius": 8.0,
+			"chainDamage": 5.0
+		},
+
+		// Faux des Ames (soul_harvest) - chaque monstre tue soigne le porteur
+		"soulHarvest": {
+
+			// Points de vie rendus par monstre tue, duree (secondes) de la Vitesse I accordee
+			"heal": 3.0,
+			"speedSeconds": 3
+		}
+	},
+
+	// Armes et outils uniques : id (minuscules, chiffres, _), item (objet vanilla de base), name, rarity (RARE, EPIC,
+	// LEGENDARY, MYTHIC), lore (histoire, codes couleur &), enchantments {id: niveau} (vanilla ou guildy:foudroiement,
+	// guildy:vampirisme, guildy:givre, guildy:brasier, guildy:echo, guildy:seisme, guildy:apesanteur, guildy:salve,
+	// guildy:moisson, guildy:marque ; niveaux au-dela du maximum vanilla permis), attributes [{attribute, amount, operation
+	// (add_value, add_multiplied_base, add_multiplied_total), slot (mainhand, offhand, feet, head, armor...)}] ajoutes aux
+	// attributs de l'objet de base, glint (brillance), unbreakable (incassable), power (storm_call, frost_nova, blink_strike,
+	// tree_feller, excavate, vein_miner, double_jump, shockwave, phoenix_arrows, tide_call, soul_harvest ou vide), model
+	// (texture du pack de ressources, vide = apparence vanilla), color (couleur RGB du cuir teint, -1 = aucune).
+	// Les objets deja obtenus suivent le pouvoir et le modele de la config ; nom, description et enchantements restent
+	// ceux de leur creation.
+	"items": [
+		{
+			"id": "foudrelame",
+			"item": "minecraft:netherite_sword",
+			"name": "Foudrelame",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Forgée sous l'orage au sommet du monde,",
+				"elle gronde encore quand le ciel s'assombrit."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 6,
+				"guildy:foudroiement": 3,
+				"minecraft:looting": 3,
+				"minecraft:unbreaking": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "storm_call",
+			"model": "foudrelame",
+			"color": -1
+		},
+		{
+			"id": "croc_de_givre",
+			"item": "minecraft:diamond_sword",
+			"name": "Croc-de-Givre",
+			"rarity": "EPIC",
+			"lore": [
+				"Taillée dans la glace d'un glacier",
+				"qui n'a jamais connu le soleil."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 5,
+				"guildy:givre": 2,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_speed",
+					"amount": 0.2,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "frost_nova",
+			"model": "croc_de_givre",
+			"color": -1
+		},
+		{
+			"id": "murmure_du_neant",
+			"item": "minecraft:netherite_sword",
+			"name": "Murmure du Néant",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Un poignard que nul n'entend venir.",
+				"Celui qui le tient marche entre les ombres."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 5,
+				"guildy:echo": 3,
+				"minecraft:looting": 2
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_speed",
+					"amount": 0.6,
+					"operation": "add_value",
+					"slot": "mainhand"
+				},
+				{
+					"attribute": "minecraft:movement_speed",
+					"amount": 0.1,
+					"operation": "add_multiplied_base",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "blink_strike",
+			"model": "murmure_du_neant",
+			"color": -1
+		},
+		{
+			"id": "hache_sylvestre",
+			"item": "minecraft:netherite_axe",
+			"name": "Hache de l'Ancien Forestier",
+			"rarity": "EPIC",
+			"lore": [
+				"Les arbres eux-mêmes s'inclinent devant elle.",
+				"Un coup, et la forêt cède."
+			],
+			"enchantments": {
+				"minecraft:efficiency": 5,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [],
+			"glint": true,
+			"unbreakable": false,
+			"power": "tree_feller",
+			"model": "hache_sylvestre",
+			"color": -1
+		},
+		{
+			"id": "pioche_du_titan",
+			"item": "minecraft:netherite_pickaxe",
+			"name": "Pioche du Titan",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Forgée pour creuser le cœur des montagnes,",
+				"elle ouvre des galeries entières d'un seul coup."
+			],
+			"enchantments": {
+				"minecraft:efficiency": 6,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:block_interaction_range",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "excavate",
+			"model": "pioche_du_titan",
+			"color": -1
+		},
+		{
+			"id": "pic_du_filon",
+			"item": "minecraft:diamond_pickaxe",
+			"name": "Pic du Filon",
+			"rarity": "RARE",
+			"lore": [
+				"Le vieux mineur jurait qu'il sentait le minerai.",
+				"Il avait raison."
+			],
+			"enchantments": {
+				"minecraft:efficiency": 4,
+				"minecraft:fortune": 2,
+				"minecraft:unbreaking": 3
+			},
+			"attributes": [],
+			"glint": true,
+			"unbreakable": false,
+			"power": "vein_miner",
+			"model": "pic_du_filon",
+			"color": -1
+		},
+		{
+			"id": "bottes_de_zephyr",
+			"item": "minecraft:netherite_boots",
+			"name": "Bottes de Zéphyr",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Cousues avec le vent du nord :",
+				"qui les porte ne touche plus vraiment le sol."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:feather_falling": 4,
+				"guildy:apesanteur": 1,
+				"minecraft:depth_strider": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:movement_speed",
+					"amount": 0.1,
+					"operation": "add_multiplied_base",
+					"slot": "feet"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "double_jump",
+			"model": "bottes_de_zephyr",
+			"color": -1
+		},
+		{
+			"id": "bottes_du_coursier",
+			"item": "minecraft:leather_boots",
+			"name": "Bottes du Coursier",
+			"rarity": "RARE",
+			"lore": [
+				"Elles ont porté les messages de cent guildes",
+				"sans jamais user leur cuir."
+			],
+			"enchantments": {
+				"minecraft:feather_falling": 3,
+				"minecraft:soul_speed": 2
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:movement_speed",
+					"amount": 0.2,
+					"operation": "add_multiplied_base",
+					"slot": "feet"
+				},
+				{
+					"attribute": "minecraft:step_height",
+					"amount": 0.5,
+					"operation": "add_value",
+					"slot": "feet"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "",
+			"model": "bottes_du_coursier",
+			"color": 3833156
+		},
+		{
+			"id": "marteau_du_seisme",
+			"item": "minecraft:mace",
+			"name": "Marteau du Séisme",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Quand il frappe le sol,",
+				"la terre se souvient."
+			],
+			"enchantments": {
+				"minecraft:density": 5,
+				"minecraft:breach": 2,
+				"guildy:seisme": 2,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [],
+			"glint": true,
+			"unbreakable": false,
+			"power": "shockwave",
+			"model": "marteau_du_seisme",
+			"color": -1
+		},
+		{
+			"id": "arc_du_phenix",
+			"item": "minecraft:bow",
+			"name": "Arc du Phénix",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Ses flèches renaissent en flammes",
+				"là où elles frappent."
+			],
+			"enchantments": {
+				"minecraft:power": 5,
+				"minecraft:flame": 1,
+				"minecraft:infinity": 1,
+				"guildy:brasier": 2
+			},
+			"attributes": [],
+			"glint": true,
+			"unbreakable": true,
+			"power": "phoenix_arrows",
+			"model": "arc_du_phenix",
+			"color": -1
+		},
+		{
+			"id": "arbalete_du_traqueur",
+			"item": "minecraft:crossbow",
+			"name": "Arbalète du Traqueur",
+			"rarity": "EPIC",
+			"lore": [
+				"Ce qu'elle marque",
+				"ne lui échappe jamais."
+			],
+			"enchantments": {
+				"minecraft:quick_charge": 3,
+				"minecraft:multishot": 1,
+				"minecraft:piercing": 4,
+				"guildy:marque": 2,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "",
+			"color": -1
+		},
+		{
+			"id": "trident_du_leviathan",
+			"item": "minecraft:trident",
+			"name": "Trident du Léviathan",
+			"rarity": "MYTHIC",
+			"lore": [
+				"Arraché aux abysses par un marin oublié,",
+				"il commande encore aux tempêtes."
+			],
+			"enchantments": {
+				"minecraft:impaling": 5,
+				"minecraft:loyalty": 3,
+				"guildy:foudroiement": 3,
+				"guildy:echo": 2
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 3.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "tide_call",
+			"model": "trident_du_leviathan",
+			"color": -1
+		},
+		{
+			"id": "faux_des_ames",
+			"item": "minecraft:netherite_hoe",
+			"name": "Faux des Âmes",
+			"rarity": "MYTHIC",
+			"lore": [
+				"Chaque âme fauchée nourrit son porteur.",
+				"Nul ne sait qui l'a forgée, ni s'il vit encore."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 5,
+				"guildy:vampirisme": 3,
+				"guildy:moisson": 3,
+				"minecraft:looting": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 8.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				},
+				{
+					"attribute": "minecraft:attack_speed",
+					"amount": -2.6,
+					"operation": "add_value",
+					"slot": "mainhand"
+				},
+				{
+					"attribute": "minecraft:entity_interaction_range",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "soul_harvest",
+			"model": "faux_des_ames",
+			"color": -1
+		},
+		{
+			"id": "coutelas_du_contrebandier",
+			"item": "minecraft:iron_sword",
+			"name": "Coutelas du Contrebandier",
+			"rarity": "RARE",
+			"lore": [
+				"Trouvé dans la cale d'un navire échoué,",
+				"il sent encore le sel et l'or volé."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 3,
+				"minecraft:looting": 3,
+				"guildy:echo": 1,
+				"minecraft:unbreaking": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_speed",
+					"amount": 0.4,
+					"operation": "add_value",
+					"slot": "mainhand"
+				},
+				{
+					"attribute": "minecraft:luck",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "coutelas_du_contrebandier",
+			"color": -1
+		}
+	]
+}

@@ -650,7 +650,7 @@ public final class UniqueConfig implements Validatable {
 				.add("croc_de_givre", 5).add("hache_sylvestre", 5).add("arbalete_du_traqueur", 5).add("murmure_du_neant", 5)
 				.add("foudrelame", 4).add("pioche_du_titan", 4).add("bottes_de_zephyr", 4).add("arc_du_phenix", 4)
 				.add("marteau_du_seisme", 4).add("trident_du_leviathan", 1).add("faux_des_ames", 1));
-		map.put("expedition", new DropTable(0.005, true)
+		map.put("expedition", new DropTable(0.02, true)
 				.add("coutelas_du_contrebandier", 10).add("bottes_du_coursier", 10).add("pic_du_filon", 8)
 				.add("hache_sylvestre", 4).add("croc_de_givre", 3).add("arbalete_du_traqueur", 3).add("bottes_de_zephyr", 1));
 		map.put("trade", new DropTable(1.0, false)

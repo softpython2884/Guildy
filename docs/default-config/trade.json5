@@ -5,10 +5,15 @@
 // (nombre d'echanges par visite), trades (table du palier). Un Carrefour de palier N tire ses echanges dans sa table
 // (poids visits.ownTierWeight) et dans celles des paliers inferieurs (poids visits.lowerTierWeight chacune).
 // Echange : {item, count (lot), price (or), maxUses (echanges possibles pendant la visite), weight (chance relative),
-// enchantment (optionnel, ex. minecraft:mending : livre enchante ou objet enchante), level}.
+// enchantment (optionnel, ex. minecraft:mending : livre enchante ou objet enchante), level, unique (optionnel : arme
+// unique vendue a la place de l'objet : "random" = tiree dans la table "trade" d'uniques.json5 a l'arrivee du
+// marchand, ou l'id d'une arme ; item n'est alors que l'icone des menus ; une seule par visite)}.
 // Regles appliquees au chargement : objets en or et objets inconnus refuses ; un marchand ne vend jamais moins cher
 // (a l'unite) que la boutique ni que le prix de rachat de la boutique (pas de boucle d'or ; prix releve sinon).
 {
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 2,
 
 	// Visites des marchands au Carrefour commercial
 	"visits": {
@@ -55,7 +60,8 @@
 					"maxUses": 8,
 					"weight": 10.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:spruce_sapling",
@@ -64,7 +70,8 @@
 					"maxUses": 8,
 					"weight": 10.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:birch_sapling",
@@ -73,7 +80,8 @@
 					"maxUses": 8,
 					"weight": 10.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:jungle_sapling",
@@ -82,7 +90,8 @@
 					"maxUses": 8,
 					"weight": 10.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:acacia_sapling",
@@ -91,7 +100,8 @@
 					"maxUses": 8,
 					"weight": 10.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:dark_oak_sapling",
@@ -100,7 +110,8 @@
 					"maxUses": 8,
 					"weight": 10.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:cherry_sapling",
@@ -109,7 +120,8 @@
 					"maxUses": 6,
 					"weight": 10.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:mangrove_propagule",
@@ -118,7 +130,8 @@
 					"maxUses": 6,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:pale_oak_sapling",
@@ -127,7 +140,8 @@
 					"maxUses": 6,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:azalea",
@@ -136,7 +150,8 @@
 					"maxUses": 6,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:flowering_azalea",
@@ -145,7 +160,8 @@
 					"maxUses": 6,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:wheat_seeds",
@@ -154,7 +170,8 @@
 					"maxUses": 8,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:beetroot_seeds",
@@ -163,7 +180,8 @@
 					"maxUses": 8,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:melon_seeds",
@@ -172,7 +190,8 @@
 					"maxUses": 8,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:pumpkin_seeds",
@@ -181,7 +200,8 @@
 					"maxUses": 8,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:torchflower_seeds",
@@ -190,7 +210,8 @@
 					"maxUses": 6,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:pitcher_pod",
@@ -199,7 +220,8 @@
 					"maxUses": 6,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:white_dye",
@@ -208,7 +230,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:light_gray_dye",
@@ -217,7 +240,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:gray_dye",
@@ -226,7 +250,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:black_dye",
@@ -235,7 +260,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:brown_dye",
@@ -244,7 +270,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:red_dye",
@@ -253,7 +280,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:orange_dye",
@@ -262,7 +290,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:yellow_dye",
@@ -271,7 +300,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:lime_dye",
@@ -280,7 +310,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:green_dye",
@@ -289,7 +320,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:cyan_dye",
@@ -298,7 +330,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:light_blue_dye",
@@ -307,7 +340,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:blue_dye",
@@ -316,7 +350,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:purple_dye",
@@ -325,7 +360,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:magenta_dye",
@@ -334,7 +370,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:pink_dye",
@@ -343,7 +380,8 @@
 					"maxUses": 8,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:dandelion",
@@ -352,7 +390,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:poppy",
@@ -361,7 +400,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:pink_petals",
@@ -370,7 +410,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:wildflowers",
@@ -379,7 +420,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:blue_orchid",
@@ -388,7 +430,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:allium",
@@ -397,7 +440,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:azure_bluet",
@@ -406,7 +450,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:red_tulip",
@@ -415,7 +460,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:orange_tulip",
@@ -424,7 +470,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:white_tulip",
@@ -433,7 +480,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:pink_tulip",
@@ -442,7 +490,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:oxeye_daisy",
@@ -451,7 +500,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:cornflower",
@@ -460,7 +510,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:lily_of_the_valley",
@@ -469,7 +520,8 @@
 					"maxUses": 8,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:sunflower",
@@ -478,7 +530,8 @@
 					"maxUses": 6,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:lilac",
@@ -487,7 +540,8 @@
 					"maxUses": 6,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:rose_bush",
@@ -496,7 +550,8 @@
 					"maxUses": 6,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:peony",
@@ -505,7 +560,8 @@
 					"maxUses": 6,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:torchflower",
@@ -514,7 +570,8 @@
 					"maxUses": 4,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:open_eyeblossom",
@@ -523,7 +580,8 @@
 					"maxUses": 4,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:cactus_flower",
@@ -532,7 +590,8 @@
 					"maxUses": 4,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:spore_blossom",
@@ -541,7 +600,8 @@
 					"maxUses": 4,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:sugar_cane",
@@ -550,7 +610,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:cactus",
@@ -559,7 +620,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:bamboo",
@@ -568,7 +630,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:cocoa_beans",
@@ -577,7 +640,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:vine",
@@ -586,7 +650,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:lily_pad",
@@ -595,7 +660,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:glow_berries",
@@ -604,7 +670,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:sweet_berries",
@@ -613,7 +680,8 @@
 					"maxUses": 8,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:kelp",
@@ -622,7 +690,8 @@
 					"maxUses": 8,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:moss_block",
@@ -631,7 +700,8 @@
 					"maxUses": 8,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:brown_mushroom",
@@ -640,7 +710,8 @@
 					"maxUses": 8,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:red_mushroom",
@@ -649,7 +720,8 @@
 					"maxUses": 8,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:big_dripleaf",
@@ -658,7 +730,8 @@
 					"maxUses": 6,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:small_dripleaf",
@@ -667,7 +740,8 @@
 					"maxUses": 6,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:glow_lichen",
@@ -676,7 +750,8 @@
 					"maxUses": 6,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:firefly_bush",
@@ -685,7 +760,8 @@
 					"maxUses": 6,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				}
 			]
 		},
@@ -709,7 +785,8 @@
 					"maxUses": 4,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:honeycomb",
@@ -718,7 +795,8 @@
 					"maxUses": 4,
 					"weight": 8.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:honey_bottle",
@@ -727,7 +805,8 @@
 					"maxUses": 4,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:nautilus_shell",
@@ -736,7 +815,8 @@
 					"maxUses": 4,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:amethyst_shard",
@@ -745,7 +825,8 @@
 					"maxUses": 4,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:blue_ice",
@@ -754,7 +835,8 @@
 					"maxUses": 4,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:packed_ice",
@@ -763,7 +845,8 @@
 					"maxUses": 4,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:sea_pickle",
@@ -772,7 +855,8 @@
 					"maxUses": 4,
 					"weight": 6.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:prismarine_shard",
@@ -781,7 +865,8 @@
 					"maxUses": 4,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:prismarine_crystals",
@@ -790,7 +875,8 @@
 					"maxUses": 4,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:turtle_scute",
@@ -799,7 +885,8 @@
 					"maxUses": 2,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:armadillo_scute",
@@ -808,7 +895,8 @@
 					"maxUses": 2,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:ink_sac",
@@ -817,7 +905,8 @@
 					"maxUses": 4,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:glow_ink_sac",
@@ -826,7 +915,8 @@
 					"maxUses": 4,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:rabbit_foot",
@@ -835,7 +925,8 @@
 					"maxUses": 2,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:phantom_membrane",
@@ -844,7 +935,8 @@
 					"maxUses": 2,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:ghast_tear",
@@ -853,7 +945,8 @@
 					"maxUses": 2,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:ender_pearl",
@@ -862,7 +955,8 @@
 					"maxUses": 2,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:experience_bottle",
@@ -871,7 +965,8 @@
 					"maxUses": 2,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:name_tag",
@@ -880,7 +975,8 @@
 					"maxUses": 1,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:saddle",
@@ -889,7 +985,8 @@
 					"maxUses": 1,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:lead",
@@ -898,7 +995,8 @@
 					"maxUses": 2,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:bell",
@@ -907,7 +1005,8 @@
 					"maxUses": 1,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:iron_horse_armor",
@@ -916,7 +1015,8 @@
 					"maxUses": 1,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:turtle_egg",
@@ -925,7 +1025,8 @@
 					"maxUses": 2,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_13",
@@ -934,7 +1035,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_cat",
@@ -943,7 +1045,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_blocks",
@@ -952,7 +1055,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_chirp",
@@ -961,7 +1065,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_far",
@@ -970,7 +1075,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_mall",
@@ -979,7 +1085,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_mellohi",
@@ -988,7 +1095,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_stal",
@@ -997,7 +1105,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_strad",
@@ -1006,7 +1115,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_ward",
@@ -1015,7 +1125,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_11",
@@ -1024,7 +1135,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:music_disc_wait",
@@ -1033,7 +1145,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				}
 			]
 		},
@@ -1057,7 +1170,8 @@
 					"maxUses": 1,
 					"weight": 5.0,
 					"enchantment": "minecraft:mending",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:enchanted_book",
@@ -1066,7 +1180,8 @@
 					"maxUses": 1,
 					"weight": 6.0,
 					"enchantment": "minecraft:unbreaking",
-					"level": 3
+					"level": 3,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:enchanted_book",
@@ -1075,7 +1190,8 @@
 					"maxUses": 1,
 					"weight": 6.0,
 					"enchantment": "minecraft:efficiency",
-					"level": 5
+					"level": 5,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:enchanted_book",
@@ -1084,7 +1200,8 @@
 					"maxUses": 1,
 					"weight": 5.0,
 					"enchantment": "minecraft:fortune",
-					"level": 3
+					"level": 3,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:enchanted_book",
@@ -1093,7 +1210,8 @@
 					"maxUses": 1,
 					"weight": 5.0,
 					"enchantment": "minecraft:silk_touch",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:enchanted_book",
@@ -1102,7 +1220,8 @@
 					"maxUses": 1,
 					"weight": 5.0,
 					"enchantment": "minecraft:looting",
-					"level": 3
+					"level": 3,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:enchanted_book",
@@ -1111,7 +1230,8 @@
 					"maxUses": 1,
 					"weight": 6.0,
 					"enchantment": "minecraft:protection",
-					"level": 4
+					"level": 4,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:totem_of_undying",
@@ -1120,7 +1240,8 @@
 					"maxUses": 1,
 					"weight": 5.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:enchanted_golden_apple",
@@ -1129,7 +1250,8 @@
 					"maxUses": 1,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:netherite_upgrade_smithing_template",
@@ -1138,7 +1260,8 @@
 					"maxUses": 1,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:heart_of_the_sea",
@@ -1147,7 +1270,8 @@
 					"maxUses": 1,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:trident",
@@ -1156,7 +1280,8 @@
 					"maxUses": 1,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:shulker_shell",
@@ -1165,7 +1290,8 @@
 					"maxUses": 2,
 					"weight": 4.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:diamond_horse_armor",
@@ -1174,7 +1300,8 @@
 					"maxUses": 1,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:echo_shard",
@@ -1183,7 +1310,8 @@
 					"maxUses": 2,
 					"weight": 3.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:sniffer_egg",
@@ -1192,7 +1320,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:wither_skeleton_skull",
@@ -1201,7 +1330,8 @@
 					"maxUses": 1,
 					"weight": 2.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
 				},
 				{
 					"item": "minecraft:elytra",
@@ -1210,7 +1340,18 @@
 					"maxUses": 1,
 					"weight": 1.0,
 					"enchantment": "",
-					"level": 1
+					"level": 1,
+					"unique": ""
+				},
+				{
+					"item": "minecraft:nether_star",
+					"count": 1,
+					"price": 360,
+					"maxUses": 1,
+					"weight": 3.0,
+					"enchantment": "",
+					"level": 1,
+					"unique": "random"
 				}
 			]
 		}

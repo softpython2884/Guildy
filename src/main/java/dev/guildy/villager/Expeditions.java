@@ -5,6 +5,7 @@ import dev.guildy.core.GuildyItems;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
+import dev.guildy.core.UniqueDrops;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.structure.BuiltStructure;
@@ -144,7 +145,7 @@ final class Expeditions {
 			Msg.guild(guild, "villager.expedition.lost", record.name, Lang.raw(type.langKey()));
 			return;
 		}
-		int found = bringLoot(guild, record, config);
+		int found = bringLoot(level, restored, guild, record, config);
 		record.stats.expeditions++;
 		record.stats.found += found;
 		if (record.goal == Goal.FILL) {
@@ -160,9 +161,17 @@ final class Expeditions {
 	}
 
 	/** Rolls the loot of the trip into the villager's bag. @return number of items brought back */
-	private static int bringLoot(Guild guild, VillagerRecord record, VillagerConfig.Expedition config) {
+	private static int bringLoot(ServerLevel level, Entity villager, Guild guild, VillagerRecord record, VillagerConfig.Expedition config) {
 		int carryStacks = VillagerModule.config().work.carryStacks;
 		int total = 0;
+		// Rare unique weapon, rolled first so a full bag cannot swallow it (dropped at its feet otherwise).
+		ItemStack unique = UniqueDrops.roll("expedition");
+		if (!unique.isEmpty()) {
+			if (addToBag(record, unique, carryStacks) == 0) {
+				villager.spawnAtLocation(level, unique);
+			}
+			total++;
+		}
 		for (DepthLoot.Drop drop : DepthLoot.roll(config.table(), config.rolls, ThreadLocalRandom.current())) {
 			Item item = ItemUtil.item(drop.item());
 			if (item != null) {

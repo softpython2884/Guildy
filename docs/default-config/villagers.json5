@@ -101,8 +101,8 @@
 		"selectionTimeoutSeconds": 120
 	},
 
-	// Tache 'Mineur' : minage simule a sa zone (fanion), le butin depend de l'objectif de la zone et de la
-	// profondeur (Y) du fanion. Sans zone : la mine la plus proche, sinon la pierre naturelle a decouvert la plus proche.
+	// Tache 'Mineur', mode 'Simule' : minage simule au fanion de sa zone, le butin depend de l'objectif de la zone et
+	// de la profondeur (Y) du fanion. Sans zone : la mine la plus proche, sinon la pierre naturelle a decouvert la plus proche.
 	"miner": {
 
 		// Duree (secondes) d'une expedition de minage a la mine
@@ -631,6 +631,127 @@
 					}
 				]
 			}
+		]
+	},
+
+	// Tache 'Mineur', mode 'Reel' (zones de mine) : le mineur creuse vraiment. Depuis le fanion, un escalier en colimacon
+	// (1 bloc de large, 3 de haut) descend jusqu'a la profondeur cible, puis il creuse des galeries : une galerie
+	// principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : des salles de carriere), toujours dans
+	// le carre de la zone. Il ne casse que des blocs naturels (listes ci-dessous) : jamais un bloc pose par un joueur, un
+	// bloc a donnees (coffre...), un bloc d'une autre guilde, ni un bloc naturel qui porte un bloc non naturel. Il colmate
+	// l'eau et la lave avec un bloc de son sac (sinon il abandonne la galerie) et comble les trous du sol.
+	"realMining": {
+
+		// Mode des nouvelles zones de mine (et des anciennes sans reglage) : true = reel, false = simule
+		"defaultReal": true,
+
+		// Temps (ticks, 20 = 1 seconde) pour casser un bloc ; le bonus de vitesse de travail s'applique (4 blocs/s max)
+		"ticksPerBlock": 20,
+
+		// Objectif 'Minerais' : profondeur cible par defaut (Y du sol des galeries ; -54 = couche des diamants)
+		"oresTargetY": -54,
+
+		// Objectif 'Tout venant' : profondeur cible par defaut (Y)
+		"mixedTargetY": 16,
+
+		// Objectif 'Pierre et variantes' : profondeur par defaut des galeries sous le fanion (blocs)
+		"stoneDepth": 12,
+
+		// Profondeur minimum des galeries sous le fanion (blocs) : jamais de tranchee a la surface
+		"minDepthBelowFanion": 4,
+
+		// Pas des boutons de profondeur (menu de la zone) et ecart entre deux niveaux de galeries (blocs)
+		"levelSpacing": 8,
+
+		// Niveau termine : ouvrir automatiquement le niveau suivant (8 blocs plus bas, sinon plus haut)
+		"autoNextLevel": true,
+
+		// Cote (blocs) du carre de l'escalier en colimacon (3 a 6) : une marche = 1 bloc plus bas
+		"stairSide": 4,
+
+		// Longueur maximum de la galerie principale (blocs ; coupee au bord de la zone)
+		"mainTunnelLength": 32,
+
+		// Ecart entre deux galeries laterales (blocs, 2 minimum)
+		"branchSpacing": 3,
+
+		// Longueur de chaque galerie laterale (blocs ; coupee au bord de la zone)
+		"branchLength": 12,
+
+		// Objectif 'Pierre' : largeur des salles de carriere (blocs, impair)
+		"roomWidth": 5,
+
+		// Objectif 'Pierre' : longueur des salles de carriere (blocs)
+		"roomLength": 5,
+
+		// Objectif 'Pierre' : hauteur des salles de carriere (blocs)
+		"roomHeight": 3,
+
+		// Objectif 'Pierre' : couloir entre deux salles (blocs)
+		"roomGap": 2,
+
+		// Objectifs 'Minerais' et 'Tout venant' : blocs de minerai suivis au plus par filon visible depuis la galerie
+		"maxVeinBlocks": 16,
+
+		// Blocs de remplissage (pierre taillee...) gardes dans le sac pour colmater et combler : ils restent dans le sac au
+		// coffre de depot (sauf fin de mission). Objectif 'Minerais' : le reste des gravats est laisse sur place.
+		"fillerReserve": 32,
+
+		// Une torche toutes les N marches / N blocs de galerie (0 = pas de torche)
+		"torchInterval": 8,
+
+		// Les torches utilisent le charbon du sac quand il y en a (1 charbon = 4 torches, + 1 baton s'il y en a)
+		"torchesUseCoal": true,
+
+		// Sans charbon dans le sac : torche gratuite (true) ou pas de torche (false)
+		"freeTorches": true,
+
+		// Trou dans le sol et aucun bloc de remplissage dans le sac : pierre taillee gratuite (true) ou galerie abandonnee
+		"freeFloorBlocks": true,
+
+		// Heure (ticks du jour, 0 a 24000) a partir de laquelle le mineur remonte avant la nuit (-1 = jamais)
+		"surfaceAtTime": 10500,
+
+		// Blocs naturels que le mineur peut casser (id ou #tag ; les blocs a donnees ne sont jamais casses)
+		"naturalBlocks": [
+			"#minecraft:base_stone_overworld",
+			"#minecraft:substrate_overworld",
+			"#minecraft:sand",
+			"minecraft:gravel",
+			"minecraft:clay",
+			"minecraft:sandstone",
+			"minecraft:red_sandstone",
+			"minecraft:calcite",
+			"minecraft:dripstone_block",
+			"minecraft:pointed_dripstone",
+			"minecraft:smooth_basalt",
+			"minecraft:magma_block",
+			"minecraft:snow_block",
+			"minecraft:infested_stone",
+			"minecraft:infested_deepslate"
+		],
+
+		// Minerais (cassables, suivis en filon ; seuls gardes avec l'objectif 'Minerais')
+		"oreBlocks": [
+			"#minecraft:ores",
+			"#minecraft:gold_ores",
+			"minecraft:raw_iron_block",
+			"minecraft:raw_copper_block"
+		],
+
+		// Objets du sac utilisables pour colmater l'eau et la lave et combler les trous (blocs pleins, jamais de sable)
+		"fillerItems": [
+			"minecraft:cobblestone",
+			"minecraft:cobbled_deepslate",
+			"minecraft:dirt",
+			"minecraft:stone",
+			"minecraft:deepslate",
+			"minecraft:andesite",
+			"minecraft:diorite",
+			"minecraft:granite",
+			"minecraft:tuff",
+			"minecraft:calcite",
+			"minecraft:netherrack"
 		]
 	},
 

@@ -159,7 +159,8 @@
 				"maxUses": 4,
 				"weight": 8.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:sugar",
@@ -168,7 +169,8 @@
 				"maxUses": 4,
 				"weight": 8.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:honey_bottle",
@@ -177,7 +179,8 @@
 				"maxUses": 4,
 				"weight": 8.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:cookie",
@@ -186,7 +189,8 @@
 				"maxUses": 4,
 				"weight": 6.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:pumpkin_pie",
@@ -195,7 +199,8 @@
 				"maxUses": 4,
 				"weight": 6.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:cake",
@@ -204,7 +209,8 @@
 				"maxUses": 2,
 				"weight": 5.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:sweet_berries",
@@ -213,7 +219,8 @@
 				"maxUses": 4,
 				"weight": 6.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:glow_berries",
@@ -222,7 +229,8 @@
 				"maxUses": 4,
 				"weight": 6.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:red_wool",
@@ -231,7 +239,8 @@
 				"maxUses": 4,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:blue_wool",
@@ -240,7 +249,8 @@
 				"maxUses": 4,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:yellow_wool",
@@ -249,7 +259,8 @@
 				"maxUses": 4,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:candle",
@@ -258,7 +269,8 @@
 				"maxUses": 4,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:firework_rocket",
@@ -267,7 +279,8 @@
 				"maxUses": 4,
 				"weight": 6.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:spyglass",
@@ -276,7 +289,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:bundle",
@@ -285,7 +299,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:compass",
@@ -294,7 +309,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:map",
@@ -303,7 +319,8 @@
 				"maxUses": 2,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:lead",
@@ -312,7 +329,8 @@
 				"maxUses": 2,
 				"weight": 5.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:name_tag",
@@ -321,7 +339,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:saddle",
@@ -330,7 +349,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:emerald",
@@ -339,7 +359,8 @@
 				"maxUses": 2,
 				"weight": 4.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:dried_ghast",
@@ -348,7 +369,8 @@
 				"maxUses": 1,
 				"weight": 2.0,
 				"enchantment": "",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			}
 		]
 	},
@@ -378,7 +400,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:mending",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -387,7 +410,8 @@
 				"maxUses": 1,
 				"weight": 8.0,
 				"enchantment": "minecraft:unbreaking",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -396,7 +420,8 @@
 				"maxUses": 1,
 				"weight": 7.0,
 				"enchantment": "minecraft:efficiency",
-				"level": 5
+				"level": 5,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -405,7 +430,8 @@
 				"maxUses": 1,
 				"weight": 6.0,
 				"enchantment": "minecraft:fortune",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -414,7 +440,8 @@
 				"maxUses": 1,
 				"weight": 6.0,
 				"enchantment": "minecraft:silk_touch",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -423,7 +450,8 @@
 				"maxUses": 1,
 				"weight": 6.0,
 				"enchantment": "minecraft:looting",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -432,7 +460,8 @@
 				"maxUses": 1,
 				"weight": 8.0,
 				"enchantment": "minecraft:protection",
-				"level": 4
+				"level": 4,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -441,7 +470,8 @@
 				"maxUses": 1,
 				"weight": 7.0,
 				"enchantment": "minecraft:sharpness",
-				"level": 5
+				"level": 5,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -450,7 +480,8 @@
 				"maxUses": 1,
 				"weight": 8.0,
 				"enchantment": "minecraft:feather_falling",
-				"level": 4
+				"level": 4,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -459,7 +490,8 @@
 				"maxUses": 1,
 				"weight": 6.0,
 				"enchantment": "minecraft:power",
-				"level": 5
+				"level": 5,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -468,7 +500,8 @@
 				"maxUses": 1,
 				"weight": 6.0,
 				"enchantment": "minecraft:respiration",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -477,7 +510,8 @@
 				"maxUses": 1,
 				"weight": 6.0,
 				"enchantment": "minecraft:aqua_affinity",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -486,7 +520,8 @@
 				"maxUses": 1,
 				"weight": 5.0,
 				"enchantment": "minecraft:depth_strider",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -495,7 +530,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:infinity",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -504,7 +540,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:thorns",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -513,7 +550,8 @@
 				"maxUses": 1,
 				"weight": 5.0,
 				"enchantment": "minecraft:fire_aspect",
-				"level": 2
+				"level": 2,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -522,7 +560,8 @@
 				"maxUses": 1,
 				"weight": 5.0,
 				"enchantment": "minecraft:sweeping_edge",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -531,7 +570,8 @@
 				"maxUses": 1,
 				"weight": 5.0,
 				"enchantment": "minecraft:smite",
-				"level": 5
+				"level": 5,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -540,7 +580,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:blast_protection",
-				"level": 4
+				"level": 4,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -549,7 +590,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:projectile_protection",
-				"level": 4
+				"level": 4,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -558,7 +600,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:fire_protection",
-				"level": 4
+				"level": 4,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -567,7 +610,8 @@
 				"maxUses": 1,
 				"weight": 3.0,
 				"enchantment": "minecraft:frost_walker",
-				"level": 2
+				"level": 2,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -576,7 +620,8 @@
 				"maxUses": 1,
 				"weight": 2.0,
 				"enchantment": "minecraft:swift_sneak",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -585,7 +630,8 @@
 				"maxUses": 1,
 				"weight": 2.0,
 				"enchantment": "minecraft:soul_speed",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -594,7 +640,8 @@
 				"maxUses": 1,
 				"weight": 3.0,
 				"enchantment": "minecraft:loyalty",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -603,7 +650,8 @@
 				"maxUses": 1,
 				"weight": 3.0,
 				"enchantment": "minecraft:riptide",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -612,7 +660,8 @@
 				"maxUses": 1,
 				"weight": 2.0,
 				"enchantment": "minecraft:channeling",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -621,7 +670,8 @@
 				"maxUses": 1,
 				"weight": 3.0,
 				"enchantment": "minecraft:impaling",
-				"level": 5
+				"level": 5,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -630,7 +680,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:multishot",
-				"level": 1
+				"level": 1,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -639,7 +690,8 @@
 				"maxUses": 1,
 				"weight": 3.0,
 				"enchantment": "minecraft:piercing",
-				"level": 4
+				"level": 4,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -648,7 +700,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:quick_charge",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -657,7 +710,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:lure",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -666,7 +720,8 @@
 				"maxUses": 1,
 				"weight": 4.0,
 				"enchantment": "minecraft:luck_of_the_sea",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -675,7 +730,8 @@
 				"maxUses": 1,
 				"weight": 2.0,
 				"enchantment": "minecraft:density",
-				"level": 5
+				"level": 5,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -684,7 +740,8 @@
 				"maxUses": 1,
 				"weight": 2.0,
 				"enchantment": "minecraft:breach",
-				"level": 4
+				"level": 4,
+				"unique": ""
 			},
 			{
 				"item": "minecraft:enchanted_book",
@@ -693,7 +750,8 @@
 				"maxUses": 1,
 				"weight": 2.0,
 				"enchantment": "minecraft:wind_burst",
-				"level": 3
+				"level": 3,
+				"unique": ""
 			}
 		]
 	}
