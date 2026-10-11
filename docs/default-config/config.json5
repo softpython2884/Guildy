@@ -3,6 +3,9 @@
 // Rechargement a chaud : /guild admin reload   (les commentaires sont regeneres automatiquement)
 {
 
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 2,
+
 	// Regles des guildes
 	"guilds": {
 
@@ -66,7 +69,7 @@
 		"enterTitle": true,
 
 		// Duree d'affichage des limites du territoire avec /guild show (secondes)
-		"borderDisplaySeconds": 15
+		"borderDisplaySeconds": 45
 	},
 
 	// Protection des territoires

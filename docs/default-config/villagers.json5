@@ -1,4 +1,4 @@
-// Guildy - villageois de guilde : arrivees, taches, stockage.
+// Guildy - villageois de guilde : arrivees, taches, zones de travail, parcours de garde, stockage.
 // Les villageois arrivent au bureau d'accueil (construction 'reception'), puis travaillent pour la guilde.
 // Rechargement a chaud : /guild admin reload
 {
@@ -57,20 +57,66 @@
 		"walkTimeoutSeconds": 30
 	},
 
-	// Tache 'Mineur' : minage simule, les minerais dependent de la profondeur (Y) de la zone de travail
+	// Zones de travail : chaque zone est marquee par un fanion (menu Villageois -> Zones et parcours).
+	// Types : mine, coupe de bois, champs, patrouille. Une zone peut sortir du territoire, jamais entrer dans celui
+	// d'une autre guilde. Rayon en chunks autour du chunk du fanion : 0 = son chunk, 1 = 3x3 chunks, 2 = 5x5...
+	"zones": {
+
+		// Nombre maximum de zones de travail par guilde (1 a 27)
+		"maxZones": 12,
+
+		// Rayon maximum d'une zone, en chunks (0 a 5)
+		"maxRadiusChunks": 3,
+
+		// Rayon d'une nouvelle zone, en chunks
+		"defaultRadiusChunks": 1,
+
+		// Distance maximum (blocs) entre le coeur et un fanion de zone ou un point de parcours
+		"maxZoneDistance": 192,
+
+		// Mode automatique (aucune zone choisie) : rayon (blocs) de recherche autour du villageois
+		// (arbres, cultures, pierre), toujours a moins de maxZoneDistance du coeur
+		"autoSearchRadius": 48,
+
+		// Duree (secondes) d'affichage des limites d'une zone ou d'un parcours (bouton 'Afficher')
+		"showSeconds": 20
+	},
+
+	// Parcours de garde : suite de points (clic droit) que les gardes parcourent en boucle ou en aller-retour
+	"routes": {
+
+		// Nombre maximum de parcours de garde par guilde (0 a 9, 0 = desactive)
+		"maxRoutes": 6,
+
+		// Nombre maximum de points par parcours
+		"maxWaypoints": 16,
+
+		// Pause (secondes) du garde a chaque point (parcours et zones de patrouille)
+		"pauseSeconds": 4,
+
+		// Distance maximum (blocs) entre le parcours et un monstre que le garde poursuit
+		"leash": 16,
+
+		// Creation d'un parcours : annulee apres ce delai (secondes) sans nouveau point
+		"selectionTimeoutSeconds": 120
+	},
+
+	// Tache 'Mineur' : minage simule a sa zone (fanion), le butin depend de l'objectif de la zone et de la
+	// profondeur (Y) du fanion. Sans zone : la mine la plus proche, sinon la pierre naturelle a decouvert la plus proche.
 	"miner": {
 
-		// Duree (secondes) d'une expedition de minage dans la zone de travail
+		// Duree (secondes) d'une expedition de minage a la mine
 		"tripSeconds": 120,
-
-		// Nombre de tirages dans la table de butin a la fin de chaque expedition
-		"rollsPerTrip": 5,
 
 		// Intervalle (secondes) entre deux animations de minage
 		"effectIntervalSeconds": 3,
 
-		// Tables de butin par profondeur : la premiere table dont maxY >= Y de la zone de travail est utilisee
-		// (si Y est au-dessus de toutes, la derniere). entries : item, min, max (quantite), weight (poids du tirage).
+		// Objectif 'Tout venant' : nombre de tirages dans la table de butin a la fin de chaque expedition
+		"rollsPerTrip": 5,
+
+		// Objectif 'Tout venant' (pierre + minerais) : tables de butin par profondeur. La premiere table dont
+		// maxY >= Y du fanion est utilisee (au-dessus de toutes : la derniere).
+		// entries : item, min, max (quantite), weight (poids du tirage).
 		"depthTables": [
 			{
 				"maxY": -24,
@@ -272,14 +318,324 @@
 					}
 				]
 			}
+		],
+
+		// Objectif 'Minerais' : nombre de tirages par expedition (que des minerais, donc moins de tirages)
+		"oreRollsPerTrip": 3,
+
+		// Objectif 'Minerais' : tables de butin par profondeur (meme format)
+		"oreTables": [
+			{
+				"maxY": -24,
+				"entries": [
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 3,
+						"weight": 22
+					},
+					{
+						"item": "minecraft:raw_gold",
+						"min": 1,
+						"max": 3,
+						"weight": 14
+					},
+					{
+						"item": "minecraft:redstone",
+						"min": 2,
+						"max": 6,
+						"weight": 18
+					},
+					{
+						"item": "minecraft:lapis_lazuli",
+						"min": 2,
+						"max": 6,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 3,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:diamond",
+						"min": 1,
+						"max": 1,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"maxY": 16,
+				"entries": [
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 4,
+						"weight": 22
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 3,
+						"weight": 24
+					},
+					{
+						"item": "minecraft:raw_copper",
+						"min": 2,
+						"max": 5,
+						"weight": 20
+					},
+					{
+						"item": "minecraft:raw_gold",
+						"min": 1,
+						"max": 2,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:redstone",
+						"min": 1,
+						"max": 4,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:lapis_lazuli",
+						"min": 1,
+						"max": 3,
+						"weight": 8
+					}
+				]
+			},
+			{
+				"maxY": 64,
+				"entries": [
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 4,
+						"weight": 34
+					},
+					{
+						"item": "minecraft:raw_copper",
+						"min": 2,
+						"max": 5,
+						"weight": 28
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 3,
+						"weight": 26
+					},
+					{
+						"item": "minecraft:raw_gold",
+						"min": 1,
+						"max": 1,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:lapis_lazuli",
+						"min": 1,
+						"max": 2,
+						"weight": 4
+					}
+				]
+			},
+			{
+				"maxY": 320,
+				"entries": [
+					{
+						"item": "minecraft:coal",
+						"min": 1,
+						"max": 4,
+						"weight": 40
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 3,
+						"weight": 26
+					},
+					{
+						"item": "minecraft:raw_copper",
+						"min": 1,
+						"max": 4,
+						"weight": 20
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 1,
+						"weight": 4
+					}
+				]
+			}
+		],
+
+		// Objectif 'Pierre et variantes' : nombre de tirages par expedition
+		"stoneRollsPerTrip": 6,
+
+		// Objectif 'Pierre et variantes' : tables de butin par profondeur (meme format)
+		"stoneTables": [
+			{
+				"maxY": 0,
+				"entries": [
+					{
+						"item": "minecraft:cobbled_deepslate",
+						"min": 3,
+						"max": 8,
+						"weight": 50
+					},
+					{
+						"item": "minecraft:tuff",
+						"min": 2,
+						"max": 6,
+						"weight": 20
+					},
+					{
+						"item": "minecraft:cobblestone",
+						"min": 1,
+						"max": 4,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:gravel",
+						"min": 1,
+						"max": 4,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:calcite",
+						"min": 1,
+						"max": 3,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:dripstone_block",
+						"min": 1,
+						"max": 3,
+						"weight": 6
+					}
+				]
+			},
+			{
+				"maxY": 48,
+				"entries": [
+					{
+						"item": "minecraft:cobblestone",
+						"min": 3,
+						"max": 8,
+						"weight": 44
+					},
+					{
+						"item": "minecraft:andesite",
+						"min": 2,
+						"max": 6,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:diorite",
+						"min": 2,
+						"max": 6,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:granite",
+						"min": 2,
+						"max": 6,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:gravel",
+						"min": 1,
+						"max": 4,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:tuff",
+						"min": 1,
+						"max": 4,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:clay_ball",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:dripstone_block",
+						"min": 1,
+						"max": 2,
+						"weight": 3
+					}
+				]
+			},
+			{
+				"maxY": 320,
+				"entries": [
+					{
+						"item": "minecraft:cobblestone",
+						"min": 3,
+						"max": 8,
+						"weight": 46
+					},
+					{
+						"item": "minecraft:andesite",
+						"min": 2,
+						"max": 6,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:diorite",
+						"min": 2,
+						"max": 6,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:granite",
+						"min": 2,
+						"max": 6,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:gravel",
+						"min": 1,
+						"max": 4,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:dirt",
+						"min": 1,
+						"max": 4,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:calcite",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:flint",
+						"min": 1,
+						"max": 2,
+						"weight": 4
+					}
+				]
+			}
 		]
 	},
 
-	// Tache 'Bucheron' : coupe reelle des arbres naturels du territoire autour de la zone de travail
+	// Tache 'Bucheron' : coupe reelle des arbres naturels de sa zone (sans zone : les plus proches de lui)
 	"lumberjack": {
-
-		// Rayon (blocs) de recherche des arbres autour de la zone de travail
-		"radius": 16,
 
 		// Nombre maximum de buches d'un arbre (les arbres plus grands sont ignores)
 		"maxLogsPerTree": 80,
@@ -288,24 +644,25 @@
 		"replant": true
 	},
 
-	// Tache 'Fermier' : recolte les cultures mures autour de la zone de travail et les replante
+	// Tache 'Fermier' : recolte les cultures mures de sa zone (sans zone : les plus proches de lui) et les replante
 	"farmer": {
 
-		// Rayon (blocs) de recolte autour de la zone de travail
-		"radius": 8,
-
-		// Hauteur (blocs) au-dessus et en dessous de la zone de travail ou chercher des cultures
+		// Cultures sous abri : hauteur (blocs) au-dessus et en dessous du fanion (sans zone : du villageois)
+		// ou les chercher en plus de la surface
 		"verticalRange": 3,
 
 		// Nombre maximum de cultures recoltees par seconde
 		"harvestPerSecond": 3
 	},
 
-	// Tache 'Garde' : attaque les monstres du territoire, defend le coeur pendant les vagues
+	// Tache 'Garde' : patrouille (zone ou parcours) ou defend le coeur ; pendant les vagues, defend toujours le coeur
 	"guard": {
 
-		// Rayon (blocs) de surveillance autour du point de garde (zone de travail, sinon le coeur)
+		// Rayon (blocs) de surveillance du garde (autour du coeur sans zone, autour de lui en patrouille)
 		"radius": 16,
+
+		// Zone de patrouille : marge (blocs) autour de la zone ou le garde attaque encore les monstres
+		"zoneMargin": 8,
 
 		// Degats par coup au niveau 1 de la guilde
 		"damage": 4.0,
@@ -351,6 +708,9 @@
 				"#minecraft:stone_crafting_materials",
 				"#minecraft:stone_tool_materials",
 				"#minecraft:dirt",
+				"#minecraft:grass_blocks",
+				"#minecraft:mud",
+				"#minecraft:moss_blocks",
 				"#minecraft:sand",
 				"#minecraft:stone_bricks",
 				"minecraft:cobblestone",

@@ -4,6 +4,9 @@
 // Rechargement a chaud : /guild admin reload
 {
 
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 2,
+
 	// Activer les hordes nocturnes
 	"enabled": true,
 
