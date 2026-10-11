@@ -14,6 +14,11 @@ import java.util.Map;
 		"Rechargement a chaud : /guild admin reload   (les commentaires sont regeneres automatiquement)"
 })
 public final class GuildyConfig implements Validatable {
+	/** Current file format; older files get their untouched old defaults migrated in {@link #validate()}. */
+	public static final int CURRENT_VERSION = 2;
+
+	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
+	public int configVersion = 0;
 
 	@Comment("Regles des guildes")
 	public Guilds guilds = new Guilds();
@@ -88,7 +93,7 @@ public final class GuildyConfig implements Validatable {
 		@Comment("Afficher un titre (true) ou seulement la barre d'action (false) en entrant dans un territoire")
 		public boolean enterTitle = true;
 		@Comment("Duree d'affichage des limites du territoire avec /guild show (secondes)")
-		public int borderDisplaySeconds = 15;
+		public int borderDisplaySeconds = 45;
 	}
 
 	@Json5.Section
@@ -192,6 +197,11 @@ public final class GuildyConfig implements Validatable {
 
 	@Override
 	public void validate() {
+		// Migrations: only values still equal to the old default change (admin edits are kept).
+		if (configVersion < 2 && territory != null && territory.borderDisplaySeconds == 15) {
+			territory.borderDisplaySeconds = 45;
+		}
+		configVersion = CURRENT_VERSION;
 		guilds.nameMinLength = Math.max(1, guilds.nameMinLength);
 		guilds.nameMaxLength = Math.max(guilds.nameMinLength, Math.min(32, guilds.nameMaxLength));
 		guilds.maxMembers = Math.max(0, guilds.maxMembers);
