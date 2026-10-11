@@ -57,6 +57,16 @@ final class QuestCommands {
 									}
 									ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("quest.admin.completed", slot, guild.name)), true);
 									return 1;
-								}))))));
+								}))))
+				.then(Commands.literal("map")
+						.then(GuildArgument.guild("guild").executes(ctx -> {
+							ServerPlayer player = GuildCommand.player(ctx);
+							Guild guild = GuildArgument.resolve(ctx, "guild");
+							if (guild == null) {
+								return 0;
+							}
+							TreasureMaps.giveMap(player, guild);
+							return 1;
+						})))));
 	}
 }
