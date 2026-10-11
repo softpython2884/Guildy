@@ -121,6 +121,21 @@
 		]
 	},
 
+	// Banniere / drapeau de guilde et affichage sur les cartes
+	"banners": {
+
+		// false : la banniere se cree au METIER A TISSER avec de vrais colorants (on tisse le drapeau fondateur,
+		// ou n'importe quelle banniere puis 'Adopter la banniere en main' dans le menu Banniere).
+		// true : editeur gratuit dans le menu en plus (couleurs et motifs sans ressources).
+		"freeEditor": false,
+
+		// Afficher le drapeau-coeur des guildes sur les cartes (marqueur de banniere avec le nom de la guilde)
+		"heartOnMaps": true,
+
+		// true : toutes les guildes apparaissent sur les cartes ; false : seulement sa propre guilde
+		"allGuildsOnMaps": true
+	},
+
 	// Role minimum (MEMBER, OFFICER, LEADER) requis pour chaque action de guilde.
 	// BUILD=casser/poser, INTERACT=portes/coffres/entites, INVITE, KICK, CLAIM=claims/drapeaux,
 	// TREASURY=retirer/depenser le tresor, VILLAGERS=gerer les villageois, STRUCTURES=constructions,
