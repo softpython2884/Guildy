@@ -58,12 +58,11 @@ final class TaskEngine {
 		RUNTIME.remove(uuid);
 	}
 
-	/** Restarts the task state machine from scratch at the next step (work zone changed...). */
+	/** Restarts the task state machine from scratch at the next step (zone / route changed...). */
 	static void resetTask(UUID uuid) {
 		VillagerRuntime rt = RUNTIME.get(uuid);
 		if (rt != null) {
-			rt.handler = null;
-			rt.handlerTask = null;
+			rt.restart = true;
 		}
 	}
 
@@ -82,11 +81,12 @@ final class TaskEngine {
 		VillagerManager.ensureMemberSetup(villager, record);
 		WorkContext ctx = new WorkContext(level, guild, record, villager, rt, VillagerModule.config());
 		Task task = record.task;
-		if (rt.handler == null || rt.handlerTask != task) {
+		if (rt.handler == null || rt.handlerTask != task || rt.restart) {
 			if (rt.handler != null) {
 				rt.handler.stop(ctx);
 				Movement.stop(ctx);
 			}
+			rt.restart = false;
 			rt.handler = TaskHandler.create(task);
 			rt.handlerTask = task;
 			rt.paused = false;

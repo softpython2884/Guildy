@@ -16,7 +16,14 @@ public class VillagerRecord {
 	public UUID uuid;
 	public String name = "";
 	public Task task = Task.IDLE;
-	/** Work position set from the menu (miner depth, lumberjack / farmer area centre, guard post). */
+	/** Assigned work zone ({@link GuildVillagerData#zones} id), -1 = automatic. Ignored when incompatible with the task. */
+	public int zoneId = -1;
+	/** Assigned patrol route ({@link GuildVillagerData#routes} id) of a guard, -1 = none. */
+	public int routeId = -1;
+	/**
+	 * Legacy work position (before work zones): read from old data, turned into a zone when the guild data loads
+	 * ({@link GuildVillagerData#migrateLegacyWorkPositions}), then always null (no longer saved).
+	 */
 	public @Nullable BlockPos workPos;
 	/** Items collected and not yet deposited (dropped if the villager dies). */
 	public List<ItemStack> carried = new ArrayList<>();
@@ -108,5 +115,7 @@ public class VillagerRecord {
 		if (awayEntity != null && awayTask == null) {
 			awayTask = Task.EXPLORER;
 		}
+		zoneId = Math.max(-1, zoneId);
+		routeId = Math.max(-1, routeId);
 	}
 }

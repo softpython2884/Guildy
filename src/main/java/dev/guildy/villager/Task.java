@@ -51,9 +51,9 @@ public enum Task {
 		return this == IDLE ? null : icon();
 	}
 
-	/** Tasks that need a work position set from the menu. */
-	public boolean needsWorkPos() {
-		return this == MINER || this == LUMBERJACK || this == FARMER;
+	/** Kind of work zone this task works in (null: no zone, e.g. the sorter or expeditions). */
+	public @Nullable ZoneType zoneType() {
+		return ZoneType.forTask(this);
 	}
 
 	/** Workers that collect items and bring them to a deposit chest. */

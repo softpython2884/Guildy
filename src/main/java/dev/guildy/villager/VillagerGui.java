@@ -30,13 +30,16 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Villager menus: list (+ candidate), villager detail (task, work zone, dismiss), bulk task assignment, storage chests
- * and the role picker used after selecting a container.
+ * Villager menus: list (+ candidate), villager detail (task, work zone, mission, carried items, call, dismiss), bulk
+ * task assignment, storage chests and the role picker used after selecting a container. Zone and route menus are in
+ * {@link ZoneGui}.
  */
 public final class VillagerGui {
 	private static final int PER_PAGE = 36;
 	private static final int CHESTS_PER_PAGE = 45;
 	private static final int CARRIED_LINES = 8;
+	/** Carried stacks listed in the villager list (the detail menu shows more). */
+	private static final int LIST_CARRIED_LINES = 3;
 
 	private VillagerGui() {
 	}
@@ -64,7 +67,7 @@ public final class VillagerGui {
 				break;
 			}
 			VillagerRecord record = records.get(index);
-			gui.setSlot(i, villagerIcon(level, record, true).setCallback((slot, type, action, g) -> {
+			gui.setSlot(i, villagerIcon(level, guild, record, true).setCallback((slot, type, action, g) -> {
 				GuiUtil.clickSound(player);
 				openDetail(player, guild, record.uuid);
 			}));
@@ -93,6 +96,11 @@ public final class VillagerGui {
 					GuiUtil.clickSound(player);
 					openAssignIdle(player, guild);
 				}));
+		gui.setSlot(48, GuiUtil.item(ZoneFlags.icon(ZoneType.FOREST), Lang.get("villager.gui.zones"),
+				GuiUtil.lines("villager.gui.zones.lore", guild.villagers.zones.size(), guild.villagers.routes.size())).setCallback((slot, type, action, g) -> {
+			GuiUtil.clickSound(player);
+			ZoneGui.openZones(player, guild);
+		}));
 		gui.setSlot(49, GuiUtil.item(Items.CHEST, Lang.get("villager.gui.storage"), GuiUtil.lines("villager.gui.storage.lore", guild.villagers.chests.size()))
 				.setCallback((slot, type, action, g) -> {
 					GuiUtil.clickSound(player);
@@ -144,11 +152,15 @@ public final class VillagerGui {
 				Math.round(VillagerModule.config().arrivals.arrivalChance * 100))));
 	}
 
-	/** Icon of a villager with its task, status, position, zone, load and stats. */
-	private static GuiElementBuilder villagerIcon(@Nullable ServerLevel level, VillagerRecord record, boolean manageHint) {
+	/** Icon of a villager: task, zone / route, status, profession, position, carried items and stats. */
+	private static GuiElementBuilder villagerIcon(@Nullable ServerLevel level, Guild guild, VillagerRecord record, boolean manageHint) {
 		Villager villager = level == null ? null : VillagerManager.entity(level, record.uuid);
 		List<Component> lore = new ArrayList<>();
 		lore.add(Lang.get("villager.gui.lore.task", Lang.raw(record.task.langKey())));
+		String assignment = Zones.assignmentText(guild, record);
+		if (assignment != null) {
+			lore.add(Lang.get("villager.gui.lore.assignment", assignment));
+		}
 		lore.add(Lang.get("villager.gui.lore.status", statusText(record, villager)));
 		if (villager != null) {
 			String profession = villager.getVillagerData().profession().unwrapKey()
@@ -159,13 +171,16 @@ public final class VillagerGui {
 		} else if (record.lastPos != null) {
 			lore.add(Lang.get("villager.gui.lore.last_position", record.lastPos.getX(), record.lastPos.getY(), record.lastPos.getZ()));
 		}
-		if (record.workPos != null) {
-			lore.add(Lang.get("villager.gui.lore.zone", record.workPos.getX(), record.workPos.getY(), record.workPos.getZ()));
-		} else if (record.task.needsWorkPos()) {
-			lore.add(Lang.get("villager.gui.lore.zone.none"));
-		}
 		if (!record.carried.isEmpty()) {
 			lore.add(Lang.get("villager.gui.lore.carried", record.carriedCount()));
+			int shown = 0;
+			for (ItemStack stack : record.carried) {
+				if (shown++ >= LIST_CARRIED_LINES) {
+					lore.add(Lang.get("villager.gui.carried.more", record.carried.size() - LIST_CARRIED_LINES));
+					break;
+				}
+				lore.add(Lang.get("villager.gui.carried.line", stack.getCount()).append(stack.getHoverName()));
+			}
 		}
 		VillagerRecord.Stats stats = record.stats;
 		if (stats.sorted > 0) {
@@ -189,7 +204,11 @@ public final class VillagerGui {
 		return GuiUtil.item(record.task.icon(), Lang.get("villager.gui.villager.name", record.name), lore);
 	}
 
-	private static String statusText(VillagerRecord record, @Nullable Villager villager) {
+	static String statusText(VillagerRecord record, @Nullable Villager villager) {
+		if (record.isAway()) {
+			VillagerRuntime rt = TaskEngine.peek(record.uuid);
+			return rt == null ? Lang.raw("villager.status.unloaded") : Lang.raw(rt.statusKey, rt.statusArgs);
+		}
 		if (villager == null) {
 			return Lang.raw("villager.status.unloaded");
 		}
@@ -202,6 +221,10 @@ public final class VillagerGui {
 
 	// ================================================================ detail
 
+	/**
+	 * Detail of a villager. Row 2: tasks; row 3: work zone, mission (goal, amount, item), carried items; row 4: call
+	 * it here, dismiss.
+	 */
 	static void openDetail(ServerPlayer player, Guild guild, UUID uuid) {
 		VillagerRecord record = guild.villagers.members.get(uuid);
 		if (record == null) {
@@ -211,10 +234,10 @@ public final class VillagerGui {
 		}
 		ServerLevel level = GuildyServer.claimLevel();
 		SimpleGui gui = chest(player, 5, Lang.get("villager.gui.detail.title", record.name));
-		gui.setSlot(4, villagerIcon(level, record, false));
+		gui.setSlot(4, villagerIcon(level, guild, record, false));
 
 		Task[] tasks = Task.values();
-		for (int i = 0; i < tasks.length; i++) {
+		for (int i = 0; i < tasks.length && i < 9; i++) {
 			Task task = tasks[i];
 			boolean currentTask = record.task == task;
 			List<Component> lore = new ArrayList<>(GuiUtil.lines(task.descKey()));
@@ -224,15 +247,15 @@ public final class VillagerGui {
 			if (currentTask) {
 				button.glow();
 			}
-			gui.setSlot(19 + i, button.setCallback((slot, type, action, g) -> {
+			gui.setSlot(9 + i, button.setCallback((slot, type, action, g) -> {
 				if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
 					return;
 				}
 				if (record.task != task) {
 					VillagerManager.setTask(guild, record, task, player);
 					Msg.send(player, "villager.task.set", record.name, Lang.raw(task.langKey()));
-					if (task.needsWorkPos() && record.workPos == null) {
-						Msg.send(player, "villager.task.need_workpos");
+					if (task.zoneType() != null && Zones.assignedZone(guild, record) == null && Zones.assignedRoute(guild, record) == null) {
+						Msg.send(player, "villager.task.auto_hint", record.name);
 					}
 					GuiUtil.successSound(player);
 				}
@@ -240,33 +263,33 @@ public final class VillagerGui {
 			}));
 		}
 
-		missionControls(gui, player, guild, record);
-
-		gui.setSlot(29, carriedIcon(record));
-		List<Component> zoneLore = new ArrayList<>();
-		if (record.workPos != null) {
-			zoneLore.add(Lang.get("villager.gui.lore.zone", record.workPos.getX(), record.workPos.getY(), record.workPos.getZ()));
-		} else {
-			zoneLore.add(Lang.get("villager.gui.lore.zone.none"));
-		}
-		zoneLore.addAll(GuiUtil.lines("villager.gui.workpos.lore"));
-		gui.setSlot(31, GuiUtil.item(Items.COMPASS, Lang.get("villager.gui.workpos"), zoneLore).setCallback((slot, type, action, g) -> {
+		gui.setSlot(19, zoneButton(level, guild, record).setCallback((slot, type, action, g) -> {
 			if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
 				return;
 			}
-			BlockPos pos = player.blockPosition();
-			if (!GuildyServer.isClaimLevel(player.level()) || GuildManager.at(player.level(), pos) != guild) {
-				Msg.send(player, "villager.workpos.outside");
+			if (record.task.zoneType() == null) {
+				Msg.send(player, "villager.zone.no_zone_task", Lang.raw(record.task.langKey()));
 				GuiUtil.errorSound(player);
 				return;
 			}
-			record.workPos = pos.immutable();
-			GuildManager.markDirty();
-			TaskEngine.resetTask(record.uuid);
-			Msg.send(player, "villager.workpos.set", record.name, pos.getX(), pos.getY(), pos.getZ());
-			GuiUtil.successSound(player);
-			openDetail(player, guild, uuid);
+			GuiUtil.clickSound(player);
+			ZoneGui.openPicker(player, guild, uuid);
 		}));
+		missionControls(gui, player, guild, record);
+		gui.setSlot(25, carriedIcon(record));
+
+		gui.setSlot(29, GuiUtil.item(Items.ENDER_PEARL, Lang.get("villager.gui.call"), GuiUtil.lines("villager.gui.call.lore", record.name))
+				.setCallback((slot, type, action, g) -> {
+					if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
+						return;
+					}
+					if (VillagerManager.summon(player, guild, record)) {
+						GuiUtil.successSound(player);
+						openDetail(player, guild, uuid);
+					} else {
+						GuiUtil.errorSound(player);
+					}
+				}));
 		gui.setSlot(33, GuiUtil.item(Items.OAK_DOOR, Lang.get("villager.gui.dismiss", record.name), GuiUtil.lines("villager.gui.dismiss.lore"))
 				.setCallback((slot, type, action, g) -> {
 					if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
@@ -285,7 +308,32 @@ public final class VillagerGui {
 		gui.open();
 	}
 
-	/** Mission goal (row 2): mode, amount and target item, for gathering tasks and expeditions. */
+	/** "Zone de travail": the assigned zone / route, the automatic mode, or nothing for tasks without zones. */
+	private static GuiElementBuilder zoneButton(@Nullable ServerLevel level, Guild guild, VillagerRecord record) {
+		ZoneType type = record.task.zoneType();
+		if (type == null) {
+			return GuiUtil.item(Items.DYE.pick(DyeColor.GRAY), Lang.get("villager.gui.zonebtn.none"), GuiUtil.lines("villager.gui.zonebtn.none.lore",
+					Lang.raw(record.task.langKey())));
+		}
+		Component name = Lang.get("villager.gui.zonebtn", Zones.assignmentText(guild, record));
+		PatrolRoute route = Zones.assignedRoute(guild, record);
+		WorkZone zone = Zones.assignedZone(guild, record);
+		GuiElementBuilder button;
+		if (route != null) {
+			button = ZoneGui.routeIcon(guild, route, false);
+		} else if (zone != null) {
+			button = ZoneGui.zoneIcon(level, guild, zone, false);
+		} else {
+			button = GuiUtil.item(Items.COMPASS, name, GuiUtil.lines("villager.gui.picker.auto.lore." + type.id(),
+					VillagerModule.config().zones.autoSearchRadius));
+		}
+		button.setName(GuiUtil.noItalic(name));
+		button.addLoreLine(GuiUtil.noItalic(Component.empty()));
+		button.addLoreLine(GuiUtil.noItalic(Lang.get("villager.gui.zonebtn.click")));
+		return button;
+	}
+
+	/** Mission goal (row 3): mode, amount and target item, for gathering tasks and expeditions. */
 	private static void missionControls(SimpleGui gui, ServerPlayer player, Guild guild, VillagerRecord record) {
 		UUID uuid = record.uuid;
 		List<Component> goalLore = new ArrayList<>(GuiUtil.lines("villager.gui.goal.lore"));
@@ -297,7 +345,7 @@ public final class VillagerGui {
 			goalLore.add(Lang.get("villager.gui.goal.no_effect"));
 		}
 		goalLore.add(Lang.get("villager.gui.goal.click"));
-		gui.setSlot(11, GuiUtil.item(Items.TARGET, Lang.get("villager.gui.goal", Lang.raw(record.goal.langKey())), goalLore)
+		gui.setSlot(21, GuiUtil.item(Items.TARGET, Lang.get("villager.gui.goal", Lang.raw(record.goal.langKey())), goalLore)
 				.setCallback((slot, type, action, g) -> {
 					if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
 						return;
@@ -309,7 +357,7 @@ public final class VillagerGui {
 					openDetail(player, guild, uuid);
 				}));
 		if (record.goal == Goal.QUOTA) {
-			gui.setSlot(13, GuiUtil.item(Items.HOPPER, Lang.get("villager.gui.goal.amount", record.goalAmount),
+			gui.setSlot(22, GuiUtil.item(Items.HOPPER, Lang.get("villager.gui.goal.amount", record.goalAmount),
 					GuiUtil.lines("villager.gui.goal.amount.lore")).setCallback((slot, type, action, g) -> {
 				if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
 					return;
@@ -317,11 +365,7 @@ public final class VillagerGui {
 				int step = type.shift ? 64 : 16;
 				int amount = record.goalAmount + (type.isRight ? -step : step);
 				record.goalAmount = Math.max(1, Math.min(10_000, amount));
-				if (record.goalProgress >= record.goalAmount) {
-					record.goalReached = true;
-				} else {
-					record.goalReached = false;
-				}
+				record.goalReached = record.goalProgress >= record.goalAmount;
 				GuildManager.markDirty();
 				GuiUtil.clickSound(player);
 				openDetail(player, guild, uuid);
@@ -330,7 +374,7 @@ public final class VillagerGui {
 			GuiElementBuilder itemButton = target == null
 					? GuiUtil.item(Items.CHEST, Lang.get("villager.gui.goal.item", Lang.raw("villager.goal.any_item")), GuiUtil.lines("villager.gui.goal.item.lore"))
 					: GuiUtil.item(target, Lang.get("villager.gui.goal.item", Missions.goalItemName(record)), GuiUtil.lines("villager.gui.goal.item.lore"));
-			gui.setSlot(15, itemButton.setCallback((slot, type, action, g) -> {
+			gui.setSlot(23, itemButton.setCallback((slot, type, action, g) -> {
 				if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
 					return;
 				}
@@ -394,8 +438,8 @@ public final class VillagerGui {
 							Msg.send(player, "villager.task.none_idle");
 						} else {
 							Msg.send(player, "villager.task.set_all", count, Lang.raw(task.langKey()));
-							if (task.needsWorkPos()) {
-								Msg.send(player, "villager.task.need_workpos");
+							if (task.zoneType() != null) {
+								Msg.send(player, "villager.task.auto_hint_all");
 							}
 							GuiUtil.successSound(player);
 						}
@@ -561,11 +605,17 @@ public final class VillagerGui {
 
 	// ================================================================ helpers
 
-	/** Chest menu whose clicks are isolated by {@link Safe} (a failing button never breaks the menu). */
-	private static SimpleGui chest(ServerPlayer player, int rows, Component title) {
+	/**
+	 * Chest menu whose clicks are isolated by {@link Safe} (a failing button never breaks the menu); only plain
+	 * left / right clicks reach the buttons (no double toggle on double clicks, drags or number keys).
+	 */
+	static SimpleGui chest(ServerPlayer player, int rows, Component title) {
 		SimpleGui gui = new SimpleGui(GuiUtil.rows(rows), player, false) {
 			@Override
 			public boolean click(int index, ClickType type, ContainerInput action) {
+				if (!(type.isLeft || type.isRight) || type.isDragging) {
+					return false;
+				}
 				return Safe.get("villager.gui", () -> super.click(index, type, action), false);
 			}
 		};
@@ -573,7 +623,7 @@ public final class VillagerGui {
 		return gui;
 	}
 
-	private static boolean checkPermission(ServerPlayer player, Guild guild) {
+	static boolean checkPermission(ServerPlayer player, Guild guild) {
 		if (GuildManager.of(player) != guild || !guild.can(player.getUUID(), GuildPermission.VILLAGERS)) {
 			Msg.send(player, "error.no_permission");
 			GuiUtil.errorSound(player);
@@ -582,7 +632,7 @@ public final class VillagerGui {
 		return true;
 	}
 
-	private static boolean stillMember(ServerPlayer player, Guild guild, VillagerRecord record) {
+	static boolean stillMember(ServerPlayer player, Guild guild, VillagerRecord record) {
 		if (guild.villagers.members.get(record.uuid) != record) {
 			Msg.send(player, "villager.error.unknown");
 			player.closeContainer();

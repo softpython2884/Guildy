@@ -6,7 +6,7 @@ import dev.guildy.core.Hooks;
 import dev.guildy.structure.StructureBehavior;
 
 /**
- * Guild villagers: arrivals, acceptance, tasks, storage sorting.
+ * Guild villagers: arrivals, acceptance, tasks, work zones (fanions) and patrol routes, storage sorting.
  */
 public final class VillagerModule {
 	private static ConfigHandle<VillagerConfig> config;
@@ -19,6 +19,7 @@ public final class VillagerModule {
 		VillagerLang.register();
 		VillagerManager.init();
 		VillagerInteractions.init();
+		ZoneVisualizer.register();
 		VillagerCommands.init();
 		StructureBehavior.register(VillagerManager.RECEPTION, new ReceptionBehavior());
 		Hooks.openVillagers = VillagerGui::openList;

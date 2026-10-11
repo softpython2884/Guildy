@@ -1,5 +1,6 @@
 package dev.guildy.villager;
 
+import dev.guildy.Guildy;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 
 /**
  * Guild villagers lifecycle: morning arrivals at the reception, candidates (transient), acceptance, deaths and
@@ -97,6 +99,7 @@ public final class VillagerManager {
 	static void init() {
 		Lifecycle.STARTED.add(VillagerManager::onStarted);
 		Lifecycle.STOPPING.add(VillagerManager::onStopping);
+		Lifecycle.RELOADED.add(VillagerManager::onReload);
 		GuildEvents.DISBANDED.add(VillagerManager::onDisband);
 		GuildEvents.WAVE_ENDED.add(VillagerManager::onWaveEnded);
 		ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> Safe.run("villager.load", () -> onEntityLoad(entity, level)));
@@ -106,6 +109,11 @@ public final class VillagerManager {
 				Safe.run("villager.conversion", () -> onConversion(previous, converted)));
 		Scheduler.every("villager.tick", 1, 0, VillagerManager::tick);
 		Scheduler.every("villager.second", 20, 11, VillagerManager::everySecond);
+		Scheduler.every("villager.zones.upkeep", 100, 53, () -> {
+			if (ready) {
+				Zones.upkeep();
+			}
+		});
 	}
 
 	// ================================================================ queries
@@ -148,9 +156,20 @@ public final class VillagerManager {
 		CANDIDATES.clear();
 		TaskEngine.clear();
 		VillagerInteractions.clear();
+		RouteSelection.clear();
+		ZoneVisualizer.clear();
 		lastDay = -1;
+		int maxRadius = VillagerModule.config().zones.maxRadiusChunks;
+		Function<ZoneType, String> zoneNames = type -> Lang.strip(Lang.raw(type.langKey()));
+		String routeName = Lang.strip(Lang.raw("villager.route.base"));
 		for (Guild guild : GuildManager.all()) {
-			guild.villagers.sanitize();
+			guild.villagers.sanitize(maxRadius, zoneNames, routeName);
+			// Data saved before work zones: per-villager work positions become zones.
+			int migrated = guild.villagers.migrateLegacyWorkPositions(zoneNames, System.currentTimeMillis());
+			if (migrated > 0) {
+				Guildy.LOGGER.info("Guild {}: {} work position(s) migrated to work zones", guild.name, migrated);
+				GuildManager.markDirty();
+			}
 		}
 		ready = true;
 		// Entities of the spawn chunks were loaded before the guild data: check them now.
@@ -164,6 +183,18 @@ public final class VillagerManager {
 			}
 			for (Villager villager : villagers) {
 				Safe.run("villager.load", () -> onEntityLoad(villager, level));
+			}
+		}
+	}
+
+	/** /guild admin reload: zones larger than a lowered maximum radius shrink to it. */
+	private static void onReload() {
+		int max = VillagerModule.config().zones.maxRadiusChunks;
+		for (Guild guild : GuildManager.all()) {
+			for (WorkZone zone : guild.villagers.zones) {
+				if (zone.radius > max) {
+					Zones.setRadius(guild, zone, max);
+				}
 			}
 		}
 	}
@@ -183,6 +214,8 @@ public final class VillagerManager {
 		CANDIDATES.clear();
 		TaskEngine.clear();
 		VillagerInteractions.clear();
+		RouteSelection.clear();
+		ZoneVisualizer.clear();
 	}
 
 	// ================================================================ ticking
@@ -261,6 +294,7 @@ public final class VillagerManager {
 			Safe.run("villager.candidate.timeout", departure);
 		}
 		VillagerInteractions.tickSelections();
+		RouteSelection.tick();
 	}
 
 	// ================================================================ arrivals
@@ -559,6 +593,7 @@ public final class VillagerManager {
 		}
 		record.task = task;
 		Missions.reset(record);
+		// The zone / route assignment is kept: ignored while it does not match the task, back when it does again.
 		if ((task == Task.IDLE || task == Task.GUARD) && !record.carried.isEmpty()) {
 			for (ItemStack stack : record.carried) {
 				ItemUtil.giveOrDrop(actor, stack);
@@ -603,6 +638,55 @@ public final class VillagerManager {
 		}
 		record.carried.clear();
 		leave(guild, record, "villager.dismissed");
+	}
+
+	/**
+	 * "Appeler ici": teleports the villager next to the player, when both are loaded and the player stands in the
+	 * territory or in one of the guild's zones. @return true on success (messages sent either way)
+	 */
+	static boolean summon(ServerPlayer player, Guild guild, VillagerRecord record) {
+		if (record.isAway()) {
+			Msg.send(player, "villager.call.away", record.name);
+			return false;
+		}
+		ServerLevel level = GuildyServer.claimLevel();
+		Villager villager = level == null ? null : entity(level, record.uuid);
+		if (villager == null || !level.isPositionEntityTicking(villager.blockPosition())) {
+			Msg.send(player, "villager.call.unloaded", record.name);
+			return false;
+		}
+		if (player.level() != level || !Zones.inGuildArea(level, guild, player.blockPosition())) {
+			Msg.send(player, "villager.call.outside");
+			return false;
+		}
+		if (villager.isTrading()) {
+			Msg.send(player, "villager.call.busy", record.name);
+			return false;
+		}
+		BlockPos spot = WorldUtil.findSafeSpot(level, player.blockPosition(), 2, true, pos -> true);
+		if (spot == null) {
+			Msg.send(player, "villager.call.no_spot");
+			return false;
+		}
+		if (villager.isPassenger()) {
+			villager.stopRiding();
+		}
+		if (villager.isSleeping()) {
+			villager.stopSleeping();
+		}
+		WorldUtil.portal(level, villager.getX(), villager.getY(), villager.getZ());
+		villager.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
+		villager.getBrain().eraseMemory(MemoryModuleType.PATH);
+		villager.getNavigation().stop();
+		villager.teleportTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5);
+		WorldUtil.portal(level, villager.getX(), villager.getY(), villager.getZ());
+		WorldUtil.playSound(level, villager, SoundEvents.CHORUS_FRUIT_TELEPORT, 0.6f, 1.2f);
+		VillagerRuntime rt = TaskEngine.peek(record.uuid);
+		if (rt != null) {
+			rt.resetAllMovement();
+		}
+		Msg.send(player, "villager.call.done", record.name);
+		return true;
 	}
 
 	static void removeRecord(Guild guild, VillagerRecord record) {
@@ -794,7 +878,9 @@ public final class VillagerManager {
 		// Unloaded ones are released when their chunk loads (no record anymore).
 		guild.villagers.members.clear();
 		guild.villagers.leaving.clear();
+		Zones.onDisband(guild);
 		VillagerInteractions.cancelGuild(guild);
+		RouteSelection.cancelGuild(guild);
 		GuildManager.markDirty();
 	}
 

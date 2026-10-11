@@ -41,8 +41,19 @@ final class WorkContext {
 		return GuildManager.at(level, pos) == guild;
 	}
 
+	/** In another guild's territory: villagers never touch anything there. */
+	boolean foreign(BlockPos pos) {
+		Guild owner = GuildManager.at(level, pos);
+		return owner != null && owner != guild;
+	}
+
 	boolean loaded(BlockPos pos) {
 		return level.isLoaded(pos);
+	}
+
+	/** Entities tick there (a player is around): villagers only head for work in such chunks. */
+	boolean ticking(BlockPos pos) {
+		return level.isPositionEntityTicking(pos);
 	}
 
 	double distSq(BlockPos pos) {

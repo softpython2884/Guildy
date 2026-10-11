@@ -24,6 +24,8 @@ public final class GuildyItems {
 	public static final String KIND_EXTENSION_FLAG = "extension_flag";
 	public static final String KIND_PLAN = "plan";
 	public static final String KIND_TREASURE_MAP = "treasure_map";
+	/** Work zone fanion of the villager module (banner): {"type": zone type, "guild": id, "zone": id when moving one}. */
+	public static final String KIND_ZONE_FLAG = "zone_flag";
 
 	private GuildyItems() {
 	}
