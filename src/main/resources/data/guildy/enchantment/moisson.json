@@ -1,0 +1,35 @@
+{
+  "description": {
+    "text": "Moisson",
+    "color": "#4DD0E1"
+  },
+  "supported_items": "#guildy:enchantable/unique_melee",
+  "weight": 1,
+  "max_level": 3,
+  "min_cost": {
+    "base": 60,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 8,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {
+    "minecraft:mob_experience": [
+      {
+        "effect": {
+          "type": "minecraft:multiply",
+          "factor": {
+            "type": "minecraft:linear",
+            "base": 1.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ]
+  }
+}

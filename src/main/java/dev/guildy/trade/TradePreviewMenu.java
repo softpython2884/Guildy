@@ -63,11 +63,23 @@ final class TradePreviewMenu extends GuildGui {
 			if (enchantment != null) {
 				lore.add(TextUtil.lang("trade.gui.entry.enchantment", enchantment));
 			}
+			boolean randomUnique = entry.isUnique() && TradeEntry.RANDOM_UNIQUE.equals(entry.unique);
+			if (randomUnique) {
+				lore.addAll(GuiUtil.lines("unique.trade.random.lore"));
+			}
 			lore.add(TextUtil.lang("trade.gui.entry.price", TradeHubMenu.price(entry)));
 			lore.add(Lang.get("trade.gui.entry.uses", entry.maxUses));
 			lore.add(Lang.get("trade.gui.entry.chance", totalWeight <= 0 ? "0" : TradeHubMenu.percent(entry.weight / totalWeight)));
-			Component name = stack.is(Items.BARRIER) ? Component.literal(entry.item)
-					: TextUtil.lang("trade.gui.entry.name", entry.count, ItemUtil.name(stack.getItem()));
+			Component name;
+			if (stack.is(Items.BARRIER)) {
+				name = Component.literal(entry.isUnique() ? entry.unique : entry.item);
+			} else if (randomUnique) {
+				name = Lang.get("unique.trade.random.name");
+			} else if (entry.isUnique()) {
+				name = stack.getHoverName();
+			} else {
+				name = TextUtil.lang("trade.gui.entry.name", entry.count, ItemUtil.name(stack.getItem()));
+			}
 			setSlot(i, GuiUtil.item(stack, name, lore));
 		}
 		if (entries.isEmpty()) {

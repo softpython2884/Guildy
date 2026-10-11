@@ -1,0 +1,108 @@
+{
+  "description": {
+    "text": "Vampirisme",
+    "color": "#E0443A"
+  },
+  "supported_items": "#guildy:enchantable/unique_melee",
+  "weight": 1,
+  "max_level": 3,
+  "min_cost": {
+    "base": 60,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 8,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {
+    "minecraft:post_attack": [
+      {
+        "enchanted": "attacker",
+        "affected": "attacker",
+        "effect": {
+          "type": "minecraft:all_of",
+          "effects": [
+            {
+              "type": "minecraft:apply_mob_effect",
+              "to_apply": "minecraft:instant_health",
+              "min_duration": 0.05,
+              "max_duration": 0.05,
+              "min_amplifier": 0.0,
+              "max_amplifier": 0.0
+            },
+            {
+              "type": "minecraft:play_sound",
+              "sound": "minecraft:item.honey_bottle.drink",
+              "volume": 0.5,
+              "pitch": {
+                "type": "minecraft:uniform",
+                "min_inclusive": 0.6,
+                "max_exclusive": 0.8
+              }
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:heart"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {},
+              "vertical_velocity": {
+                "base": 0.1
+              },
+              "speed": 1.0
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:heart"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {},
+              "vertical_velocity": {
+                "base": 0.1
+              },
+              "speed": 1.0
+            }
+          ]
+        },
+        "requirements": {
+          "type": "minecraft:all_of",
+          "terms": [
+            {
+              "type": "minecraft:damage_source_properties",
+              "predicate": {
+                "is_direct": true
+              }
+            },
+            {
+              "type": "minecraft:random_chance",
+              "chance": {
+                "type": "minecraft:enchantment_level",
+                "amount": {
+                  "type": "minecraft:linear",
+                  "base": 0.08,
+                  "per_level_above_first": 0.06
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

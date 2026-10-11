@@ -1,0 +1,47 @@
+{
+  "description": {
+    "text": "Salve",
+    "color": "#9CCC65"
+  },
+  "supported_items": "#minecraft:enchantable/bow",
+  "weight": 1,
+  "max_level": 2,
+  "min_cost": {
+    "base": 60,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 8,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {
+    "minecraft:projectile_count": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 2.0,
+            "per_level_above_first": 2.0
+          }
+        }
+      }
+    ],
+    "minecraft:projectile_spread": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 8.0,
+            "per_level_above_first": 4.0
+          }
+        }
+      }
+    ]
+  }
+}

@@ -15,6 +15,7 @@ import dev.guildy.structure.TextUtil;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -247,8 +248,17 @@ final class TradeHubMenu extends GuildGui {
 		return s < 60 ? Lang.raw("trade.time.seconds", s) : Lang.raw("trade.time.minutes", s / 60, s % 60);
 	}
 
-	/** Icon of an entry: the sold stack (enchanted books keep their enchantment). */
+	/**
+	 * Icon of an entry: the sold stack (enchanted books keep their enchantment); for a unique weapon offer, the weapon of a
+	 * fixed id, or the offer's icon item when it is drawn at random (never rolled for a preview).
+	 */
 	static ItemStack icon(HolderLookup.Provider registries, TradeEntry entry) {
+		if (entry.isUnique() && TradeEntry.RANDOM_UNIQUE.equals(entry.unique)) {
+			Item item = ItemUtil.item(entry.item);
+			ItemStack stack = new ItemStack(item == null ? Items.NETHER_STAR : item);
+			stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+			return stack;
+		}
 		ItemStack stack = TradeOffers.result(registries, entry);
 		return stack == null ? new ItemStack(Items.BARRIER) : stack;
 	}

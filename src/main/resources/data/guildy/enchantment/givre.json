@@ -1,0 +1,172 @@
+{
+  "description": {
+    "text": "Givre",
+    "color": "#9BE7FF"
+  },
+  "supported_items": "#guildy:enchantable/unique_weapon",
+  "weight": 1,
+  "max_level": 3,
+  "min_cost": {
+    "base": 60,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 8,
+  "slots": [
+    "mainhand"
+  ],
+  "exclusive_set": "#guildy:exclusive_set/elements",
+  "effects": {
+    "minecraft:post_attack": [
+      {
+        "enchanted": "attacker",
+        "affected": "victim",
+        "effect": {
+          "type": "minecraft:all_of",
+          "effects": [
+            {
+              "type": "minecraft:apply_mob_effect",
+              "to_apply": "minecraft:slowness",
+              "min_duration": {
+                "type": "minecraft:linear",
+                "base": 2.0,
+                "per_level_above_first": 1.0
+              },
+              "max_duration": {
+                "type": "minecraft:linear",
+                "base": 3.0,
+                "per_level_above_first": 1.5
+              },
+              "min_amplifier": {
+                "type": "minecraft:linear",
+                "base": 0.0,
+                "per_level_above_first": 1.0
+              },
+              "max_amplifier": {
+                "type": "minecraft:linear",
+                "base": 0.0,
+                "per_level_above_first": 1.0
+              }
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:snowflake"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {
+                "base": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": -0.1,
+                  "max_exclusive": 0.1
+                }
+              },
+              "vertical_velocity": {
+                "base": 0.05
+              },
+              "speed": 1.0
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:snowflake"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {
+                "base": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": -0.1,
+                  "max_exclusive": 0.1
+                }
+              },
+              "vertical_velocity": {
+                "base": 0.05
+              },
+              "speed": 1.0
+            }
+          ]
+        }
+      },
+      {
+        "enchanted": "attacker",
+        "affected": "victim",
+        "effect": {
+          "type": "minecraft:all_of",
+          "effects": [
+            {
+              "type": "minecraft:damage_entity",
+              "damage_type": "guildy:givre",
+              "min_damage": {
+                "type": "minecraft:linear",
+                "base": 2.0,
+                "per_level_above_first": 1.0
+              },
+              "max_damage": {
+                "type": "minecraft:linear",
+                "base": 3.0,
+                "per_level_above_first": 1.5
+              }
+            },
+            {
+              "type": "minecraft:play_sound",
+              "sound": "minecraft:block.glass.break",
+              "volume": 0.6,
+              "pitch": {
+                "type": "minecraft:uniform",
+                "min_inclusive": 1.4,
+                "max_exclusive": 1.8
+              }
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:item_snowball"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {
+                "base": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": -0.3,
+                  "max_exclusive": 0.3
+                }
+              },
+              "vertical_velocity": {
+                "base": 0.2
+              },
+              "speed": 1.0
+            }
+          ]
+        },
+        "requirements": {
+          "type": "minecraft:random_chance",
+          "chance": {
+            "type": "minecraft:enchantment_level",
+            "amount": {
+              "type": "minecraft:linear",
+              "base": 0.12,
+              "per_level_above_first": 0.08
+            }
+          }
+        }
+      }
+    ]
+  }
+}

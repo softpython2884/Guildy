@@ -20,7 +20,8 @@
 			"dev.guildy.test.BannerGameTests",
 			"dev.guildy.test.UpgradeGameTests",
 			"dev.guildy.test.EventGameTests",
-			"dev.guildy.test.QuestGameTests"
+			"dev.guildy.test.QuestGameTests",
+			"dev.guildy.test.UniqueGameTests"
 		]
 	},
 	"depends": {

@@ -2,10 +2,12 @@ package dev.guildy.wave;
 
 import dev.guildy.core.GuildyItems;
 import dev.guildy.core.ItemUtil;
+import dev.guildy.core.UniqueDrops;
 import dev.guildy.data.Guild;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -22,7 +24,10 @@ final class WaveLoot {
 	private WaveLoot() {
 	}
 
-	/** Extra drops at the death position: nuggets, elite gold + elite item, boss table + flag / treasure map chances. */
+	/**
+	 * Extra drops at the death position: nuggets, elite gold + elite item, boss table + flag / treasure map chances, and
+	 * the rare unique weapon of a boss.
+	 */
 	static void dropKillLoot(ServerLevel level, Mob mob, WavePlanner.PlannedMob planned, Guild guild, BlockPos heart, double difficulty,
 			RandomGenerator random) {
 		WaveConfig.KillLoot cfg = WaveModule.config().killLoot;
@@ -61,6 +66,32 @@ final class WaveLoot {
 				mob.spawnAtLocation(level, part);
 			}
 		}
+		if (planned.isBoss()) {
+			dropUnique(level, mob, guild, random);
+		}
+	}
+
+	/**
+	 * Unique weapon of a boss (uniques.json5: table "blood_boss" during a blood night, else "boss"). The dropped item never
+	 * despawns and resists fire, lava and explosions, and glows so that it is found after the fight.
+	 */
+	private static void dropUnique(ServerLevel level, Mob mob, Guild guild, RandomGenerator random) {
+		ItemStack unique = UniqueDrops.roll(isBloodNight(guild) ? "blood_boss" : "boss", random);
+		if (unique.isEmpty()) {
+			return;
+		}
+		ItemEntity entity = mob.spawnAtLocation(level, unique);
+		if (entity != null) {
+			entity.setUnlimitedLifetime();
+			entity.setPermanentlyInvulnerable(true);
+			entity.setGlowingTag(true);
+		}
+	}
+
+	/** A night (or test) wave strengthened by event night modifiers: the blood night (event waves are excluded). */
+	static boolean isBloodNight(Guild guild) {
+		WaveSession session = WaveManager.session(guild);
+		return session != null && !session.isEvent() && !NightModifiers.NONE.equals(session.modifiers());
 	}
 
 	/** Splits an oversized stack (configurable counts) into valid stacks. */

@@ -1,0 +1,151 @@
+{
+  "description": {
+    "text": "Brasier",
+    "color": "#FF8A3D"
+  },
+  "supported_items": "#guildy:enchantable/unique_weapon",
+  "weight": 1,
+  "max_level": 3,
+  "min_cost": {
+    "base": 60,
+    "per_level_above_first": 10
+  },
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 10
+  },
+  "anvil_cost": 8,
+  "slots": [
+    "mainhand"
+  ],
+  "exclusive_set": "#guildy:exclusive_set/elements",
+  "effects": {
+    "minecraft:post_attack": [
+      {
+        "enchanted": "attacker",
+        "affected": "victim",
+        "effect": {
+          "type": "minecraft:ignite",
+          "duration": {
+            "type": "minecraft:linear",
+            "base": 3.0,
+            "per_level_above_first": 2.0
+          }
+        }
+      },
+      {
+        "enchanted": "attacker",
+        "affected": "victim",
+        "effect": {
+          "type": "minecraft:all_of",
+          "effects": [
+            {
+              "type": "minecraft:damage_entity",
+              "damage_type": "guildy:brasier",
+              "min_damage": {
+                "type": "minecraft:linear",
+                "base": 2.0,
+                "per_level_above_first": 1.0
+              },
+              "max_damage": {
+                "type": "minecraft:linear",
+                "base": 4.0,
+                "per_level_above_first": 1.5
+              }
+            },
+            {
+              "type": "minecraft:play_sound",
+              "sound": "minecraft:item.firecharge.use",
+              "volume": 0.7,
+              "pitch": {
+                "type": "minecraft:uniform",
+                "min_inclusive": 0.8,
+                "max_exclusive": 1.2
+              }
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:flame"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {
+                "base": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": -0.15,
+                  "max_exclusive": 0.15
+                }
+              },
+              "vertical_velocity": {
+                "base": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": 0.05,
+                  "max_exclusive": 0.2
+                }
+              },
+              "speed": 1.0
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:flame"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {
+                "base": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": -0.15,
+                  "max_exclusive": 0.15
+                }
+              },
+              "vertical_velocity": {
+                "base": {
+                  "type": "minecraft:uniform",
+                  "min_inclusive": 0.05,
+                  "max_exclusive": 0.2
+                }
+              },
+              "speed": 1.0
+            },
+            {
+              "type": "minecraft:spawn_particles",
+              "particle": {
+                "type": "minecraft:lava"
+              },
+              "horizontal_position": {
+                "type": "in_bounding_box"
+              },
+              "vertical_position": {
+                "type": "in_bounding_box"
+              },
+              "horizontal_velocity": {},
+              "vertical_velocity": {},
+              "speed": 1.0
+            }
+          ]
+        },
+        "requirements": {
+          "type": "minecraft:random_chance",
+          "chance": {
+            "type": "minecraft:enchantment_level",
+            "amount": {
+              "type": "minecraft:linear",
+              "base": 0.15,
+              "per_level_above_first": 0.1
+            }
+          }
+        }
+      }
+    ]
+  }
+}
