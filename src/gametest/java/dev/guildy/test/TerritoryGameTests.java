@@ -71,4 +71,29 @@ public class TerritoryGameTests {
 		GuildManager.disband(guild);
 		helper.succeed();
 	}
+
+	/** Two guilds: a second base too close to the first is refused, a farther one is accepted. */
+	@GameTest(maxTicks = 100)
+	public void neighbourGuildsKeepTheirDistance(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos ground = TestSupport.region(level);
+		ServerPlayer first = TestSupport.player(helper, ground);
+		Guild a = TestSupport.foundGuild(helper, first, ground, "Near");
+
+		// founding radius 1 + min distance 3: a heart 4 chunks away puts both 3x3 squares 2 chunks apart -> refused.
+		BlockPos tooClose = TestSupport.pad(level, ground.getX() + 4 * 16, ground.getZ());
+		ServerPlayer second = TestSupport.player(helper, tooClose);
+		Guild b = GuildManager.create(TestSupport.uniqueName("Far"), second);
+		TestSupport.useOnTop(second, level, tooClose, GuildyItems.foundingFlag(b));
+		helper.assertFalse(b.isFounded(), "a base 4 chunks away must be refused");
+
+		BlockPos farEnough = TestSupport.pad(level, ground.getX() + 6 * 16, ground.getZ());
+		TestSupport.useOnTop(second, level, farEnough, GuildyItems.foundingFlag(b));
+		helper.assertTrue(b.isFounded(), "a base 6 chunks away is accepted");
+		helper.assertTrue(a.claims().stream().noneMatch(b::owns), "no shared chunk");
+
+		GuildManager.disband(a);
+		GuildManager.disband(b);
+		helper.succeed();
+	}
 }
