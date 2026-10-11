@@ -51,7 +51,7 @@ final class MinerTask extends TaskHandler {
 	}
 
 	private void goWork(WorkContext ctx) {
-		if (ctx.carriedFull()) {
+		if (ctx.mustReturn()) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 			return;
@@ -114,9 +114,14 @@ final class MinerTask extends TaskHandler {
 		switch (state) {
 			case WORKING -> {
 			}
-			case DONE -> phase = Phase.GO_WORK;
+			case DONE -> {
+				if (Missions.complete(ctx)) {
+					return;
+				}
+				phase = Phase.GO_WORK;
+			}
 			case NO_CHEST, ALL_FULL -> {
-				if (ctx.carriedFull()) {
+				if (ctx.mustReturn()) {
 					phase = Phase.BLOCKED;
 					retryAt = ctx.now + WorkContext.ticks(10);
 					ctx.status(DepositFlow.blockedStatus(state));

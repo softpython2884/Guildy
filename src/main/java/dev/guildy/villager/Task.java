@@ -13,7 +13,11 @@ public enum Task {
 	MINER,
 	LUMBERJACK,
 	FARMER,
-	GUARD;
+	GUARD,
+	/** Expedition in the wilds (simulated, the villager is away for a while). */
+	EXPLORER,
+	/** Expedition in the Nether through a portal of the territory (simulated, riskier, better loot). */
+	NETHER;
 
 	public String id() {
 		return name().toLowerCase(java.util.Locale.ROOT);
@@ -37,6 +41,8 @@ public enum Task {
 			case LUMBERJACK -> Items.IRON_AXE;
 			case FARMER -> Items.IRON_HOE;
 			case GUARD -> Items.IRON_SWORD;
+			case EXPLORER -> Items.COMPASS;
+			case NETHER -> Items.FLINT_AND_STEEL;
 		};
 	}
 
@@ -53,6 +59,16 @@ public enum Task {
 	/** Workers that collect items and bring them to a deposit chest. */
 	public boolean isGatherer() {
 		return this == MINER || this == LUMBERJACK || this == FARMER;
+	}
+
+	/** Tasks that send the villager away on a simulated trip. */
+	public boolean isExpedition() {
+		return this == EXPLORER || this == NETHER;
+	}
+
+	/** Tasks whose collected items count toward a mission goal. */
+	public boolean hasGoal() {
+		return isGatherer() || isExpedition();
 	}
 
 	public static Task parse(@Nullable String value, Task fallback) {

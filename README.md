@@ -111,6 +111,14 @@ Menu « Villageois » (`/guild villagers`, ou accroupi + clic droit sur un villa
 | **Bûcheron** | coupe les arbres naturels de sa zone et replante |
 | **Fermier** | récolte les cultures mûres de sa zone et replante |
 | **Garde** | attaque les monstres du territoire, défend le cœur pendant les hordes |
+| **Exploration** | part explorer les terres sauvages (il quitte vraiment la base) et revient quelques minutes plus tard avec du butin : graines, pousses, cuir, émeraudes, parfois une carte au trésor — petit risque de ne pas revenir |
+| **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** et revient avec quartz, or, poudre lumineuse, bâtons de blaze… — risque plus élevé |
+
+**Missions** (menu du villageois, bouton cible) pour le mineur, le bûcheron, le fermier et les expéditions :
+- **Travail continu** : il travaille sans s'arrêter (il vide son sac au coffre de dépôt dès qu'il est plein) ;
+- **Remplir son sac et rentrer** : un sac plein (ou une expédition), vidé au coffre, puis il s'arrête ;
+- **Rapporter une quantité** : par exemple « 64 fer brut » ou « 128 bûches de chêne » (prenez l'objet en main
+  et cliquez sur « Objet recherché ») — il continue jusqu'à les avoir rapportés, puis s'arrête et prévient la guilde.
 
 Coffres : menu Villageois → Stockage → « Ajouter un coffre », puis clic droit sur un coffre du territoire.
 La nuit, les travailleurs vont se coucher ; les gardes restent dehors. Les villageois peuvent **mourir**

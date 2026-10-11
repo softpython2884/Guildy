@@ -59,6 +59,11 @@ final class WorkContext {
 		return record.carried.size() >= config.work.carryStacks;
 	}
 
+	/** Bag full or mission goal reached: time to bring everything back to a deposit chest. */
+	boolean mustReturn() {
+		return carriedFull() || record.goalReached;
+	}
+
 	/**
 	 * Adds items to the carried list (merging into existing stacks, max {@code work.carryStacks} stacks).
 	 *
@@ -79,6 +84,7 @@ final class WorkContext {
 		while (!stack.isEmpty() && record.carried.size() < config.work.carryStacks) {
 			record.carried.add(stack.split(Math.min(stack.getCount(), stack.getMaxStackSize())));
 		}
+		Missions.onCollected(record, input, input.getCount() - stack.getCount(), carriedFull());
 		GuildManager.markDirty();
 		return stack;
 	}

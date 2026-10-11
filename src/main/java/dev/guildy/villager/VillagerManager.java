@@ -215,7 +215,11 @@ public final class VillagerManager {
 			}
 			for (VillagerRecord record : batch) {
 				if (guild.villagers.members.get(record.uuid) == record) {
-					Safe.run("villager.task", () -> TaskEngine.process(level, guild, record));
+					if (record.isAway()) {
+						Safe.run("villager.expedition", () -> Expeditions.tickAway(level, guild, record));
+					} else {
+						Safe.run("villager.task", () -> TaskEngine.process(level, guild, record));
+					}
 				}
 			}
 		}
@@ -554,6 +558,7 @@ public final class VillagerManager {
 			return;
 		}
 		record.task = task;
+		Missions.reset(record);
 		if ((task == Task.IDLE || task == Task.GUARD) && !record.carried.isEmpty()) {
 			for (ItemStack stack : record.carried) {
 				ItemUtil.giveOrDrop(actor, stack);
@@ -600,7 +605,7 @@ public final class VillagerManager {
 		leave(guild, record, "villager.dismissed");
 	}
 
-	private static void removeRecord(Guild guild, VillagerRecord record) {
+	static void removeRecord(Guild guild, VillagerRecord record) {
 		guild.villagers.members.remove(record.uuid);
 		TaskEngine.forget(record.uuid);
 		GuildManager.markDirty();
@@ -658,6 +663,11 @@ public final class VillagerManager {
 		UUID id = villager.getUUID();
 		Owner owner = owner(id);
 		if (owner != null) {
+			if (owner.record().isAway()) {
+				// Stale copy (chunk saved before an expedition departure): the villager is away, its saved copy returns.
+				defer(villager, villager::discard);
+				return;
+			}
 			// Member (possibly accepted while unloaded): make sure markers are set.
 			defer(villager, () -> ensureMemberSetup(villager, owner.record()));
 			return;
@@ -711,7 +721,8 @@ public final class VillagerManager {
 			return;
 		}
 		Owner owner = owner(id);
-		if (owner == null || !(villager.level() instanceof ServerLevel level)) {
+		if (owner == null || owner.record().isAway() || !(villager.level() instanceof ServerLevel level)) {
+			// Away = removed on purpose for an expedition.
 			return;
 		}
 		dropCarried(level, owner.record(), villager.position());
@@ -794,7 +805,8 @@ public final class VillagerManager {
 		Guild guild = outcome.guild();
 		double chance = Upgrades.reduce(guild, UpgradeEffects.VILLAGER_LOYALTY_PCT, VillagerModule.config().defeatLeaveChance);
 		for (VillagerRecord record : List.copyOf(guild.villagers.members.values())) {
-			if (ThreadLocalRandom.current().nextDouble() < chance) {
+			// Villagers away on an expedition were not there for the defeat.
+			if (!record.isAway() && ThreadLocalRandom.current().nextDouble() < chance) {
 				leave(guild, record, "villager.left.defeat");
 			}
 		}

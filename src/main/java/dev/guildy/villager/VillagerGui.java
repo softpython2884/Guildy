@@ -2,6 +2,7 @@ package dev.guildy.villager;
 
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Hooks;
+import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
 import dev.guildy.core.Safe;
@@ -239,6 +240,8 @@ public final class VillagerGui {
 			}));
 		}
 
+		missionControls(gui, player, guild, record);
+
 		gui.setSlot(29, carriedIcon(record));
 		List<Component> zoneLore = new ArrayList<>();
 		if (record.workPos != null) {
@@ -280,6 +283,70 @@ public final class VillagerGui {
 		gui.setSlot(44, GuiUtil.close());
 		GuiUtil.fill(gui);
 		gui.open();
+	}
+
+	/** Mission goal (row 2): mode, amount and target item, for gathering tasks and expeditions. */
+	private static void missionControls(SimpleGui gui, ServerPlayer player, Guild guild, VillagerRecord record) {
+		UUID uuid = record.uuid;
+		List<Component> goalLore = new ArrayList<>(GuiUtil.lines("villager.gui.goal.lore"));
+		goalLore.add(Component.empty());
+		if (record.goal == Goal.QUOTA) {
+			goalLore.add(Lang.get("villager.gui.goal.progress", record.goalProgress, record.goalAmount, Missions.goalItemName(record)));
+		}
+		if (!record.task.hasGoal()) {
+			goalLore.add(Lang.get("villager.gui.goal.no_effect"));
+		}
+		goalLore.add(Lang.get("villager.gui.goal.click"));
+		gui.setSlot(11, GuiUtil.item(Items.TARGET, Lang.get("villager.gui.goal", Lang.raw(record.goal.langKey())), goalLore)
+				.setCallback((slot, type, action, g) -> {
+					if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
+						return;
+					}
+					record.goal = record.goal.next();
+					Missions.reset(record);
+					GuildManager.markDirty();
+					GuiUtil.clickSound(player);
+					openDetail(player, guild, uuid);
+				}));
+		if (record.goal == Goal.QUOTA) {
+			gui.setSlot(13, GuiUtil.item(Items.HOPPER, Lang.get("villager.gui.goal.amount", record.goalAmount),
+					GuiUtil.lines("villager.gui.goal.amount.lore")).setCallback((slot, type, action, g) -> {
+				if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
+					return;
+				}
+				int step = type.shift ? 64 : 16;
+				int amount = record.goalAmount + (type.isRight ? -step : step);
+				record.goalAmount = Math.max(1, Math.min(10_000, amount));
+				if (record.goalProgress >= record.goalAmount) {
+					record.goalReached = true;
+				} else {
+					record.goalReached = false;
+				}
+				GuildManager.markDirty();
+				GuiUtil.clickSound(player);
+				openDetail(player, guild, uuid);
+			}));
+			Item target = record.goalItem.isEmpty() ? null : ItemUtil.item(record.goalItem);
+			GuiElementBuilder itemButton = target == null
+					? GuiUtil.item(Items.CHEST, Lang.get("villager.gui.goal.item", Lang.raw("villager.goal.any_item")), GuiUtil.lines("villager.gui.goal.item.lore"))
+					: GuiUtil.item(target, Lang.get("villager.gui.goal.item", Missions.goalItemName(record)), GuiUtil.lines("villager.gui.goal.item.lore"));
+			gui.setSlot(15, itemButton.setCallback((slot, type, action, g) -> {
+				if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
+					return;
+				}
+				ItemStack held = player.getMainHandItem();
+				if (type.shift || held.isEmpty()) {
+					record.goalItem = "";
+				} else {
+					record.goalItem = ItemUtil.id(held.getItem());
+				}
+				Missions.reset(record);
+				GuildManager.markDirty();
+				Msg.send(player, "villager.goal.item.set", record.name, Missions.goalItemName(record));
+				GuiUtil.clickSound(player);
+				openDetail(player, guild, uuid);
+			}));
+		}
 	}
 
 	private static GuiElementBuilder carriedIcon(VillagerRecord record) {

@@ -67,7 +67,7 @@ final class FarmerTask extends TaskHandler {
 	}
 
 	private void search(WorkContext ctx) {
-		if (ctx.carriedFull()) {
+		if (ctx.mustReturn()) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 			return;
@@ -122,7 +122,7 @@ final class FarmerTask extends TaskHandler {
 		target = null;
 		// Neighbouring mature crops within reach, same second.
 		Iterator<BlockPos> it = queue.iterator();
-		while (it.hasNext() && done < budget && !ctx.carriedFull()) {
+		while (it.hasNext() && done < budget && !ctx.mustReturn()) {
 			BlockPos pos = it.next();
 			if (ctx.villager.position().distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > HARVEST_REACH_SQ) {
 				continue;
@@ -136,7 +136,7 @@ final class FarmerTask extends TaskHandler {
 			WorldUtil.swing(ctx.villager);
 			ctx.status("villager.status.farmer.harvesting");
 		}
-		phase = ctx.carriedFull() ? Phase.DEPOSIT : Phase.SEARCH;
+		phase = ctx.mustReturn() ? Phase.DEPOSIT : Phase.SEARCH;
 	}
 
 	/** Harvests one mature crop: real drops, replanted at age 0 with one of its own seeds. */
@@ -188,10 +188,15 @@ final class FarmerTask extends TaskHandler {
 		switch (state) {
 			case WORKING -> {
 			}
-			case DONE -> phase = Phase.SEARCH;
+			case DONE -> {
+				if (Missions.complete(ctx)) {
+					return;
+				}
+				phase = Phase.SEARCH;
+			}
 			case NO_CHEST, ALL_FULL -> {
 				ctx.status(DepositFlow.blockedStatus(state));
-				if (ctx.carriedFull()) {
+				if (ctx.mustReturn()) {
 					phase = Phase.BLOCKED;
 					retryAt = ctx.now + WorkContext.ticks(10);
 				} else {

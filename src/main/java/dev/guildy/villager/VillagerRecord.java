@@ -25,6 +25,29 @@ public class VillagerRecord {
 	public @Nullable BlockPos lastPos;
 	public Stats stats = new Stats();
 
+	/** Mission goal (gathering tasks and expeditions). */
+	public Goal goal = Goal.CONTINUOUS;
+	/** Item counted by a QUOTA goal ("" = any item brought back). */
+	public String goalItem = "";
+	public int goalAmount = 64;
+	/** Items counted toward the current mission. */
+	public int goalProgress;
+	/** Goal reached: everything is brought back, then the mission ends (task becomes IDLE). */
+	public boolean goalReached;
+
+	/** While away on an expedition: the saved villager entity (SNBT), restored on its return. Null at home. */
+	public @Nullable String awayEntity;
+	/** Expedition kind (EXPLORER / NETHER) while away. */
+	public @Nullable Task awayTask;
+	/** Claim-level game time of the return. */
+	public long returnAt;
+	/** Where it left and comes back (portal, reception or heart). */
+	public @Nullable BlockPos returnPos;
+
+	public boolean isAway() {
+		return awayEntity != null;
+	}
+
 	public static class Stats {
 		/** Items moved by the sorter. */
 		public long sorted;
@@ -33,6 +56,9 @@ public class VillagerRecord {
 		public long logs;
 		public long crops;
 		public long kills;
+		/** Expeditions completed and items they brought back. */
+		public long expeditions;
+		public long found;
 	}
 
 	public VillagerRecord() {
@@ -67,6 +93,20 @@ public class VillagerRecord {
 		carried.removeIf(stack -> stack == null || stack.isEmpty());
 		if (stats == null) {
 			stats = new Stats();
+		}
+		if (goal == null) {
+			goal = Goal.CONTINUOUS;
+		}
+		if (goalItem == null) {
+			goalItem = "";
+		}
+		goalAmount = Math.max(1, Math.min(10_000, goalAmount));
+		goalProgress = Math.max(0, goalProgress);
+		if (awayEntity != null && awayEntity.isBlank()) {
+			awayEntity = null;
+		}
+		if (awayEntity != null && awayTask == null) {
+			awayTask = Task.EXPLORER;
 		}
 	}
 }

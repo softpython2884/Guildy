@@ -27,6 +27,38 @@ final class VillagerLang {
 		m.put("villager.task.lumberjack.desc", "&7Coupe les arbres naturels autour de sa zone\n&7de travail et replante des pousses.");
 		m.put("villager.task.farmer.desc", "&7Récolte les cultures mûres autour de sa zone\n&7de travail et les replante.");
 		m.put("villager.task.guard.desc", "&7Attaque les monstres du territoire autour de\n&7son poste (zone de travail, sinon le cœur).\n&7Défend le cœur pendant les vagues.");
+		m.put("villager.task.explorer", "Exploration");
+		m.put("villager.task.explorer.desc", "&7Part explorer les terres sauvages par le\n&7bureau d'accueil (ou le cœur) et revient\n&7quelques minutes plus tard avec du butin :\n&7graines, pousses, cuir, émeraudes, cartes au trésor...\n&cPetit risque de ne jamais revenir.");
+		m.put("villager.task.nether", "Expédition au Nether");
+		m.put("villager.task.nether.desc", "&7Passe par un &dportail du Nether&7 construit dans\n&7le territoire et revient avec du quartz, de l'or,\n&7de la poudre lumineuse, des bâtons de blaze...\n&cRisque plus élevé de ne jamais revenir.");
+		// mission goals
+		m.put("villager.goal.continuous", "Travail continu");
+		m.put("villager.goal.fill", "Remplir son sac et rentrer");
+		m.put("villager.goal.quota", "Rapporter une quantité");
+		m.put("villager.goal.any_item", "objets");
+		m.put("villager.gui.goal", "&6&lMission : &e{0}");
+		m.put("villager.gui.goal.lore", "&7&fTravail continu&7 : travaille sans s'arrêter.\n&7&fRemplir son sac&7 : remplit son sac (ou fait une\n&7expédition), le vide au coffre de dépôt, puis s'arrête.\n&7&fRapporter une quantité&7 : continue jusqu'à avoir\n&7rapporté le nombre d'objets demandé, puis s'arrête.");
+		m.put("villager.gui.goal.progress", "&7Progression : &a{0}&7/&a{1} &f{2}");
+		m.put("villager.gui.goal.no_effect", "&8(sans effet pour la tâche actuelle)");
+		m.put("villager.gui.goal.click", "&eClic : changer de mission");
+		m.put("villager.gui.goal.amount", "&6&lQuantité : &e{0}");
+		m.put("villager.gui.goal.amount.lore", "&7Clic gauche : +16  ·  clic droit : -16\n&7Maj + clic : ±64");
+		m.put("villager.gui.goal.item", "&6&lObjet recherché : &e{0}");
+		m.put("villager.gui.goal.item.lore", "&7Prenez en main l'objet voulu (ex. du fer brut,\n&7des bûches de chêne) et cliquez ici.\n&7Main vide ou Maj + clic : n'importe quel objet.");
+		m.put("villager.goal.item.set", "&aMission de &e{0}&a : rapporter des &e{1}&a.");
+		m.put("villager.mission.done.quota", "&e{0}&a a terminé sa mission ({1}) : &e{2} {3}&a rapportés au coffre !");
+		m.put("villager.mission.done.fill", "&e{0}&a a rempli son sac ({1}) et l'a vidé au coffre : mission terminée !");
+		// expeditions
+		m.put("villager.expedition.departed", "&e{0}&7 part en expédition : &f{1}&7 (retour dans ~&f{2} min&7).");
+		m.put("villager.expedition.returned", "&e{0}&a est de retour ({1}) avec &e{2}&a objets !");
+		m.put("villager.expedition.lost", "&c{0} n'est jamais revenu ({1})... Le voyage était trop dangereux.");
+		m.put("villager.status.no_portal", "&cAucun portail du Nether dans le territoire");
+		m.put("villager.status.no_departure", "&cPas de point de départ (cœur ou bureau d'accueil)");
+		m.put("villager.status.departure_unloaded", "&8Point de départ hors de portée");
+		m.put("villager.status.going_departure", "&eSe prépare au départ...");
+		m.put("villager.status.departure_failed", "&cDépart impossible (erreur, voir la console)");
+		m.put("villager.status.away", "&dParti ({0}) : retour dans ~{1} min");
+		m.put("villager.status.away_waiting", "&dDe retour d'expédition : attend que la base soit chargée");
 		// statuses
 		m.put("villager.status.unloaded", "&8Hors de portée (zone non chargée)");
 		m.put("villager.status.starting", "&7Se prépare…");

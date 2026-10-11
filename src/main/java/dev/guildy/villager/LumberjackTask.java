@@ -93,7 +93,7 @@ final class LumberjackTask extends TaskHandler {
 	}
 
 	private void search(WorkContext ctx) {
-		if (ctx.carriedFull()) {
+		if (ctx.mustReturn()) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 			return;
@@ -156,7 +156,7 @@ final class LumberjackTask extends TaskHandler {
 			goTree(ctx);
 			return;
 		}
-		if (ctx.carriedFull()) {
+		if (ctx.mustReturn()) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 			return;
@@ -197,7 +197,7 @@ final class LumberjackTask extends TaskHandler {
 		}
 		tree = null;
 		nextScan = ctx.now;
-		phase = ctx.carriedFull() ? Phase.DEPOSIT : Phase.SEARCH;
+		phase = ctx.mustReturn() ? Phase.DEPOSIT : Phase.SEARCH;
 		ctx.status("villager.status.lumberjack.searching");
 	}
 
@@ -206,10 +206,15 @@ final class LumberjackTask extends TaskHandler {
 		switch (state) {
 			case WORKING -> {
 			}
-			case DONE -> phase = tree != null ? Phase.GO_TREE : Phase.SEARCH;
+			case DONE -> {
+				if (Missions.complete(ctx)) {
+					return;
+				}
+				phase = tree != null ? Phase.GO_TREE : Phase.SEARCH;
+			}
 			case NO_CHEST, ALL_FULL -> {
 				ctx.status(DepositFlow.blockedStatus(state));
-				if (ctx.carriedFull()) {
+				if (ctx.mustReturn()) {
 					phase = Phase.BLOCKED;
 					retryAt = ctx.now + WorkContext.ticks(10);
 				} else {

@@ -44,6 +44,13 @@ public final class VillagerConfig implements Validatable {
 	@Comment("Stockage de la guilde (coffres de depot et coffres par categorie)")
 	public Storage storage = new Storage();
 
+	@Comment({
+			"Expeditions : le villageois quitte la base (il disparait), puis revient apres la duree indiquee avec du butin.",
+			"Il part par le bureau d'accueil (ou le coeur) ; pour le Nether, par un portail du Nether DANS le territoire.",
+			"lossChance = risque (0 a 1) qu'il ne revienne jamais ; rolls = nombre de tirages dans la table de butin."
+	})
+	public Expeditions expeditions = new Expeditions();
+
 	@Comment("Chance (0 a 1) que chaque villageois quitte la guilde apres une vague perdue")
 	public double defeatLeaveChance = 0.2;
 
@@ -160,6 +167,82 @@ public final class VillagerConfig implements Validatable {
 		public String fallbackCategory = "Divers";
 		@Comment("Nombre maximum de conteneurs enregistres par guilde")
 		public int maxChests = 48;
+	}
+
+	@Json5.Section
+	public static final class Expeditions {
+		@Comment("Expedition 'Exploration' (foret, plaines, grottes de surface)")
+		public Expedition exploration = Expedition.exploration();
+		@Comment("Expedition 'Nether' (necessite un portail du Nether dans le territoire)")
+		public Expedition nether = Expedition.nether();
+	}
+
+	/** One kind of expedition: duration, risk and loot. */
+	public static final class Expedition {
+		/** Duration of the trip in seconds (shortened by the "work speed" upgrade). */
+		public int durationSeconds = 480;
+		/** Chance (0..1) that the villager never comes back. */
+		public double lossChance = 0.05;
+		/** Weighted rolls in the loot table per trip. */
+		public int rolls = 6;
+		/** Chance (0..1) to also bring back a treasure map. */
+		public double treasureMapChance = 0.0;
+		public List<LootEntry> loot = new ArrayList<>();
+
+		public Expedition() {
+		}
+
+		static Expedition exploration() {
+			Expedition e = new Expedition();
+			e.durationSeconds = 480;
+			e.lossChance = 0.05;
+			e.rolls = 6;
+			e.treasureMapChance = 0.08;
+			e.loot = new ArrayList<>(List.of(
+					new LootEntry("minecraft:oak_sapling", 1, 4, 6), new LootEntry("minecraft:birch_sapling", 1, 3, 4),
+					new LootEntry("minecraft:spruce_sapling", 1, 3, 4), new LootEntry("minecraft:wheat_seeds", 2, 8, 6),
+					new LootEntry("minecraft:pumpkin_seeds", 1, 3, 3), new LootEntry("minecraft:melon_seeds", 1, 3, 3),
+					new LootEntry("minecraft:sweet_berries", 2, 6, 5), new LootEntry("minecraft:apple", 1, 4, 5),
+					new LootEntry("minecraft:sugar_cane", 1, 4, 4), new LootEntry("minecraft:cocoa_beans", 1, 3, 2),
+					new LootEntry("minecraft:leather", 1, 4, 5), new LootEntry("minecraft:feather", 2, 6, 4),
+					new LootEntry("minecraft:string", 1, 4, 4), new LootEntry("minecraft:bone", 1, 4, 4),
+					new LootEntry("minecraft:flint", 1, 4, 3), new LootEntry("minecraft:clay_ball", 2, 8, 3),
+					new LootEntry("minecraft:emerald", 1, 2, 2), new LootEntry("minecraft:name_tag", 1, 1, 1),
+					new LootEntry("minecraft:saddle", 1, 1, 1)));
+			return e;
+		}
+
+		static Expedition nether() {
+			Expedition e = new Expedition();
+			e.durationSeconds = 720;
+			e.lossChance = 0.12;
+			e.rolls = 7;
+			e.loot = new ArrayList<>(List.of(
+					new LootEntry("minecraft:quartz", 4, 12, 8), new LootEntry("minecraft:gold_nugget", 4, 12, 6),
+					new LootEntry("minecraft:glowstone_dust", 2, 8, 5), new LootEntry("minecraft:nether_wart", 1, 4, 4),
+					new LootEntry("minecraft:soul_sand", 4, 12, 4), new LootEntry("minecraft:blackstone", 8, 24, 4),
+					new LootEntry("minecraft:crimson_stem", 2, 8, 3), new LootEntry("minecraft:warped_stem", 2, 8, 3),
+					new LootEntry("minecraft:magma_cream", 1, 3, 3), new LootEntry("minecraft:blaze_rod", 1, 2, 2),
+					new LootEntry("minecraft:obsidian", 1, 3, 2), new LootEntry("minecraft:crying_obsidian", 1, 2, 1),
+					new LootEntry("minecraft:ghast_tear", 1, 1, 1), new LootEntry("minecraft:ancient_debris", 1, 1, 1)));
+			return e;
+		}
+
+		/** Loot table usable by {@link DepthLoot#roll}. */
+		DepthTable table() {
+			return new DepthTable(0, loot);
+		}
+
+		void validate() {
+			durationSeconds = clamp(durationSeconds, 1, 86_400);
+			lossChance = clamp(lossChance, 0.0, 1.0);
+			rolls = clamp(rolls, 0, 64);
+			treasureMapChance = clamp(treasureMapChance, 0.0, 1.0);
+			if (loot == null) {
+				loot = new ArrayList<>();
+			}
+			loot.removeIf(entry -> entry == null || entry.item == null || entry.weight <= 0);
+		}
 	}
 
 	/** A loot table used when the miner's work position is at or below {@code maxY}. */
@@ -283,6 +366,17 @@ public final class VillagerConfig implements Validatable {
 
 	@Override
 	public void validate() {
+		if (expeditions == null) {
+			expeditions = new Expeditions();
+		}
+		if (expeditions.exploration == null) {
+			expeditions.exploration = Expedition.exploration();
+		}
+		if (expeditions.nether == null) {
+			expeditions.nether = Expedition.nether();
+		}
+		expeditions.exploration.validate();
+		expeditions.nether.validate();
 		if (arrivals == null) {
 			arrivals = new Arrivals();
 		}
