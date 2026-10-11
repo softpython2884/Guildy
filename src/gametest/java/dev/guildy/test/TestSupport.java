@@ -12,7 +12,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -26,16 +29,63 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SuppressWarnings("removal")
 final class TestSupport {
 	private static final AtomicInteger REGIONS = new AtomicInteger();
+	/** Random per run: the test world is reused, so avoid the blocks left by previous runs. */
+	private static final int BASE_X = 40000 + (int) (Math.random() * 400) * 65536;
 
 	private TestSupport() {
 	}
 
-	/** A fresh ground position far from spawn and from other scenarios (x = 40000 + n * 4096). */
-	static BlockPos region(ServerLevel level) {
+	/**
+	 * A fresh ground position far from spawn and from other scenarios (x = 40000 + n * 4096, y = 64), with a stone
+	 * platform of the given radius (the test world is empty out there).
+	 */
+	static BlockPos region(ServerLevel level, int platformRadius) {
 		int n = REGIONS.getAndIncrement();
-		BlockPos pos = new BlockPos(40000 + n * 4096, 100, 8);
-		level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
-		return pos;
+		BlockPos center = pad(level, BASE_X + n * 4096, 8);
+		BlockState stone = Blocks.STONE.defaultBlockState();
+		BlockState air = Blocks.AIR.defaultBlockState();
+		for (int dx = -platformRadius; dx <= platformRadius; dx++) {
+			for (int dz = -platformRadius; dz <= platformRadius; dz++) {
+				BlockPos pos = center.offset(dx, 0, dz);
+				level.setBlock(pos, stone, Block.UPDATE_CLIENTS);
+				for (int dy = 1; dy <= 4; dy++) {
+					level.setBlock(pos.above(dy), air, Block.UPDATE_CLIENTS);
+				}
+			}
+		}
+		return center;
+	}
+
+	/** Stone block at the real surface of (x, z) with free space above; returns the stone position. */
+	static BlockPos pad(ServerLevel level, int x, int z) {
+		level.getChunk(x >> 4, z >> 4);
+		int firstFree = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+		BlockPos ground = new BlockPos(x, firstFree - 1, z);
+		level.setBlockAndUpdate(ground, Blocks.STONE.defaultBlockState());
+		level.setBlockAndUpdate(ground.above(), Blocks.AIR.defaultBlockState());
+		level.setBlockAndUpdate(ground.above(2), Blocks.AIR.defaultBlockState());
+		return ground;
+	}
+
+	static BlockPos region(ServerLevel level) {
+		return region(level, 0);
+	}
+
+	/** Force-loads (entity ticking) the chunks around {@code center}, like a player standing there would. */
+	static void forceChunks(ServerLevel level, BlockPos center, int radiusChunks) {
+		int cx = center.getX() >> 4;
+		int cz = center.getZ() >> 4;
+		for (int dx = -radiusChunks; dx <= radiusChunks; dx++) {
+			for (int dz = -radiusChunks; dz <= radiusChunks; dz++) {
+				level.setChunkForced(cx + dx, cz + dz, true);
+			}
+		}
+	}
+
+	/** Runs a /guild command as the server console (all permissions). */
+	static void console(ServerLevel level, String command) {
+		var server = level.getServer();
+		server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), command);
 	}
 
 	/** Connected mock player (creative) standing at {@code pos}. */

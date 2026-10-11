@@ -5,9 +5,13 @@
 	"name": "Guildy GameTests",
 	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"dev.guildy.test.GuildyTestInit"
+		],
 		"fabric-gametest": [
 			"dev.guildy.test.GuildyGameTests",
-			"dev.guildy.test.TerritoryGameTests"
+			"dev.guildy.test.TerritoryGameTests",
+			"dev.guildy.test.WaveGameTests"
 		]
 	},
 	"depends": {

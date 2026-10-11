@@ -46,15 +46,13 @@ public class TerritoryGameTests {
 
 		// Extension flag in an adjacent chunk (east of the 3x3) is accepted.
 		long heartChunk = ChunkKey.ofBlock(heart.getX(), heart.getZ());
-		BlockPos east = new BlockPos(((ChunkKey.x(heartChunk) + 2) << 4) + 8, ground.getY(), (ChunkKey.z(heartChunk) << 4) + 8);
-		level.setBlockAndUpdate(east, Blocks.STONE.defaultBlockState());
+		BlockPos east = TestSupport.pad(level, ((ChunkKey.x(heartChunk) + 2) << 4) + 8, (ChunkKey.z(heartChunk) << 4) + 8);
 		TestSupport.useOnTop(leader, level, east, GuildyItems.extensionFlag(guild));
 		long eastChunk = ChunkKey.ofBlock(east.getX(), east.getZ());
 		helper.assertTrue(guild.owns(eastChunk) && guild.claimCount() == founding + 1, "adjacent extension claimed");
 
 		// A diagonal chunk not touching the territory is refused.
-		BlockPos diagonal = new BlockPos(((ChunkKey.x(heartChunk) + 3) << 4) + 8, ground.getY(), ((ChunkKey.z(heartChunk) + 3) << 4) + 8);
-		level.setBlockAndUpdate(diagonal, Blocks.STONE.defaultBlockState());
+		BlockPos diagonal = TestSupport.pad(level, ((ChunkKey.x(heartChunk) + 3) << 4) + 8, ((ChunkKey.z(heartChunk) + 3) << 4) + 8);
 		TestSupport.useOnTop(leader, level, diagonal, GuildyItems.extensionFlag(guild));
 		helper.assertFalse(guild.owns(ChunkKey.ofBlock(diagonal.getX(), diagonal.getZ())), "disconnected chunk refused");
 
