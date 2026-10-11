@@ -94,13 +94,15 @@ public class VillagerGameTests {
 		});
 	}
 
-	/** Miner with a quota of 5 items: brings them back to the deposit chest, then stops (task IDLE). */
+	/** Miner in a mine zone (fanion planted) with a quota of 5 items: brings them back, then stops (task IDLE). */
 	@GameTest(maxTicks = 2400)
 	public void minerStopsAfterQuota(GameTestHelper helper) throws Exception {
 		ServerLevel level = helper.getLevel();
 		VillagerModule.config().miner.tripSeconds = 1;
 		Recruit recruit = recruit(helper, "Mine");
-		recruit.record.workPos = recruit.ground.offset(2, 1, 2);
+		TestSupport.useOnTop(recruit.leader, level, recruit.ground.offset(2, 0, 2), ZoneGameTests.fanion(recruit.guild, "MINE"));
+		helper.assertTrue(recruit.guild.villagers.zones.size() == 1, "mine zone created by planting its fanion");
+		recruit.record.zoneId = recruit.guild.villagers.zones.getFirst().id;
 		recruit.record.goal = Goal.QUOTA;
 		recruit.record.goalAmount = 5;
 		recruit.record.goalItem = "";

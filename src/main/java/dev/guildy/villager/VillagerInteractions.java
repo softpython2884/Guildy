@@ -8,8 +8,10 @@ import dev.guildy.core.Scheduler;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildPermission;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,6 +20,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -29,7 +32,8 @@ import java.util.UUID;
 
 /**
  * Player interactions: only guild members may trade with guild villagers (others are denied), sneak + right-click
- * opens the villager menu (VILLAGERS permission), and the storage "select a container" mode.
+ * opens the villager menu (VILLAGERS permission), the storage "select a container" mode, patrol route drawing,
+ * planting zone fanions and breaking them.
  */
 final class VillagerInteractions {
 	static final int SELECTION_SECONDS = 30;
@@ -48,6 +52,15 @@ final class VillagerInteractions {
 				Safe.get("villager.use_entity", () -> onUseEntity(player, level, hand, entity), InteractionResult.PASS));
 		UseBlockCallback.EVENT.register((player, level, hand, hitResult) ->
 				Safe.get("villager.use_block", () -> onUseBlock(player, level, hand, hitResult), InteractionResult.PASS));
+		PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) ->
+				Safe.get("villager.fanion.break", () -> !(player instanceof ServerPlayer serverPlayer) || !(level instanceof ServerLevel serverLevel)
+						|| ZoneFlags.onBreak(serverPlayer, serverLevel, pos, state), true));
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Safe.run("villager.disconnect", () -> {
+			UUID id = handler.getPlayer().getUUID();
+			SELECTIONS.remove(id);
+			RouteSelection.forget(id);
+			ZoneVisualizer.forget(id);
+		}));
 	}
 
 	// ================================================================ villagers
@@ -112,8 +125,14 @@ final class VillagerInteractions {
 	// ================================================================ container selection
 
 	static void startSelection(ServerPlayer player, Guild guild) {
+		RouteSelection.forget(player.getUUID());
 		SELECTIONS.put(player.getUUID(), new Selection(guild.id, Scheduler.ticks() + SELECTION_SECONDS * 20L));
 		Msg.send(player, "villager.storage.select", SELECTION_SECONDS);
+	}
+
+	/** A route drawing starts: a pending container selection is dropped. */
+	static void cancelStorageSelection(ServerPlayer player) {
+		SELECTIONS.remove(player.getUUID());
 	}
 
 	static void tickSelections() {
@@ -142,41 +161,57 @@ final class VillagerInteractions {
 	}
 
 	private static InteractionResult onUseBlock(Player player, Level level, InteractionHand hand, BlockHitResult hitResult) {
-		if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer) || !(level instanceof ServerLevel serverLevel)) {
+		if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer) || !(level instanceof ServerLevel serverLevel)
+				|| player.isSpectator()) {
 			return InteractionResult.PASS;
 		}
-		Selection selection = SELECTIONS.get(serverPlayer.getUUID());
+		if (RouteSelection.active(serverPlayer.getUUID())) {
+			return RouteSelection.onUseBlock(serverPlayer, serverLevel, hand, hitResult);
+		}
+		InteractionResult storage = storageSelection(serverPlayer, serverLevel, hand, hitResult);
+		if (storage != InteractionResult.PASS) {
+			return storage;
+		}
+		ItemStack stack = serverPlayer.getItemInHand(hand);
+		if (ZoneFlags.isFanion(stack)) {
+			return ZoneFlags.plant(serverPlayer, serverLevel, hitResult, stack);
+		}
+		return InteractionResult.PASS;
+	}
+
+	private static InteractionResult storageSelection(ServerPlayer player, ServerLevel level, InteractionHand hand, BlockHitResult hitResult) {
+		Selection selection = SELECTIONS.get(player.getUUID());
 		if (selection == null) {
 			return InteractionResult.PASS;
 		}
 		if (Scheduler.ticks() > selection.expiresAt()) {
-			SELECTIONS.remove(serverPlayer.getUUID());
+			SELECTIONS.remove(player.getUUID());
 			return InteractionResult.PASS;
 		}
 		BlockPos pos = hitResult.getBlockPos();
-		if (!Storage.isStorageBlock(serverLevel.getBlockEntity(pos))) {
+		if (!Storage.isStorageBlock(level.getBlockEntity(pos))) {
 			return InteractionResult.PASS;
 		}
 		Guild guild = GuildManager.get(selection.guildId());
-		if (guild == null || GuildManager.of(serverPlayer) != guild) {
-			SELECTIONS.remove(serverPlayer.getUUID());
+		if (guild == null || GuildManager.of(player) != guild) {
+			SELECTIONS.remove(player.getUUID());
 			return InteractionResult.PASS;
 		}
 		if (hand != InteractionHand.MAIN_HAND) {
 			return InteractionResult.FAIL;
 		}
-		if (GuildManager.at(serverLevel, pos) != guild) {
-			Msg.send(serverPlayer, "villager.storage.not_territory");
+		if (GuildManager.at(level, pos) != guild) {
+			Msg.send(player, "villager.storage.not_territory");
 			return InteractionResult.FAIL;
 		}
-		SELECTIONS.remove(serverPlayer.getUUID());
-		if (!guild.can(serverPlayer.getUUID(), GuildPermission.VILLAGERS)) {
-			Msg.send(serverPlayer, "error.no_permission");
+		SELECTIONS.remove(player.getUUID());
+		if (!guild.can(player.getUUID(), GuildPermission.VILLAGERS)) {
+			Msg.send(player, "error.no_permission");
 			return InteractionResult.FAIL;
 		}
-		StorageChest existing = Storage.registered(serverLevel, guild, pos);
+		StorageChest existing = Storage.registered(level, guild, pos);
 		BlockPos target = existing != null ? existing.pos : pos.immutable();
-		VillagerGui.openRolePicker(serverPlayer, guild, target);
+		VillagerGui.openRolePicker(player, guild, target);
 		return InteractionResult.SUCCESS;
 	}
 }

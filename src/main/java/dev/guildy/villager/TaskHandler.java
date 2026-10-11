@@ -1,8 +1,11 @@
 package dev.guildy.villager;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * State machine of one task for one villager. {@link #tick} is called at most once per second, only while the
- * villager is loaded and not paused (night, trading...). A new instance is created when the task changes.
+ * villager is loaded and not paused (night, trading...). A new instance is created when the task changes (or when
+ * its zone / route assignment changes, see {@link TaskEngine#resetTask}).
  */
 abstract class TaskHandler {
 	abstract void tick(WorkContext ctx);
@@ -28,20 +31,8 @@ abstract class TaskHandler {
 		};
 	}
 
-	/**
-	 * Common checks for tasks working around {@code record.workPos}.
-	 *
-	 * @return false (status set) when the villager cannot work
-	 */
-	static boolean checkWorkPos(WorkContext ctx) {
-		if (ctx.record.workPos == null) {
-			ctx.status("villager.status.no_workpos");
-			return false;
-		}
-		if (!ctx.inTerritory(ctx.record.workPos)) {
-			ctx.status("villager.status.workpos_outside");
-			return false;
-		}
-		return true;
+	/** Identity of the work area (zone settings, or "auto"): a change restarts the search. */
+	static String areaKey(@Nullable WorkZone zone) {
+		return zone == null ? "auto" : zone.settingsKey();
 	}
 }

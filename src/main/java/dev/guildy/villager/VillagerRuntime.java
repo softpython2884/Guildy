@@ -19,6 +19,8 @@ final class VillagerRuntime {
 
 	@Nullable TaskHandler handler;
 	@Nullable Task handlerTask;
+	/** The handler must be rebuilt at the next step (zone / route assignment or settings changed). */
+	boolean restart;
 	/** True while the task is paused (night, trading...): movement timers restart on resume. */
 	boolean paused;
 	/** Brain activity lock currently applied (see TaskEngine), null = vanilla brain. */

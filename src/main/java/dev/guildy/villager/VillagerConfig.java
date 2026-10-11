@@ -9,12 +9,13 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * villagers.json5 - guild villagers balance. Must stay free of Minecraft classes (used by unit tests).
  */
 @Comment({
-		"Guildy - villageois de guilde : arrivees, taches, stockage.",
+		"Guildy - villageois de guilde : arrivees, taches, zones de travail, parcours de garde, stockage.",
 		"Les villageois arrivent au bureau d'accueil (construction 'reception'), puis travaillent pour la guilde.",
 		"Rechargement a chaud : /guild admin reload"
 })
@@ -29,16 +30,29 @@ public final class VillagerConfig implements Validatable {
 	@Comment("Tache 'Ranger la base' : vide les coffres de depot dans les coffres par categorie")
 	public Sorter sorter = new Sorter();
 
-	@Comment("Tache 'Mineur' : minage simule, les minerais dependent de la profondeur (Y) de la zone de travail")
+	@Comment({
+			"Zones de travail : chaque zone est marquee par un fanion (menu Villageois -> Zones et parcours).",
+			"Types : mine, coupe de bois, champs, patrouille. Une zone peut sortir du territoire, jamais entrer dans celui",
+			"d'une autre guilde. Rayon en chunks autour du chunk du fanion : 0 = son chunk, 1 = 3x3 chunks, 2 = 5x5..."
+	})
+	public Zones zones = new Zones();
+
+	@Comment("Parcours de garde : suite de points (clic droit) que les gardes parcourent en boucle ou en aller-retour")
+	public Routes routes = new Routes();
+
+	@Comment({
+			"Tache 'Mineur' : minage simule a sa zone (fanion), le butin depend de l'objectif de la zone et de la",
+			"profondeur (Y) du fanion. Sans zone : la mine la plus proche, sinon la pierre naturelle a decouvert la plus proche."
+	})
 	public Miner miner = new Miner();
 
-	@Comment("Tache 'Bucheron' : coupe reelle des arbres naturels du territoire autour de la zone de travail")
+	@Comment("Tache 'Bucheron' : coupe reelle des arbres naturels de sa zone (sans zone : les plus proches de lui)")
 	public Lumberjack lumberjack = new Lumberjack();
 
-	@Comment("Tache 'Fermier' : recolte les cultures mures autour de la zone de travail et les replante")
+	@Comment("Tache 'Fermier' : recolte les cultures mures de sa zone (sans zone : les plus proches de lui) et les replante")
 	public Farmer farmer = new Farmer();
 
-	@Comment("Tache 'Garde' : attaque les monstres du territoire, defend le coeur pendant les vagues")
+	@Comment("Tache 'Garde' : patrouille (zone ou parcours) ou defend le coeur ; pendant les vagues, defend toujours le coeur")
 	public Guard guard = new Guard();
 
 	@Comment("Stockage de la guilde (coffres de depot et coffres par categorie)")
@@ -80,6 +94,39 @@ public final class VillagerConfig implements Validatable {
 	}
 
 	@Json5.Section
+	public static final class Zones {
+		@Comment("Nombre maximum de zones de travail par guilde (1 a 27)")
+		public int maxZones = 12;
+		@Comment("Rayon maximum d'une zone, en chunks (0 a 5)")
+		public int maxRadiusChunks = 3;
+		@Comment("Rayon d'une nouvelle zone, en chunks")
+		public int defaultRadiusChunks = 1;
+		@Comment("Distance maximum (blocs) entre le coeur et un fanion de zone ou un point de parcours")
+		public int maxZoneDistance = 192;
+		@Comment({
+				"Mode automatique (aucune zone choisie) : rayon (blocs) de recherche autour du villageois",
+				"(arbres, cultures, pierre), toujours a moins de maxZoneDistance du coeur"
+		})
+		public int autoSearchRadius = 48;
+		@Comment("Duree (secondes) d'affichage des limites d'une zone ou d'un parcours (bouton 'Afficher')")
+		public int showSeconds = 20;
+	}
+
+	@Json5.Section
+	public static final class Routes {
+		@Comment("Nombre maximum de parcours de garde par guilde (0 a 9, 0 = desactive)")
+		public int maxRoutes = 6;
+		@Comment("Nombre maximum de points par parcours")
+		public int maxWaypoints = 16;
+		@Comment("Pause (secondes) du garde a chaque point (parcours et zones de patrouille)")
+		public int pauseSeconds = 4;
+		@Comment("Distance maximum (blocs) entre le parcours et un monstre que le garde poursuit")
+		public int leash = 16;
+		@Comment("Creation d'un parcours : annulee apres ce delai (secondes) sans nouveau point")
+		public int selectionTimeoutSeconds = 120;
+	}
+
+	@Json5.Section
 	public static final class Work {
 		@Comment("Nombre de piles d'objets qu'un travailleur (mineur, bucheron, fermier) transporte avant d'aller deposer")
 		public int carryStacks = 9;
@@ -105,23 +152,47 @@ public final class VillagerConfig implements Validatable {
 
 	@Json5.Section
 	public static final class Miner {
-		@Comment("Duree (secondes) d'une expedition de minage dans la zone de travail")
+		@Comment("Duree (secondes) d'une expedition de minage a la mine")
 		public int tripSeconds = 120;
-		@Comment("Nombre de tirages dans la table de butin a la fin de chaque expedition")
-		public int rollsPerTrip = 5;
 		@Comment("Intervalle (secondes) entre deux animations de minage")
 		public int effectIntervalSeconds = 3;
+		@Comment("Objectif 'Tout venant' : nombre de tirages dans la table de butin a la fin de chaque expedition")
+		public int rollsPerTrip = 5;
 		@Comment({
-				"Tables de butin par profondeur : la premiere table dont maxY >= Y de la zone de travail est utilisee",
-				"(si Y est au-dessus de toutes, la derniere). entries : item, min, max (quantite), weight (poids du tirage)."
+				"Objectif 'Tout venant' (pierre + minerais) : tables de butin par profondeur. La premiere table dont",
+				"maxY >= Y du fanion est utilisee (au-dessus de toutes : la derniere).",
+				"entries : item, min, max (quantite), weight (poids du tirage)."
 		})
 		public List<DepthTable> depthTables = defaultDepthTables();
+		@Comment("Objectif 'Minerais' : nombre de tirages par expedition (que des minerais, donc moins de tirages)")
+		public int oreRollsPerTrip = 3;
+		@Comment("Objectif 'Minerais' : tables de butin par profondeur (meme format)")
+		public List<DepthTable> oreTables = defaultOreTables();
+		@Comment("Objectif 'Pierre et variantes' : nombre de tirages par expedition")
+		public int stoneRollsPerTrip = 6;
+		@Comment("Objectif 'Pierre et variantes' : tables de butin par profondeur (meme format)")
+		public List<DepthTable> stoneTables = defaultStoneTables();
+
+		/** Loot tables of a mine objective. */
+		public List<DepthTable> tables(ZoneObjective objective) {
+			return switch (objective) {
+				case ORES -> oreTables;
+				case STONE -> stoneTables;
+				default -> depthTables;
+			};
+		}
+
+		public int rolls(ZoneObjective objective) {
+			return switch (objective) {
+				case ORES -> oreRollsPerTrip;
+				case STONE -> stoneRollsPerTrip;
+				default -> rollsPerTrip;
+			};
+		}
 	}
 
 	@Json5.Section
 	public static final class Lumberjack {
-		@Comment("Rayon (blocs) de recherche des arbres autour de la zone de travail")
-		public int radius = 16;
 		@Comment("Nombre maximum de buches d'un arbre (les arbres plus grands sont ignores)")
 		public int maxLogsPerTree = 80;
 		@Comment("Replanter une pousse a la base de l'arbre coupe (si le sol le permet)")
@@ -130,9 +201,10 @@ public final class VillagerConfig implements Validatable {
 
 	@Json5.Section
 	public static final class Farmer {
-		@Comment("Rayon (blocs) de recolte autour de la zone de travail")
-		public int radius = 8;
-		@Comment("Hauteur (blocs) au-dessus et en dessous de la zone de travail ou chercher des cultures")
+		@Comment({
+				"Cultures sous abri : hauteur (blocs) au-dessus et en dessous du fanion (sans zone : du villageois)",
+				"ou les chercher en plus de la surface"
+		})
 		public int verticalRange = 3;
 		@Comment("Nombre maximum de cultures recoltees par seconde")
 		public int harvestPerSecond = 3;
@@ -140,8 +212,10 @@ public final class VillagerConfig implements Validatable {
 
 	@Json5.Section
 	public static final class Guard {
-		@Comment("Rayon (blocs) de surveillance autour du point de garde (zone de travail, sinon le coeur)")
+		@Comment("Rayon (blocs) de surveillance du garde (autour du coeur sans zone, autour de lui en patrouille)")
 		public int radius = 16;
+		@Comment("Zone de patrouille : marge (blocs) autour de la zone ou le garde attaque encore les monstres")
+		public int zoneMargin = 8;
 		@Comment("Degats par coup au niveau 1 de la guilde")
 		public double damage = 4.0;
 		@Comment("Degats supplementaires par niveau de guilde")
@@ -319,13 +393,77 @@ public final class VillagerConfig implements Validatable {
 		return tables;
 	}
 
+	/** "Minerais": ores only (fewer rolls than the mixed tables), diamonds only deep. */
+	public static List<DepthTable> defaultOreTables() {
+		List<DepthTable> tables = new ArrayList<>();
+		tables.add(new DepthTable(-24, List.of(
+				new LootEntry("minecraft:raw_iron", 1, 3, 22),
+				new LootEntry("minecraft:raw_gold", 1, 3, 14),
+				new LootEntry("minecraft:redstone", 2, 6, 18),
+				new LootEntry("minecraft:lapis_lazuli", 2, 6, 12),
+				new LootEntry("minecraft:coal", 1, 3, 8),
+				new LootEntry("minecraft:diamond", 1, 1, 5),
+				new LootEntry("minecraft:emerald", 1, 1, 2))));
+		tables.add(new DepthTable(16, List.of(
+				new LootEntry("minecraft:coal", 1, 4, 22),
+				new LootEntry("minecraft:raw_iron", 1, 3, 24),
+				new LootEntry("minecraft:raw_copper", 2, 5, 20),
+				new LootEntry("minecraft:raw_gold", 1, 2, 10),
+				new LootEntry("minecraft:redstone", 1, 4, 10),
+				new LootEntry("minecraft:lapis_lazuli", 1, 3, 8))));
+		tables.add(new DepthTable(64, List.of(
+				new LootEntry("minecraft:coal", 1, 4, 34),
+				new LootEntry("minecraft:raw_copper", 2, 5, 28),
+				new LootEntry("minecraft:raw_iron", 1, 3, 26),
+				new LootEntry("minecraft:raw_gold", 1, 1, 4),
+				new LootEntry("minecraft:lapis_lazuli", 1, 2, 4))));
+		tables.add(new DepthTable(320, List.of(
+				new LootEntry("minecraft:coal", 1, 4, 40),
+				new LootEntry("minecraft:raw_iron", 1, 3, 26),
+				new LootEntry("minecraft:raw_copper", 1, 4, 20),
+				new LootEntry("minecraft:emerald", 1, 1, 4))));
+		return tables;
+	}
+
+	/** "Pierre et variantes": building stone in volume (cobbled deepslate and tuff deep down). */
+	public static List<DepthTable> defaultStoneTables() {
+		List<DepthTable> tables = new ArrayList<>();
+		tables.add(new DepthTable(0, List.of(
+				new LootEntry("minecraft:cobbled_deepslate", 3, 8, 50),
+				new LootEntry("minecraft:tuff", 2, 6, 20),
+				new LootEntry("minecraft:cobblestone", 1, 4, 10),
+				new LootEntry("minecraft:gravel", 1, 4, 8),
+				new LootEntry("minecraft:calcite", 1, 3, 6),
+				new LootEntry("minecraft:dripstone_block", 1, 3, 6))));
+		tables.add(new DepthTable(48, List.of(
+				new LootEntry("minecraft:cobblestone", 3, 8, 44),
+				new LootEntry("minecraft:andesite", 2, 6, 12),
+				new LootEntry("minecraft:diorite", 2, 6, 12),
+				new LootEntry("minecraft:granite", 2, 6, 12),
+				new LootEntry("minecraft:gravel", 1, 4, 8),
+				new LootEntry("minecraft:tuff", 1, 4, 6),
+				new LootEntry("minecraft:clay_ball", 2, 6, 3),
+				new LootEntry("minecraft:dripstone_block", 1, 2, 3))));
+		tables.add(new DepthTable(320, List.of(
+				new LootEntry("minecraft:cobblestone", 3, 8, 46),
+				new LootEntry("minecraft:andesite", 2, 6, 12),
+				new LootEntry("minecraft:diorite", 2, 6, 10),
+				new LootEntry("minecraft:granite", 2, 6, 10),
+				new LootEntry("minecraft:gravel", 1, 4, 8),
+				new LootEntry("minecraft:dirt", 1, 4, 6),
+				new LootEntry("minecraft:calcite", 1, 3, 4),
+				new LootEntry("minecraft:flint", 1, 2, 4))));
+		return tables;
+	}
+
 	public static LinkedHashMap<String, List<String>> defaultCategories() {
 		LinkedHashMap<String, List<String>> map = new LinkedHashMap<>();
 		map.put("Bois", new ArrayList<>(List.of(
 				"#minecraft:logs", "#minecraft:planks", "#minecraft:wooden_slabs", "#minecraft:wooden_stairs",
 				"#minecraft:wooden_fences", "#minecraft:saplings", "#minecraft:leaves", "minecraft:stick")));
 		map.put("Pierre & terre", new ArrayList<>(List.of(
-				"#minecraft:stone_crafting_materials", "#minecraft:stone_tool_materials", "#minecraft:dirt", "#minecraft:sand",
+				"#minecraft:stone_crafting_materials", "#minecraft:stone_tool_materials", "#minecraft:dirt", "#minecraft:grass_blocks",
+				"#minecraft:mud", "#minecraft:moss_blocks", "#minecraft:sand",
 				"#minecraft:stone_bricks", "minecraft:cobblestone", "minecraft:stone", "minecraft:cobbled_deepslate",
 				"minecraft:deepslate", "minecraft:granite", "minecraft:diorite", "minecraft:andesite", "minecraft:tuff",
 				"minecraft:calcite", "minecraft:gravel", "minecraft:clay_ball", "minecraft:netherrack")));
@@ -401,6 +539,23 @@ public final class VillagerConfig implements Validatable {
 		if (storage == null) {
 			storage = new Storage();
 		}
+		if (zones == null) {
+			zones = new Zones();
+		}
+		if (routes == null) {
+			routes = new Routes();
+		}
+		zones.maxZones = clamp(zones.maxZones, 1, 27);
+		zones.maxRadiusChunks = clamp(zones.maxRadiusChunks, 0, 5);
+		zones.defaultRadiusChunks = clamp(zones.defaultRadiusChunks, 0, zones.maxRadiusChunks);
+		zones.maxZoneDistance = clamp(zones.maxZoneDistance, 16, 1024);
+		zones.autoSearchRadius = clamp(zones.autoSearchRadius, 8, 96);
+		zones.showSeconds = clamp(zones.showSeconds, 3, 120);
+		routes.maxRoutes = clamp(routes.maxRoutes, 0, 9);
+		routes.maxWaypoints = clamp(routes.maxWaypoints, 2, 32);
+		routes.pauseSeconds = clamp(routes.pauseSeconds, 0, 60);
+		routes.leash = clamp(routes.leash, 4, 48);
+		routes.selectionTimeoutSeconds = clamp(routes.selectionTimeoutSeconds, 20, 600);
 		arrivals.baseMaxVillagers = clamp(arrivals.baseMaxVillagers, 0, 100);
 		arrivals.maxVillagersPerLevel = clamp(arrivals.maxVillagersPerLevel, 0, 20);
 		arrivals.arrivalChance = clamp(arrivals.arrivalChance, 0.0, 1.0);
@@ -416,32 +571,17 @@ public final class VillagerConfig implements Validatable {
 		sorter.walkTimeoutSeconds = clamp(sorter.walkTimeoutSeconds, 5, 600);
 		miner.tripSeconds = clamp(miner.tripSeconds, 5, 3600);
 		miner.rollsPerTrip = clamp(miner.rollsPerTrip, 1, 64);
+		miner.oreRollsPerTrip = clamp(miner.oreRollsPerTrip, 1, 64);
+		miner.stoneRollsPerTrip = clamp(miner.stoneRollsPerTrip, 1, 64);
 		miner.effectIntervalSeconds = clamp(miner.effectIntervalSeconds, 1, 60);
-		if (miner.depthTables == null || miner.depthTables.isEmpty()) {
-			miner.depthTables = defaultDepthTables();
-		}
-		miner.depthTables = new ArrayList<>(miner.depthTables);
-		miner.depthTables.removeIf(table -> table == null);
-		for (DepthTable table : miner.depthTables) {
-			table.entries = table.entries == null ? new ArrayList<>() : new ArrayList<>(table.entries);
-			table.entries.removeIf(entry -> entry == null || entry.item == null || entry.item.isBlank() || entry.weight <= 0);
-			for (LootEntry entry : table.entries) {
-				entry.item = entry.item.trim();
-				entry.min = clamp(entry.min, 1, 64);
-				entry.max = clamp(entry.max, entry.min, 64);
-			}
-		}
-		miner.depthTables.removeIf(table -> table.entries.isEmpty());
-		if (miner.depthTables.isEmpty()) {
-			miner.depthTables = defaultDepthTables();
-		}
-		miner.depthTables.sort(Comparator.comparingInt(table -> table.maxY));
-		lumberjack.radius = clamp(lumberjack.radius, 2, 48);
+		miner.depthTables = cleanTables(miner.depthTables, VillagerConfig::defaultDepthTables);
+		miner.oreTables = cleanTables(miner.oreTables, VillagerConfig::defaultOreTables);
+		miner.stoneTables = cleanTables(miner.stoneTables, VillagerConfig::defaultStoneTables);
 		lumberjack.maxLogsPerTree = clamp(lumberjack.maxLogsPerTree, 1, 256);
-		farmer.radius = clamp(farmer.radius, 1, 32);
 		farmer.verticalRange = clamp(farmer.verticalRange, 0, 8);
 		farmer.harvestPerSecond = clamp(farmer.harvestPerSecond, 1, 16);
 		guard.radius = clamp(guard.radius, 2, 48);
+		guard.zoneMargin = clamp(guard.zoneMargin, 0, 32);
 		guard.damage = clamp(guard.damage, 0.0, 100.0);
 		guard.damagePerLevel = clamp(guard.damagePerLevel, 0.0, 20.0);
 		guard.attackCooldownTicks = clamp(guard.attackCooldownTicks, 1, 200);
@@ -475,6 +615,30 @@ public final class VillagerConfig implements Validatable {
 		if (names.isEmpty()) {
 			names = new ArrayList<>(new VillagerConfig().names);
 		}
+	}
+
+	/** Copy without empty / invalid entries, sorted by maxY; the defaults when nothing usable is left. */
+	private static List<DepthTable> cleanTables(List<DepthTable> tables, Supplier<List<DepthTable>> defaults) {
+		if (tables == null || tables.isEmpty()) {
+			return defaults.get();
+		}
+		List<DepthTable> cleaned = new ArrayList<>(tables);
+		cleaned.removeIf(table -> table == null);
+		for (DepthTable table : cleaned) {
+			table.entries = table.entries == null ? new ArrayList<>() : new ArrayList<>(table.entries);
+			table.entries.removeIf(entry -> entry == null || entry.item == null || entry.item.isBlank() || entry.weight <= 0);
+			for (LootEntry entry : table.entries) {
+				entry.item = entry.item.trim();
+				entry.min = clamp(entry.min, 1, 64);
+				entry.max = clamp(entry.max, entry.min, 64);
+			}
+		}
+		cleaned.removeIf(table -> table.entries.isEmpty());
+		if (cleaned.isEmpty()) {
+			return defaults.get();
+		}
+		cleaned.sort(Comparator.comparingInt(table -> table.maxY));
+		return cleaned;
 	}
 
 	private static int clamp(int value, int min, int max) {

@@ -105,17 +105,53 @@ les constructions et les bannières décoratives. Les niveaux de guilde débloqu
 ### 7. Villageois
 Avec un **bureau d'accueil** et un **lit libre** dans le territoire, un villageois se présente certains matins :
 **[Accepter] / [Refuser]** dans le chat (ou dans le menu). Nombre maximum : 2 + 1 par niveau de guilde.
-Menu « Villageois » (`/guild villagers`, ou accroupi + clic droit sur un villageois) pour leur donner une tâche :
+Menu « Villageois » (`/guild villagers`, ou accroupi + clic droit sur un villageois) : la liste montre la tâche, la zone,
+le statut et ce que chacun transporte ; le menu d'un villageois règle sa tâche, sa **zone de travail** et sa mission,
+permet de l'**appeler** à côté de soi (« Appeler ici », dans le territoire ou une zone de la guilde) ou de le renvoyer.
 
 | Tâche | Ce qu'il fait |
 |---|---|
 | **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (Bois, Pierre, Minerais, Cultures, Butin, Outils, Divers) |
-| **Mineur** | va à sa zone de travail et en rapporte des minerais (meilleurs en profondeur) |
-| **Bûcheron** | coupe les arbres naturels de sa zone et replante |
-| **Fermier** | récolte les cultures mûres de sa zone et replante |
-| **Garde** | attaque les monstres du territoire, défend le cœur pendant les hordes |
+| **Mineur** | mine à sa **mine** (minage simulé) : pierre et/ou minerais selon l'objectif, meilleurs en profondeur |
+| **Bûcheron** | coupe les arbres naturels de sa **coupe de bois** (ou autour de lui) et replante |
+| **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui) et replante |
+| **Garde** | patrouille dans sa zone ou sur son **parcours de garde**, sinon défend le cœur ; toujours au cœur pendant les hordes |
 | **Exploration** | part explorer les terres sauvages (il quitte vraiment la base) et revient quelques minutes plus tard avec du butin : graines, pousses, cuir, émeraudes, parfois une carte au trésor — petit risque de ne pas revenir |
 | **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** et revient avec quartz, or, poudre lumineuse, bâtons de blaze… — risque plus élevé |
+
+#### Zones de travail (fanions)
+Menu Villageois → **Zones et parcours** → « Créer une zone » : choisissez le type (**Mine**, **Coupe de bois**,
+**Champs**, **Patrouille**) et recevez un **fanion** (bannière). **Plantez-le** (clic droit sur un bloc) : la zone est
+créée là, le fanion prend son nom et ses réglages s'ouvrent. Clic droit sur un type = créer la zone à vos pieds, sans
+fanion (pratique au fond d'une mine).
+- Une zone peut **sortir du territoire** (à moins de 192 blocs du cœur), jamais entrer dans celui d'une autre guilde.
+  Les villageois n'y travaillent que lorsqu'elle est chargée (un joueur dans les parages).
+- **Rayon** en chunks autour du chunk du fanion : 0 = son chunk, 1 = 3×3 chunks (par défaut), jusqu'à 3 = 7×7.
+  Une mine n'utilise que son fanion : sa **hauteur fixe la profondeur** (et donc les minerais).
+- **Objectif** : mine → *Tout venant*, *Minerais* (que des minerais, moins de tirages) ou *Pierre et variantes* (pierre,
+  andésite, diorite, granite, tuf, calcite, gravier ; pierre des abîmes en profondeur) ; coupe de bois → tous les arbres ou
+  une essence (chêne, sapin, bouleau, acajou, acacia, chêne noir, palétuvier, cerisier, chêne pâle, peuplier) ; champs →
+  toutes les cultures (y compris melons, citrouilles et canne à sucre, la tige / la base restent) ou une seule (blé,
+  carottes, pommes de terre, betteraves) ; patrouille → les gardes marchent au hasard dans la zone et combattent ce qui y
+  entre (et un peu autour).
+- Réglages : rayon −/+, objectif, renommer, **Afficher** (limites en particules pendant 20 s, pour vous seul), villageois
+  affectés (un villageois d'une autre tâche affecté ici prend la tâche de la zone), **déplacer le fanion**, supprimer.
+- Retirer le fanion (avec le droit de gérer les villageois) supprime la zone, sans rendre d'objet ; les autres joueurs ne
+  peuvent pas le retirer. Si le fanion disparaît autrement, la zone continue de fonctionner (« fanion absent »).
+- Menu d'un villageois → « Zone de travail » : une zone de son type, un parcours (gardes) ou **Automatique**.
+
+**Mode automatique** (aucune zone choisie) : le bûcheron coupe les arbres naturels les plus proches de lui, le fermier
+récolte les cultures mûres les plus proches (à moins de 48 blocs de lui et de 192 blocs du cœur, jamais chez une autre
+guilde) ; le mineur va à la mine de la guilde la plus proche, sinon mine la pierre à découvert la plus proche (sinon au
+cœur) ; le garde défend le cœur. Le statut indique ce qu'il a choisi (« Coupe auto près de x y z »).
+
+#### Parcours de garde
+« Nouveau parcours » (menu Zones et parcours, ou `/guild villagers route new`) : faites un clic droit sur les blocs où le
+garde doit passer, dans l'ordre (2 à 16 points) ; la barre d'action et un aperçu en particules vous guident.
+**Accroupi + clic droit** (ou [Terminer] dans le chat) enregistre le parcours ; [Retirer le dernier point], [Abandonner] ;
+abandon automatique après 2 minutes sans nouveau point. Les gardes affectés le parcourent en **boucle** (ou en
+**aller-retour**, au choix), marquent une courte pause à chaque point, combattent les monstres qui s'approchent (jamais à
+plus de 16 blocs du parcours) puis reprennent au point le plus proche. Le parcours se renomme, s'affiche, se retrace.
 
 **Missions** (menu du villageois, bouton cible) pour le mineur, le bûcheron, le fermier et les expéditions :
 - **Travail continu** : il travaille sans s'arrêter (il vide son sac au coffre de dépôt dès qu'il est plein) ;
@@ -173,7 +209,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild waves` | Hordes : état, prochaine nuit, statistiques, règles |
 | `/guild build` | Constructions et plans |
 | `/guild quests` | Quêtes |
-| `/guild villagers [accept\|refuse]` | Villageois |
+| `/guild villagers [accept\|refuse\|zones]` · `villagers route new\|finish\|undo\|cancel` | Villageois, zones de travail / tracé d'un parcours de garde |
 | `/guild upgrades` | Arbre d'évolution (améliorations permanentes) |
 
 ### Administration
@@ -207,7 +243,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (type, cible, quantités, récompenses, durée, poids, niveau) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
-| `villagers.json5` | Arrivées, limites, réglages des tâches, tables de minage, catégories de rangement, départs après défaite |
+| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, pauses, laisse), tables de minage par objectif, catégories de rangement, départs après défaite |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
@@ -240,6 +276,9 @@ Formules par défaut (modifiables) :
 - **Drapeaux et plans = objets vanilla** marqués (bannière, papier) : impossible à fabriquer en survie.
 - **Mineur simulé** (pas de creusage réel, plus fiable) ; bûcheron/fermier réels et bornés ; chaque
   déplacement de villageois a un délai maximum et une solution de repli (jamais bloqué).
+- **Zones de travail = fanions** plantés (pas de coordonnées à taper) : elles peuvent sortir du territoire, mais les
+  villageois n'y travaillent que si elles sont chargées (aucun chargement forcé de chunk) et ne touchent jamais au
+  territoire d'une autre guilde ; sans zone, chaque villageois travaille autour de lui.
 - **Performance** : index chunk → guilde en mémoire, tâches réparties sur les ticks (joueurs toutes les
   10 ticks, villageois et hordes une fois par seconde), plafonds de monstres, uniquement des chunks chargés,
   chaque erreur isolée et journalisée sans faire tomber le serveur.
@@ -250,6 +289,8 @@ Formules par défaut (modifiables) :
 - Dormir **avant** le début d'une horde saute la nuit (sans récompense) ; pendant une horde, c'est interdit.
 - Un monstre qui ne peut pas atteindre un cœur emmuré finit par être retiré puis réapparaît ailleurs.
 - Les villageois occupés à une tâche ne réapprovisionnent plus leurs échanges (ils ne vont plus à leur poste).
+- Un fanion de zone arraché par une explosion, un piston ou la casse de son support tombe en bannière ordinaire :
+  la zone continue de fonctionner (« Déplacer le fanion » pour en replanter un).
 - Les projectiles de visiteurs peuvent encore abîmer cadres et tableaux (le corps-à-corps est bloqué) ;
   plaques de pression, fils et piétinement des cultures ne sont pas protégés.
 - Le cooldown de `/guild home` est remis à zéro au redémarrage.
