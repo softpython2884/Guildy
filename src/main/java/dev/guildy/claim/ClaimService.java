@@ -336,4 +336,9 @@ public final class ClaimService {
 	public static boolean hasBypass(ServerPlayer player) {
 		return ClaimGuard.hasBypass(player);
 	}
+
+	/** Repaints the heart banner with the current guild design and name (done later if its chunk is not loaded). */
+	public static void refreshHeartBanner(Guild guild) {
+		HeartBanners.sync(guild);
+	}
 }

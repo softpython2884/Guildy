@@ -1,5 +1,6 @@
 package dev.guildy.command;
 
+import dev.guildy.claim.ClaimService;
 import dev.guildy.config.GuildyConfig;
 import dev.guildy.core.GoldUtil;
 import dev.guildy.core.GuildyItems;
@@ -20,6 +21,7 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -626,12 +628,55 @@ public final class GuildActions {
 			return false;
 		}
 		Guild guild = GuildManager.of(player);
-		guild.banner = design.copy();
-		GuildManager.markDirty();
+		applyBanner(player, guild, design);
 		Msg.send(player, "banner.saved");
 		Msg.sound(player, SoundEvents.UI_LOOM_TAKE_RESULT, 1.0f, 1.0f);
 		notifyGuild(guild, player.getUUID(), "banner.saved.notify", name(player));
 		return true;
+	}
+
+	/** Why the banner held in the main hand cannot become the guild banner, or null. */
+	public static @Nullable Denial adoptBannerDenial(ServerPlayer player) {
+		Denial denial = saveBannerDenial(player);
+		if (denial != null) {
+			return denial;
+		}
+		if (BannerDesign.fromStack(player.getMainHandItem()) == null) {
+			return new Denial("banner.adopt.no_banner");
+		}
+		return null;
+	}
+
+	/** The banner woven at a loom and held in the main hand becomes the guild banner (the item is kept). */
+	public static boolean adoptBanner(ServerPlayer player) {
+		if (refuse(player, adoptBannerDenial(player))) {
+			return false;
+		}
+		Guild guild = GuildManager.of(player);
+		BannerDesign design = BannerDesign.fromStack(player.getMainHandItem());
+		if (guild == null || design == null) {
+			return false;
+		}
+		applyBanner(player, guild, design);
+		Msg.send(player, "banner.adopt.done");
+		Msg.sound(player, SoundEvents.UI_LOOM_TAKE_RESULT, 1.0f, 1.0f);
+		notifyGuild(guild, player.getUUID(), "banner.saved.notify", name(player));
+		return true;
+	}
+
+	/** New guild design: repaint the heart banner and the guild's founding flags carried by the player. */
+	private static void applyBanner(ServerPlayer player, Guild guild, BannerDesign design) {
+		guild.banner = design.copy();
+		GuildManager.markDirty();
+		ClaimService.refreshHeartBanner(guild);
+		var inventory = player.getInventory();
+		for (int i = 0; i < inventory.getContainerSize(); i++) {
+			ItemStack stack = inventory.getItem(i);
+			if (GuildyItems.is(stack, GuildyItems.KIND_FOUNDING_FLAG) && guild.id.equals(GuildyItems.guildOf(stack))) {
+				inventory.setItem(i, GuildyItems.foundingFlag(guild));
+			}
+		}
+		player.containerMenu.broadcastChanges();
 	}
 
 	public static @Nullable Denial decorativeBannerDenial(ServerPlayer player) {

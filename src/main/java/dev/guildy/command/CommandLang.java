@@ -135,6 +135,20 @@ final class CommandLang {
 
 		// banner
 		m.put("banner.saved", "&aLa nouvelle bannière de la guilde est enregistrée !");
+		m.put("banner.adopt.done", "&aLa bannière que vous tenez est désormais celle de la guilde ! Le cœur et les drapeaux suivront ce dessin.");
+		m.put("banner.adopt.no_banner", "&cTenez en main la bannière à adopter (tissez-la au métier à tisser avec vos colorants).");
+		m.put("banner.adopt.name", "&a&lAdopter la bannière en main");
+		m.put("banner.adopt.lore", "&7La bannière que vous tenez devient celle de\n&7la guilde : cœur de la base, drapeaux,\n"
+				+ "&7bannières décoratives et cartes.\n\n&eClic : adopter");
+		m.put("banner.adopt.lore.empty", "&7Prenez en main une bannière tissée au\n&7métier à tisser, puis cliquez ici.\n\n"
+				+ "&cAucune bannière en main.");
+		m.put("banner.loom.name", "&6&lCréer le drapeau au métier à tisser");
+		m.put("banner.loom.lore", "&71. Fabriquez une bannière de la couleur de fond voulue\n"
+				+ "&72. Au &fmétier à tisser&7, ajoutez des motifs avec vos &fcolorants\n"
+				+ "&7   (le drapeau fondateur peut lui-même y être tissé)\n"
+				+ "&73. Tenez-la en main et cliquez sur &a« Adopter »\n\n"
+				+ "&7Le drapeau planté devient le cœur de la base\n"
+				+ "&7et apparaît sur les &fcartes&7 avec le nom de la guilde.");
 		m.put("banner.saved.notify", "&e{0}&7 a modifié la bannière de la guilde.");
 		m.put("banner.decorative.bought", "&aBannière décorative obtenue pour &6{0} or&a (payé par le trésor).");
 		m.put("banner.max_layers", "&cUne bannière ne peut pas avoir plus de {0} motifs.");

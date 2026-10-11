@@ -1,6 +1,7 @@
 package dev.guildy.claim;
 
 import dev.guildy.core.GuildyItems;
+import dev.guildy.data.BannerDesign;
 import dev.guildy.core.Msg;
 import dev.guildy.data.ChunkKey;
 import dev.guildy.data.Guild;
@@ -8,6 +9,7 @@ import dev.guildy.data.GuildManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -71,7 +73,12 @@ final class FlagHandler {
 			if (error != null) {
 				return refuse(player, level, hit, error);
 			}
-			if (!placeBanner(player, level, target, banner, stack)) {
+			// The founding flag may have been woven at a loom: its design becomes the guild banner.
+			BannerDesign woven = BannerDesign.fromStack(stack);
+			if (woven != null) {
+				guild.banner = woven;
+			}
+			if (!placeBanner(level, target, banner, stack, guild)) {
 				return refuse(player, level, hit, "claim.error.cannot_place");
 			}
 			consume(player, stack);
@@ -84,7 +91,7 @@ final class FlagHandler {
 			if (error != null) {
 				return refuse(player, level, hit, error);
 			}
-			if (!placeBanner(player, level, target, banner, stack)) {
+			if (!placeBanner(level, target, banner, stack, guild)) {
 				return refuse(player, level, hit, "claim.error.cannot_place");
 			}
 			consume(player, stack);
@@ -126,19 +133,23 @@ final class FlagHandler {
 				&& level.getBlockState(target).canBeReplaced();
 	}
 
-	/** Places the banner and copies the flag's patterns only (no name / custom data: a broken flag is a plain banner). */
-	private static boolean placeBanner(ServerPlayer player, ServerLevel level, BlockPos target, BlockState state, ItemStack flag) {
+	/**
+	 * Places the banner with the flag's patterns and the guild name (shown on maps), never the flag's custom data:
+	 * a broken flag is a plain banner.
+	 */
+	private static boolean placeBanner(ServerLevel level, BlockPos target, BlockState state, ItemStack flag, Guild guild) {
 		if (!level.setBlock(target, state, Block.UPDATE_ALL_IMMEDIATE)) {
 			return false;
 		}
 		if (level.getBlockEntity(target) instanceof BannerBlockEntity banner) {
 			ItemStack patterns = new ItemStack(flag.getItem());
 			patterns.set(DataComponents.BANNER_PATTERNS, flag.getOrDefault(DataComponents.BANNER_PATTERNS, BannerPatternLayers.EMPTY));
+			patterns.set(DataComponents.CUSTOM_NAME, Component.literal(guild.name));
 			banner.applyComponentsFromItemStack(patterns);
 			banner.setChanged();
 			level.sendBlockUpdated(target, state, state, Block.UPDATE_CLIENTS);
 		}
-		level.playSound(player, target, state.getSoundType().getPlaceSound(), SoundSource.BLOCKS, 1.0F, 0.8F);
+		level.playSound(null, target, state.getSoundType().getPlaceSound(), SoundSource.BLOCKS, 1.0F, 0.8F);
 		return true;
 	}
 

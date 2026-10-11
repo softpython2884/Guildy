@@ -209,7 +209,7 @@ public final class GuildCommands {
 			}
 			GuildMenus.openBanner(player);
 			return true;
-		})));
+		})).then(Commands.literal("adopt").executes(ctx -> run(ctx, "banner adopt", GuildActions::adoptBanner))));
 	}
 
 	/** Resolves the "guild" argument; reports unknown names. */

@@ -30,6 +30,9 @@ public final class GuildyConfig implements Validatable {
 	@Comment("Niveaux de guilde (XP gagnee via vagues et quetes)")
 	public Levels levels = new Levels();
 
+	@Comment("Banniere / drapeau de guilde et affichage sur les cartes")
+	public Banners banners = new Banners();
+
 	@Comment({
 			"Role minimum (MEMBER, OFFICER, LEADER) requis pour chaque action de guilde.",
 			"BUILD=casser/poser, INTERACT=portes/coffres/entites, INVITE, KICK, CLAIM=claims/drapeaux,",
@@ -121,6 +124,20 @@ public final class GuildyConfig implements Validatable {
 	}
 
 	@Json5.Section
+	public static final class Banners {
+		@Comment({
+				"false : la banniere se cree au METIER A TISSER avec de vrais colorants (on tisse le drapeau fondateur,",
+				"ou n'importe quelle banniere puis 'Adopter la banniere en main' dans le menu Banniere).",
+				"true : editeur gratuit dans le menu en plus (couleurs et motifs sans ressources)."
+		})
+		public boolean freeEditor = false;
+		@Comment("Afficher le drapeau-coeur des guildes sur les cartes (marqueur de banniere avec le nom de la guilde)")
+		public boolean heartOnMaps = true;
+		@Comment("true : toutes les guildes apparaissent sur les cartes ; false : seulement sa propre guilde")
+		public boolean allGuildsOnMaps = true;
+	}
+
+	@Json5.Section
 	public static final class General {
 		@Comment("Sauvegarde automatique des donnees de guildes (minutes, si modifiees)")
 		public int autosaveMinutes = 5;
@@ -204,6 +221,9 @@ public final class GuildyConfig implements Validatable {
 		}
 		for (var entry : defaultRolePermissions().entrySet()) {
 			rolePermissions.putIfAbsent(entry.getKey(), entry.getValue());
+		}
+		if (banners == null) {
+			banners = new Banners();
 		}
 		general.autosaveMinutes = Math.max(1, general.autosaveMinutes);
 		general.adminOpLevel = Math.max(0, Math.min(4, general.adminOpLevel));

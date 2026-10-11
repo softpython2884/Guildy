@@ -59,6 +59,26 @@ final class BannerMenu extends GuildGui {
 			return;
 		}
 		setSlot(4, preview(working, guild));
+		boolean freeEditor = GuildyServer.config().banners.freeEditor;
+		action(freeEditor ? 43 : 22, adoptIcon(), () -> GuildActions.adoptBannerDenial(player), () -> {
+			boolean adopted = GuildActions.adoptBanner(player);
+			Guild current = guild();
+			if (adopted && current != null) {
+				working.base = current.banner.base;
+				working.layers.clear();
+				working.layers.addAll(current.banner.copy().layers);
+			}
+			return adopted;
+		});
+		if (!freeEditor) {
+			// Loom mode: the banner is woven at a real loom with real dyes, then adopted.
+			setSlot(20, GuiUtil.item(Items.LOOM, Lang.get("banner.loom.name"), GuiUtil.lines("banner.loom.lore")));
+			action(24, icon(guild.banner.createBanner(GuildyServer.registryAccess()), Lang.get("banner.decorative.name"),
+							GuiUtil.lines("banner.decorative.lore", GuildyServer.config().economy.decorativeBannerPrice)),
+					() -> GuildActions.decorativeBannerDenial(player), () -> GuildActions.buyDecorativeBanner(player));
+			bottomBar(() -> new MainMenu(player, guild).show());
+			return;
+		}
 
 		DyeColor[] colors = DyeColor.values();
 		for (int i = 0; i < colors.length && i < COLOR_SLOTS.length; i++) {
@@ -128,6 +148,15 @@ final class BannerMenu extends GuildGui {
 				() -> GuildActions.decorativeBannerDenial(player), () -> GuildActions.buyDecorativeBanner(player));
 
 		bottomBar(() -> new MainMenu(player, guild).show());
+	}
+
+	/** "Adopt the banner in hand" button, showing the held banner when there is one. */
+	private GuiElementBuilder adoptIcon() {
+		ItemStack held = player.getMainHandItem();
+		BannerDesign design = BannerDesign.fromStack(held);
+		ItemStack shown = design == null ? new ItemStack(Items.BANNER.pick(DyeColor.WHITE)) : design.createBanner(GuildyServer.registryAccess());
+		return GuiUtil.item(shown, Lang.get("banner.adopt.name"),
+				GuiUtil.lines(design == null ? "banner.adopt.lore.empty" : "banner.adopt.lore"));
 	}
 
 	private @Nullable Denial addDenial() {

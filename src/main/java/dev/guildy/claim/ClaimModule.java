@@ -29,6 +29,7 @@ public final class ClaimModule {
 		BorderVisualizer.register();
 		HomeTeleports.register();
 		ClaimCommands.register();
+		HeartBanners.register();
 
 		Lifecycle.STARTED.add(server -> {
 			ClaimGuard.refresh();
@@ -38,6 +39,7 @@ public final class ClaimModule {
 		GuildEvents.TERRITORY_CHANGED.add(guild -> {
 			HeartIndex.markDirty();
 			TerritoryNotifier.refreshSilently();
+			HeartBanners.sync(guild);
 		});
 		GuildEvents.DISBANDED.add(guild -> {
 			removeHeartBanner(guild);

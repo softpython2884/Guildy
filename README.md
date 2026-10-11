@@ -37,7 +37,15 @@ Sans guilde, le menu propose de **créer une guilde** (seul, c'est une guilde va
 
 ### 2. Fonder la base
 **Plantez le drapeau fondateur** (clic droit sur un bloc) : il devient le **cœur** de la base et la guilde
-revendique un carré de **3×3 chunks** autour. Le cœur est indestructible ; pour déménager, le chef utilise
+revendique un carré de **3×3 chunks** autour.
+
+**Le drapeau se crée au métier à tisser**, avec de vrais colorants : tissez-y le drapeau fondateur lui-même
+(il reste un drapeau de guilde) ou n'importe quelle bannière, puis tenez-la en main et cliquez sur
+« Adopter la bannière en main » (menu Bannière, ou `/guild banner adopt`). Le dessin adopté devient celui du cœur
+(repeint automatiquement), des drapeaux d'extension, des bannières décoratives et des icônes des menus.
+Le cœur porte le **nom de la guilde** et apparaît sur les **cartes** (marqueur de bannière avec le nom) dès qu'on
+tient une carte qui couvre la base. L'éditeur gratuit (sans ressources) peut être activé en config
+(`banners.freeEditor`). Le cœur est indestructible ; pour déménager, le chef utilise
 « Abandonner le territoire » (le drapeau fondateur est rendu).
 
 - Le territoire est protégé : seuls les membres (selon leur rôle) cassent, posent ou interagissent.
@@ -112,7 +120,7 @@ pendant les hordes : protégez-les ! Seuls les membres peuvent commercer avec eu
 **Chef**, **Officier**, **Membre**. Par défaut les membres construisent et interagissent ; les officiers
 invitent, excluent, gèrent le territoire, le trésor, les villageois, les constructions, la bannière et les
 quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modifiable dans `config.json5`
-(`rolePermissions`). La bannière de guilde se personnalise dans le menu (couleur + 6 motifs vanilla).
+(`rolePermissions`).
 
 ---
 
@@ -131,7 +139,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild disband` | Dissoudre (chef, confirmation) |
 | `/guild info [guilde]` · `list` · `help` | Informations |
 | `/guild deposit [all\|montant]` · `withdraw <montant>` | Trésor |
-| `/guild banner` | Éditeur de bannière |
+| `/guild banner` · `banner adopt` | Menu Bannière / adopter la bannière tenue en main |
 | `/guild flag` · `flag buy` | Récupérer le drapeau fondateur / acheter un drapeau d'extension |
 | `/guild claim` · `unclaim` · `show` | Territoire |
 | `/guild sethome` · `home` | Point de retour de la guilde |
@@ -165,7 +173,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 
 | Fichier | Contenu |
 |---|---|
-| `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, seuils d'XP des niveaux, rôles |
+| `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, seuils d'XP des niveaux, bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles |
 | `waves.json5` | Horaires, formule de difficulté, taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (type, cible, quantités, récompenses, durée, poids, niveau) |

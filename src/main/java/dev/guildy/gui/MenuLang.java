@@ -39,7 +39,7 @@ final class MenuLang {
 		m.put("menu.main.treasury.name", "&6&lTrésor");
 		m.put("menu.main.treasury.lore", "&7Solde : &6{0} or\n&7Déposer et retirer de l'or.\n\n&e» Cliquez pour ouvrir");
 		m.put("menu.main.banner.name", "&f&lBannière");
-		m.put("menu.main.banner.lore", "&7Personnaliser la bannière de la guilde\n&7(drapeaux, menus, bannières décoratives).\n\n&e» Cliquez pour ouvrir");
+		m.put("menu.main.banner.lore", "&7Le drapeau de la guilde se tisse au\n&7métier à tisser : cœur de la base, drapeaux,\n&7bannières décoratives et cartes.\n\n&e» Cliquez pour ouvrir");
 		m.put("menu.main.structures.name", "&b&lConstructions");
 		m.put("menu.main.structures.lore", "&7Tableau de quêtes, boutique, accueil...\n&7Plans et déblocages.\n\n&e» Cliquez pour ouvrir");
 		m.put("menu.main.quests.name", "&d&lQuêtes");
