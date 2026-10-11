@@ -35,6 +35,9 @@
 	--b-hay: repeating-linear-gradient(90deg, #c9a227 0 4px, #a8851c 4px 6px), linear-gradient(180deg, #8a6a12 0 12%, transparent 12% 88%, #8a6a12 88%);
 	--b-craft: linear-gradient(180deg, #a06c34 0 30%, #6e4a24 30% 36%, #b47c40 36%);
 	--b-heart: linear-gradient(180deg, #b0261d 0 70%, #7a1712 70%);
+	--b-wool: repeating-linear-gradient(45deg, #e9ecec 0 4px, #d4d8d8 4px 7px);
+	--b-emerald: linear-gradient(135deg, #8ff0b0 0 20%, #2fb35a 20% 70%, #17803a 70%);
+	--b-carto: linear-gradient(180deg, #d9c9a0 0 30%, #6e4a24 30% 38%, #8a5e30 38%), repeating-linear-gradient(90deg, transparent 0 6px, #5b3e22 6px 8px);
 }
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme="light"]) {
@@ -154,7 +157,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .pill.void { background: var(--void-soft); color: var(--void); }
 
 /* ---------- structures (inventory slots) ---------- */
-.builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; margin-top: 1rem; }
 .build { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; display: flex; flex-direction: column; gap: .7rem; min-width: 0; }
 .build h3 { margin: 0; }
 .build .meta { display: flex; flex-wrap: wrap; gap: .4rem; }
@@ -173,6 +176,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .b-stonebricks { background: var(--b-stonebricks); }
 .b-hay { background: var(--b-hay); }
 .b-craft { background: var(--b-craft); }
+.b-wool { background: var(--b-wool); }
+.b-emerald { background: var(--b-emerald); }
+.b-carto { background: var(--b-carto); }
 
 /* ---------- cards ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .9rem; margin: 1rem 0; }
@@ -230,9 +236,11 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<li><a href="#guilde">La guilde</a></li>
 				<li><a href="#territoire">Drapeau et territoire</a></li>
 				<li><a href="#nuits">Les hordes de la nuit</a></li>
+				<li><a href="#evenements">Événements</a></li>
 				<li><a href="#constructions">Constructions</a></li>
 				<li><a href="#quetes">Quêtes</a></li>
 				<li><a href="#boutique">Or et boutique</a></li>
+				<li><a href="#carrefour">Carrefour commercial</a></li>
 				<li><a href="#villageois">Villageois</a></li>
 				<li><a href="#evolution">Arbre d'évolution</a></li>
 				<li><a href="#niveaux">Niveaux de guilde</a></li>
@@ -350,11 +358,28 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<div class="note good"><p><strong>Pour bien défendre :</strong> entourez le cœur de murs (les monstres doivent le toucher pour l'abîmer), éclairez les frontières, mettez des <a href="#villageois">villageois gardes</a> et débloquez « Cœur renforcé » dans l'<a href="#evolution">arbre d'évolution</a>.</p></div>
 			</section>
 
+			<!-- ================================================================ EVENTS -->
+			<section id="evenements">
+				<div class="eyebrow">Imprévus</div>
+				<h2>Événements</h2>
+				<p>De temps en temps, le monde vous réserve une surprise. Chaque jour, à la tombée de la nuit et le matin, le serveur tire au sort les événements possibles. Ils sont annoncés par un titre et un message dans le chat.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Événement</th><th>Quand</th><th>Ce qui se passe</th></tr></thead>
+					<tbody>
+						<tr><td><span class="pill red">Nuit de sang</span></td><td>Tombée de la nuit, 7 % de chance, pour tout le serveur. Il faut qu'une guilde ait atteint le palier 3, et il y a au moins 4 jours entre deux nuits de sang.</td><td>La lune rougit. Toutes les hordes de la nuit ont 60 % de monstres en plus, beaucoup plus d'élites, des monstres plus résistants et plus forts, et souvent un boss. En échange, <strong>l'or et l'XP sont doublés</strong>. Celle-là, vous allez la sentir passer.</td></tr>
+						<tr><td><span class="pill red">Raid de pillards</span></td><td>Le matin, 5 % de chance, guildes de niveau 2 et plus.</td><td>Des éclaireurs sont repérés. Quand un membre est près du cœur, l'alerte sonne : <strong>2 minutes</strong> plus tard, une horde d'illageois (pillards, vindicateurs, parfois un évocateur) et un <strong>ravageur</strong> attaquent en plein jour. Mêmes règles que la nuit (le cœur), 10 minutes maximum, récompenses +20 %. Une défaite coûte du trésor mais ne fait pas reculer de palier.</td></tr>
+						<tr><td><span class="pill gold">Caravane marchande</span></td><td>Le matin, 15 % de chance.</td><td>Un marchand et ses deux lamas s'installent devant votre <a href="#carrefour">carrefour commercial</a> (ou près du cœur) pendant 10 minutes, avec 4 à 6 offres spéciales.</td></tr>
+						<tr><td><span class="pill void">Érudit itinérant</span></td><td>Le matin, 6 % de chance, guildes de niveau 3 et plus.</td><td>Il vend 3 à 5 <strong>livres enchantés</strong> (Raccommodage, Solidité III, Efficacité V, Fortune III…) pendant 10 minutes.</td></tr>
+					</tbody>
+				</table></div>
+				<p>Le bouton des hordes du menu principal et <button class="cmd" type="button">/guild waves</button> indiquent l'événement en cours ou prévu cette nuit.</p>
+			</section>
+
 			<!-- ================================================================ STRUCTURES -->
 			<section id="constructions">
 				<div class="eyebrow">Bâtir</div>
 				<h2>Constructions</h2>
-				<p>Trois petits murs de 3 blocs de large × 2 de haut × 1 d'épaisseur donnent accès à des fonctions. Les plans ci-dessous sont vus <strong>de face</strong>. Dans <button class="cmd" type="button">/guild build</button>, débloquez la construction, prenez le plan (un papier brillant, gratuit), bâtissez le mur dans votre territoire, puis faites <strong>clic droit avec le plan sur sa face avant</strong>.</p>
+				<p>Quatre petits murs de 3 blocs de large × 2 de haut × 1 d'épaisseur donnent accès à des fonctions. Les plans ci-dessous sont vus <strong>de face</strong>. Dans <button class="cmd" type="button">/guild build</button>, débloquez la construction, prenez le plan (un papier brillant, gratuit), bâtissez le mur dans votre territoire, puis faites <strong>clic droit avec le plan sur sa face avant</strong>.</p>
 				<div class="builds">
 					<article class="build">
 						<h3>Tableau de quêtes</h3>
@@ -398,6 +423,21 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						</ul>
 						<p class="hint">Les villageois candidats arrivent ici. Clic droit sur son panneau : gestion des villageois.</p>
 					</article>
+					<article class="build">
+						<h3>Carrefour commercial</h3>
+						<div class="meta"><span class="pill gold">60 or</span><span class="pill gold">Niveau 2</span></div>
+						<div class="grid3" role="img" aria-label="Haut : laine, bloc d'émeraude, laine. Bas : tonneau, table de cartographie, tonneau. Un panneau sur le bloc d'émeraude.">
+							<div class="slot"><b class="b-wool"></b></div><div class="slot"><b class="b-emerald"></b><i class="sign"></i></div><div class="slot"><b class="b-wool"></b></div>
+							<div class="slot"><b class="b-barrel"></b></div><div class="slot"><b class="b-carto"></b></div><div class="slot"><b class="b-barrel"></b></div>
+						</div>
+						<ul class="legend">
+							<li><b class="b-wool"></b> Laine (n'importe quelle couleur)</li>
+							<li><b class="b-emerald"></b> Bloc d'émeraude</li>
+							<li><b class="b-carto"></b> Table de cartographie</li>
+							<li><b class="b-barrel"></b> Tonneau</li>
+						</ul>
+						<p class="hint">Fait venir des marchands. <a href="#carrefour">Voir plus bas</a>.</p>
+					</article>
 				</div>
 				<p>Si le plan refuse, le message dit quel bloc est attendu et où. Casser un bloc d'une construction la désactive (ses panneaux disparaissent) : il suffit de la réparer et de la revalider. Les panneaux eux-mêmes ne se cassent pas.</p>
 			</section>
@@ -437,6 +477,23 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				</table></div>
 				<p>Rayons : blocs de construction, cultures et nourriture, butin de monstres, minerais et lingots, utilitaires. Certains articles demandent un niveau de guilde minimum. On revend toujours moins cher qu'on achète.</p>
 				<p class="hint">Les objets enchantés, renommés ou abîmés ne se vendent pas, et la vente est refusée en créatif.</p>
+			</section>
+
+			<!-- ================================================================ TRADE HUB -->
+			<section id="carrefour">
+				<div class="eyebrow">Marchands</div>
+				<h2>Carrefour commercial</h2>
+				<p>Le comptoir est une boutique en menu ; le <strong>carrefour commercial</strong> fait venir de vrais <strong>marchands</strong>, avec qui on échange dans l'écran de commerce habituel, en lingots d'or. Construisez-le (<a href="#constructions">plan plus haut</a>), puis cliquez sur son panneau ou tapez <button class="cmd" type="button">/guild trade</button>.</p>
+				<p>Chaque matin, un <strong>marchand de passage</strong> peut arriver devant le carrefour : 50 % de chance au palier I, 65 % au palier II, 80 % au palier III. Il reste 10 minutes (et part au plus tard à la tombée de la nuit). Plus le carrefour est haut, plus ses offres sont rares.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Palier</th><th>Pour l'obtenir</th><th class="num">Offres</th><th>Ce qu'on y trouve</th></tr></thead>
+					<tbody>
+						<tr><td><span class="pill green">I</span></td><td>Construire le carrefour</td><td class="num">5 à 7</td><td>Toutes les pousses (cerisier, palétuvier…), graines, colorants, fleurs, canne à sucre, cactus, bambou, cacao…</td></tr>
+						<tr><td><span class="pill gold">II</span></td><td>Niveau 3, 150 or du trésor + 16 émeraudes</td><td class="num">6 à 8</td><td>Boules de slime, rayons de miel, coquilles de nautile, améthyste, glace, disques, étiquettes, selles…</td></tr>
+						<tr><td><span class="pill red">III</span></td><td>Niveau 5, 400 or du trésor + 2 blocs de diamant</td><td class="num">7 à 9</td><td>Les trades de fou : livres Raccommodage, Solidité III, Efficacité V, Fortune III, Toucher de soie, Butin III, Protection IV, totem d'immortalité, pomme d'or enchantée, modèle d'amélioration en netherite, cœur de la mer, trident, carapaces de shulker, et parfois des élytres.</td></tr>
+					</tbody>
+				</table></div>
+				<p class="hint">Le menu du carrefour montre le palier, les marchands présents et le temps qu'il leur reste, la chance de visite, et toutes les offres possibles de chaque palier. Les marchands n'achètent rien et ne vendent jamais d'or.</p>
 			</section>
 
 			<!-- ================================================================ VILLAGERS -->
@@ -543,6 +600,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td><button class="cmd" type="button">/guild quests</button></td><td>Quêtes</td></tr>
 						<tr><td><button class="cmd" type="button">/guild villagers</button></td><td>Villageois (et <code>accept</code> / <code>refuse</code> pour un candidat)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild upgrades</button></td><td>Arbre d'évolution</td></tr>
+						<tr><td><button class="cmd" type="button">/guild trade</button></td><td>Carrefour commercial (palier, marchands, offres)</td></tr>
 					</tbody>
 				</table></div>
 			</section>
@@ -591,6 +649,9 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin quest reroll|complete|map &lt;guilde&gt;</button></td><td>Quêtes : tout renouveler, terminer un emplacement, donner une carte au trésor</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin villager spawn &lt;guilde&gt;</button></td><td>Faire venir un candidat villageois</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin upgrade unlock|lock &lt;guilde&gt; &lt;id&gt;</button></td><td>Donner ou retirer une évolution</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin event list</button></td><td>Événements en cours et prévus</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin event start|stop &lt;événement&gt; [guilde]</button></td><td>Déclencher ou arrêter <code>blood_night</code>, <code>pillager_raid</code>, <code>caravan</code>, <code>book_merchant</code>, <code>merchant</code></td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin trade tier &lt;guilde&gt; &lt;palier&gt;</button></td><td>Régler le palier du carrefour commercial</td></tr>
 						</tbody>
 					</table></div>
 					<p class="hint">Les noms de guilde avec des espaces se mettent entre guillemets quand un autre argument suit.</p>
@@ -606,6 +667,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><code>shop.json5</code></td><td>Catalogue de la boutique</td></tr>
 							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches, expéditions, catégories de rangement</td></tr>
 							<tr><td><code>upgrades.json5</code></td><td>Arbre d'évolution</td></tr>
+							<tr><td><code>events.json5</code></td><td>Événements : chances, délais, effets (dont <code>randomEvents</code> pour tout couper)</td></tr>
+							<tr><td><code>trade.json5</code></td><td>Carrefour commercial : paliers, visites, tables d'offres</td></tr>
 							<tr><td><code>lang.json</code></td><td>Tous les textes affichés aux joueurs</td></tr>
 						</tbody>
 					</table></div>
