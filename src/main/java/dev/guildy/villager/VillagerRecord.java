@@ -39,6 +39,8 @@ public class VillagerRecord {
 	public int goalAmount = 64;
 	/** Items counted toward the current mission. */
 	public int goalProgress;
+	/** "Objectifs prioritaires" of this villager (item ids, see {@link Wishlist}). */
+	public List<String> wishlist = new ArrayList<>();
 	/** Goal reached: everything is brought back, then the mission ends (task becomes IDLE). */
 	public boolean goalReached;
 
@@ -109,6 +111,7 @@ public class VillagerRecord {
 		}
 		goalAmount = Math.max(1, Math.min(10_000, goalAmount));
 		goalProgress = Math.max(0, goalProgress);
+		wishlist = Wishlist.sanitize(wishlist);
 		if (awayEntity != null && awayEntity.isBlank()) {
 			awayEntity = null;
 		}

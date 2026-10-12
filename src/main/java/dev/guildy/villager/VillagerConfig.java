@@ -20,6 +20,14 @@ import java.util.function.Supplier;
 		"Rechargement a chaud : /guild admin reload"
 })
 public final class VillagerConfig implements Validatable {
+	/**
+	 * Current file format; older files get their untouched old defaults migrated in {@link #validate()} (each step:
+	 * {@code if (configVersion < N) {...}}, only values still equal to the old default are changed).
+	 */
+	public static final int CURRENT_VERSION = 1;
+
+	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
+	public int configVersion = 0;
 
 	@Comment("Arrivees de nouveaux villageois")
 	public Arrivals arrivals = new Arrivals();
@@ -696,6 +704,7 @@ public final class VillagerConfig implements Validatable {
 		if (names.isEmpty()) {
 			names = new ArrayList<>(new VillagerConfig().names);
 		}
+		configVersion = CURRENT_VERSION;
 	}
 
 	private static void validateRealMining(RealMining real) {

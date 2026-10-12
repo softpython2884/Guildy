@@ -3,6 +3,9 @@ package dev.guildy.villager;
 import net.minecraft.core.BlockPos;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * A work zone (persisted in {@link GuildVillagerData#zones}): a square of chunks around a fanion. Zones may lie
  * outside the territory, never inside another guild's (checked when the fanion is planted, and again for every
@@ -26,6 +29,8 @@ public class WorkZone {
 	public long createdAt;
 	/** Mines only: mode and real excavation (null in older data and for other types: created on demand). */
 	public @Nullable MineState mine;
+	/** "Objectifs prioritaires" shared by every villager of the zone (item ids, see {@link Wishlist}). */
+	public List<String> wishlist = new ArrayList<>();
 
 	public WorkZone() {
 	}
@@ -106,6 +111,7 @@ public class WorkZone {
 		if (name == null) {
 			name = "";
 		}
+		wishlist = Wishlist.sanitize(wishlist);
 		if (type != ZoneType.MINE) {
 			mine = null;
 		} else if (mine != null) {
