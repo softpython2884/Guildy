@@ -208,38 +208,47 @@ découvert la plus proche (sinon au cœur) ; le garde défend le cœur. Le statu
 
 #### Mine réelle
 Une zone **Mine** est en mode **Réel** par défaut (bouton « Mode : Réel / Simulé » de son menu ; le mode simulé garde
-l'ancien fonctionnement : aucun bloc cassé, butin tiré selon la hauteur du fanion). En mode réel, les mineurs creusent
-vraiment, uniquement dans le carré de la zone :
-1. **Escalier** : depuis le fanion, un escalier en colimaçon d'un bloc de large (3 blocs de hauteur libre par marche,
-   une marche = un bloc plus bas) descend jusqu'à la **profondeur cible**. Son sens est choisi en sondant le terrain :
-   le plus loin possible des constructions, de l'eau et de la lave. Les joueurs l'empruntent aussi ; les villageois ne
-   savent pas grimper aux échelles, ils marchent toujours par l'escalier. Une torche toutes les 8 marches (charbon du
-   sac s'il y en a, sinon gratuite).
-2. **Galeries** à la profondeur cible : une galerie principale (2 de haut) qui part de l'escalier, avec des galeries
-   latérales tous les 3 blocs. Objectifs *Minerais* et *Tout venant* : les **filons** visibles depuis la galerie sont
-   suivis (minerais reliés, 16 au plus). Objectif *Pierre* : des **salles de carrière** (5×5, 3 de haut) le long de la
-   galerie. Un niveau fini, les mineurs ouvrent le suivant (8 blocs plus bas, sinon plus haut).
-3. **Retour** : sac plein, mission atteinte ou fin de journée (ils remontent avant la nuit) → ils remontent par leurs
+l'ancien fonctionnement : aucun bloc cassé, butin tiré selon la hauteur du fanion, objectifs prioritaires 4 fois plus
+fréquents). En mode réel, les mineurs creusent vraiment, dans le carré de la zone :
+1. **Escalier** : depuis le fanion, un escalier en colimaçon de **2 blocs de large** (les mineurs s'y croisent sans se
+   gêner, chaque virage forme un petit palier) descend vers la **profondeur cible**. Son sens est choisi en sondant le
+   terrain : le plus loin possible des constructions, de l'eau et de la lave. Les joueurs l'empruntent aussi ; les
+   villageois ne savent pas grimper aux échelles, ils marchent toujours par l'escalier. Une torche toutes les 8 marches
+   (charbon du sac s'il y en a, sinon gratuite).
+2. **Niveaux tous les 6 blocs** : du premier niveau sous la surface jusqu'à la profondeur cible, chaque niveau a un
+   palier, une galerie principale (2 de haut) et des galeries latérales tous les 3 blocs (objectif *Pierre* : des
+   **salles de carrière** 5×5). Un niveau s'ouvre dès que l'escalier l'atteint, pendant que l'escalier continue de
+   descendre : les mineurs se répartissent sur plusieurs niveaux. Tout fini (ou des mineurs sans travail), l'escalier
+   descend encore plus bas.
+3. **Aucun minerai visible laissé** : murs, plafonds et sols (le sol est rebouché) de l'escalier, des galeries et des
+   salles ; les **filons** sont suivis jusqu'à 64 blocs et **jusqu'à 16 blocs hors de la zone** (jamais chez une autre
+   guilde ni sous une construction). Un filon hors de portée est repris plus tard par un mineur qui creuse un petit
+   tunnel d'approche depuis le niveau.
+4. **Retour** : sac plein, mission atteinte ou fin de journée (ils remontent avant la nuit) → ils remontent par leurs
    tunnels, vident le sac au coffre de dépôt, puis redescendent au front de taille.
 
-Plusieurs mineurs se partagent la mine (escalier d'abord, puis une galerie chacun : jamais deux sur les mêmes blocs).
-Les blocs cassés donnent leur vrai butin (comme une pioche en fer) ; l'objectif *Minerais* ne garde que les minerais
-et quelques blocs de pierre pour colmater.
+**Jusqu'à 20 mineurs par mine** : le travail est partagé en petits chantiers (front de l'escalier, élargissement,
+paliers, tronçons de galerie, galeries latérales, salles, filons) ; chaque mineur prend le chantier libre le plus proche,
+jamais deux sur les mêmes blocs. Les blocs cassés donnent leur vrai butin (comme une pioche en fer) ; l'objectif
+*Minerais* ne garde que les minerais (et les objectifs prioritaires) plus quelques blocs de pierre pour colmater.
+**Objectifs prioritaires** (par exemple la diorite) : minés comme des filons, gardés en priorité dans le sac (jamais
+utilisés pour colmater) et rapportés au coffre.
 
 **Règles anti-casse** : le mineur ne casse que des **blocs naturels** (pierre, ardoise des abîmes, tuf, calcite, terre,
 gravier, argile, sable, grès, minerais…, liste dans `villagers.json5`) ; jamais un bloc posé par un joueur (planches,
 briques, pierre taillée, verre, laine…), un bloc à données (coffre, panneau…), un bloc chez une **autre guilde**, ni un
 bloc naturel qui **porte** un bloc non naturel (pas de sape sous une construction) ou un cadre, un tableau, un support
-d'armure. Il n'ouvre jamais sur l'eau ou la
-lave : il **colmate** d'abord avec un bloc de son sac (sinon il abandonne la galerie ; de l'eau ou de la lave au-dessus :
-galerie abandonnée). Il **comble les trous** du sol. Un escalier bloqué s'arrête au-dessus de l'obstacle et les galeries
-se creusent là (juste sous la surface : un autre escalier est essayé). Seuls les chunks chargés sont touchés.
+d'armure. Il n'ouvre jamais sur l'eau ou la lave : il **colmate** d'abord avec un bloc de son sac (sinon il abandonne la
+galerie ; de l'eau ou de la lave au-dessus : galerie abandonnée). Il **comble les trous** du sol. Seuls les chunks
+chargés sont touchés.
 
-Menu de la zone (mine réelle) : **profondeur cible** (−8 / +8, entre le fond du monde + 5 et 4 blocs sous le fanion ;
-par défaut : Y -54 pour *Minerais*, Y 16 pour *Tout venant*, 12 blocs sous le fanion pour *Pierre*), **rayon**, et
-**Exploitation** : étape en cours (escalier x/y marches, galeries x/y), profondeur atteinte, blocs minés, minerais
-trouvés, dernier incident (lave, eau, construction…) et « Réinitialiser l'exploitation ». Le statut de chaque mineur dit
-ce qu'il fait (« Creuse l'escalier : Y 12 → -54 », « Galerie 3/8 », « Remonte déposer », « Bloqué : lave »…).
+Menu de la zone (mine réelle) : **profondeur cible** (−/+, entre le fond du monde + 5 et 4 blocs sous le fanion ; par
+défaut : Y -54 pour *Minerais*, Y 16 pour *Tout venant*, 12 blocs sous le fanion pour *Pierre*), **rayon**, villageois
+affectés (20 mineurs au plus) et **Exploitation** : escalier, chaque niveau (avancement, minerais, objectifs, mineurs
+présents), les mineurs et leur statut, filons en attente, dernier incident et « Réinitialiser l'exploitation ». Le statut
+de chaque mineur dit ce qu'il fait (« Galerie niveau Y 46 (3/8) », « Suit un filon hors zone… », « Élargit
+l'escalier… », « Remonte déposer », « Bloqué : lave »…). Les mines creusées avant la version 1.2 gardent leur escalier
+d'un bloc ; des niveaux sont ajoutés sur le chemin (« Réinitialiser l'exploitation » leur donne un escalier de 2 blocs).
 
 #### Parcours de garde
 « Nouveau parcours » (menu Zones et parcours, ou `/guild villagers route new`) : faites un clic droit sur les blocs où le
@@ -620,8 +629,9 @@ Formules par défaut (modifiables) :
 - Un fanion de zone arraché par une explosion, un piston ou la casse de son support tombe en bannière ordinaire :
   la zone continue de fonctionner (« Déplacer le fanion » pour en replanter un).
 - Mine réelle : déplacer son fanion fait creuser un nouvel escalier (l'ancien reste ouvert) ; les tunnels sont éclairés
-  mais une mine reste un lieu où des monstres peuvent attaquer les mineurs ; les blocs de minerai qui forment le sol des
-  galeries sont laissés en place.
+  mais une mine reste un lieu où des monstres peuvent attaquer les mineurs ; un filon à plus de ~4 blocs au-dessus ou
+  au-dessous d'un niveau n'est pas atteint ; dans une mine neuve, les mineurs attendent que l'escalier atteigne le
+  premier niveau.
 - Les projectiles de visiteurs peuvent encore abîmer cadres et tableaux (le corps-à-corps est bloqué) ;
   plaques de pression, fils et piétinement des cultures ne sont pas protégés.
 - Le cooldown de `/guild home` est remis à zéro au redémarrage.

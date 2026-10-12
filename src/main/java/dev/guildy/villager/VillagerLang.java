@@ -22,15 +22,15 @@ final class VillagerLang {
 		m.put("villager.task.farmer", "Fermier");
 		m.put("villager.task.guard", "Garde");
 		m.put("villager.task.idle.desc", "&7Comportement normal d'un villageois :\n&7commerce, promenade, sommeil.");
-		m.put("villager.task.sorter.desc", "&7Vide les coffres de &bdépôt&7 et range les\n&7objets dans les coffres de leur catégorie.");
+		m.put("villager.task.sorter.desc", "&7Vide les coffres de &bdépôt&7 et range chaque\n&7objet dans le coffre de son thème (bois, pierre,\n&7minerais, butin de monstres... 19 catégories).");
 		m.put("villager.task.miner.desc", "&7Mine à sa zone (fanion « Mine ») et rapporte\n&7pierre et minerais. Mine réelle : creuse un\n&7escalier puis des galeries jusqu'à la profondeur\n&7cible. Mine simulée : butin selon la hauteur du\n&7fanion. Sans zone : la mine la plus proche,\n&7sinon la pierre à découvert.");
-		m.put("villager.task.lumberjack.desc", "&7Coupe les arbres naturels de sa zone (fanion\n&7« Coupe de bois ») et replante des pousses.\n&7Sans zone : les arbres les plus proches de lui.");
-		m.put("villager.task.farmer.desc", "&7Récolte les cultures mûres de sa zone (fanion\n&7« Champs ») et les replante. Sans zone : les\n&7cultures les plus proches de lui.");
+		m.put("villager.task.lumberjack.desc", "&7Coupe les arbres naturels de sa zone (fanion\n&7« Coupe de bois ») et replante des pousses.\n&7Sans zone : dans le territoire et jusqu'à\n&748 blocs autour.");
+		m.put("villager.task.farmer.desc", "&7Récolte les cultures mûres de sa zone (fanion\n&7« Champs ») et les replante. Sans zone : dans\n&7le territoire et jusqu'à 48 blocs autour.");
 		m.put("villager.task.guard.desc", "&7Épéiste ou archer : patrouille dans sa zone ou\n&7sur son parcours et attaque les monstres. Sans\n&7zone : défend le cœur et le territoire. Toujours\n&7au cœur pendant les vagues. S'équipe dans les\n&7coffres du stockage, va se soigner à son lit.");
 		m.put("villager.task.explorer", "Exploration");
-		m.put("villager.task.explorer.desc", "&7Part explorer les terres sauvages par le\n&7bureau d'accueil (ou le cœur) et revient\n&7quelques minutes plus tard avec du butin :\n&7graines, pousses, cuir, émeraudes, cartes au trésor...\n&cPetit risque de ne jamais revenir.");
+		m.put("villager.task.explorer.desc", "&7Part vers la &edestination&7 choisie (forêt, désert,\n&7village, temples...) par le bureau d'accueil\n&7(ou le cœur) et revient quelques minutes plus\n&7tard avec le butin du lieu.\n&cRisque de ne jamais revenir (selon la destination).");
 		m.put("villager.task.nether", "Expédition au Nether");
-		m.put("villager.task.nether.desc", "&7Passe par un &dportail du Nether&7 construit dans\n&7le territoire et revient avec du quartz, de l'or,\n&7de la poudre lumineuse, des bâtons de blaze...\n&cRisque plus élevé de ne jamais revenir.");
+		m.put("villager.task.nether.desc", "&7Passe par un &dportail du Nether&7 construit dans\n&7le territoire vers la &edestination&7 choisie\n&7(forteresse, bastion, forêts...) et revient\n&7avec le butin du lieu.\n&cRisque élevé de ne jamais revenir.");
 		// mission goals
 		m.put("villager.goal.continuous", "Travail continu");
 		m.put("villager.goal.fill", "Remplir son sac et rentrer");
@@ -49,13 +49,11 @@ final class VillagerLang {
 		m.put("villager.mission.done.quota", "&e{0}&a a terminé sa mission ({1}) : &e{2} {3}&a rapportés au coffre !");
 		m.put("villager.mission.done.fill", "&e{0}&a a rempli son sac ({1}) et l'a vidé au coffre : mission terminée !");
 		// expeditions
-		m.put("villager.expedition.departed", "&e{0}&7 part en expédition : &f{1}&7 (retour dans ~&f{2} min&7).");
 		m.put("villager.expedition.returned", "&e{0}&a est de retour ({1}) avec &e{2}&a objets !");
 		m.put("villager.expedition.lost", "&c{0} n'est jamais revenu ({1})... Le voyage était trop dangereux.");
 		m.put("villager.status.no_portal", "&cAucun portail du Nether dans le territoire");
 		m.put("villager.status.no_departure", "&cPas de point de départ (cœur ou bureau d'accueil)");
 		m.put("villager.status.departure_unloaded", "&8Point de départ hors de portée");
-		m.put("villager.status.going_departure", "&eSe prépare au départ...");
 		m.put("villager.status.departure_failed", "&cDépart impossible (erreur, voir la console)");
 		m.put("villager.status.away", "&dParti ({0}) : retour dans ~{1} min");
 		m.put("villager.status.away_waiting", "&dDe retour d'expédition : attend que la base soit chargée");
@@ -96,8 +94,6 @@ final class VillagerLang {
 		m.put("villager.status.mine.evening", "&9Remonte avant la nuit · Y {0}");
 		m.put("villager.status.mine.leaving", "&7Remonte de la mine « {0} » · Y {1}");
 		m.put("villager.status.mine.night_wait", "&9Attend le matin pour redescendre à « {0} »");
-		m.put("villager.status.mine.waiting_stairs", "&7Attend son tour : {0} creuse l'escalier");
-		m.put("villager.status.mine.waiting_galleries", "&7Attend son tour : les galeries de « {0} » sont occupées");
 		m.put("villager.status.mine.planning", "&7Étudie le terrain de « {0} »");
 		m.put("villager.status.mine.blocked", "&cBloqué : {0}");
 		m.put("villager.status.mine.exhausted", "&7Mine « {0} » épuisée : changez la profondeur cible ou réinitialisez");
@@ -116,7 +112,6 @@ final class VillagerLang {
 		m.put("villager.mine.issue.wait", "zone non chargée");
 		m.put("villager.mine.issue.clear", "—");
 		m.put("villager.mine.issue.dig", "—");
-		m.put("villager.mine.level_next", "&aMine « {0} » : niveau Y {1} terminé, les mineurs ouvrent le niveau Y {2}.");
 		m.put("villager.mine.exhausted", "&eMine « {0} » épuisée : changez sa profondeur cible ou réinitialisez l'exploitation (menu de la zone).");
 		m.put("villager.mine.stairs_blocked", "&eL'escalier de la mine « {0} » est bloqué ({1}) vers Y {2} : galeries à Y {3}.");
 		m.put("villager.mine.stairs_retry", "&eL'escalier de la mine « {0} » est bloqué ({1}) sous la surface : les mineurs en creusent un autre.");
@@ -126,8 +121,6 @@ final class VillagerLang {
 		m.put("villager.mine.mode_set", "&aMine « {0} » : mode {1}.");
 		m.put("villager.mine.info.not_started", "&7État : &fpas encore commencée");
 		m.put("villager.mine.info.stairs", "&7État : &fescalier {0}/{1} marches &8(Y {2} → {3})");
-		m.put("villager.mine.info.galleries", "&7État : &fgaleries, {0}/{1} tronçons creusés &8(niveau Y {2})");
-		m.put("villager.mine.info.abandoned", "&7Galeries abandonnées : &c{0}");
 		m.put("villager.mine.info.exhausted", "&7État : &eépuisée");
 		m.put("villager.mine.info.stuck", "&7État : &cbloquée");
 		m.put("villager.mine.info.depth", "&7Profondeur atteinte : &fY {0}");
@@ -136,17 +129,13 @@ final class VillagerLang {
 		m.put("villager.mine.info.levels", "&7Niveaux terminés : &f{0}");
 		m.put("villager.mine.info.issue", "&7Dernier incident : &c{0}");
 		m.put("villager.mine.info.issue_at", "&7Dernier incident : &c{0} &8({1} {2} {3})");
-		m.put("villager.status.lumberjack.searching", "&7Cherche un arbre aux alentours");
-		m.put("villager.status.lumberjack.searching_zone", "&7Cherche un arbre dans « {0} »");
 		m.put("villager.status.lumberjack.no_tree_zone", "&7Aucun arbre ({1}) à couper dans « {0} »");
-		m.put("villager.status.lumberjack.no_tree_auto", "&7Aucun arbre naturel à couper autour de lui ({0} blocs)");
 		m.put("villager.status.lumberjack.going_zone", "&eSe rend à un arbre de « {0} »");
 		m.put("villager.status.lumberjack.going_auto", "&eCoupe auto près de {0} {1} {2}");
 		m.put("villager.status.lumberjack.cutting", "&aCoupe un arbre ({0} bûche(s) restantes)");
 		m.put("villager.status.lumberjack.cutting_auto", "&aCoupe auto près de {0} {1} {2} ({3} bûche(s) restantes)");
 		m.put("villager.status.farmer.searching", "&7Cherche des cultures mûres");
 		m.put("villager.status.farmer.waiting_zone", "&7Attend que les cultures ({1}) de « {0} » mûrissent");
-		m.put("villager.status.farmer.waiting_auto", "&7Aucune culture mûre autour de lui ({0} blocs)");
 		m.put("villager.status.farmer.going_zone", "&eSe rend aux cultures de « {0} »");
 		m.put("villager.status.farmer.going_auto", "&eRécolte auto près de {0} {1} {2}");
 		m.put("villager.status.farmer.harvesting", "&aRécolte");
@@ -391,7 +380,6 @@ final class VillagerLang {
 		m.put("villager.gui.zonebtn.none", "&8Zone de travail : —");
 		m.put("villager.gui.zonebtn.none.lore", "&7La tâche « {0} » n'utilise pas de zone.");
 		m.put("villager.gui.call", "&d&lAppeler ici");
-		m.put("villager.gui.call.lore", "&7Téléporte {0} à côté de vous.\n&7Vous devez être dans le territoire ou dans\n&7une zone de la guilde, et lui à portée.");
 		// zones & routes menus
 		m.put("villager.gui.zones.title", "Zones {0}/{1} · Parcours {2}/{3}");
 		m.put("villager.gui.zones.empty", "&7Aucune zone ni parcours");
@@ -400,7 +388,6 @@ final class VillagerLang {
 		m.put("villager.gui.zones.create.lore", "&7Mine, coupe de bois, champs, patrouille.\n&7Zones : {0}/{1}\n&eClic : choisir le type");
 		m.put("villager.gui.zones.new_route", "&b&lNouveau parcours de garde");
 		m.put("villager.gui.zones.new_route.lore", "&7Cliquez des blocs dans l'ordre (2 à {2} points) :\n&7les gardes les parcourent en boucle.\n&7Parcours : {0}/{1}\n&eClic : commencer le tracé");
-		m.put("villager.gui.zones.help.lore", "&7Un &efanion&7 planté marque une zone ; son &erayon\n&7se compte en chunks autour de son chunk.\n&7Les zones peuvent sortir du territoire (à moins\n&7de {0} blocs du cœur), jamais chez une autre guilde.\n&7Retirer un fanion supprime sa zone.\n&7Sans zone (mode automatique), un villageois\n&7travaille à moins de {1} blocs de lui.");
 		m.put("villager.gui.zone.name", "&e{0}");
 		m.put("villager.gui.zone.lore.type", "&7Type : &f{0}");
 		m.put("villager.gui.zone.lore.objective", "&7Objectif : &f{0}");
@@ -422,7 +409,6 @@ final class VillagerLang {
 		m.put("villager.gui.mine.target.custom", "&7Choisie dans ce menu (Y {0} à Y {1}).");
 		m.put("villager.gui.mine.target.next", "&7Un niveau tous les {0} blocs jusqu'à la cible ;\n&7ensuite (ou si des mineurs manquent de\n&7travail), l'escalier descend plus bas.");
 		m.put("villager.gui.mine.info", "&6&lExploitation");
-		m.put("villager.gui.mine.reset.click", "&eClic : réinitialiser l'exploitation");
 		m.put("villager.gui.mine.reset.confirm", "Réinitialiser {0} ?");
 		m.put("villager.gui.mine.reset.lore", "&7Les mineurs choisissent un nouvel escalier\n&7et reprennent les galeries depuis le début\n&7(les tunnels creusés restent, les\n&7statistiques aussi).");
 		m.put("villager.gui.zone.lore.villagers", "&7Villageois : &f{0}");
@@ -491,8 +477,6 @@ final class VillagerLang {
 		m.put("villager.gui.picker.title", "Zone de {0}");
 		m.put("villager.gui.picker.auto", "&f&lAutomatique");
 		m.put("villager.gui.picker.auto.lore.mine", "&7Va à la mine de la guilde la plus proche ;\n&7sinon mine la pierre à découvert la plus\n&7proche (moins de {0} blocs), sinon au cœur.");
-		m.put("villager.gui.picker.auto.lore.forest", "&7Coupe les arbres naturels les plus proches\n&7de lui (moins de {0} blocs).");
-		m.put("villager.gui.picker.auto.lore.farm", "&7Récolte les cultures mûres les plus proches\n&7de lui (moins de {0} blocs).");
 		m.put("villager.gui.picker.auto.lore.patrol", "&7Défend le cœur et le territoire.");
 		m.put("villager.gui.picker.current", "&a▶ Choix actuel");
 		m.put("villager.gui.picker.choose", "&eClic : choisir");
@@ -514,20 +498,13 @@ final class VillagerLang {
 		m.put("villager.gui.storage.entry.lore.fill", "&7Rempli : &f{0}/{1} emplacements");
 		m.put("villager.gui.storage.entry.lore.unloaded", "&8Zone non chargée");
 		m.put("villager.gui.storage.entry.lore.missing", "&cConteneur introuvable");
-		m.put("villager.gui.storage.entry.lore.remove", "&cClic : retirer du stockage");
 		m.put("villager.gui.storage.remove.confirm", "Retirer ce conteneur ?");
 		m.put("villager.gui.storage.add", "&a&lAjouter un coffre");
 		m.put("villager.gui.storage.add.lore", "&7Puis faites un clic droit sur un coffre,\n&7un tonneau ou une boîte de Shulker\n&7du territoire ({0} secondes).");
-		m.put("villager.gui.storage.categories", "&bCatégories");
-		m.put("villager.gui.storage.categories.line", "&8- &f{0}");
-		m.put("villager.gui.storage.categories.lore", "&7(modifiables dans villagers.json5)");
-		m.put("villager.gui.storage.help.lore", "&7Les travailleurs déposent leur récolte dans\n&7les coffres de &bdépôt&7. Le trieur (tâche\n&7« Ranger la base ») les range ensuite dans\n&7les coffres de catégorie, sinon « {0} ».");
 		m.put("villager.gui.role.title", "Rôle du conteneur ({0} {1} {2})");
 		m.put("villager.gui.role.deposit", "&b&lDépôt");
 		m.put("villager.gui.role.deposit.lore", "&7Les travailleurs y déposent leur récolte ;\n&7le trieur le vide.");
 		m.put("villager.gui.role.category", "&e&l{0}");
-		m.put("villager.gui.role.category.lore", "&7Le trieur y range les objets de\n&7cette catégorie.");
-		m.put("villager.gui.role.fallback.lore", "&7Objets sans catégorie, ou dont\n&7les coffres sont pleins.");
 		Lang.addDefaults(m);
 	}
 }

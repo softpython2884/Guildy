@@ -562,20 +562,20 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				</ol>
 				<p>« Afficher » dessine la zone en particules pendant 20 secondes. Un membre qui gère les villageois peut casser le fanion pour supprimer la zone ; les autres joueurs ne peuvent pas y toucher. Les villageois ne travaillent une zone que lorsqu'un joueur est dans les parages (zone chargée).</p>
 				<h3 id="mine">Mine réelle</h3>
-				<p>Une zone de mine est en mode <strong>Réel</strong> par défaut : les mineurs creusent vraiment, et seulement dans le carré de la zone.</p>
+				<p>Une zone de mine est en mode <strong>Réel</strong> par défaut : les mineurs creusent vraiment, dans le carré de la zone. <strong>Jusqu'à 20 mineurs</strong> travaillent en même temps dans une mine : chacun prend le chantier libre le plus proche (escalier, palier, tronçon de galerie, filon…).</p>
 				<div class="cards">
-					<div class="card"><h3>1. L'escalier</h3><p>Depuis le fanion, un escalier en colimaçon (1 bloc de large, 3 de haut) descend jusqu'à la <strong>profondeur cible</strong>, avec une torche toutes les 8 marches. Il passe loin des constructions, de l'eau et de la lave, et vous pouvez l'emprunter aussi.</p></div>
-					<div class="card"><h3>2. Les galeries</h3><p>Au fond, une galerie principale et des galeries latérales tous les 3 blocs. Les filons visibles sont suivis jusqu'au bout ; pour l'objectif Pierre, ce sont des salles de carrière de 5 × 5. Quand un niveau est fini, le suivant s'ouvre 8 blocs plus bas.</p></div>
+					<div class="card"><h3>1. L'escalier</h3><p>Depuis le fanion, un escalier en colimaçon de <strong>2 blocs de large</strong> (les mineurs s'y croisent) descend vers la <strong>profondeur cible</strong>, avec une torche toutes les 8 marches. Il passe loin des constructions, de l'eau et de la lave, et vous pouvez l'emprunter aussi.</p></div>
+					<div class="card"><h3>2. Un niveau tous les 6 blocs</h3><p>Chaque niveau a un palier, une galerie principale et des galeries latérales tous les 3 blocs (ou des salles de carrière pour la pierre). Ils s'ouvrent à mesure que l'escalier descend : aucune couche n'est sautée. <strong>Aucun minerai visible n'est laissé</strong>, et les filons sont suivis jusqu'à 16 blocs hors de la zone.</p></div>
 					<div class="card"><h3>3. Le retour</h3><p>Sac plein, mission atteinte ou fin de journée : il remonte par ses tunnels, vide son sac au coffre de dépôt, puis redescend au front de taille.</p></div>
 				</div>
 				<p><strong>Il ne casse jamais vos constructions.</strong> Il ne prend que des blocs naturels (pierre, ardoise des abîmes, terre, gravier, minerais…). Il ne touche jamais à un bloc posé (planches, briques, verre…), à un coffre ou un panneau, à un bloc qui soutient une construction, ni au territoire d'une autre guilde. S'il tombe sur de l'eau ou de la lave, il bouche avec un bloc de son sac ; sinon, il abandonne la galerie. Plusieurs mineurs se partagent la mine sans jamais creuser les mêmes blocs.</p>
 				<p>Le menu de la zone propose trois réglages :</p>
 				<ul>
 					<li><strong>Mode</strong> : Réel, ou Simulé (l'ancien minage, sans bloc cassé, où la hauteur du fanion fixe le butin) ;</li>
-					<li><strong>Profondeur cible</strong> : −8 / +8 ; par défaut Y −54 pour les minerais et Y 16 pour le tout venant ;</li>
-					<li><strong>Exploitation</strong> : étape en cours, profondeur atteinte, blocs minés, minerais trouvés, dernier incident, et « Réinitialiser l'exploitation ».</li>
+					<li><strong>Profondeur cible</strong> : par défaut Y −54 pour les minerais et Y 16 pour le tout venant ;</li>
+					<li><strong>Exploitation</strong> : l'escalier, chaque niveau (avancement, minerais, objectifs, mineurs présents), les mineurs et leur statut, le dernier incident, et « Réinitialiser l'exploitation ».</li>
 				</ul>
-				<p class="hint">Les villageois ne savent pas monter aux échelles : ils passent toujours par l'escalier. Une mine réelle n'avance que si un joueur est dans les parages (zone chargée).</p>
+				<p class="hint">Les villageois ne savent pas monter aux échelles : ils passent toujours par l'escalier. Une mine réelle n'avance que si un joueur est dans les parages (zone chargée). Les objectifs prioritaires (par exemple la diorite) sont minés comme des filons et rapportés au coffre.</p>
 				<h3>Parcours de garde</h3>
 				<p>Menu Zones et parcours → « Nouveau parcours » (ou <button class="cmd" type="button">/guild villagers route new</button>). Faites clic droit sur les endroits par où passer (jusqu'à 16 points, un aperçu en particules suit votre tracé), puis <strong>accroupi + clic droit</strong> pour terminer. Assignez des gardes au parcours : ils le suivent en boucle ou en aller-retour, s'arrêtent à chaque point, combattent les monstres proches puis reprennent leur ronde.</p>
 				<p><strong>Appeler ici :</strong> le bouton du menu du villageois le fait venir à côté de vous, où qu'il soit, si vous êtes dans le territoire ou dans une de ses zones (« Appel en cours… » quand il est loin).</p>
@@ -827,7 +827,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.1.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.2.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -876,7 +876,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.1.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.2.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

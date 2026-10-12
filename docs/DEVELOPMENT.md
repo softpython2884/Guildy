@@ -216,7 +216,14 @@ Ressources : `data/guildy/enchantment` (10 enchantements data-driven), `data/gui
     `retreatHealthRatio` vers le lit (mémoire HOME, sinon lit libre) avec soins, debout (l'activité REST reste verrouillée
     pour les gardes). Pas de tir ami : `AttackEntityCallback` + `ALLOW_DAMAGE` annulent coups, projectiles et animaux
     des membres sur les villageois de leur guilde.
-32. **Rangement par thème** : `ItemClassifier` applique des règles par catégorie (`storage.categories` : id, `#tag`,
+32. **Mine réelle v2** : escalier de 2 voies (la voie intérieure sert de chemin, chaque virage forme un palier 2×2),
+    niveaux tous les `levelSpacing` (6) blocs alignés sur la cible et ouverts dès que l'escalier les atteint ; le travail
+    est découpé en chantiers réservés (`MineJobs`, pur : le plus proche le long de l'arbre des tunnels, avec priorités),
+    20 mineurs au plus par zone ; minerais exposés pris partout (sols rebouchés), filons suivis hors zone
+    (`veinMaxOutside`) ou mis en attente (repris par un tunnel d'approche depuis un niveau) ; objectifs prioritaires
+    minés comme des filons et jamais utilisés pour colmater. Données : `MineState.format` (0 = mine d'avant les
+    niveaux, gardée avec son escalier d'une voie). Migration n° 2 (`levelSpacing` 8 → 6, `maxVeinBlocks` 16 → 64).
+33. **Rangement par thème** : `ItemClassifier` applique des règles par catégorie (`storage.categories` : id, `#tag`,
     motif `*_ore`, propriétés `@food/@armor/@tool/…`, onglets créatifs `@tab:` construits côté serveur avec
     `CreativeModeTabs.tryRebuildTabContents`) ; la règle la plus précise gagne (id > plus petit tag > plus long motif >
     propriété > onglet, puis ordre du fichier) ; résultat mis en cache par objet. Les coffres enregistrés prennent le nom

@@ -3,6 +3,9 @@
 // Rechargement a chaud : /guild admin reload
 {
 
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 6,
+
 	// Arrivees de nouveaux villageois
 	"arrivals": {
 
@@ -74,9 +77,14 @@
 		// Distance maximum (blocs) entre le coeur et un fanion de zone ou un point de parcours
 		"maxZoneDistance": 192,
 
-		// Mode automatique (aucune zone choisie) : rayon (blocs) de recherche autour du villageois
-		// (arbres, cultures, pierre), toujours a moins de maxZoneDistance du coeur
+		// Mode automatique (aucune zone choisie) : rayon (blocs) de recherche, toujours a moins de maxZoneDistance du coeur.
+		// Bucheron et fermier : autour du point du territoire le plus proche d'eux (autour d'eux dans le territoire), donc
+		// jamais plus loin que ce rayon du territoire ; mineur (pierre a decouvert) : autour de lui
 		"autoSearchRadius": 48,
+
+		// Objectifs prioritaires (menu d'un villageois ou d'une zone) : distance (blocs) hors de la zone (ou de la zone
+		// automatique) jusqu'ou un bucheron ou un fermier va chercher les objets voulus ; jamais chez une autre guilde (0 a 64)
+		"wishlistMargin": 16,
 
 		// Duree (secondes) d'affichage des limites d'une zone ou d'un parcours (bouton 'Afficher')
 		"showSeconds": 20
@@ -631,15 +639,21 @@
 					}
 				]
 			}
-		]
+		],
+
+		// Objectifs prioritaires du mineur ou de la zone : poids multiplie dans les tables de butin (1 = aucun effet)
+		"wishlistWeight": 4
 	},
 
-	// Tache 'Mineur', mode 'Reel' (zones de mine) : le mineur creuse vraiment. Depuis le fanion, un escalier en colimacon
-	// (1 bloc de large, 3 de haut) descend jusqu'a la profondeur cible, puis il creuse des galeries : une galerie
-	// principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : des salles de carriere), toujours dans
-	// le carre de la zone. Il ne casse que des blocs naturels (listes ci-dessous) : jamais un bloc pose par un joueur, un
-	// bloc a donnees (coffre...), un bloc d'une autre guilde, ni un bloc naturel qui porte un bloc non naturel. Il colmate
-	// l'eau et la lave avec un bloc de son sac (sinon il abandonne la galerie) et comble les trous du sol.
+	// Tache 'Mineur', mode 'Reel' (zones de mine) : les mineurs creusent vraiment. Depuis le fanion, un escalier en
+	// colimacon (2 blocs de large, 3 de haut) descend ; tous les 'levelSpacing' blocs, un niveau : un palier puis une
+	// galerie principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : des salles de carriere),
+	// toujours dans le carre de la zone. Les niveaux s'ouvrent pendant que l'escalier continue de descendre jusqu'a la
+	// profondeur cible : plusieurs mineurs (jusqu'a 'maxMinersPerZone') se partagent les chantiers. Les minerais et les
+	// objectifs prioritaires visibles sont mines en suivant leurs filons (un peu hors de la zone aussi). Seuls des blocs
+	// naturels sont casses (listes ci-dessous) : jamais un bloc pose par un joueur, un bloc a donnees (coffre...), un bloc
+	// d'une autre guilde, ni un bloc naturel qui porte un bloc non naturel. L'eau et la lave sont colmatees avec un bloc
+	// du sac (sinon la galerie est abandonnee) et les trous du sol combles.
 	"realMining": {
 
 		// Mode des nouvelles zones de mine (et des anciennes sans reglage) : true = reel, false = simule
@@ -660,14 +674,23 @@
 		// Profondeur minimum des galeries sous le fanion (blocs) : jamais de tranchee a la surface
 		"minDepthBelowFanion": 4,
 
-		// Pas des boutons de profondeur (menu de la zone) et ecart entre deux niveaux de galeries (blocs)
-		"levelSpacing": 8,
+		// Ecart (blocs) entre deux niveaux de galeries (un palier de l'escalier tous les N blocs, du premier niveau sous
+		// la surface jusqu'a la profondeur cible) ; aussi le pas des boutons de profondeur du menu de la zone
+		"levelSpacing": 6,
 
-		// Niveau termine : ouvrir automatiquement le niveau suivant (8 blocs plus bas, sinon plus haut)
+		// Escalier arrive a la profondeur cible et tous les niveaux termines (ou des mineurs sans travail) : l'escalier
+		// descend ouvrir les niveaux suivants, plus bas (jusqu'au fond du monde)
 		"autoNextLevel": true,
 
-		// Cote (blocs) du carre de l'escalier en colimacon (3 a 6) : une marche = 1 bloc plus bas
+		// Cote (blocs) du carre interieur de l'escalier en colimacon (3 a 6) : une marche = 1 bloc plus bas
 		"stairSide": 4,
+
+		// Largeur des nouveaux escaliers : 2 = deux voies (les mineurs se croisent sans se gener, le carre fait 2 blocs de
+		// plus de cote ; 1 voie si la zone est trop petite), 1 = une voie. Les escaliers deja creuses gardent leur largeur.
+		"stairWidth": 2,
+
+		// Nombre maximum de mineurs qui travaillent en meme temps dans une meme mine reelle (menu : affectation refusee au-dela)
+		"maxMinersPerZone": 20,
 
 		// Longueur maximum de la galerie principale (blocs ; coupee au bord de la zone)
 		"mainTunnelLength": 32,
@@ -690,8 +713,12 @@
 		// Objectif 'Pierre' : couloir entre deux salles (blocs)
 		"roomGap": 2,
 
-		// Objectifs 'Minerais' et 'Tout venant' : blocs de minerai suivis au plus par filon visible depuis la galerie
-		"maxVeinBlocks": 16,
+		// Blocs suivis au plus par filon (minerais et objectifs prioritaires visibles depuis les tunnels, sol compris ;
+		// 0 = ne pas suivre les filons). Hors de portee : un autre mineur le suit plus tard en creusant un tunnel d'approche.
+		"maxVeinBlocks": 64,
+
+		// Distance (blocs) au-dela du bord de la zone jusqu'a laquelle un filon est suivi (jamais chez une autre guilde)
+		"veinMaxOutside": 16,
 
 		// Blocs de remplissage (pierre taillee...) gardes dans le sac pour colmater et combler : ils restent dans le sac au
 		// coffre de depot (sauf fin de mission). Objectif 'Minerais' : le reste des gravats est laisse sur place.
@@ -758,8 +785,8 @@
 	// Tache 'Bucheron' : coupe reelle des arbres naturels de sa zone (sans zone : les plus proches de lui)
 	"lumberjack": {
 
-		// Nombre maximum de buches d'un arbre (les arbres plus grands sont ignores)
-		"maxLogsPerTree": 80,
+		// Nombre maximum de buches d'un arbre (les arbres plus grands sont ignores ; 160 : sapins et acajous geants compris)
+		"maxLogsPerTree": 160,
 
 		// Replanter une pousse a la base de l'arbre coupe (si le sol le permet)
 		"replant": true
@@ -806,130 +833,727 @@
 			"minecraft:phantom",
 			"minecraft:ghast",
 			"minecraft:enderman"
-		]
+		],
+
+		// Roles : epeiste (corps a corps) ou archer (fleches). Role 'Auto' (par defaut, modifiable dans le menu du garde) :
+		// le role qui rapproche la part d'archers parmi les gardes de la guilde de cette valeur (0 = que des epeistes,
+		// 1 = que des archers, 0.5 = moitie-moitie)
+		"archerShare": 0.5,
+
+		// Archers : portee maximum de tir (blocs ; il faut voir le monstre)
+		"bowRange": 16,
+
+		// Archers : en dessous de cette distance (blocs), l'archer recule pour garder ses distances
+		"bowMinDistance": 5.0,
+
+		// Archers : degats d'une fleche = degats d'un coup d'epee (damage, damagePerLevel, arbre d'evolution) x ce facteur
+		"bowDamageFactor": 1.0,
+
+		// Archers : delai (ticks, 20 = 1 seconde) entre deux tirs
+		"bowCooldownTicks": 30,
+
+		// Archers : imprecision des tirs (0 = parfait ; un squelette en difficulte difficile = 2)
+		"bowInaccuracy": 2.0,
+
+		// Monstres ignores par les archers (liste a part : ils peuvent tirer sur des monstres que les epeistes ne
+		// peuvent pas atteindre, comme les phantoms). Leurs fleches ne touchent que les monstres : jamais un joueur,
+		// un villageois, un animal de compagnie ou un animal passif.
+		"bowIgnoredMobs": [
+			"minecraft:creeper",
+			"minecraft:enderman"
+		],
+
+		// Repli : sous cette part de sa vie (0 a 1, 0 = jamais), le garde arrete de combattre et court (bonus de vitesse)
+		// se soigner a son lit (sinon le lit le plus proche du territoire, sinon le bureau d'accueil ou le coeur), meme
+		// pendant une horde. Il frappe encore les monstres a portee de bras en chemin.
+		"retreatHealthRatio": 0.4,
+
+		// Repli : le garde reprend son poste (patrouille, parcours, defense du coeur) une fois soigne a cette part de sa vie
+		"resumeHealthRatio": 0.9,
+
+		// Soin pendant le repli, loin d'un lit (points de vie par seconde ; 2 points = 1 coeur, un villageois en a 20)
+		"healPerSecond": 0.5,
+
+		// Soin a cote de son lit (points de vie par seconde)
+		"bedHealPerSecond": 1.0,
+
+		// Regeneration lente hors combat (points de vie par seconde, 0 = aucune ; les villageois ne regenerent pas seuls)
+		"passiveRegenPerSecond": 0.1,
+
+		// Repli : niveau de l'effet Vitesse pendant la course vers le lit (0 = aucun, 2 = Vitesse II)
+		"retreatSpeedLevel": 2,
+
+		// Equipement : hors combat, les gardes vont prendre les meilleures pieces d'armure (points d'armure, puis
+		// robustesse ; toute matiere, enchantees ou non) dans les coffres du stockage enregistres (menu Villageois ->
+		// Stockage : depot et categories) et rapportent l'ancienne piece. Une piece cassee est remplacee plus tard.
+		"equipmentFromChests": true,
+
+		// Equipement : les gardes prennent aussi une meilleure epee (epeistes) ou un meilleur arc enchante (archers)
+		"weaponsFromChests": true,
+
+		// Equipement : intervalle (secondes) entre deux recherches d'equipement dans les coffres
+		"equipmentScanSeconds": 30,
+
+		// Equipement : les armures des gardes s'usent quand ils sont blesses (comme celles des joueurs)
+		"armorWear": true,
+
+		// Equipement : a la mort d'un garde, son equipement (armure, arme des coffres) tombe au sol (false = perdu avec lui)
+		"dropEquipmentOnDeath": true
 	},
 
 	// Stockage de la guilde (coffres de depot et coffres par categorie)
 	"storage": {
 
-		// Categories de rangement, dans l'ordre de priorite (la premiere qui correspond l'emporte).
-		// Chaque valeur est un id d'objet (minecraft:diamond) ou un tag d'objet precede de # (#minecraft:logs).
+		// Categories de rangement (ordre du fichier = ordre des menus) : "Nom": { icon, description, rules }.
+		//   icon : objet affiche dans les menus ; description : exemples affiches dans les menus ;
+		//   rules : regles qui designent les objets de la categorie (espace de noms facultatif, majuscules ignorees) :
+		//     minecraft:diamond      un objet precis
+		//     #minecraft:logs        un tag d'objets (vanilla ou c: des tags communs Fabric)
+		//     *_ore, stripped_*      un motif d'id (* = n'importe quel texte ; sans espace de noms : tous les mods)
+		//     @food @armor @tool @weapon @potion @enchanted_book @enchanted @music_disc @banner_pattern
+		//     @smithing_template @spawn_egg @dye @block      une propriete de l'objet
+		//     @tab:building_blocks   un onglet de l'inventaire creatif (building_blocks, colored_blocks, natural_blocks,
+		//                            functional_blocks, redstone_blocks, tools_and_utilities, combat, food_and_drinks,
+		//                            ingredients, spawn_eggs)
+		// La regle la plus precise l'emporte : objet precis, puis tag (le plus petit d'abord), puis motif (le plus long
+		// d'abord), puis propriete, puis onglet ; a egalite, la premiere categorie du fichier. Aucune regle : 'Divers'.
+		// Chevauchements des categories par defaut : le butin de monstres est liste objet par objet, il gagne donc sur
+		// Nourriture, Nether et End (chair putrefiee, yeux d'araignee, batons de blaze, larmes de ghast, carapaces de
+		// shulker, tetes et cranes...) ; les fleches (meme a effet) vont dans Armes ; chorus et pierre de l'End dans End ;
+		// quartz, roche noire et basalte dans Nether, mais les minerais du Nether dans Minerais et le bois du Nether dans
+		// Bois ; boutons, plaques de pression et rails dans Redstone ; dalles, escaliers et murets suivent leur matiere
+		// (pierre, bois, Nether, End...), sinon Blocs de construction. Un coffre dont la categorie n'existe plus sert de
+		// coffre 'Divers'.
 		"categories": {
-			"Bois": [
-				"#minecraft:logs",
-				"#minecraft:planks",
-				"#minecraft:wooden_slabs",
-				"#minecraft:wooden_stairs",
-				"#minecraft:wooden_fences",
-				"#minecraft:saplings",
-				"#minecraft:leaves",
-				"minecraft:stick"
-			],
-			"Pierre & terre": [
-				"#minecraft:stone_crafting_materials",
-				"#minecraft:stone_tool_materials",
-				"#minecraft:dirt",
-				"#minecraft:grass_blocks",
-				"#minecraft:mud",
-				"#minecraft:moss_blocks",
-				"#minecraft:sand",
-				"#minecraft:stone_bricks",
-				"minecraft:cobblestone",
-				"minecraft:stone",
-				"minecraft:cobbled_deepslate",
-				"minecraft:deepslate",
-				"minecraft:granite",
-				"minecraft:diorite",
-				"minecraft:andesite",
-				"minecraft:tuff",
-				"minecraft:calcite",
-				"minecraft:gravel",
-				"minecraft:clay_ball",
-				"minecraft:netherrack"
-			],
-			"Minerais & lingots": [
-				"#minecraft:coals",
-				"#minecraft:iron_ores",
-				"#minecraft:gold_ores",
-				"#minecraft:copper_ores",
-				"#minecraft:coal_ores",
-				"#minecraft:diamond_ores",
-				"#minecraft:emerald_ores",
-				"#minecraft:lapis_ores",
-				"#minecraft:redstone_ores",
-				"minecraft:raw_iron",
-				"minecraft:raw_gold",
-				"minecraft:raw_copper",
-				"minecraft:iron_ingot",
-				"minecraft:gold_ingot",
-				"minecraft:copper_ingot",
-				"minecraft:iron_nugget",
-				"minecraft:gold_nugget",
-				"minecraft:diamond",
-				"minecraft:emerald",
-				"minecraft:lapis_lazuli",
-				"minecraft:redstone",
-				"minecraft:quartz",
-				"minecraft:amethyst_shard",
-				"minecraft:flint"
-			],
-			"Cultures & nourriture": [
-				"#minecraft:villager_plantable_seeds",
-				"#minecraft:meat",
-				"#minecraft:fishes",
-				"minecraft:wheat",
-				"minecraft:carrot",
-				"minecraft:potato",
-				"minecraft:beetroot",
-				"minecraft:bread",
-				"minecraft:apple",
-				"minecraft:melon_slice",
-				"minecraft:pumpkin",
-				"minecraft:sugar_cane",
-				"minecraft:egg"
-			],
-			"Butin de monstres": [
-				"minecraft:rotten_flesh",
-				"minecraft:bone",
-				"minecraft:bone_meal",
-				"minecraft:string",
-				"minecraft:spider_eye",
-				"minecraft:gunpowder",
-				"minecraft:ender_pearl",
-				"minecraft:slime_ball",
-				"minecraft:phantom_membrane",
-				"minecraft:blaze_rod",
-				"minecraft:ghast_tear",
-				"minecraft:magma_cream"
-			],
-			"Outils & armes": [
-				"#minecraft:swords",
-				"#minecraft:axes",
-				"#minecraft:pickaxes",
-				"#minecraft:shovels",
-				"#minecraft:hoes",
-				"#minecraft:spears",
-				"#minecraft:head_armor",
-				"#minecraft:chest_armor",
-				"#minecraft:leg_armor",
-				"#minecraft:foot_armor",
-				"#minecraft:arrows",
-				"minecraft:bow",
-				"minecraft:crossbow",
-				"minecraft:shield",
-				"minecraft:trident",
-				"minecraft:mace",
-				"minecraft:fishing_rod",
-				"minecraft:shears",
-				"minecraft:flint_and_steel"
-			]
+			"Bois": {
+				"icon": "minecraft:oak_log",
+				"description": "Bûches, bois, planches, escaliers et dalles en bois, barrières, portillons, portes, trappes, panneaux, bâtons, bols",
+				"rules": [
+					"#minecraft:logs",
+					"#minecraft:planks",
+					"#minecraft:wooden_slabs",
+					"#minecraft:wooden_stairs",
+					"#minecraft:wooden_fences",
+					"#minecraft:fence_gates",
+					"#minecraft:wooden_doors",
+					"#minecraft:wooden_trapdoors",
+					"#minecraft:signs",
+					"#minecraft:hanging_signs",
+					"#minecraft:bamboo_blocks",
+					"#c:natural_logs",
+					"#c:natural_woods",
+					"#c:stripped_logs",
+					"#c:stripped_woods",
+					"#c:fences/wooden",
+					"#c:fence_gates/wooden",
+					"minecraft:stick",
+					"minecraft:bowl",
+					"minecraft:petrified_oak_slab",
+					"bamboo_mosaic*"
+				]
+			},
+			"Pierre": {
+				"icon": "minecraft:cobblestone",
+				"description": "Pierre, roche, pierre des abîmes, andésite, diorite, granite, tuf, calcite, grès, cinabre, soufre, pierre taillée et briques de pierre",
+				"rules": [
+					"minecraft:stone",
+					"minecraft:stone_stairs",
+					"minecraft:stone_slab",
+					"minecraft:bedrock",
+					"minecraft:infested_stone",
+					"#minecraft:stone_bricks",
+					"#c:stones",
+					"#c:cobblestones",
+					"*cobblestone*",
+					"*stone_brick*",
+					"smooth_stone*",
+					"*granite*",
+					"*diorite*",
+					"*andesite*",
+					"*deepslate*",
+					"*tuff*",
+					"*calcite*",
+					"*dripstone*",
+					"*sandstone*",
+					"*cinnabar*",
+					"*sulfur*",
+					"infested_*"
+				]
+			},
+			"Terre, sable et gravier": {
+				"icon": "minecraft:dirt",
+				"description": "Terre, herbe, podzol, mycélium, boue, argile, sable, gravier, neige, glace",
+				"rules": [
+					"#minecraft:dirt",
+					"#minecraft:grass_blocks",
+					"#minecraft:sand",
+					"#minecraft:mud",
+					"#c:sands",
+					"#c:gravels",
+					"minecraft:gravel",
+					"minecraft:suspicious_gravel",
+					"minecraft:clay",
+					"minecraft:clay_ball",
+					"minecraft:farmland",
+					"minecraft:dirt_path",
+					"minecraft:snow",
+					"minecraft:snow_block",
+					"minecraft:snowball",
+					"minecraft:ice",
+					"minecraft:packed_ice",
+					"minecraft:blue_ice"
+				]
+			},
+			"Blocs de construction": {
+				"icon": "minecraft:bricks",
+				"description": "Briques, verre, vitres, béton, terre cuite, laine, tapis, cuivre, prismarine, résine, barreaux, dalles, escaliers et murets",
+				"rules": [
+					"#minecraft:terracotta",
+					"#minecraft:glazed_terracotta",
+					"#minecraft:concrete",
+					"#minecraft:concrete_powders",
+					"#minecraft:concrete_slabs",
+					"#minecraft:concrete_stairs",
+					"#minecraft:wool",
+					"#minecraft:wool_slabs",
+					"#minecraft:wool_stairs",
+					"#minecraft:wool_carpets",
+					"#minecraft:copper",
+					"#minecraft:bars",
+					"#c:glass_blocks",
+					"#c:glass_panes",
+					"#c:concretes",
+					"#c:glazed_terracottas",
+					"minecraft:packed_mud",
+					"minecraft:honeycomb_block",
+					"minecraft:resin_block",
+					"brick*",
+					"*mud_brick*",
+					"*prismarine*",
+					"*resin*",
+					"*glass",
+					"*glass_pane",
+					"*cut_copper*",
+					"*chiseled_copper*",
+					"*copper_grate*",
+					"*copper_door*",
+					"*copper_trapdoor*",
+					"@tab:building_blocks",
+					"@tab:colored_blocks"
+				]
+			},
+			"Mobilier et décoration": {
+				"icon": "minecraft:lantern",
+				"description": "Établis, fours, coffres, tonneaux, enclumes, lits, torches, lanternes, bougies, chaînes, échelles, tableaux, cadres, pots, bannières, tessons, disques",
+				"rules": [
+					"#minecraft:beds",
+					"#minecraft:candles",
+					"#minecraft:banners",
+					"#minecraft:lanterns",
+					"#minecraft:chains",
+					"#minecraft:wooden_shelves",
+					"#minecraft:copper_chests",
+					"#minecraft:copper_golem_statues",
+					"#minecraft:anvil",
+					"#minecraft:cushions",
+					"#minecraft:decorated_pot_sherds",
+					"#c:chests",
+					"#c:barrels",
+					"#c:froglights",
+					"#c:music_discs",
+					"#c:player_workstations/crafting_tables",
+					"#c:player_workstations/furnaces",
+					"#c:villager_job_sites",
+					"minecraft:crafting_table",
+					"minecraft:furnace",
+					"minecraft:smoker",
+					"minecraft:blast_furnace",
+					"minecraft:stonecutter",
+					"minecraft:cartography_table",
+					"minecraft:fletching_table",
+					"minecraft:smithing_table",
+					"minecraft:grindstone",
+					"minecraft:loom",
+					"minecraft:composter",
+					"minecraft:chest",
+					"minecraft:barrel",
+					"minecraft:campfire",
+					"minecraft:soul_campfire",
+					"minecraft:torch",
+					"minecraft:soul_torch",
+					"minecraft:copper_torch",
+					"minecraft:sea_lantern",
+					"minecraft:jack_o_lantern",
+					"minecraft:carved_pumpkin",
+					"minecraft:ladder",
+					"minecraft:scaffolding",
+					"minecraft:bell",
+					"minecraft:beacon",
+					"minecraft:conduit",
+					"minecraft:lodestone",
+					"minecraft:jukebox",
+					"minecraft:disc_fragment_5",
+					"minecraft:flower_pot",
+					"minecraft:decorated_pot",
+					"minecraft:painting",
+					"minecraft:item_frame",
+					"minecraft:glow_item_frame",
+					"minecraft:armor_stand",
+					"minecraft:bee_nest",
+					"minecraft:beehive",
+					"minecraft:straw_bed",
+					"*_banner_pattern",
+					"*_pottery_sherd",
+					"*froglight",
+					"@music_disc",
+					"@banner_pattern",
+					"@tab:functional_blocks"
+				]
+			},
+			"Minerais et lingots": {
+				"icon": "minecraft:iron_ingot",
+				"description": "Minerais, minerais bruts, lingots, pépites, diamants, émeraudes, lapis, charbon, cuivre, netherite, améthyste, blocs de minerai, silex",
+				"rules": [
+					"#minecraft:ores",
+					"#minecraft:coals",
+					"#minecraft:metal_nuggets",
+					"#c:ores",
+					"#c:ingots",
+					"#c:nuggets",
+					"#c:raw_materials",
+					"#c:gems",
+					"#c:storage_blocks",
+					"minecraft:raw_iron",
+					"minecraft:raw_gold",
+					"minecraft:raw_copper",
+					"minecraft:iron_ingot",
+					"minecraft:gold_ingot",
+					"minecraft:copper_ingot",
+					"minecraft:netherite_ingot",
+					"minecraft:netherite_scrap",
+					"minecraft:ancient_debris",
+					"minecraft:diamond",
+					"minecraft:emerald",
+					"minecraft:lapis_lazuli",
+					"minecraft:flint",
+					"minecraft:coal_block",
+					"minecraft:iron_block",
+					"minecraft:gold_block",
+					"minecraft:diamond_block",
+					"minecraft:emerald_block",
+					"minecraft:lapis_block",
+					"minecraft:netherite_block",
+					"minecraft:raw_iron_block",
+					"minecraft:raw_gold_block",
+					"minecraft:raw_copper_block",
+					"minecraft:copper_block",
+					"minecraft:waxed_copper_block",
+					"*amethyst*",
+					"*_ore",
+					"@tab:ingredients"
+				]
+			},
+			"Redstone": {
+				"icon": "minecraft:redstone",
+				"description": "Poudre et blocs de redstone, torches, répéteurs, comparateurs, pistons, leviers, boutons, plaques de pression, trémies, observateurs, rails, wagonnets, TNT",
+				"rules": [
+					"#minecraft:buttons",
+					"#minecraft:wooden_pressure_plates",
+					"#minecraft:rails",
+					"#minecraft:lightning_rods",
+					"#c:dusts/redstone",
+					"minecraft:redstone",
+					"minecraft:redstone_block",
+					"minecraft:redstone_torch",
+					"minecraft:redstone_lamp",
+					"minecraft:repeater",
+					"minecraft:comparator",
+					"minecraft:observer",
+					"minecraft:piston",
+					"minecraft:sticky_piston",
+					"minecraft:dispenser",
+					"minecraft:dropper",
+					"minecraft:crafter",
+					"minecraft:hopper",
+					"minecraft:lever",
+					"minecraft:tripwire_hook",
+					"minecraft:daylight_detector",
+					"minecraft:target",
+					"minecraft:note_block",
+					"minecraft:trapped_chest",
+					"minecraft:tnt",
+					"minecraft:slime_block",
+					"minecraft:honey_block",
+					"minecraft:iron_door",
+					"minecraft:iron_trapdoor",
+					"minecraft:stone_pressure_plate",
+					"minecraft:polished_blackstone_pressure_plate",
+					"minecraft:light_weighted_pressure_plate",
+					"minecraft:heavy_weighted_pressure_plate",
+					"minecraft:sculk_sensor",
+					"minecraft:calibrated_sculk_sensor",
+					"*minecart",
+					"*copper_bulb",
+					"*sculk*",
+					"@tab:redstone_blocks"
+				]
+			},
+			"Outils": {
+				"icon": "minecraft:iron_pickaxe",
+				"description": "Pioches, haches, pelles, houes, cisailles, briquets, cannes à pêche, seaux, boussoles, horloges, cartes, longues-vues, laisses, selles, bateaux, sacs, fusées",
+				"rules": [
+					"#minecraft:pickaxes",
+					"#minecraft:axes",
+					"#minecraft:shovels",
+					"#minecraft:hoes",
+					"#minecraft:boats",
+					"#minecraft:bundles",
+					"#minecraft:harnesses",
+					"#minecraft:compasses",
+					"#c:tools/mining_tool",
+					"#c:tools/fishing_rod",
+					"#c:tools/brush",
+					"#c:tools/igniter",
+					"#c:tools/shear",
+					"#c:tools/wrench",
+					"#c:buckets",
+					"minecraft:shears",
+					"minecraft:flint_and_steel",
+					"minecraft:fire_charge",
+					"minecraft:fishing_rod",
+					"minecraft:carrot_on_a_stick",
+					"minecraft:warped_fungus_on_a_stick",
+					"minecraft:brush",
+					"minecraft:spyglass",
+					"minecraft:clock",
+					"minecraft:map",
+					"minecraft:lead",
+					"minecraft:name_tag",
+					"minecraft:saddle",
+					"minecraft:bucket",
+					"minecraft:goat_horn",
+					"minecraft:firework_rocket",
+					"minecraft:firework_star",
+					"*_bucket",
+					"*_map",
+					"@tool",
+					"@tab:tools_and_utilities"
+				]
+			},
+			"Armes": {
+				"icon": "minecraft:iron_sword",
+				"description": "Épées, lances, arcs, arbalètes, tridents, masses, flèches, charges de vent",
+				"rules": [
+					"#minecraft:swords",
+					"#minecraft:spears",
+					"#minecraft:arrows",
+					"#c:tools/melee_weapon",
+					"#c:tools/ranged_weapon",
+					"#c:tools/trident",
+					"#c:tools/mace",
+					"minecraft:bow",
+					"minecraft:crossbow",
+					"minecraft:trident",
+					"minecraft:mace",
+					"minecraft:wind_charge",
+					"@weapon",
+					"@tab:combat"
+				]
+			},
+			"Armures": {
+				"icon": "minecraft:iron_chestplate",
+				"description": "Casques, plastrons, jambières, bottes, boucliers, élytres, armures de cheval, de loup et de nautile, modèles de forge",
+				"rules": [
+					"#minecraft:head_armor",
+					"#minecraft:chest_armor",
+					"#minecraft:leg_armor",
+					"#minecraft:foot_armor",
+					"#c:armors",
+					"#c:tools/shield",
+					"minecraft:shield",
+					"minecraft:elytra",
+					"minecraft:wolf_armor",
+					"*horse_armor",
+					"*nautilus_armor",
+					"*_smithing_template",
+					"@armor",
+					"@smithing_template"
+				]
+			},
+			"Livres et enchantements": {
+				"icon": "minecraft:enchanted_book",
+				"description": "Livres enchantés, livres, livres et plumes, papier, fioles d'expérience, tables d'enchantement, bibliothèques, pupitres",
+				"rules": [
+					"#minecraft:bookshelf_books",
+					"#minecraft:lectern_books",
+					"#c:bookshelves",
+					"minecraft:book",
+					"minecraft:writable_book",
+					"minecraft:written_book",
+					"minecraft:knowledge_book",
+					"minecraft:enchanted_book",
+					"minecraft:paper",
+					"minecraft:experience_bottle",
+					"minecraft:enchanting_table",
+					"minecraft:bookshelf",
+					"minecraft:chiseled_bookshelf",
+					"minecraft:lectern",
+					"@enchanted_book"
+				]
+			},
+			"Potions et alchimie": {
+				"icon": "minecraft:potion",
+				"description": "Potions, potions jetables et persistantes, fioles, alambics, chaudrons, poudre de blaze, œil d'araignée fermenté, melon scintillant, souffle de dragon",
+				"rules": [
+					"#minecraft:brewing_potion_inputs",
+					"#c:potions",
+					"minecraft:potion",
+					"minecraft:splash_potion",
+					"minecraft:lingering_potion",
+					"minecraft:glass_bottle",
+					"minecraft:brewing_stand",
+					"minecraft:cauldron",
+					"minecraft:blaze_powder",
+					"minecraft:fermented_spider_eye",
+					"minecraft:glistering_melon_slice",
+					"minecraft:dragon_breath",
+					"minecraft:ominous_bottle",
+					"@potion"
+				]
+			},
+			"Nourriture": {
+				"icon": "minecraft:bread",
+				"description": "Viandes, poissons, pain, fruits, légumes, gâteaux, tartes, soupes, œufs, lait, sucre, blé, citrouilles, pastèques",
+				"rules": [
+					"#minecraft:eggs",
+					"#minecraft:fishes",
+					"#minecraft:meat",
+					"#c:foods",
+					"#c:crops",
+					"minecraft:cake",
+					"minecraft:milk_bucket",
+					"minecraft:sugar",
+					"minecraft:wheat",
+					"minecraft:hay_block",
+					"minecraft:pumpkin",
+					"minecraft:melon",
+					"minecraft:dried_kelp_block",
+					"@food",
+					"@tab:food_and_drinks"
+				]
+			},
+			"Graines et pousses": {
+				"icon": "minecraft:wheat_seeds",
+				"description": "Graines, pousses d'arbres, propagules, azalées, fèves de cacao, cosses de sarracénie",
+				"rules": [
+					"#minecraft:saplings",
+					"#c:seeds",
+					"minecraft:wheat_seeds",
+					"minecraft:beetroot_seeds",
+					"minecraft:melon_seeds",
+					"minecraft:pumpkin_seeds",
+					"minecraft:torchflower_seeds",
+					"minecraft:pitcher_pod",
+					"minecraft:cocoa_beans",
+					"minecraft:mangrove_propagule",
+					"*_seeds",
+					"*_sapling"
+				]
+			},
+			"Plantes et fleurs": {
+				"icon": "minecraft:poppy",
+				"description": "Fleurs, feuilles, herbes, fougères, buissons, lianes, mousses, champignons, coraux, algues, cactus, canne à sucre, bambou, nénuphars",
+				"rules": [
+					"#minecraft:flowers",
+					"#minecraft:small_flowers",
+					"#minecraft:leaves",
+					"#minecraft:moss_blocks",
+					"#minecraft:mushrooms",
+					"#c:flowers",
+					"#c:mushrooms",
+					"minecraft:short_grass",
+					"minecraft:tall_grass",
+					"minecraft:fern",
+					"minecraft:large_fern",
+					"minecraft:short_dry_grass",
+					"minecraft:tall_dry_grass",
+					"minecraft:bush",
+					"minecraft:red_shrub",
+					"minecraft:dead_bush",
+					"minecraft:firefly_bush",
+					"minecraft:leaf_litter",
+					"minecraft:vine",
+					"minecraft:glow_lichen",
+					"minecraft:hanging_roots",
+					"minecraft:mangrove_roots",
+					"minecraft:lily_pad",
+					"minecraft:seagrass",
+					"minecraft:sea_pickle",
+					"minecraft:kelp",
+					"minecraft:bamboo",
+					"minecraft:sugar_cane",
+					"minecraft:cactus",
+					"minecraft:big_dripleaf",
+					"minecraft:small_dripleaf",
+					"minecraft:moss_carpet",
+					"minecraft:pale_moss_carpet",
+					"minecraft:pale_hanging_moss",
+					"minecraft:brown_mushroom_block",
+					"minecraft:red_mushroom_block",
+					"minecraft:mushroom_stem",
+					"*coral*",
+					"*_leaves",
+					"@tab:natural_blocks"
+				]
+			},
+			"Butin de monstres": {
+				"icon": "minecraft:skeleton_skull",
+				"description": "Os, ficelle, poudre à canon, chair putréfiée, yeux d'araignée, slime, perles de l'Ender, bâtons de blaze, larmes de ghast, membranes, cuir, plumes, peaux de lapin, poches d'encre, têtes et crânes, écailles, carapaces de shulker, coquilles de nautile, totems",
+				"rules": [
+					"#minecraft:skulls",
+					"#c:bones",
+					"#c:feathers",
+					"#c:leathers",
+					"#c:strings",
+					"#c:gunpowders",
+					"#c:slime_balls",
+					"#c:ender_pearls",
+					"#c:nether_stars",
+					"#c:rods/blaze",
+					"#c:rods/breeze",
+					"minecraft:rotten_flesh",
+					"minecraft:bone",
+					"minecraft:bone_meal",
+					"minecraft:bone_block",
+					"minecraft:string",
+					"minecraft:cobweb",
+					"minecraft:spider_eye",
+					"minecraft:gunpowder",
+					"minecraft:ender_pearl",
+					"minecraft:slime_ball",
+					"minecraft:magma_cream",
+					"minecraft:phantom_membrane",
+					"minecraft:blaze_rod",
+					"minecraft:breeze_rod",
+					"minecraft:ghast_tear",
+					"minecraft:leather",
+					"minecraft:feather",
+					"minecraft:rabbit_hide",
+					"minecraft:rabbit_foot",
+					"minecraft:ink_sac",
+					"minecraft:glow_ink_sac",
+					"minecraft:turtle_scute",
+					"minecraft:armadillo_scute",
+					"minecraft:shulker_shell",
+					"minecraft:nautilus_shell",
+					"minecraft:heart_of_the_sea",
+					"minecraft:prismarine_shard",
+					"minecraft:prismarine_crystals",
+					"minecraft:totem_of_undying",
+					"minecraft:nether_star",
+					"minecraft:echo_shard",
+					"minecraft:trial_key",
+					"minecraft:ominous_trial_key",
+					"minecraft:heavy_core",
+					"minecraft:honeycomb",
+					"minecraft:turtle_egg",
+					"minecraft:sniffer_egg",
+					"minecraft:dried_ghast",
+					"minecraft:frogspawn",
+					"minecraft:sponge",
+					"minecraft:wet_sponge",
+					"minecraft:spawner",
+					"minecraft:trial_spawner",
+					"minecraft:vault",
+					"minecraft:creaking_heart",
+					"*_spawn_egg",
+					"@spawn_egg",
+					"@tab:spawn_eggs"
+				]
+			},
+			"Nether": {
+				"icon": "minecraft:netherrack",
+				"description": "Netherrack, briques du Nether, quartz, sable et terre des âmes, basalte, roche noire, verrues, pierre lumineuse, champignons et racines du Nether, obsidienne, magma",
+				"rules": [
+					"#minecraft:soul_fire_base_blocks",
+					"#minecraft:wart_blocks",
+					"#c:netherracks",
+					"#c:obsidians",
+					"minecraft:netherrack",
+					"minecraft:quartz",
+					"minecraft:nether_wart",
+					"minecraft:glowstone",
+					"minecraft:glowstone_dust",
+					"minecraft:shroomlight",
+					"minecraft:magma_block",
+					"minecraft:obsidian",
+					"minecraft:crying_obsidian",
+					"minecraft:respawn_anchor",
+					"minecraft:crimson_nylium",
+					"minecraft:warped_nylium",
+					"minecraft:crimson_fungus",
+					"minecraft:warped_fungus",
+					"minecraft:crimson_roots",
+					"minecraft:warped_roots",
+					"minecraft:nether_sprouts",
+					"minecraft:weeping_vines",
+					"minecraft:twisting_vines",
+					"minecraft:gilded_blackstone",
+					"*nether_brick*",
+					"*blackstone*",
+					"*polished_blackstone*",
+					"*basalt*",
+					"*quartz*"
+				]
+			},
+			"End": {
+				"icon": "minecraft:end_stone",
+				"description": "Pierre de l'End, purpur, chorus, barres de l'End, yeux de l'Ender, cristaux de l'End, coffres de l'Ender, boîtes de Shulker, œuf de dragon",
+				"rules": [
+					"#minecraft:shulker_boxes",
+					"#c:end_stones",
+					"#c:shulker_boxes",
+					"minecraft:end_stone",
+					"minecraft:end_stone_bricks",
+					"minecraft:end_stone_brick_slab",
+					"minecraft:end_stone_brick_stairs",
+					"minecraft:end_stone_brick_wall",
+					"minecraft:chorus_fruit",
+					"minecraft:popped_chorus_fruit",
+					"minecraft:chorus_plant",
+					"minecraft:chorus_flower",
+					"minecraft:end_rod",
+					"minecraft:end_crystal",
+					"minecraft:ender_eye",
+					"minecraft:ender_chest",
+					"minecraft:dragon_egg",
+					"minecraft:end_portal_frame",
+					"purpur_*"
+				]
+			},
+			"Colorants": {
+				"icon": "minecraft:red_dye",
+				"description": "Colorants des 16 couleurs",
+				"rules": [
+					"#minecraft:dyes",
+					"#c:dyes",
+					"@dye"
+				]
+			}
 		},
 
-		// Categorie implicite des objets qui ne correspondent a aucune categorie (ou sans coffre dedie)
+		// Categorie implicite des objets qui ne correspondent a aucune categorie ; ses coffres recoivent aussi ce qui n'a
+		// pas de coffre dedie (ou dont les coffres sont pleins). Sans coffre 'Divers', ces objets restent au depot.
 		"fallbackCategory": "Divers",
 
 		// Nombre maximum de conteneurs enregistres par guilde
-		"maxChests": 48
+		"maxChests": 48,
+
+		// Nommer les conteneurs enregistres (titre affiche a l'ouverture : 'Depot', 'Minerais et lingots'...)
+		"labelChests": true,
+
+		// Duree (secondes) du bouton 'Afficher les coffres' (particules visibles par le joueur seul)
+		"showSeconds": 20
 	},
 
 	// Expeditions : le villageois quitte la base (il disparait), puis revient apres la duree indiquee avec du butin.
@@ -937,7 +1561,8 @@
 	// lossChance = risque (0 a 1) qu'il ne revienne jamais ; rolls = nombre de tirages dans la table de butin.
 	"expeditions": {
 
-		// Expedition 'Exploration' (foret, plaines, grottes de surface)
+		// Expedition 'Exploration' (foret, plaines, grottes de surface) = destination par defaut des explorations
+		// (id plains, nom dans lang.json : villager.destination.plains)
 		"exploration": {
 			"durationSeconds": 480,
 			"lossChance": 0.05,
@@ -1061,7 +1686,8 @@
 			]
 		},
 
-		// Expedition 'Nether' (necessite un portail du Nether dans le territoire)
+		// Expedition 'Nether' (necessite un portail du Nether dans le territoire) = destination par defaut des
+		// expeditions au Nether (id nether_wastes, nom dans lang.json : villager.destination.nether_wastes)
 		"nether": {
 			"durationSeconds": 720,
 			"lossChance": 0.12,
@@ -1153,7 +1779,1438 @@
 					"weight": 1
 				}
 			]
-		}
+		},
+
+		// Objets des 'objectifs prioritaires' d'un villageois : leur poids dans la table de la destination est multiplie (1 a 20)
+		"wishlistWeightMultiplier": 3.0,
+
+		// Autres destinations, choisies dans le menu du villageois (bouton 'Destination') : biomes, constructions, Nether.
+		// id (unique : lettres minuscules, chiffres, _), name (nom affiche), icon (objet), kind (exploration, ou nether :
+		// portail du Nether requis), minLevel (niveau de guilde), durationSeconds (0 = durationMultiplier x la duree de la
+		// destination par defaut du meme type), lossChance, rolls, treasureMapChance, uniqueChanceMultiplier (x la chance
+		// 'expedition' d'uniques.json5 ; 0 = jamais), loot (meme format ; minecraft:enchanted_book = livre a enchantement
+		// aleatoire). Destination inconnue ou retiree : le villageois part vers la destination par defaut de son type.
+		"destinations": [
+			{
+				"id": "desert",
+				"name": "Désert",
+				"icon": "minecraft:cactus",
+				"kind": "exploration",
+				"minLevel": 1,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.0,
+				"lossChance": 0.06,
+				"rolls": 6,
+				"treasureMapChance": 0.06,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:sand",
+						"min": 8,
+						"max": 24,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:sandstone",
+						"min": 4,
+						"max": 12,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:cactus",
+						"min": 1,
+						"max": 4,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:bone",
+						"min": 1,
+						"max": 4,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:dead_bush",
+						"min": 1,
+						"max": 3,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:rabbit_hide",
+						"min": 1,
+						"max": 3,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:red_sand",
+						"min": 4,
+						"max": 12,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:gold_nugget",
+						"min": 1,
+						"max": 4,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:rabbit_foot",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "jungle",
+				"name": "Jungle",
+				"icon": "minecraft:jungle_sapling",
+				"kind": "exploration",
+				"minLevel": 1,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.1,
+				"lossChance": 0.07,
+				"rolls": 6,
+				"treasureMapChance": 0.05,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:bamboo",
+						"min": 4,
+						"max": 12,
+						"weight": 9
+					},
+					{
+						"item": "minecraft:cocoa_beans",
+						"min": 2,
+						"max": 6,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:melon_slice",
+						"min": 3,
+						"max": 8,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:jungle_sapling",
+						"min": 1,
+						"max": 4,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:vine",
+						"min": 2,
+						"max": 8,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:jungle_log",
+						"min": 4,
+						"max": 10,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:feather",
+						"min": 1,
+						"max": 3,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "taiga",
+				"name": "Taïga et neige",
+				"icon": "minecraft:spruce_sapling",
+				"kind": "exploration",
+				"minLevel": 1,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.1,
+				"lossChance": 0.06,
+				"rolls": 6,
+				"treasureMapChance": 0.05,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:spruce_sapling",
+						"min": 1,
+						"max": 4,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:sweet_berries",
+						"min": 3,
+						"max": 8,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:snowball",
+						"min": 4,
+						"max": 16,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:ice",
+						"min": 2,
+						"max": 6,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:rabbit",
+						"min": 1,
+						"max": 3,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:spruce_log",
+						"min": 4,
+						"max": 10,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:packed_ice",
+						"min": 1,
+						"max": 4,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:rabbit_hide",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:fern",
+						"min": 1,
+						"max": 3,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "ocean",
+				"name": "Océan et plage",
+				"icon": "minecraft:kelp",
+				"kind": "exploration",
+				"minLevel": 1,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.1,
+				"lossChance": 0.07,
+				"rolls": 6,
+				"treasureMapChance": 0.1,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:sand",
+						"min": 6,
+						"max": 16,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:kelp",
+						"min": 4,
+						"max": 12,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:cod",
+						"min": 2,
+						"max": 5,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:sea_pickle",
+						"min": 1,
+						"max": 4,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:salmon",
+						"min": 1,
+						"max": 4,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:prismarine_shard",
+						"min": 1,
+						"max": 4,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:ink_sac",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:nautilus_shell",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "swamp",
+				"name": "Marais et mangrove",
+				"icon": "minecraft:lily_pad",
+				"kind": "exploration",
+				"minLevel": 1,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.1,
+				"lossChance": 0.07,
+				"rolls": 6,
+				"treasureMapChance": 0.04,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:clay_ball",
+						"min": 4,
+						"max": 12,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:mud",
+						"min": 4,
+						"max": 12,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:mangrove_propagule",
+						"min": 1,
+						"max": 4,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:lily_pad",
+						"min": 1,
+						"max": 4,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:mangrove_log",
+						"min": 4,
+						"max": 10,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:slime_ball",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:vine",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:blue_orchid",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					}
+				]
+			},
+			{
+				"id": "mountains",
+				"name": "Montagnes",
+				"icon": "minecraft:goat_horn",
+				"kind": "exploration",
+				"minLevel": 2,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.2,
+				"lossChance": 0.08,
+				"rolls": 6,
+				"treasureMapChance": 0.04,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:stone",
+						"min": 8,
+						"max": 24,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 2,
+						"max": 6,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 4,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:raw_copper",
+						"min": 2,
+						"max": 6,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:calcite",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:snowball",
+						"min": 2,
+						"max": 8,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:goat_horn",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "cherry_grove",
+				"name": "Cerisiers",
+				"icon": "minecraft:cherry_sapling",
+				"kind": "exploration",
+				"minLevel": 2,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.1,
+				"lossChance": 0.05,
+				"rolls": 6,
+				"treasureMapChance": 0.04,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:pink_petals",
+						"min": 2,
+						"max": 8,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:cherry_sapling",
+						"min": 1,
+						"max": 3,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:cherry_log",
+						"min": 4,
+						"max": 10,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:honeycomb",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:pink_tulip",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:honey_bottle",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "village",
+				"name": "Village",
+				"icon": "minecraft:bell",
+				"kind": "exploration",
+				"minLevel": 2,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.25,
+				"lossChance": 0.06,
+				"rolls": 6,
+				"treasureMapChance": 0.06,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:bread",
+						"min": 2,
+						"max": 5,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:wheat",
+						"min": 4,
+						"max": 12,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:carrot",
+						"min": 2,
+						"max": 8,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:potato",
+						"min": 2,
+						"max": 8,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:iron_ingot",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:apple",
+						"min": 1,
+						"max": 4,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:book",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:saddle",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "mineshaft",
+				"name": "Puits de mine abandonné",
+				"icon": "minecraft:rail",
+				"kind": "exploration",
+				"minLevel": 3,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.25,
+				"lossChance": 0.1,
+				"rolls": 6,
+				"treasureMapChance": 0.04,
+				"uniqueChanceMultiplier": 1.25,
+				"loot": [
+					{
+						"item": "minecraft:coal",
+						"min": 3,
+						"max": 8,
+						"weight": 9
+					},
+					{
+						"item": "minecraft:rail",
+						"min": 2,
+						"max": 8,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:raw_iron",
+						"min": 1,
+						"max": 4,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:glow_berries",
+						"min": 2,
+						"max": 6,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:string",
+						"min": 2,
+						"max": 6,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:oak_planks",
+						"min": 4,
+						"max": 12,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:redstone",
+						"min": 2,
+						"max": 6,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:lapis_lazuli",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:torch",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:name_tag",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "shipwreck",
+				"name": "Épave et ruines",
+				"icon": "minecraft:map",
+				"kind": "exploration",
+				"minLevel": 3,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.25,
+				"lossChance": 0.08,
+				"rolls": 6,
+				"treasureMapChance": 0.25,
+				"uniqueChanceMultiplier": 1.25,
+				"loot": [
+					{
+						"item": "minecraft:paper",
+						"min": 2,
+						"max": 8,
+						"weight": 9
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 2,
+						"max": 6,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:iron_nugget",
+						"min": 2,
+						"max": 8,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:kelp",
+						"min": 3,
+						"max": 8,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:gold_nugget",
+						"min": 2,
+						"max": 6,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:wheat",
+						"min": 2,
+						"max": 6,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:carrot",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:prismarine_shard",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					}
+				]
+			},
+			{
+				"id": "desert_temple",
+				"name": "Temple du désert",
+				"icon": "minecraft:chiseled_sandstone",
+				"kind": "exploration",
+				"minLevel": 4,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.5,
+				"lossChance": 0.12,
+				"rolls": 6,
+				"treasureMapChance": 0.05,
+				"uniqueChanceMultiplier": 1.5,
+				"loot": [
+					{
+						"item": "minecraft:bone",
+						"min": 2,
+						"max": 6,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:rotten_flesh",
+						"min": 2,
+						"max": 7,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:sand",
+						"min": 4,
+						"max": 12,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:gunpowder",
+						"min": 1,
+						"max": 4,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:gold_ingot",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:tnt",
+						"min": 1,
+						"max": 2,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:spider_eye",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:enchanted_book",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:diamond",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "jungle_temple",
+				"name": "Temple de la jungle",
+				"icon": "minecraft:mossy_cobblestone",
+				"kind": "exploration",
+				"minLevel": 4,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.5,
+				"lossChance": 0.12,
+				"rolls": 6,
+				"treasureMapChance": 0.05,
+				"uniqueChanceMultiplier": 1.5,
+				"loot": [
+					{
+						"item": "minecraft:bamboo",
+						"min": 4,
+						"max": 12,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:arrow",
+						"min": 4,
+						"max": 12,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:bone",
+						"min": 2,
+						"max": 6,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:rotten_flesh",
+						"min": 2,
+						"max": 6,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:mossy_cobblestone",
+						"min": 4,
+						"max": 10,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:iron_ingot",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:gold_ingot",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:enchanted_book",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					},
+					{
+						"item": "minecraft:diamond",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "pillager_outpost",
+				"name": "Avant-poste de pillards",
+				"icon": "minecraft:crossbow",
+				"kind": "exploration",
+				"minLevel": 5,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.5,
+				"lossChance": 0.18,
+				"rolls": 7,
+				"treasureMapChance": 0.04,
+				"uniqueChanceMultiplier": 2.0,
+				"loot": [
+					{
+						"item": "minecraft:arrow",
+						"min": 6,
+						"max": 16,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:dark_oak_log",
+						"min": 4,
+						"max": 12,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:string",
+						"min": 2,
+						"max": 6,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 1,
+						"max": 3,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:wheat",
+						"min": 3,
+						"max": 8,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:iron_ingot",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:crossbow",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 1,
+						"max": 3,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:goat_horn",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "ocean_monument",
+				"name": "Monument océanique",
+				"icon": "minecraft:prismarine_bricks",
+				"kind": "exploration",
+				"minLevel": 6,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.75,
+				"lossChance": 0.2,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 2.0,
+				"loot": [
+					{
+						"item": "minecraft:prismarine_shard",
+						"min": 4,
+						"max": 12,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:prismarine_crystals",
+						"min": 3,
+						"max": 10,
+						"weight": 9
+					},
+					{
+						"item": "minecraft:prismarine",
+						"min": 4,
+						"max": 10,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:cod",
+						"min": 2,
+						"max": 6,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:sea_lantern",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:dark_prismarine",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:gold_ingot",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:sponge",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "ancient_city",
+				"name": "Ville ancienne",
+				"icon": "minecraft:sculk_shrieker",
+				"kind": "exploration",
+				"minLevel": 7,
+				"durationSeconds": 0,
+				"durationMultiplier": 2.0,
+				"lossChance": 0.25,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 3.0,
+				"loot": [
+					{
+						"item": "minecraft:sculk",
+						"min": 4,
+						"max": 12,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:candle",
+						"min": 1,
+						"max": 4,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:bone",
+						"min": 2,
+						"max": 6,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:amethyst_shard",
+						"min": 2,
+						"max": 6,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 2,
+						"max": 6,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:soul_torch",
+						"min": 2,
+						"max": 6,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:sculk_sensor",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:enchanted_book",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:echo_shard",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:disc_fragment_5",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "crimson_forest",
+				"name": "Forêt carmin",
+				"icon": "minecraft:crimson_fungus",
+				"kind": "nether",
+				"minLevel": 2,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.0,
+				"lossChance": 0.12,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:crimson_stem",
+						"min": 4,
+						"max": 12,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:crimson_fungus",
+						"min": 1,
+						"max": 4,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:nether_wart_block",
+						"min": 2,
+						"max": 6,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:weeping_vines",
+						"min": 2,
+						"max": 6,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:shroomlight",
+						"min": 1,
+						"max": 3,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:crimson_roots",
+						"min": 1,
+						"max": 4,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:porkchop",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:leather",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:gold_nugget",
+						"min": 2,
+						"max": 6,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "warped_forest",
+				"name": "Forêt biscornue",
+				"icon": "minecraft:warped_fungus",
+				"kind": "nether",
+				"minLevel": 2,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.0,
+				"lossChance": 0.1,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 1.0,
+				"loot": [
+					{
+						"item": "minecraft:warped_stem",
+						"min": 4,
+						"max": 12,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:warped_fungus",
+						"min": 1,
+						"max": 4,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:warped_wart_block",
+						"min": 2,
+						"max": 6,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:twisting_vines",
+						"min": 2,
+						"max": 6,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:shroomlight",
+						"min": 1,
+						"max": 3,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:warped_roots",
+						"min": 1,
+						"max": 4,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:nether_sprouts",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:ender_pearl",
+						"min": 1,
+						"max": 2,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "soul_sand_valley",
+				"name": "Vallée des âmes",
+				"icon": "minecraft:soul_sand",
+				"kind": "nether",
+				"minLevel": 3,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.1,
+				"lossChance": 0.15,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 1.25,
+				"loot": [
+					{
+						"item": "minecraft:soul_sand",
+						"min": 6,
+						"max": 16,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:bone",
+						"min": 2,
+						"max": 8,
+						"weight": 9
+					},
+					{
+						"item": "minecraft:soul_soil",
+						"min": 6,
+						"max": 16,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:arrow",
+						"min": 2,
+						"max": 8,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:bone_block",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:basalt",
+						"min": 2,
+						"max": 6,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:gunpowder",
+						"min": 1,
+						"max": 3,
+						"weight": 3
+					},
+					{
+						"item": "minecraft:ghast_tear",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					}
+				]
+			},
+			{
+				"id": "basalt_deltas",
+				"name": "Deltas de basalte",
+				"icon": "minecraft:basalt",
+				"kind": "nether",
+				"minLevel": 3,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.1,
+				"lossChance": 0.15,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 1.25,
+				"loot": [
+					{
+						"item": "minecraft:basalt",
+						"min": 6,
+						"max": 16,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:blackstone",
+						"min": 6,
+						"max": 16,
+						"weight": 9
+					},
+					{
+						"item": "minecraft:magma_cream",
+						"min": 1,
+						"max": 4,
+						"weight": 7
+					},
+					{
+						"item": "minecraft:magma_block",
+						"min": 2,
+						"max": 6,
+						"weight": 5
+					},
+					{
+						"item": "minecraft:quartz",
+						"min": 2,
+						"max": 6,
+						"weight": 4
+					}
+				]
+			},
+			{
+				"id": "nether_fortress",
+				"name": "Forteresse du Nether",
+				"icon": "minecraft:nether_bricks",
+				"kind": "nether",
+				"minLevel": 4,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.25,
+				"lossChance": 0.16,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 1.5,
+				"loot": [
+					{
+						"item": "minecraft:nether_wart",
+						"min": 2,
+						"max": 6,
+						"weight": 16
+					},
+					{
+						"item": "minecraft:nether_bricks",
+						"min": 4,
+						"max": 12,
+						"weight": 16
+					},
+					{
+						"item": "minecraft:blaze_rod",
+						"min": 1,
+						"max": 3,
+						"weight": 14
+					},
+					{
+						"item": "minecraft:coal",
+						"min": 2,
+						"max": 6,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:bone",
+						"min": 2,
+						"max": 6,
+						"weight": 12
+					},
+					{
+						"item": "minecraft:magma_cream",
+						"min": 1,
+						"max": 3,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:gold_nugget",
+						"min": 2,
+						"max": 6,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:iron_ingot",
+						"min": 1,
+						"max": 3,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:obsidian",
+						"min": 1,
+						"max": 2,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:wither_skeleton_skull",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			},
+			{
+				"id": "bastion",
+				"name": "Bastion",
+				"icon": "minecraft:gilded_blackstone",
+				"kind": "nether",
+				"minLevel": 6,
+				"durationSeconds": 0,
+				"durationMultiplier": 1.5,
+				"lossChance": 0.22,
+				"rolls": 7,
+				"treasureMapChance": 0.0,
+				"uniqueChanceMultiplier": 2.5,
+				"loot": [
+					{
+						"item": "minecraft:gold_nugget",
+						"min": 4,
+						"max": 12,
+						"weight": 16
+					},
+					{
+						"item": "minecraft:blackstone",
+						"min": 6,
+						"max": 16,
+						"weight": 16
+					},
+					{
+						"item": "minecraft:polished_blackstone_bricks",
+						"min": 4,
+						"max": 10,
+						"weight": 10
+					},
+					{
+						"item": "minecraft:magma_cream",
+						"min": 1,
+						"max": 3,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:arrow",
+						"min": 4,
+						"max": 12,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:porkchop",
+						"min": 2,
+						"max": 5,
+						"weight": 8
+					},
+					{
+						"item": "minecraft:gilded_blackstone",
+						"min": 1,
+						"max": 2,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:crying_obsidian",
+						"min": 1,
+						"max": 3,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:obsidian",
+						"min": 1,
+						"max": 3,
+						"weight": 6
+					},
+					{
+						"item": "minecraft:gold_ingot",
+						"min": 1,
+						"max": 2,
+						"weight": 4
+					},
+					{
+						"item": "minecraft:ancient_debris",
+						"min": 1,
+						"max": 1,
+						"weight": 2
+					},
+					{
+						"item": "minecraft:piglin_banner_pattern",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					},
+					{
+						"item": "minecraft:netherite_scrap",
+						"min": 1,
+						"max": 1,
+						"weight": 1
+					}
+				]
+			}
+		]
 	},
 
 	// Chance (0 a 1) que chaque villageois quitte la guilde apres une vague perdue

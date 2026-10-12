@@ -369,6 +369,23 @@
 		"nightRollback": 2
 	},
 
+	// Treve : apres plusieurs defaites d'affilee (hordes de nuit et raids), la base est epargnee quelques nuits
+	// pour se relever. Une victoire remet le compte des defaites a zero.
+	"truce": {
+
+		// Activer la treve
+		"enabled": true,
+
+		// Nombre de defaites d'affilee qui declenchent une treve (1 a 10)
+		"defeatsInARow": 2,
+
+		// Nombre de nuits sans horde pendant la treve (0 a 30)
+		"nights": 3,
+
+		// Pendant la treve, les pillards ne lancent pas de raid non plus
+		"blocksRaids": true
+	},
+
 	// Butin supplementaire lache par les monstres de la horde a leur mort
 	"killLoot": {
 
