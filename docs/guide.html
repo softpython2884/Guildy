@@ -568,6 +568,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>2. Un niveau tous les 6 blocs</h3><p>Chaque niveau a un palier, une galerie principale et des galeries latérales tous les 3 blocs (ou des salles de carrière pour la pierre). Ils s'ouvrent à mesure que l'escalier descend : aucune couche n'est sautée. <strong>Aucun minerai visible n'est laissé</strong>, et les filons sont suivis jusqu'à 16 blocs hors de la zone.</p></div>
 					<div class="card"><h3>3. Le retour</h3><p>Sac plein, mission atteinte ou fin de journée : il remonte par ses tunnels, vide son sac au coffre de dépôt, puis redescend au front de taille.</p></div>
 				</div>
+				<div class="note"><p><strong>Carrière (objectif Pierre et variantes) :</strong> au lieu de galeries, les mineurs creusent <strong>tout le carré de la zone</strong> par gradins de 3 blocs, de la surface jusqu'à la profondeur cible. Il ne reste que la tour de l'escalier (entourée d'un mur de roche, avec une ouverture vers chaque gradin) et une chaussée qui relie le fanion au bord. Herbes, fleurs, arbres naturels et neige sont dégagés ; vos constructions gardent la colonne de roche qui les porte. Ils rapportent la pierre, les minerais et vos objectifs prioritaires ; terre, gravier et sable sont jetés.</p></div>
 				<p><strong>Il ne casse jamais vos constructions.</strong> Il ne prend que des blocs naturels (pierre, ardoise des abîmes, terre, gravier, minerais…). Il ne touche jamais à un bloc posé (planches, briques, verre…), à un coffre ou un panneau, à un bloc qui soutient une construction, ni au territoire d'une autre guilde. S'il tombe sur de l'eau ou de la lave, il bouche avec un bloc de son sac ; sinon, il abandonne la galerie. Plusieurs mineurs se partagent la mine sans jamais creuser les mêmes blocs.</p>
 				<p>Le menu de la zone propose trois réglages :</p>
 				<ul>
@@ -852,7 +853,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.2.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.3.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -902,7 +903,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.2.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.3.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

@@ -232,6 +232,15 @@ fréquents). En mode réel, les mineurs creusent vraiment, dans le carré de la 
 4. **Retour** : sac plein, mission atteinte ou fin de journée (ils remontent avant la nuit) → ils remontent par leurs
    tunnels, vident le sac au coffre de dépôt, puis redescendent au front de taille.
 
+**Carrière (objectif *Pierre et variantes*)** : au lieu de galeries, les mineurs creusent **tout le carré de la zone**,
+par **gradins de 3 blocs**, de la surface jusqu'à la profondeur cible. Seul l'escalier reste debout : une **tour**
+entourée d'un mur de roche, percée d'une ouverture vers chaque gradin, et une **chaussée** de roche relie le fanion au
+bord de la carrière. Les mineurs (jusqu'à 20) se partagent des **bandes** ; un gradin ne se creuse que sous les parties
+finies du gradin du dessus, jamais sous les pieds de quelqu'un. Herbes, fleurs, arbres naturels et neige de surface
+sont dégagés ; une construction posée dans la zone (même une planche) garde la colonne de roche qui la porte. Torches au
+sol tous les 8 blocs. Ils ne rapportent que la pierre et ses variantes, les minerais et les objectifs prioritaires (la
+terre, le gravier et le sable sont jetés). `stoneQuarry: false` dans `villagers.json5` remet l'ancien fonctionnement.
+
 **Jusqu'à 20 mineurs par mine** : le travail est partagé en petits chantiers (front de l'escalier, élargissement,
 paliers, tronçons de galerie, galeries latérales, salles, filons) ; chaque mineur prend le chantier libre le plus proche,
 jamais deux sur les mêmes blocs. Les blocs cassés donnent leur vrai butin (comme une pioche en fer) ; l'objectif

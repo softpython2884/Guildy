@@ -346,7 +346,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="nuits">
 				<div class="eyebrow">Le cœur du jeu</div>
 				<h2>Les hordes de la nuit</h2>
-				<p>Chaque nuit (heure 13000 du jeu), chaque base dont au moins un membre est à moins de <strong>96 blocs du cœur</strong> subit une horde. Les monstres arrivent par groupes depuis les bords du territoire pendant environ 4 minutes, puis marchent vers le cœur. Si personne n'est là, la horde peut encore se déclencher quand un membre arrive, jusqu'au milieu de la nuit. Une base vide n'est jamais attaquée.</p>
+				<p>Tous les <strong>1 à 3 jours</strong> (tiré au hasard pour chaque guilde), à la nuit (heure 13000 du jeu), une base dont au moins un membre est à moins de <strong>96 blocs du cœur</strong> subit une horde. Le menu <button class="cmd" type="button">/guild waves</button> indique la prochaine (« cette nuit » ou « dans N nuits ») ; une nuit de sang en amène toujours une. Les monstres de la horde ignorent vos villageois, sauf ceux qui les frappent (vos gardes). Les monstres arrivent par groupes depuis les bords du territoire pendant environ 4 minutes, puis marchent vers le cœur. Si personne n'est là, la horde peut encore se déclencher quand un membre arrive, jusqu'au milieu de la nuit. Une base vide n'est jamais attaquée.</p>
 				<div class="cards">
 					<div class="card"><h3>Victoire</h3><p>Le cœur tient jusqu'à l'aube, ou toute la horde est tuée. Gains : or au trésor, XP de guilde, objets pour les membres présents, selon la part de monstres tués.</p></div>
 					<div class="card"><h3>Défaite</h3><p>Les monstres au contact du cœur l'abîment chaque seconde. À 0 : la horde repart, la guilde perd 25 % du trésor et 2 paliers de difficulté, et chaque villageois a 20 % de chance de partir.</p></div>
@@ -539,7 +539,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<ol>
 					<li>Atteignez le <strong>niveau 2</strong>, débloquez et construisez le <a href="#constructions">bureau d'accueil</a>.</li>
 					<li>Posez au moins un <strong>lit libre</strong> dans le territoire.</li>
-					<li>Un premier candidat arrive environ une minute après la construction, puis les autres certains matins (6 chances sur 10).</li>
+					<li>Un premier groupe arrive environ une minute après la construction, puis d'autres certains matins (6 chances sur 10) : <strong>1 à 3 candidats</strong> à la fois, dans la limite des places et des lits libres.</li>
 					<li>Cliquez sur [Accepter] dans le chat, ou utilisez <button class="cmd" type="button">/guild villagers accept</button>. Le candidat repart au bout de 10 minutes sans réponse.</li>
 				</ol>
 				<p>Limite : 2 villageois au niveau 1, +1 par niveau (et plus avec l'arbre d'évolution). Seuls les membres peuvent commercer avec eux.</p>
@@ -550,8 +550,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<tbody>
 						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de son thème (19 catégories). <a href="#rangement">Détails</a></td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
 						<tr><td>Mineur</td><td>Creuse vraiment sa mine : un escalier en colimaçon jusqu'à la profondeur choisie, puis des galeries qui suivent les filons (ou des salles de carrière pour la pierre). Il remonte vider son sac et ne casse jamais vos constructions. <a href="#mine">Détails</a></td><td>Un coffre de dépôt ; une zone de mine (sinon : la pierre à nu la plus proche, en minage simulé)</td></tr>
-						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois), seulement l'essence choisie si vous en choisissez une, et replante.</td><td>Un coffre de dépôt ; une zone de coupe (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
-						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes ») et replante.</td><td>Un coffre de dépôt ; une zone de champs (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
+						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois), seulement l'essence choisie si vous en choisissez une, replante et plante de nouvelles pousses. <a href="#plantation">Plantation</a></td><td>Un coffre de dépôt ; une zone de coupe (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
+						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes »), replante, sème les terres vides et laboure près de l'eau. <a href="#plantation">Plantation</a></td><td>Un coffre de dépôt ; une zone de champs (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
 						<tr><td>Garde</td><td>Épéiste ou archer : patrouille dans sa zone ou suit son parcours, tue les monstres, défend le cœur pendant les hordes. S'équipe dans vos coffres et se replie pour se soigner. <a href="#gardes">Détails</a></td><td>Facultatif : une zone de patrouille ou un parcours ; des armures dans les coffres ; des lits</td></tr>
 						<tr><td>Exploration</td><td>Part vers la destination choisie (forêt, désert, village, temples…) et revient quelques minutes plus tard avec son butin. <a href="#destinations">Destinations</a> <span class="pill red">5 à 25 % de risque de perte</span></td><td>Le bureau d'accueil (sinon il part du cœur)</td></tr>
 						<tr><td>Expédition au Nether</td><td>Passe par votre portail vers la destination choisie (forteresse, bastion, forêts…) et revient avec son butin. <span class="pill red">10 à 22 % de risque de perte</span></td><td>Un portail du Nether dans le territoire</td></tr>
@@ -574,6 +574,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>2. Un niveau tous les 6 blocs</h3><p>Chaque niveau a un palier, une galerie principale et des galeries latérales tous les 3 blocs (ou des salles de carrière pour la pierre). Ils s'ouvrent à mesure que l'escalier descend : aucune couche n'est sautée. <strong>Aucun minerai visible n'est laissé</strong>, et les filons sont suivis jusqu'à 16 blocs hors de la zone.</p></div>
 					<div class="card"><h3>3. Le retour</h3><p>Sac plein, mission atteinte ou fin de journée : il remonte par ses tunnels, vide son sac au coffre de dépôt, puis redescend au front de taille.</p></div>
 				</div>
+				<div class="note"><p><strong>Carrière (objectif Pierre et variantes) :</strong> au lieu de galeries, les mineurs creusent <strong>tout le carré de la zone</strong> par gradins de 3 blocs, de la surface jusqu'à la profondeur cible. Il ne reste que la tour de l'escalier (entourée d'un mur de roche, avec une ouverture vers chaque gradin) et une chaussée qui relie le fanion au bord. Herbes, fleurs, arbres naturels et neige sont dégagés ; vos constructions gardent la colonne de roche qui les porte. Ils rapportent la pierre, les minerais et vos objectifs prioritaires ; terre, gravier et sable sont jetés.</p></div>
 				<p><strong>Il ne casse jamais vos constructions.</strong> Il ne prend que des blocs naturels (pierre, ardoise des abîmes, terre, gravier, minerais…). Il ne touche jamais à un bloc posé (planches, briques, verre…), à un coffre ou un panneau, à un bloc qui soutient une construction, ni au territoire d'une autre guilde. S'il tombe sur de l'eau ou de la lave, il bouche avec un bloc de son sac ; sinon, il abandonne la galerie. Plusieurs mineurs se partagent la mine sans jamais creuser les mêmes blocs.</p>
 				<p>Le menu de la zone propose trois réglages :</p>
 				<ul>
@@ -606,6 +607,31 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>Repli</h3><p>Sous 40 % de vie, un garde quitte le combat, même pendant une horde, et court se soigner à un lit. Il reprend son poste à 90 %. Posez des lits près du cœur !</p></div>
 				</div>
 				<div class="note good"><p><strong>Pas de tir ami :</strong> vous ne pouvez pas blesser les villageois de votre guilde, ni à l'épée, ni à l'arc, ni au trident. Pour vous en séparer, utilisez « Renvoyer » dans son menu.</p></div>
+				<h3>Équipement de base des gardes</h3>
+				<p>Gratuit, il s'améliore avec le niveau de la guilde (il ne tombe pas et ne s'use pas). Un meilleur équipement trouvé dans les coffres reste prioritaire.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th class="num">Niveau</th><th>Épée</th><th>Tir</th><th>Armure</th></tr></thead>
+					<tbody>
+						<tr><td class="num">1</td><td>bois</td><td>arc</td><td>aucune</td></tr>
+						<tr><td class="num">2-3</td><td>pierre</td><td>arc (Puissance I au niveau 3)</td><td>cuir</td></tr>
+						<tr><td class="num">4-5</td><td>fer</td><td>arc Puissance I / II</td><td>mailles</td></tr>
+						<tr><td class="num">6</td><td>fer Tranchant I</td><td><strong>arbalète</strong> Charge rapide I</td><td>fer</td></tr>
+						<tr><td class="num">7-8</td><td>diamant</td><td>arbalète Charge rapide, Perforation I</td><td>fer</td></tr>
+						<tr><td class="num">9</td><td>diamant Tranchant II</td><td>arbalète Charge rapide II, Perforation II</td><td>diamant</td></tr>
+						<tr><td class="num">10</td><td>netherite Tranchant II</td><td>arbalète Charge rapide III, Perforation II</td><td>diamant</td></tr>
+					</tbody>
+				</table></div>
+				<h3 id="vie">Vie, nuit et refuge</h3>
+				<div class="cards">
+					<div class="card"><h3>Plus de vie</h3><p>Chaque villageois gagne 2 cœurs par niveau de guilde (les gardes encore plus) et se soigne lentement hors combat. Sa vie s'affiche dans le menu.</p></div>
+					<div class="card"><h3>Retour avant la nuit</h3><p>En fin de journée, les travailleurs posent leurs outils et rentrent en courant à leur lit (sinon un lit libre du territoire, le bureau d'accueil ou le cœur).</p></div>
+					<div class="card"><h3>Mis à l'abri</h3><p>À la tombée de la nuit, ou dès qu'une horde arrive, un travailleur encore dehors est téléporté près de son lit. Les gardes, eux, restent dehors.</p></div>
+				</div>
+				<h3 id="plantation">Plantation</h3>
+				<p><strong>Bûcheron :</strong> quand il n'a plus d'arbre à couper dans sa coupe de bois, il plante de nouvelles pousses sur le sol naturel libre, espacées de 5 blocs, 8 arbres au plus par chunk, jamais sur un chemin ni à côté de vos constructions. Essence de la zone d'abord, puis celles de vos objectifs prioritaires. Il prend les pousses dans son sac (il ramasse celles qui tombent) ou dans les coffres « Graines et pousses », de dépôt ou « Divers ».</p>
+				<p><strong>Fermier :</strong> quand rien n'est mûr, il sème les terres labourées vides (blé, carottes, pommes de terre, betteraves) avec les graines de son sac ou du stockage. Dans une zone Champs, il laboure aussi l'herbe et la terre à moins de 4 blocs d'une eau.</p>
+				<h3 id="distance">Travail à distance</h3>
+				<p>Un villageois au travail garde chargés ses alentours, sa destination et sa zone : il <strong>continue de travailler quand vous êtes loin</strong>, dès qu'un membre de la guilde est connecté. Rien n'est chargé pour un villageois sans tâche, en expédition ou couché. Les cultures y poussent, aucun monstre n'y apparaît. Le menu Villageois (« Chunks des villageois ») indique combien de chunks sont gardés chargés.</p>
 				<h3 id="destinations">Destinations d'expédition</h3>
 				<p>Pour un explorateur ou une expédition au Nether, le bouton « Destination » de son menu choisit où il part. Chaque destination indique sa durée, son risque, son butin typique et le niveau de guilde requis. Plus le lieu est dangereux, meilleur est le butin, et plus les armes uniques sont fréquentes.</p>
 				<div class="table-wrap"><table>
@@ -808,7 +834,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<details><summary>Je n'arrive pas à planter mon drapeau</summary>
 					<p>Le message en rouge donne la raison. Les plus courantes : trop près du spawn (4 chunks minimum) ou d'une autre guilde (il faut plus de 3 chunks d'écart), vous n'êtes pas dans l'Overworld, votre rôle ne le permet pas (officier ou chef). Pour une extension : le chunk doit toucher le territoire par un côté, et la limite de chunks ne doit pas être atteinte.</p></details>
 				<details><summary>Il n'y a pas eu de horde cette nuit</summary>
-					<p>Il faut une base fondée et un membre à moins de 96 blocs du cœur avant le milieu de la nuit. Si la nuit a été sautée, il n'y a pas de horde non plus.</p></details>
+					<p>Les hordes viennent tous les 1 à 3 jours : regardez « Prochaine horde » dans <button class="cmd" type="button">/guild waves</button>. Il faut aussi une base fondée et un membre à moins de 96 blocs du cœur avant le milieu de la nuit, et pas de trêve en cours. Si la nuit a été sautée, il n'y a pas de horde non plus.</p></details>
 				<details><summary>Je ne peux pas dormir</summary>
 					<p>Une horde attaque votre base : le sommeil est interdit jusqu'à la fin. Défendez le cœur !</p></details>
 				<details><summary>Le plan ne valide pas ma construction</summary>
@@ -818,7 +844,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<details><summary>Mon mineur ne creuse pas</summary>
 					<p>Ouvrez le menu de sa zone, puis « Exploitation » : le dernier incident (lave, eau, construction…) dit ce qui bloque. Le fanion doit être planté sur un sol naturel avec de la roche dessous, la zone doit être chargée (un joueur à proximité) et il faut un coffre de dépôt. Si l'escalier est coincé, changez la profondeur cible ou utilisez « Réinitialiser l'exploitation ».</p></details>
 				<details><summary>Mes gardes meurent toutes les nuits</summary>
-					<p>Mettez des armures (et des épées, des arcs) dans un coffre du Stockage : les gardes s'équipent seuls. Posez des lits près du cœur : sous 40 % de vie, ils vont s'y soigner. Mélangez archers et épéistes (mode Auto), et entourez le cœur de murs.</p></details>
+					<p>Ils gagnent de la vie et un meilleur équipement de base à chaque niveau de guilde. Mettez aussi des armures (et des épées, des arcs) dans un coffre du Stockage : les gardes s'équipent seuls. Posez des lits près du cœur : sous 40 % de vie, ils vont s'y soigner. Mélangez archers et épéistes (mode Auto), et entourez le cœur de murs.</p></details>
 				<details><summary>Je n'arrive pas à frapper un villageois de ma guilde</summary>
 					<p>C'est voulu : les coups, flèches et tridents des membres ne blessent jamais les villageois de la guilde, pour éviter les accidents pendant les hordes. Pour vous en séparer, utilisez « Renvoyer » dans son menu.</p></details>
 				<details><summary>La boutique refuse de m'acheter un objet</summary>
@@ -833,7 +859,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.2.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.3.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -847,10 +873,11 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin tp &lt;guilde&gt;</button></td><td>Aller au cœur d'une guilde</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin wave start|stop|status &lt;guilde&gt;</button></td><td>Lancer une horde de test (même de jour), l'arrêter, son état</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin wave setnight &lt;guilde&gt; &lt;palier&gt;</button></td><td>Régler le palier de difficulté</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin wave schedule &lt;guilde&gt; &lt;nuits&gt;</button></td><td>Prochaine horde dans N nuits (0 = cette nuit)</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin wave truce &lt;guilde&gt; &lt;nuits&gt;</button></td><td>Régler les nuits de trêve restantes (0 = fin de la trêve)</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin structure unlock &lt;guilde&gt; &lt;id&gt;</button></td><td>Débloquer une construction</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin quest reroll|complete|map &lt;guilde&gt;</button></td><td>Quêtes : tout renouveler, terminer un emplacement, donner une carte au trésor</td></tr>
-							<tr><td><button class="cmd" type="button">/guild admin villager spawn &lt;guilde&gt;</button></td><td>Faire venir un candidat villageois</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin villager spawn &lt;guilde&gt;</button> · <button class="cmd" type="button">/guild admin villager chunks</button></td><td>Faire venir un candidat villageois ; chunks gardés chargés pour les villageois</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin upgrade unlock|lock &lt;guilde&gt; &lt;id&gt;</button></td><td>Donner ou retirer une évolution</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin event list</button></td><td>Événements en cours et prévus</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin event start|stop &lt;événement&gt; [guilde]</button></td><td>Déclencher ou arrêter <code>blood_night</code>, <code>pillager_raid</code>, <code>caravan</code>, <code>book_merchant</code>, <code>merchant</code></td></tr>
@@ -882,7 +909,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.2.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.3.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

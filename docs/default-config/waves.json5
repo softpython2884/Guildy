@@ -38,7 +38,12 @@
 		"endWhenHordeDefeated": true,
 
 		// Securite : duree maximale d'une horde (minutes) ; au-dela elle se termine comme a l'aube
-		"maxWaveMinutes": 20
+		"maxWaveMinutes": 20,
+
+		// Jours entre deux hordes d'une guilde : tire au hasard entre minDaysBetweenHordes et maxDaysBetweenHordes
+		// apres chaque horde (1 et 1 = une horde chaque nuit). Une nuit de sang amene toujours une horde.
+		"minDaysBetweenHordes": 1,
+		"maxDaysBetweenHordes": 3
 	},
 
 	// Difficulte D = base + perNight * nuit + perLevel * (niveau - 1) + perExtraPlayer * (membres presents - 1),
@@ -217,7 +222,12 @@
 		// Boss : taille (attribut scale), resistance au recul, contour lumineux
 		"bossScale": 1.3,
 		"bossKnockbackResistance": 0.6,
-		"bossGlowing": true
+		"bossGlowing": true,
+
+		// Les monstres de la horde attaquent aussi les villageois (comportement vanilla des zombies et illageois, qui
+		// les traquent ensuite meme hors de vue). false : ils les ignorent (villageois de la guilde, candidats,
+		// marchands), sauf un villageois qui vient de les frapper (un garde qui les combat)
+		"targetVillagers": false
 	},
 
 	// Coeur de la base : points d'integrite et degats subis chaque seconde

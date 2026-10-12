@@ -56,7 +56,7 @@ public class MineGameTests {
 		}
 	}
 
-	@GameTest(maxTicks = 4800)
+	@GameTest(environment = "guildy-test:day", maxTicks = 4800)
 	public void realMinerDigsStairsAndNeverBreaksPlanks(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Galerie", 12, 1, 9, 0);
 		ServerLevel level = scene.level();
@@ -95,7 +95,7 @@ public class MineGameTests {
 	 * A deeper spiral (15 steps, every corner, one turn under the first steps): the miner walks it down and back up to the
 	 * deposit chest, and seals a water source found next to a step with a block of its bag.
 	 */
-	@GameTest(maxTicks = 6000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 6000)
 	public void realMinerWalksTheSpiralAndSealsWater(GameTestHelper helper) throws Exception {
 		int steps = 15;
 		Scene scene = scene(helper, "Colimacon", 20, 1, steps, 0);
@@ -134,7 +134,7 @@ public class MineGameTests {
 	 * Five miners in one mine with several levels: the work is split in small jobs (stairs, widening, landings,
 	 * galleries of every level the stairs reached), so at least four of them dig at the same time.
 	 */
-	@GameTest(maxTicks = 4000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 4000)
 	public void severalMinersWorkAtOnce(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Equipe", 30, 5, 25, 1);
 		ServerLevel level = scene.level();
@@ -183,7 +183,7 @@ public class MineGameTests {
 	 * levels are open, at least 15 of them dig within the same 10 seconds, and the 2-wide staircase keeps the fallback
 	 * teleports rare.
 	 */
-	@GameTest(maxTicks = 7000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 7000)
 	public void twentyMinersShareOneMine(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Vingt", 40, 20, 33, 1);
 		ServerLevel level = scene.level();
@@ -248,7 +248,7 @@ public class MineGameTests {
 	 * A mine planned before levels existed (1-wide staircase dug down to its gallery level, old galleries): it keeps its
 	 * staircase (never widened) and its level, and gets a level on the way down, worked right away.
 	 */
-	@GameTest(maxTicks = 4000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 4000)
 	public void minePlannedBeforeLevelsKeepsItsStairs(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Ancienne", 20, 2, 14, 1);
 		ServerLevel level = scene.level();
@@ -295,7 +295,7 @@ public class MineGameTests {
 	}
 
 	/** Continuous work: bag full in the galleries → up the spiral to the chest (filler reserve kept) → back to the front. */
-	@GameTest(maxTicks = 6000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 6000)
 	public void realMinerGoesBackToTheFrontAfterDepositing(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Retour", 20, 1, 15, 0);
 		ServerLevel level = scene.level();
@@ -326,7 +326,7 @@ public class MineGameTests {
 	}
 
 	/** An ore in the floor of a gallery is taken (and the floor filled again), not left in place. */
-	@GameTest(maxTicks = 4000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 4000)
 	public void galleryFloorOreIsMined(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Sol", 14, 1, 9, 0);
 		ServerLevel level = scene.level();
@@ -353,7 +353,7 @@ public class MineGameTests {
 	 * A vein seen from the end of a gallery runs out of the zone (north), then west into another guild's land: it is
 	 * followed outside the zone (an approach tunnel when it gets out of reach) but stops at the other guild's border.
 	 */
-	@GameTest(maxTicks = 6000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 6000)
 	public void veinCrossingTheBorderStopsAtAnotherGuild(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Filon", 14, 1, 9, 0);
 		ServerLevel level = scene.level();
@@ -412,7 +412,7 @@ public class MineGameTests {
 	}
 
 	/** "Objectifs prioritaires": with the ores objective, a wanted diorite cluster is still mined, kept and deposited. */
-	@GameTest(maxTicks = 4000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 4000)
 	public void wantedDioriteClusterIsMinedAndDeposited(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Diorite", 14, 1, 9, 0);
 		ServerLevel level = scene.level();

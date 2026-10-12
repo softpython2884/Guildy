@@ -250,6 +250,12 @@ Ressources : `data/guildy/enchantment` (10 enchantements data-driven), `data/gui
     deux récoltes, emplacements naturels espacés et plafonnés par chunk, jamais près d'un bloc non naturel ou d'une autre
     guilde ; pousses / graines prises au sac puis au stockage (`PlantStock`, retrait réel) ; labour seulement en zone
     Champs, près d'une eau.
+38. **Carrière** (objectif Pierre, `realMining.stoneQuarry`) : `Quarry` (pur) découpe le carré de la zone en gradins
+    de `quarryBenchHeight` blocs et en bandes, garde la tour de l'escalier (son carré + un mur d'un bloc, une ouverture
+    par gradin) et une chaussée jusqu'au bord ; avancement par colonne (bits) ; `QuarryJobs` (pur) n'ouvre une bande que
+    sous une partie entièrement creusée du gradin du dessus (deux gradins à la fois au plus). Colonnes de soutien sous
+    tout bloc non naturel, jamais de creusage sous les pieds d'une entité. GameTests de mine en environnement
+    `guildy-test:day` (heure figée : le refuge de nuit arrêterait les mineurs).
 
 ## Notes API Minecraft 26.3
 
