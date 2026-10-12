@@ -48,6 +48,13 @@ public class VillagerRecord {
 	public @Nullable String awayEntity;
 	/** Expedition kind (EXPLORER / NETHER) while away. */
 	public @Nullable Task awayTask;
+	/**
+	 * Expedition destination chosen in the menu (id, see {@link ExpeditionDestinations}); "" or an id unknown for the
+	 * task's kind = the default destination of the kind. Kept when the task changes.
+	 */
+	public String expeditionDestination = "";
+	/** Destination of the trip in progress (set at the departure, used by the return), null at home. */
+	public @Nullable String awayDestination;
 	/** Claim-level game time of the return. */
 	public long returnAt;
 	/** Where it left and comes back (portal, reception or heart). */
@@ -117,6 +124,12 @@ public class VillagerRecord {
 		}
 		if (awayEntity != null && awayTask == null) {
 			awayTask = Task.EXPLORER;
+		}
+		if (expeditionDestination == null) {
+			expeditionDestination = "";
+		}
+		if (awayEntity == null) {
+			awayDestination = null;
 		}
 		zoneId = Math.max(-1, zoneId);
 		routeId = Math.max(-1, routeId);

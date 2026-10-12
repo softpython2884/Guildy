@@ -161,6 +161,10 @@ public final class VillagerGui {
 		if (assignment != null) {
 			lore.add(Lang.get("villager.gui.lore.assignment", assignment));
 		}
+		Component destination = ExpeditionMenu.listLine(guild, record);
+		if (destination != null) {
+			lore.add(destination);
+		}
 		lore.add(Lang.get("villager.gui.lore.status", statusText(record, villager)));
 		if (villager != null) {
 			String profession = villager.getVillagerData().profession().unwrapKey()
@@ -275,6 +279,10 @@ public final class VillagerGui {
 			GuiUtil.clickSound(player);
 			ZoneGui.openPicker(player, guild, uuid);
 		}));
+		if (record.task.isExpedition()) {
+			// Expeditions use no work zone: their destination takes the button's place.
+			gui.setSlot(19, ExpeditionMenu.button(player, guild, record));
+		}
 		missionControls(gui, player, guild, record);
 		gui.setSlot(25, carriedIcon(record));
 
