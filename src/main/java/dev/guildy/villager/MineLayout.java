@@ -1,23 +1,34 @@
 package dev.guildy.villager;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.IntPredicate;
 
 /**
- * Pure geometry of a real mine (no world access: unit tested). From the fanion, a 1-wide spiral staircase goes down
- * one block per step around a square pillar, with 3 blocks of headroom per step so that the vanilla ground navigation
- * walks it both ways (it cannot climb ladders). At the gallery level a 2-high main tunnel leaves the spiral outwards,
- * with side branches every few blocks, or (stone) quarry rooms along it. Everything stays inside the zone square.
+ * Pure geometry of a real mine (no world access: unit tested).
  * <p>
- * The layout also gives the walking graph, a tree rooted at the fanion (node 0): stairs, then the main tunnel, branches
- * hanging off it; and the work segments shared by the miners (a segment is dug in order, each cell from its stand node).
+ * <b>Staircase.</b> From the fanion, a spiral goes down one block per step around a square pillar, with 3 blocks of
+ * headroom per step so that the vanilla ground navigation walks it both ways (it cannot climb ladders). Its inner lane
+ * is a 1-wide spiral (the walking path, dug first); a 2-wide staircase adds an outer lane beside it (each step then has
+ * 2 cells, 4 at the corners: room for many miners to pass each other), dug apart. Mines planned before levels existed
+ * keep their 1-wide spiral and their old galleries (width 0).
+ * <p>
+ * <b>Levels.</b> A level is the set of galleries at the height of one stair step: a small landing next to the
+ * staircase, then a 2-high main tunnel leaving the spiral outwards, with side branches every few blocks (or quarry
+ * rooms). Levels are built on demand, everything stays inside the zone square.
+ * <p>
+ * <b>Walking graph.</b> A tree rooted at the fanion ({@link #ENTRANCE}): the stairs (inner lane), then for each level
+ * its landing, main tunnel and branches. Work segments: cells dug in order, cell i from node {@code stands[i]}.
  */
 public final class MineLayout {
 	/** 4 first directions × 2 turning senses. */
@@ -26,13 +37,18 @@ public final class MineLayout {
 	public static final int TUNNEL_HEIGHT = 2;
 	public static final int MIN_SIDE = 3;
 	public static final int MAX_SIDE = 6;
-	/** Node segment index of the stairs (gallery segments have ids from 1). */
-	public static final int STAIRS = 0;
+	/** Node of the fanion (root of the walking graph). */
+	public static final int ENTRANCE = 0;
+	/** {@link #nodeLevel} of the entrance and of the stair nodes. */
+	public static final int STAIRS_LEVEL = Integer.MIN_VALUE;
+	/** Highest cell of any level (quarry rooms): a level at y holds blocks y - 1 .. y + MAX_CELL_HEIGHT - 1. */
+	public static final int MAX_CELL_HEIGHT = 5;
 	/** Horizontal directions: north, east, south, west. */
 	private static final int[] DX = {0, 1, 0, -1};
 	private static final int[] DZ = {-1, 0, 1, 0};
 
 	public enum Kind {
+		LANDING,
 		MAIN,
 		BRANCH,
 		ROOM
@@ -49,71 +65,141 @@ public final class MineLayout {
 		}
 	}
 
-	/** Dimensions (villagers.json5, realMining). */
-	public record Settings(int stairSide, int mainLength, int branchSpacing, int branchLength, int roomWidth, int roomLength,
-			int roomHeight, int roomGap) {
+	/**
+	 * Dimensions (villagers.json5, realMining). {@code stairWidth}: 2 = two-block staircase, 1 = one block, 0 = one
+	 * block with the galleries of mines planned before levels existed (no landing, main tunnel right off the stairs).
+	 */
+	public record Settings(int stairSide, int stairWidth, int mainLength, int branchSpacing, int branchLength, int roomWidth,
+			int roomLength, int roomHeight, int roomGap) {
 	}
 
 	/**
 	 * Work unit of one miner: cells dug in order, cell i from node {@code stands[i]}; available once segment
-	 * {@code after} is done (-1: right after the stairs). {@code ordinal}: 1-based rank among the segments of its kind.
+	 * {@code after} of the same level is done (-1: as soon as the stairs reach the level). {@code ordinal}: 1-based
+	 * rank among the segments of its kind (branches and rooms share one count).
 	 */
 	public record Segment(int id, Kind kind, List<Cell> cells, int[] stands, int after, int ordinal) {
+	}
+
+	/** Galleries of one level (feet height {@link #y}), dug from the stair step at that height. */
+	public static final class Level {
+		private final int y;
+		private final int step;
+		private int mainDir = -1;
+		private int mainLength;
+		private int galleryCount;
+		private final List<Segment> segments = new ArrayList<>();
+		private final Map<Integer, Segment> byId = new HashMap<>();
+		private final LongOpenHashSet structure = new LongOpenHashSet();
+		private final IntArrayList nodes = new IntArrayList();
+
+		private Level(int y, int step) {
+			this.y = y;
+			this.step = step;
+		}
+
+		public int y() {
+			return y;
+		}
+
+		/** Stair step at this height (-1: galleries at the fanion's own height). */
+		public int step() {
+			return step;
+		}
+
+		/** Segments in work order (ids 1..n). */
+		public List<Segment> segments() {
+			return segments;
+		}
+
+		public @Nullable Segment segment(int id) {
+			return byId.get(id);
+		}
+
+		/** Branches / quarry rooms. */
+		public int galleryCount() {
+			return galleryCount;
+		}
+
+		/** Direction (0 north, 1 east, 2 south, 3 west) of the main tunnel, -1 if none. */
+		public int mainDirection() {
+			return mainDir;
+		}
+
+		/** Farthest main tunnel cell from the staircase (blocks). */
+		public int mainLength() {
+			return mainLength;
+		}
+
+		public int cellCount() {
+			int total = 0;
+			for (Segment segment : segments) {
+				total += segment.cells().size();
+			}
+			return total;
+		}
+
+		public boolean contains(BlockPos pos) {
+			return structure.contains(pos.asLong());
+		}
 	}
 
 	private final BlockPos origin;
 	private final int orientation;
 	private final int side;
-	private final int levelY;
-	private final List<BlockPos> nodes = new ArrayList<>();
-	private final List<Integer> parentList = new ArrayList<>();
-	/** Segment of each node (-1 entrance, {@link #STAIRS}, gallery id) and cell index inside it. */
-	private final List<Integer> nodeSegment = new ArrayList<>();
-	private final List<Integer> nodeCell = new ArrayList<>();
+	private final int width;
+	private final int[] bounds;
+	private final boolean rooms;
+	private final Settings settings;
+	/** Inner lane: step k (the walking path). */
 	private final List<Cell> stairs = new ArrayList<>();
-	private final List<Segment> segments = new ArrayList<>();
-	private final Map<Integer, Segment> byId = new HashMap<>();
-	/** Blocks and floors of every cell (+ one more loop of stairs): veins never touch them. */
-	private final Set<Long> structure = new HashSet<>();
-	private int[] parents = new int[0];
-	private int mainDir = -1;
-	private int mainLength;
-	private int mainCount;
-	private int galleryCount;
+	/** Outer lane cells of step k (2-wide staircases). */
+	private final List<List<Cell>> outer = new ArrayList<>();
+	private final LongOpenHashSet stairStructure = new LongOpenHashSet();
+	private final TreeMap<Integer, Level> levels = new TreeMap<>();
+	// walking graph
+	private final List<BlockPos> nodes = new ArrayList<>();
+	private final IntArrayList parents = new IntArrayList();
+	private final IntArrayList depths = new IntArrayList();
+	private final IntArrayList nodeLevels = new IntArrayList();
+	private final IntArrayList nodeSegments = new IntArrayList();
+	private final IntArrayList nodeCells = new IntArrayList();
+	private final Long2IntOpenHashMap nodeByPos = new Long2IntOpenHashMap();
 
-	private MineLayout(BlockPos origin, int orientation, int levelY, int[] bounds, boolean rooms, Settings settings) {
+	private MineLayout(BlockPos origin, int orientation, int lowestY, int[] bounds, boolean rooms, Settings settings) {
 		this.origin = origin.immutable();
 		this.orientation = Math.floorMod(orientation, ORIENTATIONS);
 		this.side = clampSide(settings.stairSide());
-		this.levelY = Math.min(levelY, origin.getY());
-		addNode(this.origin, -1, -1, -1);
-		structure.add(this.origin.asLong());
-		structure.add(this.origin.below().asLong());
-		int steps = this.origin.getY() - this.levelY;
+		this.width = settings.stairWidth();
+		this.bounds = bounds.clone();
+		this.rooms = rooms;
+		this.settings = settings;
+		nodeByPos.defaultReturnValue(-1);
+		addNode(this.origin, -1, STAIRS_LEVEL, -1, -1);
+		stairStructure.add(this.origin.asLong());
+		stairStructure.add(this.origin.below().asLong());
+		int steps = Math.max(0, this.origin.getY() - Math.min(lowestY, this.origin.getY()));
 		for (int k = 0; k < steps; k++) {
-			Cell cell = stairCell(this.origin, this.orientation, side, k);
+			Cell cell = stairCell(this.origin, this.orientation, side, width, k);
 			stairs.add(cell);
-			addNode(cell.feet(), k, STAIRS, k);
-			addStructure(cell);
-		}
-		for (int k = steps; k < steps + perimeter(side); k++) {
-			addStructure(stairCell(this.origin, this.orientation, side, k));
-		}
-		buildGalleries(bounds, rooms, settings, steps);
-		parents = new int[parentList.size()];
-		for (int i = 0; i < parents.length; i++) {
-			parents[i] = parentList.get(i);
+			addNode(cell.feet(), k, STAIRS_LEVEL, -1, k);
+			addStructure(stairStructure, cell);
+			List<Cell> lane = outerCells(this.origin, this.orientation, side, width, k);
+			outer.add(lane);
+			for (Cell extra : lane) {
+				addStructure(stairStructure, extra);
+			}
 		}
 	}
 
 	/**
-	 * Layout of the mine of a fanion at {@code origin} (feet position of the banner) with galleries at {@code levelY}
-	 * (feet height, at most the fanion's), inside {@code bounds} = {minX, minZ, maxX, maxZ}.
+	 * Layout of the mine of a fanion at {@code origin} (feet position of the banner): stairs down to {@code lowestY}
+	 * (feet height of the deepest possible step), levels inside {@code bounds} = {minX, minZ, maxX, maxZ}.
 	 *
 	 * @param rooms quarry rooms instead of side branches
 	 */
-	public static MineLayout build(BlockPos origin, int orientation, int levelY, int[] bounds, boolean rooms, Settings settings) {
-		return new MineLayout(origin, orientation, levelY, bounds, rooms, settings);
+	public static MineLayout build(BlockPos origin, int orientation, int lowestY, int[] bounds, boolean rooms, Settings settings) {
+		return new MineLayout(origin, orientation, lowestY, bounds, rooms, settings);
 	}
 
 	// ------------------------------------------------------------------ spiral
@@ -125,6 +211,16 @@ public final class MineLayout {
 	/** Steps of one turn of the spiral. */
 	public static int perimeter(int side) {
 		return 4 * (clampSide(side) - 1);
+	}
+
+	/** Two-lane staircase. */
+	public static boolean wide(int width) {
+		return width >= 2;
+	}
+
+	/** Side of the dug square (the outer lane of a 2-wide staircase surrounds the inner spiral). */
+	public static int footprintSide(int side, int width) {
+		return clampSide(side) + (wide(width) ? 2 : 0);
 	}
 
 	/** First direction (0 north, 1 east, 2 south, 3 west) of an orientation. */
@@ -141,21 +237,69 @@ public final class MineLayout {
 		return Math.floorMod(direction + quarters, 4);
 	}
 
-	/**
-	 * Stair step {@code k} (0 = the column next to the fanion): feet one block lower per step, 3 blocks high. The steps
-	 * walk the border of a side×side square that starts next to the fanion, so one turn of the spiral goes down
-	 * {@link #perimeter} blocks and the next turn passes under the previous one with plenty of rock between them.
-	 */
-	public static Cell stairCell(BlockPos origin, int orientation, int side, int k) {
-		int[] local = stairLocal(side, k);
-		int d0 = firstDirection(orientation);
-		int d1 = sideDirection(orientation);
-		int x = origin.getX() + DX[d0] + local[0] * DX[d0] + local[1] * DX[d1];
-		int z = origin.getZ() + DZ[d0] + local[0] * DZ[d0] + local[1] * DZ[d1];
-		return new Cell(new BlockPos(x, origin.getY() - 1 - k, z), STAIR_HEIGHT);
+	static int dx(int direction) {
+		return DX[direction];
 	}
 
-	/** Position {a, b} of step k in the square (a along the first direction, b along the second). */
+	static int dz(int direction) {
+		return DZ[direction];
+	}
+
+	/** Column (u, v) of the square: u along the first direction (0 = next to the fanion), v along the second one. */
+	private static BlockPos column(BlockPos origin, int orientation, int u, int v, int y) {
+		int d0 = firstDirection(orientation);
+		int d1 = sideDirection(orientation);
+		return new BlockPos(origin.getX() + DX[d0] * (1 + u) + DX[d1] * v, y, origin.getZ() + DZ[d0] * (1 + u) + DZ[d1] * v);
+	}
+
+	/** Inner lane step {@code k} of a 1-wide staircase (mines planned before wide staircases). */
+	public static Cell stairCell(BlockPos origin, int orientation, int side, int k) {
+		return stairCell(origin, orientation, side, 1, k);
+	}
+
+	/**
+	 * Inner lane step {@code k} (0 = the step next to the fanion): feet one block lower per step, 3 blocks high. The
+	 * steps walk the border of a side×side square, so one turn of the spiral goes down {@link #perimeter} blocks and the
+	 * next turn passes under the previous one with plenty of rock between them. The inner lane of a 2-wide staircase is
+	 * the same spiral moved one block away from the fanion (its outer lane passes between them).
+	 */
+	public static Cell stairCell(BlockPos origin, int orientation, int side, int width, int k) {
+		int[] local = stairLocal(side, k);
+		int shift = wide(width) ? 1 : 0;
+		return new Cell(column(origin, orientation, local[0] + shift, local[1] + shift, origin.getY() - 1 - k), STAIR_HEIGHT);
+	}
+
+	/**
+	 * Outer lane cells of step {@code k} (2-wide staircases, empty otherwise): the cells next to the inner step on its
+	 * outer side(s), at the same height; at a corner both sides and the diagonal (a 2×2 landing of the turn).
+	 */
+	public static List<Cell> outerCells(BlockPos origin, int orientation, int side, int width, int k) {
+		if (!wide(width)) {
+			return List.of();
+		}
+		BlockPos inner = stairCell(origin, orientation, side, width, k).feet();
+		List<Integer> directions = outward(orientation, side, k);
+		List<Cell> cells = new ArrayList<>(3);
+		for (int direction : directions) {
+			cells.add(new Cell(inner.offset(DX[direction], 0, DZ[direction]), STAIR_HEIGHT));
+		}
+		if (directions.size() == 2) {
+			int a = directions.get(0);
+			int b = directions.get(1);
+			cells.add(new Cell(inner.offset(DX[a] + DX[b], 0, DZ[a] + DZ[b]), STAIR_HEIGHT));
+		}
+		return cells;
+	}
+
+	/** Every cell of step {@code k}: the inner one first. */
+	public static List<Cell> stepCells(BlockPos origin, int orientation, int side, int width, int k) {
+		List<Cell> cells = new ArrayList<>(4);
+		cells.add(stairCell(origin, orientation, side, width, k));
+		cells.addAll(outerCells(origin, orientation, side, width, k));
+		return cells;
+	}
+
+	/** Position {a, b} of step k in the inner square (a along the first direction, b along the second). */
 	static int[] stairLocal(int side, int k) {
 		int s = clampSide(side) - 1;
 		int p = Math.floorMod(k, 4 * s);
@@ -169,28 +313,36 @@ public final class MineLayout {
 		};
 	}
 
-	/** Columns {x, z} of the whole square (steps and pillar). */
-	public static List<int[]> footprint(BlockPos origin, int orientation, int side) {
-		int s = clampSide(side);
-		int d0 = firstDirection(orientation);
-		int d1 = sideDirection(orientation);
+	/** Columns {x, z} of the whole dug square (steps of both lanes and pillar). */
+	public static List<int[]> footprint(BlockPos origin, int orientation, int side, int width) {
+		int s = footprintSide(side, width);
 		List<int[]> columns = new ArrayList<>(s * s);
-		for (int a = 0; a < s; a++) {
-			for (int b = 0; b < s; b++) {
-				columns.add(new int[]{origin.getX() + DX[d0] * (1 + a) + DX[d1] * b, origin.getZ() + DZ[d0] * (1 + a) + DZ[d1] * b});
+		for (int u = 0; u < s; u++) {
+			for (int v = 0; v < s; v++) {
+				BlockPos pos = column(origin, orientation, u, v, 0);
+				columns.add(new int[]{pos.getX(), pos.getZ()});
 			}
 		}
 		return columns;
 	}
 
-	/** The spiral of this orientation stays inside the bounds. */
-	public static boolean fits(BlockPos origin, int orientation, int side, int[] bounds) {
-		for (int[] column : footprint(origin, orientation, side)) {
+	/** Columns of a 1-wide staircase. */
+	public static List<int[]> footprint(BlockPos origin, int orientation, int side) {
+		return footprint(origin, orientation, side, 1);
+	}
+
+	/** The staircase of this orientation stays inside the bounds. */
+	public static boolean fits(BlockPos origin, int orientation, int side, int width, int[] bounds) {
+		for (int[] column : footprint(origin, orientation, side, width)) {
 			if (!inside(column[0], column[1], bounds)) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	public static boolean fits(BlockPos origin, int orientation, int side, int[] bounds) {
+		return fits(origin, orientation, side, 1, bounds);
 	}
 
 	static boolean inside(int x, int z, int[] bounds) {
@@ -228,146 +380,243 @@ public final class MineLayout {
 		return directions;
 	}
 
-	// ------------------------------------------------------------------ galleries
+	// ------------------------------------------------------------------ levels
 
-	private void buildGalleries(int[] bounds, boolean rooms, Settings settings, int steps) {
-		BlockPos anchor = steps > 0 ? stairs.getLast().feet() : origin;
-		List<Integer> candidates = steps > 0 ? outward(orientation, side, steps - 1) : List.of(0, 1, 2, 3);
+	/**
+	 * Galleries at feet height {@code y} (built on first use), or null when no stair step stands at that height (above
+	 * the first step, below the deepest one). {@code y} = the fanion's own height: galleries right from the fanion
+	 * (a fanion planted just above the bedrock).
+	 */
+	public @Nullable Level level(int y) {
+		Level level = levels.get(y);
+		if (level != null) {
+			return level;
+		}
+		int step = origin.getY() - 1 - y;
+		if (step < -1 || step >= stairs.size()) {
+			return null;
+		}
+		level = new Level(y, step);
+		levels.put(y, level);
+		buildLevel(level);
+		return level;
+	}
+
+	/** Levels built so far. */
+	public Collection<Level> builtLevels() {
+		return levels.values();
+	}
+
+	private void buildLevel(Level level) {
+		int y = level.y;
+		BlockPos anchor = level.step < 0 ? origin : stairs.get(level.step).feet();
+		int anchorNode = level.step < 0 ? ENTRANCE : stairNode(level.step);
+		List<Integer> candidates = level.step < 0 ? List.of(0, 1, 2, 3) : outward(orientation, side, level.step);
+		boolean landing = settings.stairWidth() > 0;
+		// Cells of the staircase square next to the anchor (outer lane of a 2-wide staircase): the landing starts after.
+		int first = level.step >= 0 && wide(width) ? 2 : 1;
 		int maxMain = Math.max(0, settings.mainLength());
 		int best = -1;
 		for (int direction : candidates) {
 			int length = available(anchor.getX(), anchor.getZ(), direction, maxMain, bounds);
 			if (length > best) {
 				best = length;
-				mainDir = direction;
+				level.mainDir = direction;
 			}
 		}
-		mainLength = Math.max(0, best);
+		int reach = Math.max(0, best);
+		level.mainLength = reach;
+		if (level.mainDir < 0 || reach < first) {
+			return;
+		}
+		int dir = level.mainDir;
+		int parent = anchorNode;
+		int mainStart = 1;
+		int previous = -1;
+		if (landing) {
+			int id = level.segments.size() + 1;
+			List<Cell> cells = new ArrayList<>();
+			IntArrayList stands = new IntArrayList();
+			if (first == 2) {
+				// The outer lane cell beside the landing step: the way in, dug even before the staircase is widened.
+				Cell entry = new Cell(at(anchor, dir, 1, y), STAIR_HEIGHT);
+				cells.add(entry);
+				stands.add(parent);
+				parent = addNode(entry.feet(), parent, y, id, 0);
+				level.nodes.add(parent);
+				addStructure(level.structure, entry);
+			}
+			int last = Math.min(first + 1, reach);
+			for (int j = first; j <= last; j++) {
+				Cell center = new Cell(at(anchor, dir, j, y), TUNNEL_HEIGHT);
+				cells.add(center);
+				stands.add(parent);
+				int centerNode = addNode(center.feet(), parent, y, id, cells.size() - 1);
+				level.nodes.add(centerNode);
+				addStructure(level.structure, center);
+				for (int sign : new int[]{-1, 1}) {
+					int across = turn(dir, sign);
+					BlockPos pos = center.feet().offset(DX[across], 0, DZ[across]);
+					if (!inside(pos.getX(), pos.getZ(), bounds)) {
+						continue;
+					}
+					Cell cell = new Cell(pos, TUNNEL_HEIGHT);
+					cells.add(cell);
+					stands.add(centerNode);
+					level.nodes.add(addNode(pos, centerNode, y, id, cells.size() - 1));
+					addStructure(level.structure, cell);
+				}
+				parent = centerNode;
+			}
+			add(level, new Segment(id, Kind.LANDING, List.copyOf(cells), stands.toIntArray(), -1, 1));
+			previous = id;
+			mainStart = last + 1;
+		}
+		if (mainStart > reach) {
+			return;
+		}
 		int roomLength = Math.max(1, settings.roomLength());
 		int roomPeriod = roomLength + Math.max(1, settings.roomGap());
-		int roomHeight = Math.max(TUNNEL_HEIGHT, settings.roomHeight());
-		int[] mainNodes = new int[mainLength + 1];
-		mainNodes[0] = steps;
-		List<Cell> mainCells = new ArrayList<>(mainLength + 1);
-		mainCells.add(null);
-		for (int j = 1; j <= mainLength; j++) {
-			boolean roomTrunk = rooms && j >= 2 && (j - 2) % roomPeriod < roomLength;
-			Cell cell = new Cell(new BlockPos(anchor.getX() + DX[mainDir] * j, levelY, anchor.getZ() + DZ[mainDir] * j),
-					roomTrunk ? roomHeight : TUNNEL_HEIGHT);
-			mainCells.add(cell);
-			mainNodes[j] = nodes.size();
-			// The segment is not known yet: fixed below when the segments are cut.
-			addNode(cell.feet(), mainNodes[j - 1], -1, -1);
-			addStructure(cell);
+		int roomHeight = Math.max(TUNNEL_HEIGHT, Math.min(MAX_CELL_HEIGHT, settings.roomHeight()));
+		// Quarry rooms leave one corridor cell after the landing (legacy galleries: from the 2nd cell).
+		int roomBase = landing ? mainStart + 1 : 2;
+		Cell[] mainCells = new Cell[reach + 1];
+		int[] mainNodes = new int[reach + 1];
+		mainNodes[mainStart - 1] = parent;
+		for (int j = mainStart; j <= reach; j++) {
+			boolean trunk = rooms && j >= roomBase && (j - roomBase) % roomPeriod < roomLength;
+			Cell cell = new Cell(at(anchor, dir, j, y), trunk ? roomHeight : TUNNEL_HEIGHT);
+			mainCells[j] = cell;
+			// The segment is not known yet: set when the segments are cut.
+			mainNodes[j] = addNode(cell.feet(), mainNodes[j - 1], y, -1, -1);
+			level.nodes.add(mainNodes[j]);
+			addStructure(level.structure, cell);
 		}
 		if (rooms) {
-			cutRooms(bounds, settings, mainCells, mainNodes, roomLength, roomPeriod, roomHeight);
+			cutRooms(level, mainCells, mainNodes, mainStart, reach, roomBase, roomLength, roomPeriod, roomHeight, previous);
 		} else {
-			cutBranches(bounds, settings, mainCells, mainNodes);
+			cutBranches(level, mainCells, mainNodes, mainStart, reach, previous);
 		}
 	}
 
-	private void cutBranches(int[] bounds, Settings settings, List<Cell> mainCells, int[] mainNodes) {
+	private static BlockPos at(BlockPos anchor, int direction, int distance, int y) {
+		return new BlockPos(anchor.getX() + DX[direction] * distance, y, anchor.getZ() + DZ[direction] * distance);
+	}
+
+	private void cutBranches(Level level, Cell[] mainCells, int[] mainNodes, int mainStart, int reach, int previous) {
 		int spacing = Math.max(2, settings.branchSpacing());
-		int prevMain = -1;
-		for (int start = 1; start <= mainLength; start += spacing) {
-			int end = Math.min(start + spacing - 1, mainLength);
-			Segment main = mainSegment(mainCells, mainNodes, start, end, prevMain);
+		int prevMain = previous;
+		for (int start = mainStart; start <= reach; start += spacing) {
+			int end = Math.min(start + spacing - 1, reach);
+			Segment main = mainSegment(level, mainCells, mainNodes, start, end, prevMain);
 			prevMain = main.id();
 			if (end - start + 1 < spacing) {
 				break;
 			}
-			BlockPos junction = mainCells.get(end).feet();
+			BlockPos junction = mainCells[end].feet();
 			for (int sign : new int[]{-1, 1}) {
-				int direction = turn(mainDir, sign);
+				int direction = turn(level.mainDir, sign);
 				int length = available(junction.getX(), junction.getZ(), direction, Math.max(0, settings.branchLength()), bounds);
 				if (length <= 0) {
 					continue;
 				}
-				int id = segments.size() + 1;
+				int id = level.segments.size() + 1;
 				List<Cell> cells = new ArrayList<>(length);
 				int[] stands = new int[length];
-				int previous = mainNodes[end];
+				int node = mainNodes[end];
 				for (int t = 1; t <= length; t++) {
-					Cell cell = new Cell(new BlockPos(junction.getX() + DX[direction] * t, levelY, junction.getZ() + DZ[direction] * t), TUNNEL_HEIGHT);
+					Cell cell = new Cell(at(junction, direction, t, level.y), TUNNEL_HEIGHT);
 					cells.add(cell);
-					stands[t - 1] = previous;
-					previous = addNode(cell.feet(), previous, id, t - 1);
-					addStructure(cell);
+					stands[t - 1] = node;
+					node = addNode(cell.feet(), node, level.y, id, t - 1);
+					level.nodes.add(node);
+					addStructure(level.structure, cell);
 				}
-				add(new Segment(id, Kind.BRANCH, List.copyOf(cells), stands, main.id(), ++galleryCount));
+				add(level, new Segment(id, Kind.BRANCH, List.copyOf(cells), stands, main.id(), ++level.galleryCount));
 			}
 		}
 	}
 
-	private void cutRooms(int[] bounds, Settings settings, List<Cell> mainCells, int[] mainNodes, int roomLength, int roomPeriod,
-			int roomHeight) {
+	private void cutRooms(Level level, Cell[] mainCells, int[] mainNodes, int mainStart, int reach, int roomBase, int roomLength,
+			int roomPeriod, int roomHeight, int previous) {
 		int half = Math.max(0, (settings.roomWidth() - 1) / 2);
-		int prevMain = -1;
-		int j = 1;
-		for (int room = 0; j <= mainLength; room++) {
-			int roomStart = 2 + room * roomPeriod;
-			int end = roomStart > mainLength ? mainLength : Math.min(roomStart + roomLength - 1, mainLength);
-			Segment main = mainSegment(mainCells, mainNodes, j, end, prevMain);
-			prevMain = main.id();
-			j = end + 1;
-			if (roomStart > mainLength || half == 0) {
+		int prevMain = previous;
+		int j = mainStart;
+		for (int room = 0; j <= reach; room++) {
+			int roomStart = roomBase + room * roomPeriod;
+			int end = roomStart > reach ? reach : Math.min(roomStart + roomLength - 1, reach);
+			if (end < j) {
 				continue;
 			}
-			int id = segments.size() + 1;
+			Segment main = mainSegment(level, mainCells, mainNodes, j, end, prevMain);
+			prevMain = main.id();
+			j = end + 1;
+			if (roomStart > reach || half == 0) {
+				continue;
+			}
+			int id = level.segments.size() + 1;
 			List<Cell> cells = new ArrayList<>();
-			List<Integer> stands = new ArrayList<>();
-			for (int jj = roomStart; jj <= end; jj++) {
-				BlockPos trunk = mainCells.get(jj).feet();
+			IntArrayList stands = new IntArrayList();
+			for (int jj = Math.max(roomStart, mainStart); jj <= end; jj++) {
+				BlockPos trunk = mainCells[jj].feet();
 				for (int t = 1; t <= half; t++) {
 					for (int sign : new int[]{-1, 1}) {
-						int direction = turn(mainDir, sign);
+						int direction = turn(level.mainDir, sign);
 						if (available(trunk.getX(), trunk.getZ(), direction, t, bounds) < t) {
 							continue;
 						}
-						Cell cell = new Cell(new BlockPos(trunk.getX() + DX[direction] * t, levelY, trunk.getZ() + DZ[direction] * t), roomHeight);
+						Cell cell = new Cell(at(trunk, direction, t, level.y), roomHeight);
 						cells.add(cell);
 						stands.add(mainNodes[jj]);
-						addStructure(cell);
+						addStructure(level.structure, cell);
 					}
 				}
 			}
 			if (!cells.isEmpty()) {
-				int[] standArray = stands.stream().mapToInt(Integer::intValue).toArray();
-				add(new Segment(id, Kind.ROOM, List.copyOf(cells), standArray, main.id(), ++galleryCount));
+				add(level, new Segment(id, Kind.ROOM, List.copyOf(cells), stands.toIntArray(), main.id(), ++level.galleryCount));
 			}
 		}
 	}
 
-	private Segment mainSegment(List<Cell> mainCells, int[] mainNodes, int start, int end, int after) {
-		int id = segments.size() + 1;
+	private Segment mainSegment(Level level, Cell[] mainCells, int[] mainNodes, int start, int end, int after) {
+		int id = level.segments.size() + 1;
 		List<Cell> cells = new ArrayList<>(end - start + 1);
 		int[] stands = new int[end - start + 1];
 		for (int j = start; j <= end; j++) {
-			cells.add(mainCells.get(j));
+			cells.add(mainCells[j]);
 			stands[j - start] = mainNodes[j - 1];
-			nodeSegment.set(mainNodes[j], id);
-			nodeCell.set(mainNodes[j], j - start);
+			nodeSegments.set(mainNodes[j], id);
+			nodeCells.set(mainNodes[j], j - start);
 		}
-		Segment segment = new Segment(id, Kind.MAIN, List.copyOf(cells), stands, after, ++mainCount);
-		add(segment);
+		int ordinal = 0;
+		for (Segment segment : level.segments) {
+			if (segment.kind() == Kind.MAIN) {
+				ordinal++;
+			}
+		}
+		Segment segment = new Segment(id, Kind.MAIN, List.copyOf(cells), stands, after, ordinal + 1);
+		add(level, segment);
 		return segment;
 	}
 
-	private void add(Segment segment) {
-		segments.add(segment);
-		byId.put(segment.id(), segment);
+	private static void add(Level level, Segment segment) {
+		level.segments.add(segment);
+		level.byId.put(segment.id(), segment);
 	}
 
-	private int addNode(BlockPos pos, int parent, int segment, int cell) {
+	private int addNode(BlockPos pos, int parent, int level, int segment, int cell) {
+		int index = nodes.size();
 		nodes.add(pos);
-		parentList.add(parent);
-		nodeSegment.add(segment);
-		nodeCell.add(cell);
-		return nodes.size() - 1;
+		parents.add(parent);
+		depths.add(parent < 0 ? 0 : depths.getInt(parent) + 1);
+		nodeLevels.add(level);
+		nodeSegments.add(segment);
+		nodeCells.add(cell);
+		nodeByPos.put(pos.asLong(), index);
+		return index;
 	}
 
-	private void addStructure(Cell cell) {
+	private static void addStructure(LongOpenHashSet structure, Cell cell) {
 		for (int i = 0; i < cell.height(); i++) {
 			structure.add(cell.feet().above(i).asLong());
 		}
@@ -388,36 +637,54 @@ public final class MineLayout {
 		return side;
 	}
 
-	public int levelY() {
-		return levelY;
+	/** Staircase width (0 / 1: one lane, 2: two lanes). */
+	public int width() {
+		return width;
 	}
 
-	/** Stair steps down to the gallery level (feet of the last one = level). */
+	public int[] bounds() {
+		return bounds.clone();
+	}
+
+	public boolean rooms() {
+		return rooms;
+	}
+
+	public Settings settings() {
+		return settings;
+	}
+
+	/** Inner lane steps (feet of step k = fanion height - 1 - k). */
 	public List<Cell> stairs() {
 		return stairs;
 	}
 
-	/** Gallery segments in work order (ids 1..n). */
-	public List<Segment> segments() {
-		return segments;
+	/** Outer lane cells of step k (empty for a 1-wide staircase). */
+	public List<Cell> outer(int k) {
+		return k >= 0 && k < outer.size() ? outer.get(k) : List.of();
 	}
 
-	public Segment segment(int id) {
-		return byId.get(id);
+	/** Every cell of step k, the inner one first. */
+	public List<Cell> step(int k) {
+		List<Cell> cells = new ArrayList<>(4);
+		cells.add(stairs.get(k));
+		cells.addAll(outer(k));
+		return cells;
 	}
 
-	/** Branches / quarry rooms of the level. */
-	public int galleryCount() {
-		return galleryCount;
+	/** Step whose feet stand at height y (-1 for the fanion's own height). */
+	public int stepAt(int y) {
+		return origin.getY() - 1 - y;
 	}
 
-	public int mainLength() {
-		return mainLength;
+	/** Node standing on stair step k. */
+	public static int stairNode(int k) {
+		return k + 1;
 	}
 
-	/** Direction (0 north, 1 east, 2 south, 3 west) of the main tunnel, -1 if none. */
-	public int mainDirection() {
-		return mainDir;
+	/** Node to stand on to dig stair step k: the previous step (the fanion for the first one). */
+	public static int stairStand(int k) {
+		return k;
 	}
 
 	public int nodeCount() {
@@ -429,30 +696,64 @@ public final class MineLayout {
 	}
 
 	public int parent(int index) {
-		return parents[index];
+		return parents.getInt(index);
 	}
 
-	/** Segment of a node: -1 for the entrance (the fanion), {@link #STAIRS}, or a gallery segment id. */
+	public int depth(int index) {
+		return depths.getInt(index);
+	}
+
+	/** Level (feet height) of a node, {@link #STAIRS_LEVEL} for the entrance and the stairs. */
+	public int nodeLevel(int index) {
+		return nodeLevels.getInt(index);
+	}
+
+	/** Segment of a node: -1 for the entrance and the stairs, else a segment id of its level. */
 	public int nodeSegment(int index) {
-		return nodeSegment.get(index);
+		return nodeSegments.getInt(index);
 	}
 
 	/** Cell index of a node inside its segment (step index for the stairs). */
 	public int nodeCell(int index) {
-		return nodeCell.get(index);
+		return nodeCells.getInt(index);
 	}
 
-	/** Node standing on stair step k. */
-	public static int stairNode(int k) {
-		return k + 1;
+	/** Node whose feet are at {@code feet} (stairs and built levels), -1 if none. */
+	public int nodeAt(BlockPos feet) {
+		return nodeByPos.get(feet.asLong());
 	}
 
+	/** Part of a staircase step, a built level's cells, or their floors: veins never take them. */
 	public boolean inStructure(BlockPos pos) {
-		return structure.contains(pos.asLong());
+		return inStructure(pos.asLong(), pos.getY());
 	}
 
-	public Set<Long> structure() {
-		return structure;
+	public boolean inStructure(long packed, int y) {
+		if (stairStructure.contains(packed)) {
+			return true;
+		}
+		for (Level level : levels.subMap(y - MAX_CELL_HEIGHT + 1, true, y + 1, true).values()) {
+			if (level.structure.contains(packed)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** In the columns of the staircase square, or the fanion's: approach tunnels never go there. */
+	public boolean inStairColumns(int x, int z) {
+		if (x == origin.getX() && z == origin.getZ()) {
+			return true;
+		}
+		int d0 = firstDirection(orientation);
+		int d1 = sideDirection(orientation);
+		int rx = x - origin.getX();
+		int rz = z - origin.getZ();
+		// Back to (u, v): u + 1 along d0, v along d1.
+		int along = rx * DX[d0] + rz * DZ[d0];
+		int sideways = rx * DX[d1] + rz * DZ[d1];
+		int s = footprintSide(side, width);
+		return along >= 1 && along <= s && sideways >= 0 && sideways < s;
 	}
 
 	/**
@@ -461,45 +762,92 @@ public final class MineLayout {
 	 */
 	public List<Integer> path(int from, int to) {
 		List<Integer> result = new ArrayList<>();
-		if (from == to) {
+		if (from == to || from < 0 || to < 0) {
 			return result;
 		}
-		List<Integer> chain = new ArrayList<>();
-		Map<Integer, Integer> rank = new HashMap<>();
-		for (int node = to; node >= 0; node = parents[node]) {
-			rank.put(node, chain.size());
-			chain.add(node);
+		List<Integer> down = new ArrayList<>();
+		int a = from;
+		int b = to;
+		while (depth(a) > depth(b)) {
+			a = parent(a);
+			result.add(a);
 		}
-		int current = from;
-		while (!rank.containsKey(current)) {
-			current = parents[current];
-			if (current < 0) {
-				return result;
-			}
-			result.add(current);
+		while (depth(b) > depth(a)) {
+			down.add(b);
+			b = parent(b);
 		}
-		for (int i = rank.get(current) - 1; i >= 0; i--) {
-			result.add(chain.get(i));
+		while (a != b) {
+			a = parent(a);
+			result.add(a);
+			down.add(b);
+			b = parent(b);
+		}
+		for (int i = down.size() - 1; i >= 0; i--) {
+			result.add(down.get(i));
 		}
 		return result;
+	}
+
+	/** Nodes walked between two nodes of the tree. */
+	public int distance(int from, int to) {
+		if (from < 0 || to < 0) {
+			return Integer.MAX_VALUE / 4;
+		}
+		int a = from;
+		int b = to;
+		int steps = 0;
+		while (depth(a) > depth(b)) {
+			a = parent(a);
+			steps++;
+		}
+		while (depth(b) > depth(a)) {
+			b = parent(b);
+			steps++;
+		}
+		while (a != b) {
+			a = parent(a);
+			b = parent(b);
+			steps += 2;
+		}
+		return steps;
 	}
 
 	/** Walkable node nearest to (x, y, z) (feet), within {@code maxDistance}; -1 if none. */
 	public int nearestNode(double x, double y, double z, double maxDistance, IntPredicate walkable) {
 		int best = -1;
 		double bestSq = maxDistance * maxDistance;
-		for (int i = 0; i < nodes.size(); i++) {
-			BlockPos pos = nodes.get(i);
-			double dx = pos.getX() + 0.5 - x;
-			double dy = pos.getY() - y;
-			double dz = pos.getZ() + 0.5 - z;
-			double dist = dx * dx + dy * dy + dz * dz;
+		int span = (int) Math.ceil(maxDistance) + 1;
+		int center = origin.getY() - 1 - (int) Math.floor(y);
+		int from = Math.max(-1, center - span);
+		int to = Math.min(stairs.size() - 1, center + span);
+		for (int k = from; k <= to; k++) {
+			int node = k < 0 ? ENTRANCE : stairNode(k);
+			double dist = distSq(node, x, y, z);
 			// The predicate may read the world: only for candidates closer than the best one.
-			if (dist <= bestSq && walkable.test(i)) {
+			if (dist <= bestSq && walkable.test(node)) {
 				bestSq = dist;
-				best = i;
+				best = node;
+			}
+		}
+		int floorY = (int) Math.floor(y);
+		for (Level level : levels.subMap(floorY - span, true, floorY + span, true).values()) {
+			for (int i = 0; i < level.nodes.size(); i++) {
+				int node = level.nodes.getInt(i);
+				double dist = distSq(node, x, y, z);
+				if (dist <= bestSq && walkable.test(node)) {
+					bestSq = dist;
+					best = node;
+				}
 			}
 		}
 		return best;
+	}
+
+	private double distSq(int node, double x, double y, double z) {
+		BlockPos pos = nodes.get(node);
+		double dx = pos.getX() + 0.5 - x;
+		double dy = pos.getY() - y;
+		double dz = pos.getZ() + 0.5 - z;
+		return dx * dx + dy * dy + dz * dz;
 	}
 }

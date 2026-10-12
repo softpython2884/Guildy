@@ -1,24 +1,31 @@
 package dev.guildy.villager;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalInt;
-import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.LongPredicate;
 
 /**
  * Pure rules of real mining (unit tested on fake grids): what may be broken (never a non-natural block, never another
  * guild's land, never a natural block carrying a non-natural one, never into water or lava without sealing it first),
- * floors to fill, ore veins to follow, the choice of the staircase orientation and the gallery levels.
+ * floors to fill, ore veins and wanted blocks to follow (also a little outside the zone), what a miner can reach, the
+ * choice of the staircase orientation and the gallery levels.
  */
 public final class MineRules {
 	/** Faces checked for fluids before breaking a block (the block above is checked apart: it is never sealed). */
 	private static final int[][] SEALED_FACES = {{1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1}, {0, -1, 0}};
 	private static final int[][] FACES = {{1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1}, {0, -1, 0}, {0, 1, 0}};
+	/** {@link Targets#key} of every ore (any ore joins a vein). */
+	public static final int ORE_KEY = 1;
+	/** Eye height used for reach checks (villager). */
+	private static final double EYE = 1.5;
 
 	private MineRules() {
 	}
@@ -35,6 +42,28 @@ public final class MineRules {
 
 		default MineBlock at(BlockPos pos) {
 			return at(pos.getX(), pos.getY(), pos.getZ());
+		}
+	}
+
+	/**
+	 * What the miners collect apart from the rock they dig through: 0 = nothing special, {@link #ORE_KEY} = an ore,
+	 * any other value = a wanted block ("objectifs prioritaires"; one value per kind of block). A vein is a connected
+	 * cluster of blocks of the same key.
+	 */
+	public interface Targets {
+		int key(int x, int y, int z);
+	}
+
+	/** Box where veins are followed: the zone square widened by a margin, between two heights. */
+	public record Region(int minX, int minZ, int maxX, int maxZ, int minY, int maxY) {
+		public boolean contains(int x, int y, int z) {
+			return x >= minX && x <= maxX && z >= minZ && z <= maxZ && y >= minY && y <= maxY;
+		}
+
+		/** {@code bounds} = {minX, minZ, maxX, maxZ} widened by {@code margin} blocks. */
+		public static Region around(int[] bounds, int margin, int minY, int maxY) {
+			int m = Math.max(0, margin);
+			return new Region(bounds[0] - m, bounds[1] - m, bounds[2] + m, bounds[3] + m, minY, maxY);
 		}
 	}
 
@@ -146,7 +175,7 @@ public final class MineRules {
 		return new Check(Verdict.DIG, seal);
 	}
 
-	/** Vein blocks around the tunnel: same rules, but never next to a fluid (no sealing) nor under a falling block. */
+	/** Vein blocks around the tunnels: same rules, but never next to a fluid (no sealing) nor under a falling block. */
 	public static Verdict digVein(Grid grid, int x, int y, int z) {
 		Check check = dig(grid, x, y, z);
 		if (check.verdict() != Verdict.DIG) {
@@ -180,37 +209,61 @@ public final class MineRules {
 		};
 	}
 
+	/** A face of the block touches the open (air, torch...): it can be seen and reached by a pickaxe. */
+	public static boolean exposed(Grid grid, BlockPos pos) {
+		for (int[] face : FACES) {
+			if (grid.at(pos.getX() + face[0], pos.getY() + face[1], pos.getZ() + face[2]).passable()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// ------------------------------------------------------------------ veins
+
 	/**
-	 * Ore blocks connected to the walls / ceiling of a dug cell (breadth first, so each one is exposed by the previous
-	 * ones), at most {@code max}, within {@code reach} blocks of the cell, never in {@code excluded} (the tunnels and
-	 * their floors).
+	 * Veins around open blocks (a freshly dug cell): target blocks touching them, then the target blocks touching those
+	 * (breadth first, so each one is exposed by an open block or a previous one: a block left by a vein becomes visible
+	 * once the vein is mined, an ore next to a wanted block is taken too), at most {@code max}, inside {@code region},
+	 * never {@code excluded} (the mine's cells and floors), only blocks the vein rules allow (nothing next to a fluid,
+	 * under a falling block or a building, in another guild's land, nor unloaded).
 	 */
-	public static List<BlockPos> vein(Grid grid, MineLayout.Cell cell, Set<Long> excluded, int max, int reach) {
+	public static List<BlockPos> vein(Grid grid, Targets targets, Collection<BlockPos> open, Region region, LongPredicate excluded,
+			int max) {
+		ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+		for (BlockPos block : open) {
+			for (int[] face : FACES) {
+				queue.add(block.offset(face[0], face[1], face[2]));
+			}
+		}
+		return follow(grid, targets, queue, region, excluded, max);
+	}
+
+	/** The vein of {@code seed}: the seed, then the target blocks connected to it, breadth first. */
+	public static List<BlockPos> cluster(Grid grid, Targets targets, BlockPos seed, Region region, LongPredicate excluded, int max) {
+		ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+		queue.add(seed);
+		return follow(grid, targets, queue, region, excluded, max);
+	}
+
+	private static List<BlockPos> follow(Grid grid, Targets targets, ArrayDeque<BlockPos> queue, Region region, LongPredicate excluded,
+			int max) {
 		List<BlockPos> found = new ArrayList<>();
 		if (max <= 0) {
 			return found;
 		}
-		BlockPos feet = cell.feet();
-		ArrayDeque<BlockPos> queue = new ArrayDeque<>();
-		for (int i = 0; i < cell.height(); i++) {
-			BlockPos block = feet.above(i);
-			queue.add(block.east());
-			queue.add(block.west());
-			queue.add(block.south());
-			queue.add(block.north());
-		}
-		queue.add(cell.top().above());
-		Set<Long> seen = new HashSet<>();
+		LongOpenHashSet seen = new LongOpenHashSet();
 		while (!queue.isEmpty() && found.size() < max) {
 			BlockPos pos = queue.poll();
-			if (!seen.add(pos.asLong()) || excluded.contains(pos.asLong())) {
+			long packed = pos.asLong();
+			if (!seen.add(packed)) {
 				continue;
 			}
-			if (Math.abs(pos.getX() - feet.getX()) > reach || Math.abs(pos.getZ() - feet.getZ()) > reach
-					|| pos.getY() < feet.getY() - reach || pos.getY() > cell.top().getY() + reach) {
-				continue;
-			}
-			if (grid.at(pos) != MineBlock.ORE) {
+			int x = pos.getX();
+			int y = pos.getY();
+			int z = pos.getZ();
+			if (!region.contains(x, y, z) || excluded.test(packed) || targets.key(x, y, z) == 0
+					|| digVein(grid, x, y, z) != Verdict.DIG) {
 				continue;
 			}
 			found.add(pos);
@@ -221,11 +274,43 @@ public final class MineRules {
 		return found;
 	}
 
+	/** A villager standing at {@code feet} can mine {@code block} (eye to block centre). */
+	public static boolean reachable(BlockPos feet, BlockPos block, double reach) {
+		double dx = feet.getX() - block.getX();
+		double dy = feet.getY() + EYE - (block.getY() + 0.5);
+		double dz = feet.getZ() - block.getZ();
+		return dx * dx + dy * dy + dz * dz <= reach * reach;
+	}
+
+	/**
+	 * Next cell of an approach tunnel from {@code from} toward {@code target}: one block along the axis where the target
+	 * is farther, at the same height (null when already in the target's column).
+	 */
+	public static @Nullable BlockPos approach(BlockPos from, BlockPos target) {
+		int dx = target.getX() - from.getX();
+		int dz = target.getZ() - from.getZ();
+		if (dx == 0 && dz == 0) {
+			return null;
+		}
+		if (Math.abs(dx) >= Math.abs(dz)) {
+			return from.offset(Integer.signum(dx), 0, 0);
+		}
+		return from.offset(0, 0, Integer.signum(dz));
+	}
+
+	/** Blocks of (x, z) beyond the zone square (0 inside): veins are followed outside up to a limit. */
+	public static int outside(int x, int z, int[] bounds) {
+		int dx = Math.max(0, Math.max(bounds[0] - x, x - bounds[2]));
+		int dz = Math.max(0, Math.max(bounds[1] - z, z - bounds[3]));
+		return Math.max(dx, dz);
+	}
+
 	// ------------------------------------------------------------------ orientation
 
 	/**
 	 * How good a staircase is: steps diggable before the first obstacle (more is better), non-natural blocks next to its
-	 * first steps (fewer: stay away from buildings), floor holes to fill (fewer), main tunnel length (longer).
+	 * first steps or blocking its outer lane (fewer: stay away from buildings), floor holes to fill (fewer), main tunnel
+	 * length (longer).
 	 */
 	public record Score(int clearSteps, int buildingsNear, int holes, int mainLength) {
 		public boolean betterThan(Score other) {
@@ -243,10 +328,11 @@ public final class MineRules {
 	}
 
 	/**
-	 * Scores the staircase of a layout over its first {@code maxSteps} steps; {@code nearSteps}: first steps checked for
-	 * neighbouring buildings.
+	 * Scores the staircase of a layout over its first {@code maxSteps} steps (the inner lane must be diggable, the outer
+	 * lane should be); {@code nearSteps}: first steps checked for neighbouring buildings. {@code levelY}: a level whose
+	 * main tunnel length is compared last (no level: 0).
 	 */
-	public static Score score(Grid grid, MineLayout layout, int nearSteps, int maxSteps) {
+	public static Score score(Grid grid, MineLayout layout, int nearSteps, int maxSteps, @Nullable Integer levelY) {
 		List<MineLayout.Cell> stairs = layout.stairs();
 		int steps = Math.min(stairs.size(), Math.max(0, maxSteps));
 		int clear = steps;
@@ -258,8 +344,7 @@ public final class MineRules {
 				clear = k;
 				break;
 			}
-			BlockPos floor = cell.floor();
-			FloorCheck check = floor(grid, floor.getX(), floor.getY(), floor.getZ());
+			FloorCheck check = floorOf(grid, cell);
 			if (check.fix() == FloorFix.BLOCKED || check.fix() == FloorFix.WAIT) {
 				clear = k;
 				break;
@@ -267,11 +352,31 @@ public final class MineRules {
 			if (check.fix() != FloorFix.OK) {
 				holes++;
 			}
+			for (MineLayout.Cell extra : layout.outer(k)) {
+				FloorCheck floor = floorOf(grid, extra);
+				if (!stepDiggable(grid, extra) || floor.fix() == FloorFix.BLOCKED || floor.fix() == FloorFix.WAIT) {
+					near++;
+				} else if (floor.fix() != FloorFix.OK) {
+					holes++;
+				}
+			}
 			if (k < nearSteps) {
-				near += buildingsAround(grid, layout, cell);
+				for (MineLayout.Cell part : layout.step(k)) {
+					near += buildingsAround(grid, layout, part);
+				}
 			}
 		}
-		return new Score(clear, near, holes, layout.mainLength());
+		MineLayout.Level level = levelY == null ? null : layout.level(levelY);
+		return new Score(clear, near, holes, level == null ? 0 : level.mainLength());
+	}
+
+	public static Score score(Grid grid, MineLayout layout, int nearSteps, int maxSteps) {
+		return score(grid, layout, nearSteps, maxSteps, null);
+	}
+
+	private static FloorCheck floorOf(Grid grid, MineLayout.Cell cell) {
+		BlockPos floor = cell.floor();
+		return floor(grid, floor.getX(), floor.getY(), floor.getZ());
 	}
 
 	/** Every block of the step can be dug top-down without sealing anything. */
@@ -308,7 +413,7 @@ public final class MineRules {
 
 	// ------------------------------------------------------------------ levels
 
-	/** Default gallery level of an objective: deep for ores, a few blocks under the fanion for stone. */
+	/** Default target level of an objective: deep for ores, a few blocks under the fanion for stone. */
 	public static int defaultTarget(ZoneObjective objective, int fanionY, int oresY, int mixedY, int stoneDepth) {
 		return switch (objective) {
 			case ORES -> oresY;
@@ -328,8 +433,8 @@ public final class MineRules {
 	}
 
 	/**
-	 * Gallery level for a wished height, kept between {@link #minLevel} and {@link #maxLevel}; a fanion planted too
-	 * deep for that (right above the bedrock) digs at its own height.
+	 * Level for a wished height, kept between {@link #minLevel} and {@link #maxLevel}; a fanion planted too deep for
+	 * that (right above the bedrock) digs at its own height.
 	 */
 	public static int clampLevel(int wanted, int fanionY, int worldMinY, int minDepth) {
 		int lo = minLevel(worldMinY);
@@ -345,28 +450,53 @@ public final class MineRules {
 		return blockedAt < 0 ? Integer.MIN_VALUE : fanionY - blockedAt;
 	}
 
+	/** Levels of a mine (feet heights, highest first) and the lowest one on the grid of the target. */
+	public record LevelPlan(List<Integer> levels, int gridBottom) {
+		public boolean isEmpty() {
+			return levels.isEmpty();
+		}
+
+		/** Deepest level: the stairs go down to it. */
+		public int lowest() {
+			return levels.getLast();
+		}
+	}
+
 	/**
-	 * Next level once a level is finished: {@code target} ± k × spacing (deeper first), within [lo, hi], not finished
-	 * yet; empty when there is none.
+	 * Gallery levels of a mine (feet heights, highest first): every {@code spacing} blocks on the grid of the target
+	 * level, from the highest one allowed ({@code hi}) down to {@code bottom} (never under the target unless asked, never
+	 * under {@code lo}). {@code extra} levels between lo and hi are added when they stay at least {@code minGap} blocks
+	 * from the others (the level of a mine planned before levels existed, the one where blocked stairs stop).
 	 */
-	public static OptionalInt nextLevel(int target, Collection<Integer> finished, int spacing, int lo, int hi) {
+	public static LevelPlan levels(int target, int spacing, int lo, int hi, int bottom, Collection<Integer> extra, int minGap) {
 		if (lo > hi) {
-			return OptionalInt.empty();
+			return new LevelPlan(List.of(), lo);
 		}
 		int step = Math.max(1, spacing);
-		int base = Math.max(lo, Math.min(hi, target));
-		for (int k = 0; ; k++) {
-			int down = base - k * step;
-			int up = base + k * step;
-			if (down < lo && up > hi) {
-				return OptionalInt.empty();
+		int top = target + Math.floorDiv(hi - target, step) * step;
+		int b = Math.max(lo, Math.min(Math.min(bottom, target), top));
+		TreeSet<Integer> levels = new TreeSet<>();
+		int gridBottom = top;
+		for (int y = top; y >= b; y -= step) {
+			levels.add(y);
+			gridBottom = y;
+		}
+		for (Integer y : extra) {
+			if (y == null || y < lo || y > hi || levels.contains(y)) {
+				continue;
 			}
-			if (down >= lo && !finished.contains(down)) {
-				return OptionalInt.of(down);
-			}
-			if (k > 0 && up <= hi && !finished.contains(up)) {
-				return OptionalInt.of(up);
+			Integer above = levels.ceiling(y);
+			Integer below = levels.floor(y);
+			if ((above == null || above - y >= minGap) && (below == null || y - below >= minGap)) {
+				levels.add(y);
 			}
 		}
+		return new LevelPlan(new ArrayList<>(levels.descendingSet()), gridBottom);
+	}
+
+	/** Next level under {@code gridBottom} on the grid of the levels, if the world (and the stairs) go that deep. */
+	public static OptionalInt deeper(int gridBottom, int spacing, int lo) {
+		int next = gridBottom - Math.max(1, spacing);
+		return next >= lo ? OptionalInt.of(next) : OptionalInt.empty();
 	}
 }

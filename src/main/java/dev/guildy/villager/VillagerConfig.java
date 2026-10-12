@@ -54,12 +54,15 @@ public final class VillagerConfig implements Validatable {
 	public Miner miner = new Miner();
 
 	@Comment({
-			"Tache 'Mineur', mode 'Reel' (zones de mine) : le mineur creuse vraiment. Depuis le fanion, un escalier en colimacon",
-			"(1 bloc de large, 3 de haut) descend jusqu'a la profondeur cible, puis il creuse des galeries : une galerie",
-			"principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : des salles de carriere), toujours dans",
-			"le carre de la zone. Il ne casse que des blocs naturels (listes ci-dessous) : jamais un bloc pose par un joueur, un",
-			"bloc a donnees (coffre...), un bloc d'une autre guilde, ni un bloc naturel qui porte un bloc non naturel. Il colmate",
-			"l'eau et la lave avec un bloc de son sac (sinon il abandonne la galerie) et comble les trous du sol."
+			"Tache 'Mineur', mode 'Reel' (zones de mine) : les mineurs creusent vraiment. Depuis le fanion, un escalier en",
+			"colimacon (2 blocs de large, 3 de haut) descend ; tous les 'levelSpacing' blocs, un niveau : un palier puis une",
+			"galerie principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : des salles de carriere),",
+			"toujours dans le carre de la zone. Les niveaux s'ouvrent pendant que l'escalier continue de descendre jusqu'a la",
+			"profondeur cible : plusieurs mineurs (jusqu'a 'maxMinersPerZone') se partagent les chantiers. Les minerais et les",
+			"objectifs prioritaires visibles sont mines en suivant leurs filons (un peu hors de la zone aussi). Seuls des blocs",
+			"naturels sont casses (listes ci-dessous) : jamais un bloc pose par un joueur, un bloc a donnees (coffre...), un bloc",
+			"d'une autre guilde, ni un bloc naturel qui porte un bloc non naturel. L'eau et la lave sont colmatees avec un bloc",
+			"du sac (sinon la galerie est abandonnee) et les trous du sol combles."
 	})
 	public RealMining realMining = new RealMining();
 
@@ -195,6 +198,8 @@ public final class VillagerConfig implements Validatable {
 		public int stoneRollsPerTrip = 6;
 		@Comment("Objectif 'Pierre et variantes' : tables de butin par profondeur (meme format)")
 		public List<DepthTable> stoneTables = defaultStoneTables();
+		@Comment("Objectifs prioritaires du mineur ou de la zone : poids multiplie dans les tables de butin (1 = aucun effet)")
+		public int wishlistWeight = 4;
 
 		/** Loot tables of a mine objective. */
 		public List<DepthTable> tables(ZoneObjective objective) {
@@ -228,12 +233,25 @@ public final class VillagerConfig implements Validatable {
 		public int stoneDepth = 12;
 		@Comment("Profondeur minimum des galeries sous le fanion (blocs) : jamais de tranchee a la surface")
 		public int minDepthBelowFanion = 4;
-		@Comment("Pas des boutons de profondeur (menu de la zone) et ecart entre deux niveaux de galeries (blocs)")
-		public int levelSpacing = 8;
-		@Comment("Niveau termine : ouvrir automatiquement le niveau suivant (8 blocs plus bas, sinon plus haut)")
+		@Comment({
+				"Ecart (blocs) entre deux niveaux de galeries (un palier de l'escalier tous les N blocs, du premier niveau sous",
+				"la surface jusqu'a la profondeur cible) ; aussi le pas des boutons de profondeur du menu de la zone"
+		})
+		public int levelSpacing = 6;
+		@Comment({
+				"Escalier arrive a la profondeur cible et tous les niveaux termines (ou des mineurs sans travail) : l'escalier",
+				"descend ouvrir les niveaux suivants, plus bas (jusqu'au fond du monde)"
+		})
 		public boolean autoNextLevel = true;
-		@Comment("Cote (blocs) du carre de l'escalier en colimacon (3 a 6) : une marche = 1 bloc plus bas")
+		@Comment("Cote (blocs) du carre interieur de l'escalier en colimacon (3 a 6) : une marche = 1 bloc plus bas")
 		public int stairSide = 4;
+		@Comment({
+				"Largeur des nouveaux escaliers : 2 = deux voies (les mineurs se croisent sans se gener, le carre fait 2 blocs de",
+				"plus de cote ; 1 voie si la zone est trop petite), 1 = une voie. Les escaliers deja creuses gardent leur largeur."
+		})
+		public int stairWidth = 2;
+		@Comment("Nombre maximum de mineurs qui travaillent en meme temps dans une meme mine reelle (menu : affectation refusee au-dela)")
+		public int maxMinersPerZone = 20;
 		@Comment("Longueur maximum de la galerie principale (blocs ; coupee au bord de la zone)")
 		public int mainTunnelLength = 32;
 		@Comment("Ecart entre deux galeries laterales (blocs, 2 minimum)")
@@ -248,8 +266,13 @@ public final class VillagerConfig implements Validatable {
 		public int roomHeight = 3;
 		@Comment("Objectif 'Pierre' : couloir entre deux salles (blocs)")
 		public int roomGap = 2;
-		@Comment("Objectifs 'Minerais' et 'Tout venant' : blocs de minerai suivis au plus par filon visible depuis la galerie")
-		public int maxVeinBlocks = 16;
+		@Comment({
+				"Blocs suivis au plus par filon (minerais et objectifs prioritaires visibles depuis les tunnels, sol compris ;",
+				"0 = ne pas suivre les filons). Hors de portee : un autre mineur le suit plus tard en creusant un tunnel d'approche."
+		})
+		public int maxVeinBlocks = 64;
+		@Comment("Distance (blocs) au-dela du bord de la zone jusqu'a laquelle un filon est suivi (jamais chez une autre guilde)")
+		public int veinMaxOutside = 16;
 		@Comment({
 				"Blocs de remplissage (pierre taillee...) gardes dans le sac pour colmater et combler : ils restent dans le sac au",
 				"coffre de depot (sauf fin de mission). Objectif 'Minerais' : le reste des gravats est laisse sur place."
@@ -686,6 +709,15 @@ public final class VillagerConfig implements Validatable {
 		if (realMining == null) {
 			realMining = new RealMining();
 		}
+		if (configVersion < 2) {
+			// Mines with levels every few blocks and long veins: old untouched defaults follow.
+			if (realMining.levelSpacing == 8) {
+				realMining.levelSpacing = 6;
+			}
+			if (realMining.maxVeinBlocks == 16) {
+				realMining.maxVeinBlocks = 64;
+			}
+		}
 		validateRealMining(realMining);
 		if (lumberjack == null) {
 			lumberjack = new Lumberjack();
@@ -735,6 +767,7 @@ public final class VillagerConfig implements Validatable {
 		miner.oreRollsPerTrip = clamp(miner.oreRollsPerTrip, 1, 64);
 		miner.stoneRollsPerTrip = clamp(miner.stoneRollsPerTrip, 1, 64);
 		miner.effectIntervalSeconds = clamp(miner.effectIntervalSeconds, 1, 60);
+		miner.wishlistWeight = clamp(miner.wishlistWeight, 1, 20);
 		miner.depthTables = cleanTables(miner.depthTables, VillagerConfig::defaultDepthTables);
 		miner.oreTables = cleanTables(miner.oreTables, VillagerConfig::defaultOreTables);
 		miner.stoneTables = cleanTables(miner.stoneTables, VillagerConfig::defaultStoneTables);
@@ -796,6 +829,9 @@ public final class VillagerConfig implements Validatable {
 		real.minDepthBelowFanion = clamp(real.minDepthBelowFanion, 3, 64);
 		real.levelSpacing = clamp(real.levelSpacing, 4, 64);
 		real.stairSide = clamp(real.stairSide, 3, 6);
+		real.stairWidth = clamp(real.stairWidth, 1, 2);
+		real.maxMinersPerZone = clamp(real.maxMinersPerZone, 1, 64);
+		real.veinMaxOutside = clamp(real.veinMaxOutside, 0, 32);
 		real.mainTunnelLength = clamp(real.mainTunnelLength, 0, 128);
 		real.branchSpacing = clamp(real.branchSpacing, 2, 16);
 		real.branchLength = clamp(real.branchLength, 0, 64);
@@ -803,7 +839,7 @@ public final class VillagerConfig implements Validatable {
 		real.roomLength = clamp(real.roomLength, 1, 16);
 		real.roomHeight = clamp(real.roomHeight, 2, 5);
 		real.roomGap = clamp(real.roomGap, 1, 16);
-		real.maxVeinBlocks = clamp(real.maxVeinBlocks, 0, 64);
+		real.maxVeinBlocks = clamp(real.maxVeinBlocks, 0, 256);
 		real.fillerReserve = clamp(real.fillerReserve, 0, 256);
 		real.torchInterval = clamp(real.torchInterval, 0, 64);
 		real.surfaceAtTime = real.surfaceAtTime < 0 ? -1 : clamp(real.surfaceAtTime, 0, 24000);

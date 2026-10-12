@@ -15,17 +15,33 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MineRulesTest {
-	private static final MineLayout.Settings SETTINGS = new MineLayout.Settings(4, 32, 3, 12, 5, 5, 3, 2);
+	private static final MineLayout.Settings SETTINGS = new MineLayout.Settings(4, 0, 32, 3, 12, 5, 5, 3, 2);
 
 	/** Fake world: natural stone everywhere unless set; foreign columns; solid blocks are sturdy unless listed. */
-	private static final class FakeGrid implements MineRules.Grid {
+	private static final class FakeGrid implements MineRules.Grid, MineRules.Targets {
 		private final Map<Long, MineBlock> blocks = new HashMap<>();
+		/** Wanted natural blocks (key per kind). */
+		private final Map<Long, Integer> wanted = new HashMap<>();
 		private final Set<Long> foreignColumns = new HashSet<>();
 		private final Set<Long> unsturdy = new HashSet<>();
 
 		FakeGrid set(int x, int y, int z, MineBlock block) {
 			blocks.put(BlockPos.asLong(x, y, z), block);
 			return this;
+		}
+
+		FakeGrid wanted(int x, int y, int z, int kind) {
+			blocks.put(BlockPos.asLong(x, y, z), MineBlock.NATURAL);
+			wanted.put(BlockPos.asLong(x, y, z), 2 + kind);
+			return this;
+		}
+
+		@Override
+		public int key(int x, int y, int z) {
+			if (at(x, y, z) == MineBlock.ORE) {
+				return MineRules.ORE_KEY;
+			}
+			return wanted.getOrDefault(BlockPos.asLong(x, y, z), 0);
 		}
 
 		FakeGrid foreign(int x, int z) {
@@ -155,21 +171,101 @@ class MineRulesTest {
 				.set(0, 2, 0, MineBlock.ORE).set(0, 3, 0, MineBlock.ORE)
 				.set(7, 0, 0, MineBlock.ORE)
 				.set(-1, 1, 0, MineBlock.ORE);
-		MineLayout.Cell cell = new MineLayout.Cell(new BlockPos(0, 0, 0), 2);
+		List<BlockPos> open = List.of(new BlockPos(0, 0, 0), new BlockPos(0, 1, 0));
 		Set<Long> structure = Set.of(new BlockPos(-1, 1, 0).asLong());
-		List<BlockPos> vein = MineRules.vein(grid, cell, structure, 16, 4);
+		MineRules.Region region = MineRules.Region.around(new int[]{-16, -16, 16, 16}, 0, -4, 5);
+		List<BlockPos> vein = MineRules.vein(grid, grid, open, region, structure::contains, 16);
 		Set<BlockPos> found = new HashSet<>(vein);
 		assertEquals(Set.of(new BlockPos(1, 0, 0), new BlockPos(2, 0, 0), new BlockPos(3, 0, 0), new BlockPos(3, 1, 0),
 				new BlockPos(0, 2, 0), new BlockPos(0, 3, 0)), found, "connected ores only, never the tunnels themselves");
 		assertTrue(vein.indexOf(new BlockPos(1, 0, 0)) < vein.indexOf(new BlockPos(2, 0, 0)), "nearest first: each one is exposed");
-		assertEquals(3, MineRules.vein(grid, cell, structure, 3, 4).size(), "capped");
-		// Reach: a long vein is followed 4 blocks away at most.
+		assertEquals(3, MineRules.vein(grid, grid, open, region, structure::contains, 3).size(), "capped");
+		// The region bounds a long vein.
 		FakeGrid line = new FakeGrid();
 		for (int x = 1; x <= 8; x++) {
 			line.set(x, 0, 0, MineBlock.ORE);
 		}
-		assertEquals(4, MineRules.vein(line, cell, Set.of(), 16, 4).size());
-		assertTrue(MineRules.vein(new FakeGrid(), cell, Set.of(), 16, 4).isEmpty());
+		MineRules.Region narrow = MineRules.Region.around(new int[]{-4, -4, 4, 4}, 0, -4, 5);
+		assertEquals(4, MineRules.vein(line, line, open, narrow, p -> false, 16).size());
+		assertTrue(MineRules.vein(new FakeGrid(), new FakeGrid(), open, region, p -> false, 16).isEmpty());
+	}
+
+	@Test
+	void veinsGoOutsideTheZoneButNeverIntoAnotherGuildNorUnloadedLand() {
+		// Zone square x, z in [0, 15]; ore line along x from the tunnel at x = 14 to x = 40.
+		int[] zone = {0, 0, 15, 15};
+		FakeGrid grid = new FakeGrid();
+		for (int x = 15; x <= 40; x++) {
+			grid.set(x, 0, 5, MineBlock.ORE);
+		}
+		List<BlockPos> open = List.of(new BlockPos(14, 0, 5), new BlockPos(14, 1, 5));
+		MineRules.Region region = MineRules.Region.around(zone, 16, -4, 5);
+		List<BlockPos> vein = MineRules.vein(grid, grid, open, region, p -> false, 64);
+		assertEquals(17, vein.size(), "followed up to 16 blocks past the border (x = 15..31)");
+		for (BlockPos pos : vein) {
+			assertTrue(MineRules.outside(pos.getX(), pos.getZ(), zone) <= 16);
+		}
+		assertEquals(0, MineRules.outside(15, 5, zone));
+		assertEquals(16, MineRules.outside(31, 5, zone));
+		// Another guild's land from x = 22: the vein stops right before it.
+		grid.foreign(22, 5);
+		for (int x = 23; x <= 40; x++) {
+			grid.foreign(x, 5);
+		}
+		vein = MineRules.vein(grid, grid, open, region, p -> false, 64);
+		assertEquals(7, vein.size(), "x = 15..21");
+		assertTrue(vein.stream().allMatch(p -> p.getX() < 22));
+		// An unloaded chunk cuts it too (a block next to it cannot be checked for fluids).
+		FakeGrid unloaded = new FakeGrid();
+		for (int x = 15; x <= 25; x++) {
+			unloaded.set(x, 0, 5, MineBlock.ORE);
+		}
+		unloaded.set(20, 0, 5, MineBlock.UNLOADED);
+		vein = MineRules.vein(unloaded, unloaded, open, region, p -> false, 64);
+		assertTrue(vein.stream().allMatch(p -> p.getX() < 19), "nothing at or next to the unloaded block");
+		// Never under a building.
+		FakeGrid built = new FakeGrid().set(15, 0, 5, MineBlock.ORE).set(16, 0, 5, MineBlock.ORE).set(16, 1, 5, MineBlock.PROTECTED);
+		assertEquals(List.of(new BlockPos(15, 0, 5)), MineRules.vein(built, built, open, region, p -> false, 64));
+	}
+
+	@Test
+	void wantedBlocksAreFollowedLikeOres() {
+		FakeGrid grid = new FakeGrid();
+		// A diorite blob (kind 1) next to the tunnel, an iron ore touching it, granite (kind 2) touching the diorite.
+		grid.wanted(1, 0, 0, 1).wanted(2, 0, 0, 1).wanted(2, 1, 0, 1).set(3, 0, 0, MineBlock.ORE).wanted(2, 2, 0, 2);
+		// Plain stone (not wanted) around: never followed.
+		List<BlockPos> open = List.of(new BlockPos(0, 0, 0), new BlockPos(0, 1, 0));
+		MineRules.Region region = MineRules.Region.around(new int[]{-16, -16, 16, 16}, 0, -4, 5);
+		List<BlockPos> vein = MineRules.vein(grid, grid, open, region, p -> false, 64);
+		assertEquals(Set.of(new BlockPos(1, 0, 0), new BlockPos(2, 0, 0), new BlockPos(2, 1, 0), new BlockPos(3, 0, 0),
+				new BlockPos(2, 2, 0)), new HashSet<>(vein), "every wanted block and ore that becomes visible");
+		// The cluster of a seed (pending vein).
+		assertEquals(5, MineRules.cluster(grid, grid, new BlockPos(2, 0, 0), region, p -> false, 64).size());
+		assertTrue(MineRules.cluster(grid, grid, new BlockPos(5, 5, 5), region, p -> false, 64).isEmpty(), "not a target");
+	}
+
+	@Test
+	void reachAndApproachTunnels() {
+		BlockPos feet = new BlockPos(0, 0, 0);
+		assertTrue(MineRules.reachable(feet, new BlockPos(1, 1, 0), 4.5));
+		assertTrue(MineRules.reachable(feet, new BlockPos(3, 3, 0), 4.5));
+		assertFalse(MineRules.reachable(feet, new BlockPos(5, 1, 0), 4.5));
+		assertFalse(MineRules.reachable(feet, new BlockPos(0, -4, 0), 4.5), "too deep under the floor");
+		assertEquals(new BlockPos(1, 0, 0), MineRules.approach(feet, new BlockPos(6, 3, 2)), "along the longer axis");
+		assertEquals(new BlockPos(0, 0, -1), MineRules.approach(feet, new BlockPos(1, 0, -5)));
+		assertEquals(null, MineRules.approach(feet, new BlockPos(0, 4, 0)), "already in its column");
+		// An approach tunnel reaches a block 10 blocks away in a few cells.
+		BlockPos target = new BlockPos(10, 1, 3);
+		BlockPos stand = feet;
+		int cells = 0;
+		while (!MineRules.reachable(stand, target, 4.5)) {
+			stand = MineRules.approach(stand, target);
+			cells++;
+		}
+		assertTrue(cells >= 5 && cells <= 8, "tunnel of " + cells + " cells");
+		FakeGrid grid = new FakeGrid().set(1, 0, 0, MineBlock.AIR);
+		assertTrue(MineRules.exposed(grid, new BlockPos(2, 0, 0)));
+		assertFalse(MineRules.exposed(grid, new BlockPos(3, 0, 0)));
 	}
 
 	@Test
@@ -244,15 +340,35 @@ class MineRulesTest {
 	}
 
 	@Test
-	void nextLevelGoesDeeperFirstThenHigher() {
-		assertEquals(OptionalInt.of(-54), MineRules.nextLevel(-54, List.of(), 8, -59, 66));
-		assertEquals(OptionalInt.of(-46), MineRules.nextLevel(-54, List.of(-54), 8, -59, 66), "no room below: up");
-		assertEquals(OptionalInt.of(-38), MineRules.nextLevel(-54, List.of(-54, -46), 8, -59, 66));
-		assertEquals(OptionalInt.of(8), MineRules.nextLevel(16, List.of(16), 8, -59, 66), "deeper first");
-		assertEquals(OptionalInt.of(24), MineRules.nextLevel(16, List.of(16, 8), 8, -59, 66));
-		assertEquals(OptionalInt.empty(), MineRules.nextLevel(10, List.of(10, 2, 18), 8, 0, 20), "every level done");
-		assertEquals(OptionalInt.empty(), MineRules.nextLevel(10, List.of(), 8, 30, 20));
-		assertEquals(OptionalInt.of(-59), MineRules.nextLevel(-100, List.of(), 8, -59, 66), "out of range: nearest allowed level");
-		assertFalse(MineRules.nextLevel(-54, List.of(-54), 8, -54, -54).isPresent());
+	void levelsEveryFewBlocksOnTheGridOfTheTarget() {
+		// Fanion at 70, highest level 66, lowest -59, target 16, a level every 6 blocks.
+		MineRules.LevelPlan plan = MineRules.levels(16, 6, -59, 66, 16, List.of(), 4);
+		assertEquals(List.of(64, 58, 52, 46, 40, 34, 28, 22, 16), plan.levels(), "from under the surface down to the target");
+		assertEquals(16, plan.gridBottom());
+		assertEquals(16, plan.lowest());
+		assertEquals(OptionalInt.of(10), MineRules.deeper(16, 6, -59), "then deeper, one level at a time");
+		plan = MineRules.levels(16, 6, -59, 66, 4, List.of(), 4);
+		assertEquals(4, plan.lowest(), "the bottom moved down: 10 and 4 too");
+		assertEquals(11, plan.levels().size());
+		assertEquals(OptionalInt.empty(), MineRules.deeper(-58, 6, -59), "never under the bottom of the world");
+		// Ores: from just under the surface to the diamonds.
+		plan = MineRules.levels(-54, 6, -59, 66, -54, List.of(), 4);
+		assertEquals(66 - (66 + 54) % 6, plan.levels().getFirst());
+		assertEquals(-54, plan.lowest());
+		assertEquals(21, plan.levels().size());
+		// Blocked stairs: the grid stays, levels stop where the stairs do, the stop level is added if far enough.
+		plan = MineRules.levels(16, 6, 25, 66, 16, List.of(25), 4);
+		assertEquals(List.of(64, 58, 52, 46, 40, 34, 28), plan.levels().subList(0, 7));
+		assertFalse(plan.levels().contains(25), "3 blocks under 28: too close");
+		plan = MineRules.levels(16, 6, 23, 66, 16, List.of(23), 4);
+		assertEquals(23, plan.lowest(), "5 blocks under 28: a level where the stairs stop");
+		// A mine planned before levels keeps its level.
+		plan = MineRules.levels(16, 6, -59, 66, 16, List.of(-40), 4);
+		assertEquals(-40, plan.lowest());
+		assertEquals(16, plan.gridBottom());
+		// Target above the highest level allowed: one level at the top.
+		plan = MineRules.levels(80, 6, -59, 66, 80, List.of(), 4);
+		assertEquals(List.of(62), plan.levels());
+		assertTrue(MineRules.levels(16, 6, 30, 20, 16, List.of(), 4).isEmpty(), "no room at all");
 	}
 }

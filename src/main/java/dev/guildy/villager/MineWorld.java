@@ -46,15 +46,18 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * World side of real mining: what a block is for the rules ({@link MineBlock}, lists of villagers.json5), breaking a
- * natural block like a player with an iron pickaxe (real drops), filling holes / sealing fluids with blocks of the bag,
- * wall torches. Reads only loaded chunks.
+ * World side of real mining: what a block is for the rules ({@link MineBlock}, lists of villagers.json5), which blocks
+ * are collected on purpose (ores, "objectifs prioritaires": {@link Wanted}), breaking a natural block like a player
+ * with an iron pickaxe (real drops), filling holes / sealing fluids with blocks of the bag, wall torches. Reads only
+ * loaded chunks.
  */
-final class MineWorld implements MineRules.Grid {
+final class MineWorld implements MineRules.Grid, MineRules.Targets {
 	private static final ItemStack PICKAXE = new ItemStack(Items.IRON_PICKAXE);
 	private static final byte OTHER = 0;
 	private static final byte NATURAL = 1;
 	private static final byte ORE = 2;
+	/** Items a block was seen to drop (iron pickaxe), per block. */
+	private static final Map<Block, Set<Item>> DROPS = new IdentityHashMap<>();
 
 	/** Compiled block / item lists of a config instance (tags resolved per block, cached). */
 	private record Lists(Set<Block> natural, List<TagKey<Block>> naturalTags, Set<Block> ores, List<TagKey<Block>> oreTags,
@@ -66,11 +69,99 @@ final class MineWorld implements MineRules.Grid {
 
 	private final ServerLevel level;
 	private final Guild guild;
+	private final @Nullable Wanted wanted;
 	private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
 	MineWorld(ServerLevel level, Guild guild) {
+		this(level, guild, null);
+	}
+
+	MineWorld(ServerLevel level, Guild guild, @Nullable Wanted wanted) {
 		this.level = level;
 		this.guild = guild;
+		this.wanted = wanted;
+	}
+
+	/**
+	 * Wanted items of one miner ("objectifs prioritaires", {@link Wishlist}) and the natural blocks dropping them (cached
+	 * per block). The bulk rock (stone, deepslate) is never followed as a vein even when its drop is wanted: the tunnels
+	 * bring plenty of it.
+	 */
+	static final class Wanted {
+		private static final Set<Block> BULK = Set.of(Blocks.STONE, Blocks.DEEPSLATE);
+		final Set<Item> items;
+		private final Map<Block, Boolean> blocks = new IdentityHashMap<>();
+
+		Wanted(Set<Item> items) {
+			this.items = Set.copyOf(items);
+		}
+
+		boolean isEmpty() {
+			return items.isEmpty();
+		}
+
+		boolean item(ItemStack stack) {
+			return !stack.isEmpty() && items.contains(stack.getItem());
+		}
+
+		private boolean block(ServerLevel level, BlockPos pos, BlockState state) {
+			if (items.isEmpty()) {
+				return false;
+			}
+			Block block = state.getBlock();
+			Boolean known = blocks.get(block);
+			if (known == null) {
+				known = !BULK.contains(block) && (items.contains(block.asItem()) || drops(level, pos, state).stream().anyMatch(items::contains));
+				blocks.put(block, known);
+			}
+			return known;
+		}
+	}
+
+	/** Items the block drops when mined (sampled once per block with an iron pickaxe). */
+	private static Set<Item> drops(ServerLevel level, BlockPos pos, BlockState state) {
+		Block block = state.getBlock();
+		Set<Item> items = DROPS.get(block);
+		if (items == null) {
+			items = new HashSet<>();
+			for (ItemStack drop : Block.getDrops(state, level, pos.immutable(), null, null, PICKAXE)) {
+				if (!drop.isEmpty()) {
+					items.add(drop.getItem());
+				}
+			}
+			DROPS.put(block, items);
+		}
+		return items;
+	}
+
+	// ------------------------------------------------------------------ targets
+
+	/** {@link MineRules#ORE_KEY} for ores, a key per kind of wanted natural block, else 0. */
+	@Override
+	public int key(int x, int y, int z) {
+		cursor.set(x, y, z);
+		if (!level.isLoaded(cursor)) {
+			return 0;
+		}
+		BlockState state = level.getBlockState(cursor);
+		MineBlock kind = classify(state);
+		if (kind == MineBlock.ORE) {
+			return MineRules.ORE_KEY;
+		}
+		if ((kind == MineBlock.NATURAL || kind == MineBlock.FALLING) && wanted != null && wanted.block(level, cursor, state)) {
+			return 2 + BuiltInRegistries.BLOCK.getId(state.getBlock());
+		}
+		return 0;
+	}
+
+	/** The block at {@code pos} is an ore, or drops a wanted item. */
+	boolean target(BlockPos pos) {
+		return key(pos.getX(), pos.getY(), pos.getZ()) != 0;
+	}
+
+	/** The block at {@code pos} is a wanted (non-ore) block. */
+	boolean wantedBlock(BlockPos pos) {
+		return key(pos.getX(), pos.getY(), pos.getZ()) > MineRules.ORE_KEY;
 	}
 
 	// ------------------------------------------------------------------ grid
@@ -212,9 +303,14 @@ final class MineWorld implements MineRules.Grid {
 
 	/** Filler blocks in the bag. */
 	static int fillerCount(VillagerRecord record) {
+		return fillerCount(record, stack -> false);
+	}
+
+	/** Filler blocks in the bag, but the stacks {@code keep} protects (wanted items are never used as filler). */
+	static int fillerCount(VillagerRecord record, Predicate<ItemStack> keep) {
 		int count = 0;
 		for (ItemStack stack : record.carried) {
-			if (isFiller(stack)) {
+			if (isFiller(stack) && !keep.test(stack)) {
 				count += stack.getCount();
 			}
 		}
@@ -223,10 +319,15 @@ final class MineWorld implements MineRules.Grid {
 
 	/** Takes one filler block out of the bag, null when there is none. */
 	static @Nullable BlockState takeFiller(VillagerRecord record) {
+		return takeFiller(record, stack -> false);
+	}
+
+	/** Takes one filler block out of the bag (never a stack {@code keep} protects), null when there is none. */
+	static @Nullable BlockState takeFiller(VillagerRecord record, Predicate<ItemStack> keep) {
 		Iterator<ItemStack> it = record.carried.iterator();
 		while (it.hasNext()) {
 			ItemStack stack = it.next();
-			if (!isFiller(stack) || !(stack.getItem() instanceof BlockItem blockItem)) {
+			if (!isFiller(stack) || keep.test(stack) || !(stack.getItem() instanceof BlockItem blockItem)) {
 				continue;
 			}
 			BlockState state = blockItem.getBlock().defaultBlockState();
