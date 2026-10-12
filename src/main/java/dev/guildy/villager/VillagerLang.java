@@ -26,7 +26,7 @@ final class VillagerLang {
 		m.put("villager.task.miner.desc", "&7Mine à sa zone (fanion « Mine ») et rapporte\n&7pierre et minerais. Mine réelle : creuse un\n&7escalier puis des galeries jusqu'à la profondeur\n&7cible. Mine simulée : butin selon la hauteur du\n&7fanion. Sans zone : la mine la plus proche,\n&7sinon la pierre à découvert.");
 		m.put("villager.task.lumberjack.desc", "&7Coupe les arbres naturels de sa zone (fanion\n&7« Coupe de bois ») et replante des pousses.\n&7Sans zone : les arbres les plus proches de lui.");
 		m.put("villager.task.farmer.desc", "&7Récolte les cultures mûres de sa zone (fanion\n&7« Champs ») et les replante. Sans zone : les\n&7cultures les plus proches de lui.");
-		m.put("villager.task.guard.desc", "&7Patrouille dans sa zone ou sur son parcours\n&7et attaque les monstres. Sans zone : défend\n&7le cœur et le territoire. Toujours au cœur\n&7pendant les vagues.");
+		m.put("villager.task.guard.desc", "&7Épéiste ou archer : patrouille dans sa zone ou\n&7sur son parcours et attaque les monstres. Sans\n&7zone : défend le cœur et le territoire. Toujours\n&7au cœur pendant les vagues. S'équipe dans les\n&7coffres du stockage, va se soigner à son lit.");
 		m.put("villager.task.explorer", "Exploration");
 		m.put("villager.task.explorer.desc", "&7Part explorer les terres sauvages par le\n&7bureau d'accueil (ou le cœur) et revient\n&7quelques minutes plus tard avec du butin :\n&7graines, pousses, cuir, émeraudes, cartes au trésor...\n&cPetit risque de ne jamais revenir.");
 		m.put("villager.task.nether", "Expédition au Nether");

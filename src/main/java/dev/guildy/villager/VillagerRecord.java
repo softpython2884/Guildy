@@ -53,6 +53,9 @@ public class VillagerRecord {
 	/** Where it left and comes back (portal, reception or heart). */
 	public @Nullable BlockPos returnPos;
 
+	/** Guard role setting (created the first time the villager becomes a guard, see {@link Guards}). */
+	public @Nullable GuardData guard;
+
 	public boolean isAway() {
 		return awayEntity != null;
 	}
@@ -120,5 +123,8 @@ public class VillagerRecord {
 		}
 		zoneId = Math.max(-1, zoneId);
 		routeId = Math.max(-1, routeId);
+		if (guard != null) {
+			guard.sanitize();
+		}
 	}
 }

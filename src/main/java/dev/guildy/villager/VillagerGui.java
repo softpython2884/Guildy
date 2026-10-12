@@ -162,6 +162,7 @@ public final class VillagerGui {
 			lore.add(Lang.get("villager.gui.lore.assignment", assignment));
 		}
 		lore.add(Lang.get("villager.gui.lore.status", statusText(record, villager)));
+		GuardGui.addLore(lore, record, villager);
 		if (villager != null) {
 			String profession = villager.getVillagerData().profession().unwrapKey()
 					.map(key -> Lang.raw("villager.profession." + key.identifier().getPath())).orElse("?");
@@ -201,7 +202,7 @@ public final class VillagerGui {
 		if (manageHint) {
 			lore.add(Lang.get("villager.gui.lore.manage"));
 		}
-		return GuiUtil.item(record.task.icon(), Lang.get("villager.gui.villager.name", record.name), lore);
+		return GuiUtil.item(GuardGui.icon(record), Lang.get("villager.gui.villager.name", record.name), lore);
 	}
 
 	static String statusText(VillagerRecord record, @Nullable Villager villager) {
@@ -235,6 +236,7 @@ public final class VillagerGui {
 		ServerLevel level = GuildyServer.claimLevel();
 		SimpleGui gui = chest(player, 5, Lang.get("villager.gui.detail.title", record.name));
 		gui.setSlot(4, villagerIcon(level, guild, record, false));
+		GuardGui.addButtons(gui, player, guild, record);
 
 		Task[] tasks = Task.values();
 		for (int i = 0; i < tasks.length && i < 9; i++) {
