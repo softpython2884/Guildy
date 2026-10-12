@@ -141,12 +141,20 @@ final class MineGui {
 				}
 				lore.add(Lang.get("villager.gui.mine.view.widened", widened, dug));
 			}
+			Quarry quarry = layout.quarry();
+			if (quarry != null) {
+				lore.add(Component.empty());
+				lore.addAll(GuiUtil.lines("villager.gui.mine.view.quarry", quarry.benchHeight()));
+			}
 		}
 		return GuiUtil.item(Items.IRON_PICKAXE, Lang.get("villager.gui.mine.view.summary", zone.name), lore);
 	}
 
 	private static GuiElementBuilder levelIcon(Guild guild, Mines.View view, int y, int target, Map<UUID, Integer> active) {
 		MineLayout layout = view.layout();
+		if (layout != null && layout.quarry() != null) {
+			return benchIcon(guild, view, layout, y, target, active);
+		}
 		MineState state = view.state();
 		MineState.Level progress = state.level(y);
 		boolean finished = progress != null && progress.finished;
@@ -179,6 +187,54 @@ final class MineGui {
 		}
 		Item icon = finished ? Items.MOSSY_COBBLESTONE : !reached ? Items.GRAVEL : y < 0 ? Items.DEEPSLATE : Items.STONE;
 		GuiElementBuilder builder = GuiUtil.item(icon, Lang.get("villager.gui.mine.view.level", y), lore);
+		if (!names.isEmpty()) {
+			builder.glow();
+		}
+		return builder;
+	}
+
+	/** A bench of a quarry: open / finished / not reached, columns and strips dug (benches being worked), blocks, miners. */
+	private static GuiElementBuilder benchIcon(Guild guild, Mines.View view, MineLayout layout, int y, int target, Map<UUID, Integer> active) {
+		MineState state = view.state();
+		MineState.Level progress = state.level(y);
+		boolean finished = progress != null && progress.finished;
+		boolean reached = QuarryJobs.reached(layout, state, y);
+		boolean worked = QuarryJobs.window(view.levels(), state).contains(y);
+		List<Component> lore = new ArrayList<>();
+		if (y == target) {
+			lore.add(Lang.get("villager.gui.mine.view.level.target"));
+		}
+		lore.add(Lang.get(finished ? "villager.gui.mine.view.level.finished" : !reached ? "villager.gui.mine.view.bench.closed"
+				: worked ? "villager.gui.mine.view.level.open" : "villager.gui.mine.view.bench.later"));
+		MineLayout.Level level = worked ? layout.level(y) : null;
+		Quarry.Bench bench = level == null ? null : level.bench();
+		if (bench != null && !finished) {
+			int cells = 0;
+			for (int c : bench.order()) {
+				cells += QuarryJobs.cleared(progress, c) ? 1 : 0;
+			}
+			int[] strips = QuarryJobs.strips(bench, progress);
+			lore.add(Lang.get("villager.gui.mine.view.bench.cells", cells, bench.size()));
+			lore.add(Lang.get("villager.gui.mine.view.bench.strips", strips[0], strips[1]));
+			int skipped = progress == null ? 0 : Quarry.count(progress.skipped);
+			if (skipped > 0) {
+				lore.add(Lang.get("villager.gui.mine.view.bench.skipped", skipped));
+			}
+		}
+		lore.add(Lang.get("villager.gui.mine.view.bench.quarried", progress == null ? 0 : progress.quarried));
+		lore.add(Lang.get("villager.gui.mine.view.level.found", progress == null ? 0 : progress.ores, progress == null ? 0 : progress.wanted));
+		List<String> names = new ArrayList<>();
+		for (Map.Entry<UUID, Integer> entry : active.entrySet()) {
+			VillagerRecord record = guild.villagers.members.get(entry.getKey());
+			if (record != null && entry.getValue() == y) {
+				names.add(record.name);
+			}
+		}
+		if (!names.isEmpty()) {
+			lore.add(Lang.get("villager.gui.mine.view.level.miners", String.join(", ", names)));
+		}
+		Item icon = finished ? Items.MOSSY_COBBLESTONE : !reached ? Items.GRAVEL : y < 0 ? Items.DEEPSLATE : Items.STONE;
+		GuiElementBuilder builder = GuiUtil.item(icon, Lang.get("villager.gui.mine.view.bench", y), lore);
 		if (!names.isEmpty()) {
 			builder.glow();
 		}

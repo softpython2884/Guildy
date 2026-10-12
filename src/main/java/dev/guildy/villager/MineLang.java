@@ -72,5 +72,6 @@ final class MineLang {
 		m.put("villager.gui.mine.view.reset", "&c&lRéinitialiser l'exploitation");
 		m.put("villager.gui.mine.view.page", "&ePage {0}/{1}");
 		Lang.addDefaults(m);
+		QuarryLang.register();
 	}
 }

@@ -205,7 +205,7 @@ final class VillagerLang {
 		m.put("villager.objective.ores", "Minerais");
 		m.put("villager.objective.ores.desc", "&7Uniquement des minerais (moins de tirages).\n&7Diamants seulement en profondeur (Y < -24).\n&7Mine réelle : niveaux jusqu'en bas (diamants),\n&7suit les filons, laisse les gravats.");
 		m.put("villager.objective.stone", "Pierre et variantes");
-		m.put("villager.objective.stone.desc", "&7Pierre en quantité : pierre taillée, andésite,\n&7diorite, granite, tuf, calcite, gravier...\n&7(pierre des abîmes en profondeur).\n&7Mine réelle : salles de carrière peu profondes.");
+		m.put("villager.objective.stone.desc", "&7Pierre en quantité : pierre taillée, andésite,\n&7diorite, granite, tuf, calcite, gravier...\n&7(pierre des abîmes en profondeur).\n&7Mine réelle : carrière à ciel ouvert, tout le\n&7carré de la zone par gradins (l'escalier reste).");
 		m.put("villager.objective.any_wood", "Tous les arbres");
 		m.put("villager.objective.any_wood.desc", "&7Coupe tous les arbres naturels de la zone.");
 		m.put("villager.objective.oak", "Chêne");

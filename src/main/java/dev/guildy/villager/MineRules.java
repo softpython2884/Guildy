@@ -175,6 +175,47 @@ public final class MineRules {
 		return new Check(Verdict.DIG, seal);
 	}
 
+	/**
+	 * Fluids around a block about to be removed that is not itself checked by {@link #dig} (quarry vegetation): DIG with
+	 * the fluids beside / below it to seal first; WATER or LAVA under a fluid (never sealed) or next to a block holding
+	 * water; FOREIGN for a fluid in another guild's land; WAIT when not loaded.
+	 */
+	public static Check sealing(Grid grid, int x, int y, int z) {
+		switch (grid.at(x, y + 1, z)) {
+			case WATER, WET -> {
+				return Check.of(Verdict.WATER);
+			}
+			case LAVA -> {
+				return Check.of(Verdict.LAVA);
+			}
+			case UNLOADED -> {
+				return Check.of(Verdict.WAIT);
+			}
+			default -> {
+			}
+		}
+		List<BlockPos> seal = new ArrayList<>(0);
+		for (int[] face : SEALED_FACES) {
+			int nx = x + face[0];
+			int ny = y + face[1];
+			int nz = z + face[2];
+			MineBlock side = grid.at(nx, ny, nz);
+			if (side == MineBlock.UNLOADED) {
+				return Check.of(Verdict.WAIT);
+			}
+			if (side == MineBlock.WET) {
+				return Check.of(Verdict.WATER);
+			}
+			if (side.liquid()) {
+				if (grid.foreign(nx, ny, nz)) {
+					return Check.of(Verdict.FOREIGN);
+				}
+				seal.add(new BlockPos(nx, ny, nz));
+			}
+		}
+		return new Check(Verdict.DIG, seal);
+	}
+
 	/** Vein blocks around the tunnels: same rules, but never next to a fluid (no sealing) nor under a falling block. */
 	public static Verdict digVein(Grid grid, int x, int y, int z) {
 		Check check = dig(grid, x, y, z);

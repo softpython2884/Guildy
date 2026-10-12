@@ -4,6 +4,8 @@ import dev.guildy.core.Lang;
 import dev.guildy.data.GuildManager;
 import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.Item;
@@ -64,6 +66,8 @@ final class RealMiner {
 	private static final long FULL_RETRY_TICKS = 10 * 20L;
 	/** Without work this long in a gallery: back to the surface (it may wait in a gallery, never on the stairs). */
 	private static final long WAIT_IN_PLACE_TICKS = 30 * 20L;
+	/** Quarry: blocks looked at above a bench cell (trees, a cliff...). */
+	private static final int STACK_SCAN = 48;
 
 	private enum Phase {
 		WORK,
@@ -80,6 +84,8 @@ final class RealMiner {
 		WALK,
 		/** Not loaded: wait. */
 		WAIT,
+		/** Waiting, the status is set (someone stands on a quarry column...). */
+		WAITING,
 		/** The cell cannot be dug ({@link #failIssue}). */
 		FAILED
 	}
@@ -104,6 +110,14 @@ final class RealMiner {
 	private List<BlockPos> floorVein = List.of();
 	private @Nullable String failIssue;
 	private @Nullable BlockPos failPos;
+	/** Rule that stopped the cell (null: no filler...): a quarry keeps a support column for a building. */
+	private MineRules.@Nullable Verdict failVerdict;
+	/** Quarry cell: what stands on the column, cleared before the cell is dug (null = not looked at yet). */
+	private @Nullable List<BlockPos> clearing;
+	/** Quarry cell: highest block cleared above the cell (nobody may stand on what is removed). */
+	private int clearTop;
+	/** Quarry cell: holes of the tower's shell beside the cell, patched (null = not looked at yet). */
+	private @Nullable List<BlockPos> walls;
 	// ---- vein job
 	private @Nullable List<BlockPos> cluster;
 	/** Where the miner stands to follow the vein: its start node, then the end of its approach tunnel. */
@@ -197,7 +211,7 @@ final class RealMiner {
 			return MineLayout.STAIRS_LEVEL;
 		}
 		return switch (current.type()) {
-			case SEGMENT, VEIN -> current.levelY();
+			case SEGMENT, VEIN, STRIP -> current.levelY();
 			default -> MineLayout.STAIRS_LEVEL;
 		};
 	}
@@ -421,6 +435,9 @@ final class RealMiner {
 					ctx.status("villager.status.zone_unloaded", zone.name);
 					return;
 				}
+				case WAITING -> {
+					return;
+				}
 				case FAILED -> {
 					if (!cellFailed(ctx, plan, cell)) {
 						return;
@@ -454,6 +471,7 @@ final class RealMiner {
 				plan.state().issue(issue, pos);
 				Mines.finishSegment(plan, current.levelY(), current.id(), true);
 			}
+			case STRIP -> quarryFailed(plan, current, cell, issue, pos);
 			default -> {
 			}
 		}
@@ -462,8 +480,43 @@ final class RealMiner {
 		return false;
 	}
 
+	/**
+	 * A quarry cell cannot be dug: under a non-natural block, the column stays as a support column (every bench), else
+	 * it is skipped on this bench; a way onto the bench that cannot be dug skips its first cell (another way is taken).
+	 * The benches are planned again around it.
+	 */
+	private void quarryFailed(Mines.Plan plan, MineJobs.Job current, MineLayout.Cell cell, String issue, BlockPos pos) {
+		Quarry quarry = plan.layout().quarry();
+		if (quarry == null) {
+			return;
+		}
+		BlockPos feet = cell.feet();
+		MineRules.Verdict verdict = failVerdict;
+		boolean support = verdict == MineRules.Verdict.BUILDING || verdict == MineRules.Verdict.UNDERMINE
+				|| verdict == MineRules.Verdict.FOREIGN;
+		if (feet.getY() == current.levelY() && quarry.inQuarry(feet.getX(), feet.getZ())) {
+			Mines.quarryFailed(plan, current.levelY(), feet.getX(), feet.getZ(), support, issue, pos);
+			return;
+		}
+		MineLayout.Level level = plan.layout().level(current.levelY());
+		Quarry.Bench bench = level == null ? null : level.bench();
+		Quarry.Opening opening = bench == null ? null : bench.opening();
+		if (opening != null) {
+			BlockPos entry = opening.entry().feet();
+			Mines.quarryFailed(plan, current.levelY(), entry.getX(), entry.getZ(), false, issue, pos);
+		}
+	}
+
 	/** Advances the current cell as far as the budget allows; {@code stand}: where the miner digs it from. */
 	private CellStep digCell(WorkContext ctx, Mines.Plan plan, MineWorld world, MineLayout.Cell cell, BlockPos stand, boolean near) {
+		Quarry quarry = quarryCell(plan, cell);
+		// 0) Quarry: what stands on the column is cleared first, never under someone's feet.
+		if (quarry != null) {
+			CellStep above = clearColumn(ctx, plan, world, quarry, cell, near);
+			if (above != CellStep.DONE) {
+				return above;
+			}
+		}
 		// 1) The blocks of the cell, top-down.
 		boolean settle = false;
 		for (int i = cell.height() - 1; i >= 0; i--) {
@@ -484,12 +537,12 @@ final class RealMiner {
 						return CellStep.PENDING;
 					}
 					if (redigs >= cell.height() + MAX_REDIGS) {
-						return fail(Mines.issueKey(MineRules.Verdict.CAVE_IN), pos);
+						return fail(Mines.issueKey(MineRules.Verdict.CAVE_IN), pos, MineRules.Verdict.CAVE_IN);
 					}
 					if (world.decorated(pos)) {
-						return fail(Mines.issueKey(MineRules.Verdict.BUILDING), pos);
+						return fail(Mines.issueKey(MineRules.Verdict.BUILDING), pos, MineRules.Verdict.BUILDING);
 					}
-					if (!seal(ctx, world, check.seal())) {
+					if (!seal(ctx, world, check.seal(), quarry != null)) {
 						return fail("villager.mine.issue.no_filler", pos);
 					}
 					settle |= world.at(pos.getX(), pos.getY() + 1, pos.getZ()) == MineBlock.FALLING;
@@ -499,7 +552,7 @@ final class RealMiner {
 					redigs++;
 				}
 				default -> {
-					return fail(Mines.issueKey(check.verdict()), pos);
+					return fail(Mines.issueKey(check.verdict()), pos, check.verdict());
 				}
 			}
 		}
@@ -522,15 +575,227 @@ final class RealMiner {
 				return veinStep;
 			}
 		}
-		// 4) Light.
-		torch(ctx, plan, world, cell);
+		// 4) Light (quarry: the tower's shell is patched first, then a torch on the floor every few blocks).
+		if (quarry != null) {
+			CellStep wallStep = patchWalls(ctx, plan, world, quarry, cell, near);
+			if (wallStep != CellStep.DONE) {
+				return wallStep;
+			}
+			floorTorch(ctx, world, quarry, cell);
+		} else if (job == null || job.type() != MineJobs.Type.STRIP) {
+			torch(ctx, plan, world, cell);
+		}
 		return CellStep.DONE;
 	}
 
 	private CellStep fail(String issue, BlockPos pos) {
+		return fail(issue, pos, null);
+	}
+
+	private CellStep fail(String issue, BlockPos pos, MineRules.@Nullable Verdict verdict) {
 		failIssue = issue;
 		failPos = pos.immutable();
+		failVerdict = verdict;
 		return CellStep.FAILED;
+	}
+
+	// ================================================================ quarry cells
+
+	/** The quarry of the plan when {@code cell} is a bench cell of the current strip job, else null. */
+	private @Nullable Quarry quarryCell(Mines.Plan plan, MineLayout.Cell cell) {
+		MineJobs.Job current = job;
+		Quarry quarry = plan.layout().quarry();
+		if (quarry == null || current == null || current.type() != MineJobs.Type.STRIP) {
+			return null;
+		}
+		BlockPos feet = cell.feet();
+		return feet.getY() == current.levelY() && quarry.inQuarry(feet.getX(), feet.getZ()) ? quarry : null;
+	}
+
+	/**
+	 * Quarry: what stands in and on the column of the cell ({@link Quarry#stack}) is cleared first (vegetation, the
+	 * quarry's floor torches, the overburden of the first bench), top-down; a non-natural block resting on the column or a
+	 * fluid fails the cell (support column / skipped). Nothing is removed under the feet of someone standing on the column.
+	 */
+	private CellStep clearColumn(WorkContext ctx, Mines.Plan plan, MineWorld world, Quarry quarry, MineLayout.Cell cell, boolean near) {
+		BlockPos feet = cell.feet();
+		BlockPos top = cell.top();
+		Quarry.SurfaceGrid surface = world.surface(quarry);
+		if (clearing == null) {
+			int clearUpTo = quarry.benchIndex(feet.getY()) == 0 ? quarry.ground() + quarry.settings().clearAbove() : top.getY();
+			Quarry.Stack stack = Quarry.stack(surface, feet.getX(), feet.getY(), top.getY(), feet.getZ(), clearUpTo, STACK_SCAN);
+			BlockPos at = stack.at() == null ? top : stack.at();
+			switch (stack.verdict()) {
+				case WAIT -> {
+					return CellStep.WAIT;
+				}
+				case SUPPORT -> {
+					return fail(Mines.issueKey(MineRules.Verdict.UNDERMINE), at, MineRules.Verdict.UNDERMINE);
+				}
+				case FLUID -> {
+					return fail(Mines.issueKey(MineRules.Verdict.WATER), at, MineRules.Verdict.WATER);
+				}
+				default -> {
+					clearing = new ArrayList<>(stack.clear());
+					clearTop = top.getY();
+					for (BlockPos pos : stack.clear()) {
+						clearTop = Math.max(clearTop, pos.getY());
+					}
+				}
+			}
+		}
+		List<BlockPos> list = clearing;
+		boolean digging = !list.isEmpty() || world.at(top.getX(), top.getY(), top.getZ()).breakable();
+		if (digging) {
+			LivingEntity standing = world.standing(top.above(), clearTop - top.getY() + 2, ctx.villager);
+			if (standing != null) {
+				Movement.hold(ctx, top);
+				ctx.status("villager.status.mine.quarry.occupied", standing.getName().getString(), feet.getY());
+				return CellStep.WAITING;
+			}
+		}
+		while (!list.isEmpty()) {
+			BlockPos pos = list.getFirst();
+			Quarry.Surface kind = surface.surface(pos.getX(), pos.getY(), pos.getZ());
+			switch (kind) {
+				case AIR -> {
+					list.removeFirst();
+					continue;
+				}
+				case UNLOADED -> {
+					return CellStep.WAIT;
+				}
+				case FLUID, OTHER -> {
+					// Changed meanwhile: looked at again.
+					clearing = null;
+					return CellStep.PENDING;
+				}
+				default -> {
+				}
+			}
+			if (!near) {
+				return CellStep.WALK;
+			}
+			boolean free = kind == Quarry.Surface.PLANT || kind == Quarry.Surface.TORCH || kind == Quarry.Surface.LIGHT;
+			if (!free) {
+				if (budget < 1.0) {
+					Movement.hold(ctx, pos);
+					return CellStep.PENDING;
+				}
+				// Fluids beside it are sealed first.
+				MineRules.Check sides = MineRules.sealing(world, pos.getX(), pos.getY(), pos.getZ());
+				if (sides.verdict() == MineRules.Verdict.WAIT) {
+					return CellStep.WAIT;
+				}
+				if (sides.verdict() != MineRules.Verdict.DIG) {
+					return fail(Mines.issueKey(sides.verdict()), pos, sides.verdict());
+				}
+				if (!seal(ctx, world, sides.seal(), true)) {
+					return fail("villager.mine.issue.no_filler", pos);
+				}
+			}
+			Movement.hold(ctx, pos);
+			switch (kind) {
+				case PLANT -> world.removePlant(pos);
+				case TORCH, LIGHT -> {
+					world.removePlant(pos);
+					ctx.addCarried(new ItemStack(Items.TORCH));
+				}
+				default -> {
+					collect(ctx, plan, world, pos);
+					budget -= 1.0;
+				}
+			}
+			WorldUtil.swing(ctx.villager);
+			list.removeFirst();
+		}
+		return CellStep.DONE;
+	}
+
+	/** Quarry: holes of the tower's shell beside the cell (caves, old tunnels) are patched, never its openings. */
+	private CellStep patchWalls(WorkContext ctx, Mines.Plan plan, MineWorld world, Quarry quarry, MineLayout.Cell cell, boolean near) {
+		BlockPos feet = cell.feet();
+		if (walls == null) {
+			List<BlockPos> holes = new ArrayList<>();
+			int maxStep = plan.layout().stairs().size() - 1;
+			int highest = Math.min(cell.top().getY(), quarry.ground());
+			for (Direction direction : Direction.Plane.HORIZONTAL) {
+				int x = feet.getX() + direction.getStepX();
+				int z = feet.getZ() + direction.getStepZ();
+				if (!quarry.inShell(x, z)) {
+					continue;
+				}
+				for (int y = feet.getY(); y <= highest; y++) {
+					BlockPos pos = new BlockPos(x, y, z);
+					MineBlock kind = world.at(x, y, z);
+					if ((kind == MineBlock.AIR || kind.liquid()) && !quarry.openingWall(pos, maxStep)) {
+						holes.add(pos);
+					}
+				}
+			}
+			walls = holes;
+		}
+		List<BlockPos> list = walls;
+		while (!list.isEmpty()) {
+			BlockPos pos = list.getFirst();
+			MineBlock kind = world.at(pos.getX(), pos.getY(), pos.getZ());
+			if (kind == MineBlock.UNLOADED) {
+				return CellStep.WAIT;
+			}
+			if ((kind != MineBlock.AIR && !kind.liquid()) || world.standing(pos, 1, ctx.villager) != null) {
+				list.removeFirst();
+				continue;
+			}
+			if (!near) {
+				return CellStep.WALK;
+			}
+			if (budget < 1.0) {
+				return CellStep.PENDING;
+			}
+			BlockState filler = filler(ctx);
+			if (filler == null) {
+				// Nothing to patch with: the hole is left.
+				list.removeFirst();
+				continue;
+			}
+			Movement.hold(ctx, pos);
+			WorldUtil.swing(ctx.villager);
+			world.place(pos, filler);
+			budget -= 1.0;
+			list.removeFirst();
+		}
+		return CellStep.DONE;
+	}
+
+	/** Quarry: a standing torch on the bench floor on the torch spots (a torch of the bag, else coal, else free). */
+	private void floorTorch(WorkContext ctx, MineWorld world, Quarry quarry, MineLayout.Cell cell) {
+		BlockPos feet = cell.feet();
+		VillagerConfig.RealMining real = ctx.config.realMining;
+		if (!quarry.torchSpot(feet.getX(), feet.getZ()) || !ctx.level.getBlockState(feet).isAir()) {
+			return;
+		}
+		boolean fromBag = MineWorld.take(ctx.record, Items.TORCH);
+		if (!fromBag && real.torchesUseCoal && torchCredits <= 0
+				&& (MineWorld.take(ctx.record, Items.COAL) || MineWorld.take(ctx.record, Items.CHARCOAL))) {
+			torchCredits = 4;
+			MineWorld.take(ctx.record, Items.STICK);
+		}
+		boolean paid = fromBag || torchCredits > 0;
+		if (!paid && !real.freeTorches) {
+			return;
+		}
+		if (world.placeFloorTorch(feet)) {
+			if (!fromBag && torchCredits > 0) {
+				torchCredits--;
+			}
+		} else if (fromBag) {
+			ctx.addCarried(new ItemStack(Items.TORCH));
+		}
+	}
+
+	/** Quarry: a filler block the bench below can dig again (see {@link MineWorld#takeQuarryFiller}). */
+	private @Nullable BlockState quarryFiller(WorkContext ctx) {
+		return MineWorld.takeQuarryFiller(ctx.record, wanted::item, ctx.config.realMining.freeFloorBlocks);
 	}
 
 	/** Floor of the cell (see {@link #floorStage}). */
@@ -538,7 +803,9 @@ final class RealMiner {
 		BlockPos floor = cell.floor();
 		MineJobs.Job current = job;
 		boolean stairs = current != null && (current.type() == MineJobs.Type.STAIRS || current.type() == MineJobs.Type.WIDEN);
-		if (floorStage == 0 && world.target(floor)) {
+		// Quarry: the floor of a bench is the next bench (its ores are dug with it), refilled with natural blocks.
+		boolean quarry = quarryCell(plan, cell) != null;
+		if (floorStage == 0 && !quarry && world.target(floor)) {
 			MineRules.Check check = MineRules.dig(world, floor.getX(), floor.getY(), floor.getZ());
 			if (check.verdict() == MineRules.Verdict.WAIT) {
 				return CellStep.WAIT;
@@ -552,7 +819,7 @@ final class RealMiner {
 					Movement.hold(ctx, floor);
 					return CellStep.PENDING;
 				}
-				seal(ctx, world, check.seal());
+				seal(ctx, world, check.seal(), false);
 				Movement.hold(ctx, floor);
 				collect(ctx, plan, world, floor);
 				budget -= 1.0;
@@ -579,7 +846,7 @@ final class RealMiner {
 				return CellStep.WAIT;
 			}
 			case BLOCKED -> {
-				return fail(Mines.issueKey(floorCheck.reason()), floor);
+				return fail(Mines.issueKey(floorCheck.reason()), floor, floorCheck.reason());
 			}
 			default -> {
 			}
@@ -596,12 +863,13 @@ final class RealMiner {
 			if (check.verdict() == MineRules.Verdict.DIG && world.decorated(floor)) {
 				check = new MineRules.Check(MineRules.Verdict.BUILDING, List.of());
 			}
-			if (check.verdict() != MineRules.Verdict.DIG || !seal(ctx, world, check.seal())) {
-				return fail(check.verdict() == MineRules.Verdict.DIG ? "villager.mine.issue.no_filler" : Mines.issueKey(check.verdict()), floor);
+			if (check.verdict() != MineRules.Verdict.DIG || !seal(ctx, world, check.seal(), quarry)) {
+				return check.verdict() == MineRules.Verdict.DIG ? fail("villager.mine.issue.no_filler", floor)
+						: fail(Mines.issueKey(check.verdict()), floor, check.verdict());
 			}
 			collect(ctx, plan, world, floor);
 		}
-		BlockState filler = filler(ctx);
+		BlockState filler = quarry ? quarryFiller(ctx) : filler(ctx);
 		if (filler == null) {
 			return fail("villager.mine.issue.no_filler", floor);
 		}
@@ -712,17 +980,20 @@ final class RealMiner {
 		return stand;
 	}
 
-	/** Seals the fluids next to a block with filler blocks of the bag; false when the bag has not enough. */
-	private boolean seal(WorkContext ctx, MineWorld world, List<BlockPos> fluids) {
+	/**
+	 * Seals the fluids next to a block with filler blocks of the bag; false when the bag has not enough. {@code quarry}:
+	 * blocks the bench below can dig again ({@link #quarryFiller}).
+	 */
+	private boolean seal(WorkContext ctx, MineWorld world, List<BlockPos> fluids, boolean quarry) {
 		if (fluids.isEmpty()) {
 			return true;
 		}
 		Predicate<ItemStack> keep = wanted::item;
-		if (MineWorld.fillerCount(ctx.record, keep) < fluids.size()) {
+		if (!quarry && MineWorld.fillerCount(ctx.record, keep) < fluids.size()) {
 			return false;
 		}
 		for (BlockPos pos : fluids) {
-			BlockState filler = MineWorld.takeFiller(ctx.record, keep);
+			BlockState filler = quarry ? quarryFiller(ctx) : MineWorld.takeFiller(ctx.record, keep);
 			if (filler == null) {
 				return false;
 			}
@@ -740,17 +1011,26 @@ final class RealMiner {
 		MineBlock kind = world.at(pos.getX(), pos.getY(), pos.getZ());
 		List<ItemStack> drops = world.breakBlock(pos, ctx.villager);
 		WorldUtil.swing(ctx.villager);
-		boolean oresOnly = zone.objective == ZoneObjective.ORES && kind != MineBlock.ORE;
+		// "Ores" objective: ores only; a quarry: the realMining.quarryKeep items (and ores) only.
+		boolean quarry = plan.layout().quarry() != null;
+		boolean oresOnly = kind != MineBlock.ORE && (zone.objective == ZoneObjective.ORES || (quarry && ctx.config.realMining.quarryDiscardOthers));
 		int reserveLeft = oresOnly ? ctx.config.realMining.fillerReserve - MineWorld.fillerCount(ctx.record, wanted::item) : 0;
 		MineState state = plan.state();
 		MineState.Level level = statLevel(state);
+		MineJobs.Job current = job;
+		if (quarry && current != null && current.type() == MineJobs.Type.STRIP) {
+			state.quarried++;
+			if (level != null) {
+				level.quarried++;
+			}
+		}
 		for (ItemStack drop : drops) {
 			if (drop.isEmpty()) {
 				continue;
 			}
 			boolean wantedItem = wanted.item(drop);
 			ItemStack kept = drop;
-			if (oresOnly && !wantedItem) {
+			if (oresOnly && !wantedItem && !(quarry && MineWorld.quarryKeep(drop))) {
 				if (reserveLeft <= 0 || !MineWorld.isFiller(drop)) {
 					continue;
 				}
@@ -786,11 +1066,12 @@ final class RealMiner {
 	/** Level whose statistics count the blocks of the current job (null on the stairs). */
 	private MineState.@Nullable Level statLevel(MineState state) {
 		MineJobs.Job current = job;
-		if (current == null || (current.type() != MineJobs.Type.SEGMENT && current.type() != MineJobs.Type.VEIN)) {
+		if (current == null || (current.type() != MineJobs.Type.SEGMENT && current.type() != MineJobs.Type.VEIN
+				&& current.type() != MineJobs.Type.STRIP)) {
 			return null;
 		}
 		MineState.Level level = state.level(current.levelY());
-		if (level == null && current.type() == MineJobs.Type.SEGMENT) {
+		if (level == null && current.type() != MineJobs.Type.VEIN) {
 			level = state.levelOrCreate(current.levelY());
 		}
 		return level;
@@ -845,7 +1126,7 @@ final class RealMiner {
 			return;
 		}
 		MineLayout layout = plan.layout();
-		if (world.placeTorch(at, wall -> !layout.inStructure(wall) && !world.target(wall)
+		if (world.placeTorch(at, wall -> !layout.digVolume(wall) && !world.target(wall)
 				&& world.at(wall.getX(), wall.getY(), wall.getZ()) != MineBlock.ORE) && paid) {
 			torchCredits--;
 		}
@@ -864,6 +1145,10 @@ final class RealMiner {
 		if (current != null && current.type() == MineJobs.Type.WIDEN && (cursor + 1 >= steps.length || steps[cursor + 1] != steps[cursor])) {
 			state.widen(steps[cursor]);
 		}
+		Quarry quarry = quarryCell(plan, cell);
+		if (quarry != null && current != null) {
+			Mines.quarryCleared(plan, current.levelY(), quarry.column(cell.feet().getX(), cell.feet().getZ()));
+		}
 		cursor++;
 		resetCell();
 		GuildManager.markDirty();
@@ -876,6 +1161,9 @@ final class RealMiner {
 		floorVein = List.of();
 		failIssue = null;
 		failPos = null;
+		failVerdict = null;
+		clearing = null;
+		walls = null;
 	}
 
 	// ================================================================ vein jobs
@@ -935,6 +1223,9 @@ final class RealMiner {
 					}
 					case WAIT -> {
 						ctx.status("villager.status.zone_unloaded", zone.name);
+						return;
+					}
+					case WAITING -> {
 						return;
 					}
 					case FAILED -> {
@@ -1001,7 +1292,8 @@ final class RealMiner {
 			return null;
 		}
 		BlockPos next = MineRules.approach(stand, target);
-		if (next == null || layout.inStairColumns(next.getX(), next.getZ())
+		Quarry quarry = layout.quarry();
+		if (next == null || layout.inStairColumns(next.getX(), next.getZ()) || (quarry != null && quarry.kept(next.getX(), next.getZ()))
 				|| MineRules.outside(next.getX(), next.getZ(), zone.bounds()) > real.veinMaxOutside || !ctx.ticking(next)) {
 			return null;
 		}
@@ -1075,6 +1367,10 @@ final class RealMiner {
 							|| (!progress.done.contains(current.id()) && !progress.abandoned.contains(current.id())));
 				}
 				case VEIN -> valid = state.veins.contains(current.vein());
+				case STRIP -> {
+					MineState.Level progress = state.level(current.levelY());
+					valid = plan.levels().contains(current.levelY()) && (progress == null || !progress.finished) && cursor < cells.size();
+				}
 				default -> valid = false;
 			}
 		}
@@ -1100,7 +1396,7 @@ final class RealMiner {
 				// The stairs go on to the next level: a job for this miner next step.
 				ctx.status("villager.status.mine.planning", zone.name);
 			} else if (open.isEmpty()) {
-				ctx.status("villager.status.mine.no_work", zone.name);
+				ctx.status(layout.quarry() != null ? "villager.status.mine.quarry.wait" : "villager.status.mine.no_work", zone.name);
 			} else {
 				ctx.status("villager.status.mine.all_taken", open.size(), zone.name);
 			}
@@ -1153,6 +1449,21 @@ final class RealMiner {
 					list.addAll(segment.cells());
 					for (int stand : segment.stands()) {
 						standList.add(stand);
+						stepList.add(-1);
+					}
+				}
+			}
+			case STRIP -> {
+				// The opening, or a strip from its first cell not dug yet.
+				MineLayout.Level level = layout.level(picked.levelY());
+				MineLayout.Segment segment = level == null ? null : level.segment(picked.id());
+				Quarry.Bench bench = level == null ? null : level.bench();
+				if (segment != null && bench != null) {
+					int first = segment.kind() == MineLayout.Kind.STRIP
+							? QuarryJobs.firstOpen(bench.strips().get(picked.id() - 2), state.level(picked.levelY())) : 0;
+					for (int i = first; i < segment.cells().size(); i++) {
+						list.add(segment.cells().get(i));
+						standList.add(segment.stands()[i]);
 						stepList.add(-1);
 					}
 				}
@@ -1214,9 +1525,24 @@ final class RealMiner {
 					case LANDING -> "villager.status.mine.landing";
 					case MAIN -> "villager.status.mine.gallery_main";
 					case BRANCH -> "villager.status.mine.gallery";
-					case ROOM -> "villager.status.mine.quarry";
+					default -> "villager.status.mine.quarry";
 				};
 				ctx.status(key, current.levelY(), done, segment.cells().size());
+			}
+			case STRIP -> {
+				MineLayout.Level level = plan.layout().level(current.levelY());
+				MineLayout.Segment segment = level == null ? null : level.segment(current.id());
+				if (segment == null) {
+					return;
+				}
+				if (segment.kind() == MineLayout.Kind.OPENING) {
+					ctx.status("villager.status.mine.quarry.opening", current.levelY());
+				} else if (clearing != null && !clearing.isEmpty()) {
+					ctx.status("villager.status.mine.quarry.clearing", current.levelY(), segment.ordinal(), level.segments().size() - 1);
+				} else {
+					ctx.status("villager.status.mine.quarry.strip", current.levelY(), segment.ordinal(), level.segments().size() - 1,
+							Math.min(cursor + 1, cells.size()), cells.size());
+				}
 			}
 			default -> {
 			}

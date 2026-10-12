@@ -17,6 +17,7 @@
 			"dev.guildy.test.GuardGameTests",
 			"dev.guildy.test.ZoneGameTests",
 			"dev.guildy.test.MineGameTests",
+			"dev.guildy.test.QuarryGameTests",
 			"dev.guildy.test.StructureGameTests",
 			"dev.guildy.test.MenuGameTests",
 			"dev.guildy.test.BannerGameTests",

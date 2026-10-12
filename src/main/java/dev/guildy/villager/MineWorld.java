@@ -13,6 +13,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.BlockAttachedEntity;
 import net.minecraft.world.entity.decoration.Mannequin;
@@ -26,8 +27,10 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DiodeBlock;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.LadderBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.RedstoneWireBlock;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.TripWireBlock;
 import net.minecraft.world.level.block.TripWireHookBlock;
 import net.minecraft.world.level.block.WallTorchBlock;
@@ -61,7 +64,8 @@ final class MineWorld implements MineRules.Grid, MineRules.Targets {
 
 	/** Compiled block / item lists of a config instance (tags resolved per block, cached). */
 	private record Lists(Set<Block> natural, List<TagKey<Block>> naturalTags, Set<Block> ores, List<TagKey<Block>> oreTags,
-			Set<Item> fillers, Map<Block, Byte> kinds) {
+			Set<Item> fillers, Map<Block, Byte> kinds, Set<Item> keep, List<TagKey<Item>> keepTags, Set<Block> clear,
+			List<TagKey<Block>> clearTags, Map<Block, Boolean> clearable) {
 	}
 
 	private static @Nullable Lists lists;
@@ -256,7 +260,25 @@ final class MineWorld implements MineRules.Grid, MineRules.Targets {
 				}
 			}
 		}
-		return new Lists(natural, naturalTags, ores, oreTags, fillers, new IdentityHashMap<>());
+		Set<Item> keep = new HashSet<>();
+		List<TagKey<Item>> keepTags = new ArrayList<>();
+		for (String value : real.quarryKeep) {
+			boolean tag = value.startsWith("#");
+			Identifier identifier = parse(tag ? value.substring(1) : value);
+			if (identifier == null) {
+				continue;
+			}
+			if (tag) {
+				keepTags.add(TagKey.create(Registries.ITEM, identifier));
+			} else if (BuiltInRegistries.ITEM.containsKey(identifier)) {
+				keep.add(BuiltInRegistries.ITEM.getValue(identifier));
+			}
+		}
+		Set<Block> clear = new HashSet<>();
+		List<TagKey<Block>> clearTags = new ArrayList<>();
+		readBlocks(real.quarrySurfaceClear, clear, clearTags);
+		return new Lists(natural, naturalTags, ores, oreTags, fillers, new IdentityHashMap<>(), keep, keepTags, clear, clearTags,
+				new IdentityHashMap<>());
 	}
 
 	private static void readBlocks(List<String> ids, Set<Block> blocks, List<TagKey<Block>> tags) {
@@ -301,6 +323,37 @@ final class MineWorld implements MineRules.Grid, MineRules.Targets {
 		return !stack.isEmpty() && lists().fillers().contains(stack.getItem());
 	}
 
+	/** Quarry: an item kept in the bag (realMining.quarryKeep). */
+	static boolean quarryKeep(ItemStack stack) {
+		if (stack.isEmpty()) {
+			return false;
+		}
+		Lists current = lists();
+		if (current.keep().contains(stack.getItem())) {
+			return true;
+		}
+		for (TagKey<Item> tag : current.keepTags()) {
+			if (stack.is(tag)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Quarry: extra vegetation cleared from the columns (realMining.quarrySurfaceClear). */
+	private static boolean surfaceClear(BlockState state) {
+		Lists current = lists();
+		return current.clearable().computeIfAbsent(state.getBlock(), b -> {
+			BlockState base = b.defaultBlockState();
+			return current.clear().contains(b) || current.clearTags().stream().anyMatch(base::is);
+		});
+	}
+
+	/** A natural block (realMining.naturalBlocks) that does not fall: a filler the next bench can dig again. */
+	private static boolean naturalFiller(Block block) {
+		return kind(block) == NATURAL && !(block instanceof FallingBlock);
+	}
+
 	/** Filler blocks in the bag. */
 	static int fillerCount(VillagerRecord record) {
 		return fillerCount(record, stack -> false);
@@ -341,6 +394,32 @@ final class MineWorld implements MineRules.Grid, MineRules.Targets {
 		return null;
 	}
 
+	/**
+	 * Quarry: a filler block for the quarry square, that the bench below can dig again: a natural one of the bag, else a
+	 * free stone block when {@code free} (realMining.freeFloorBlocks), else any filler of the bag (that column will then
+	 * stay as a support column). Never a stack {@code keep} protects. Null when there is none.
+	 */
+	static @Nullable BlockState takeQuarryFiller(VillagerRecord record, Predicate<ItemStack> keep, boolean free) {
+		Iterator<ItemStack> it = record.carried.iterator();
+		while (it.hasNext()) {
+			ItemStack stack = it.next();
+			if (!isFiller(stack) || keep.test(stack) || !(stack.getItem() instanceof BlockItem blockItem) || !naturalFiller(blockItem.getBlock())) {
+				continue;
+			}
+			BlockState state = blockItem.getBlock().defaultBlockState();
+			stack.shrink(1);
+			if (stack.isEmpty()) {
+				it.remove();
+			}
+			GuildManager.markDirty();
+			return state;
+		}
+		if (free) {
+			return Blocks.STONE.defaultBlockState();
+		}
+		return takeFiller(record, keep);
+	}
+
 	/** Takes one item of {@code item} out of the bag. */
 	static boolean take(VillagerRecord record, Item item) {
 		Iterator<ItemStack> it = record.carried.iterator();
@@ -378,6 +457,100 @@ final class MineWorld implements MineRules.Grid, MineRules.Targets {
 	void place(BlockPos pos, BlockState state) {
 		level.setBlockAndUpdate(pos, state);
 		level.playSound(null, pos, state.getSoundType().getPlaceSound(), SoundSource.BLOCKS, 0.8f, 0.9f);
+	}
+
+	/** Quarry: a standing torch on the bench floor at {@code pos} (air above a sturdy floor). */
+	boolean placeFloorTorch(BlockPos pos) {
+		if (!level.isLoaded(pos) || !level.getBlockState(pos).isAir()) {
+			return false;
+		}
+		BlockState torch = Blocks.TORCH.defaultBlockState();
+		if (!torch.canSurvive(level, pos)) {
+			return false;
+		}
+		place(pos, torch);
+		return true;
+	}
+
+	/** Removes a plant without drops (grass, flowers... on a column being dug). */
+	void removePlant(BlockPos pos) {
+		level.destroyBlock(pos, false);
+	}
+
+	/**
+	 * A living entity (miner, player, animal...) stands in the {@code height} blocks from {@code pos} up: the block under
+	 * {@code pos} is its floor, never dug away. Null when there is none.
+	 */
+	@Nullable LivingEntity standing(BlockPos pos, int height, Entity self) {
+		AABB box = new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + height, pos.getZ() + 1);
+		List<LivingEntity> found = level.getEntitiesOfClass(LivingEntity.class, box, entity -> entity != self && entity.isAlive()
+				&& !entity.isSpectator());
+		return found.isEmpty() ? null : found.getFirst();
+	}
+
+	/** Quarry: what a block of a column is ({@link Quarry#stack}); {@code quarry}: its torch spots. */
+	Quarry.SurfaceGrid surface(Quarry quarry) {
+		return new Quarry.SurfaceGrid() {
+			private final BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
+
+			@Override
+			public Quarry.Surface surface(int x, int y, int z) {
+				at.set(x, y, z);
+				if (!level.isLoaded(at)) {
+					return Quarry.Surface.UNLOADED;
+				}
+				BlockState state = level.getBlockState(at);
+				if (state.isAir()) {
+					return Quarry.Surface.AIR;
+				}
+				if (!state.getFluidState().isEmpty()) {
+					return Quarry.Surface.FLUID;
+				}
+				Block block = state.getBlock();
+				if (block == Blocks.TORCH || block == Blocks.WALL_TORCH) {
+					return block == Blocks.TORCH && quarry.torchSpot(x, z) ? Quarry.Surface.TORCH : Quarry.Surface.LIGHT;
+				}
+				if (state.hasBlockEntity()) {
+					return Quarry.Surface.OTHER;
+				}
+				if (surfaceClear(state)) {
+					return Quarry.Surface.VEGETATION;
+				}
+				if (state.is(BlockTags.LEAVES)) {
+					return naturalLeaves(state) ? Quarry.Surface.LEAVES : Quarry.Surface.OTHER;
+				}
+				if (state.is(BlockTags.LOGS)) {
+					return state.hasProperty(RotatedPillarBlock.AXIS) && state.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.Y
+							? Quarry.Surface.LOG : Quarry.Surface.OTHER;
+				}
+				if (state.getCollisionShape(level, at).isEmpty()) {
+					return isFixture(state) ? Quarry.Surface.OTHER : Quarry.Surface.PLANT;
+				}
+				return switch (kind(block)) {
+					case ORE, NATURAL -> block instanceof FallingBlock ? Quarry.Surface.FALLING : Quarry.Surface.NATURAL;
+					default -> Quarry.Surface.OTHER;
+				};
+			}
+
+			@Override
+			public boolean leavesNear(int x, int y, int z) {
+				for (int dx = -2; dx <= 2; dx++) {
+					for (int dz = -2; dz <= 2; dz++) {
+						for (int dy = -1; dy <= 2; dy++) {
+							at.set(x + dx, y + dy, z + dz);
+							if (level.isLoaded(at) && naturalLeaves(level.getBlockState(at))) {
+								return true;
+							}
+						}
+					}
+				}
+				return false;
+			}
+		};
+	}
+
+	private static boolean naturalLeaves(BlockState state) {
+		return state.is(BlockTags.LEAVES) && state.hasProperty(LeavesBlock.PERSISTENT) && !state.getValue(LeavesBlock.PERSISTENT);
 	}
 
 	/** Wall torch at {@code pos} (air), hung on a sturdy side accepted by {@code wall} (never a block still to dig). */

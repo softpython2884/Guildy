@@ -56,7 +56,7 @@ public final class VillagerConfig implements Validatable {
 	@Comment({
 			"Tache 'Mineur', mode 'Reel' (zones de mine) : les mineurs creusent vraiment. Depuis le fanion, un escalier en",
 			"colimacon (2 blocs de large, 3 de haut) descend ; tous les 'levelSpacing' blocs, un niveau : un palier puis une",
-			"galerie principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : des salles de carriere),",
+			"galerie principale avec des galeries laterales tous les 3 blocs (objectif 'Pierre' : une carriere, voir stoneQuarry),",
 			"toujours dans le carre de la zone. Les niveaux s'ouvrent pendant que l'escalier continue de descendre jusqu'a la",
 			"profondeur cible : plusieurs mineurs (jusqu'a 'maxMinersPerZone') se partagent les chantiers. Les minerais et les",
 			"objectifs prioritaires visibles sont mines en suivant leurs filons (un peu hors de la zone aussi). Seuls des blocs",
@@ -339,6 +339,50 @@ public final class VillagerConfig implements Validatable {
 				"minecraft:cobblestone", "minecraft:cobbled_deepslate", "minecraft:dirt", "minecraft:stone", "minecraft:deepslate",
 				"minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:tuff", "minecraft:calcite",
 				"minecraft:netherrack"));
+		@Comment({
+				"Objectif 'Pierre et variantes' : carriere a ciel ouvert (true) au lieu des salles de carriere (false). Les mineurs",
+				"creusent tout le carre de la zone par gradins depuis la surface jusqu'a la profondeur cible ; il ne reste que",
+				"l'escalier (une tour entouree d'un mur de roche d'un bloc, une ouverture par gradin) et une chaussee de roche",
+				"qui relie le fanion au bord de la carriere. Les mines 'Pierre' deja commencees passent en carriere (les",
+				"galeries creusees sont simplement vides)."
+		})
+		public boolean stoneQuarry = true;
+		@Comment("Carriere : hauteur (blocs) d'un gradin (2 a 5 ; au-dela de 3, une chute d'un gradin blesse)")
+		public int quarryBenchHeight = 3;
+		@Comment("Carriere : blocs laisses intacts le long du bord de la zone (0 = jusqu'au bord)")
+		public int quarryMargin = 0;
+		@Comment("Carriere : largeur (blocs) de la chaussee de roche laissee entre le fanion et le bord de la carriere (1 a 4)")
+		public int quarryAccessWidth = 2;
+		@Comment("Carriere : longueur maximum (blocs) d'une bande, le chantier d'un mineur (2 a 32)")
+		public int quarryStripLength = 8;
+		@Comment({
+				"Carriere : blocs naturels (colline) au-dessus du sol du fanion retires par le premier gradin, jusqu'a cette",
+				"hauteur (0 a 32) ; plus haut, ils restent (et le sable ou le gravier tombe dans la carriere, puis est creuse)"
+		})
+		public int quarryClearAbove = 8;
+		@Comment({
+				"Carriere : objets gardes dans le sac (id ou #tag d'objet) ; les minerais et les objectifs prioritaires sont",
+				"toujours gardes, plus une reserve de blocs de remplissage (fillerReserve)"
+		})
+		public List<String> quarryKeep = new ArrayList<>(List.of(
+				"minecraft:cobblestone", "minecraft:cobbled_deepslate", "minecraft:stone", "minecraft:deepslate",
+				"minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:tuff", "minecraft:calcite",
+				"minecraft:dripstone_block", "minecraft:smooth_basalt", "minecraft:sandstone", "minecraft:red_sandstone",
+				"minecraft:clay_ball", "minecraft:flint"));
+		@Comment("Carriere : les autres blocs (terre, gravier, sable...) sont jetes (true) ou rapportes au coffre (false)")
+		public boolean quarryDiscardOthers = true;
+		@Comment({
+				"Carriere : vegetation naturelle retiree au lieu de bloquer le creusage (id ou #tag de bloc), en plus des regles",
+				"fixes : plantes sans collision (herbes, fleurs, lianes...), feuilles naturelles (jamais celles posees par un",
+				"joueur), troncs droits qui finissent dans des feuilles naturelles, torches de la carriere. Tout autre bloc non",
+				"naturel pose sur une colonne (construction, poteau de buches...) la garde intacte jusqu'au fond (colonne de",
+				"soutien)."
+		})
+		public List<String> quarrySurfaceClear = new ArrayList<>(List.of(
+				"minecraft:snow", "minecraft:powder_snow", "minecraft:cactus", "minecraft:bamboo", "minecraft:pumpkin",
+				"minecraft:melon", "minecraft:brown_mushroom_block", "minecraft:red_mushroom_block", "minecraft:mushroom_stem",
+				"minecraft:moss_carpet", "minecraft:pale_moss_carpet", "minecraft:azalea", "minecraft:flowering_azalea",
+				"minecraft:big_dripleaf", "minecraft:big_dripleaf_stem", "minecraft:mangrove_roots", "minecraft:muddy_mangrove_roots"));
 	}
 
 	@Json5.Section
@@ -970,6 +1014,13 @@ public final class VillagerConfig implements Validatable {
 		real.naturalBlocks = cleanIds(real.naturalBlocks, new RealMining().naturalBlocks);
 		real.oreBlocks = cleanIds(real.oreBlocks, new RealMining().oreBlocks);
 		real.fillerItems = cleanIds(real.fillerItems, new RealMining().fillerItems);
+		real.quarryBenchHeight = clamp(real.quarryBenchHeight, 2, 5);
+		real.quarryMargin = clamp(real.quarryMargin, 0, 16);
+		real.quarryAccessWidth = clamp(real.quarryAccessWidth, 1, 4);
+		real.quarryStripLength = clamp(real.quarryStripLength, 2, 32);
+		real.quarryClearAbove = clamp(real.quarryClearAbove, 0, 32);
+		real.quarryKeep = cleanIds(real.quarryKeep, new RealMining().quarryKeep);
+		real.quarrySurfaceClear = cleanIds(real.quarrySurfaceClear, new RealMining().quarrySurfaceClear);
 	}
 
 	/** Copy without blank entries (trimmed); the defaults when the list is missing. */

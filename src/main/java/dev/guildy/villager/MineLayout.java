@@ -29,6 +29,10 @@ import java.util.function.IntPredicate;
  * <p>
  * <b>Walking graph.</b> A tree rooted at the fanion ({@link #ENTRANCE}): the stairs (inner lane), then for each level
  * its landing, main tunnel and branches. Work segments: cells dug in order, cell i from node {@code stands[i]}.
+ * <p>
+ * <b>Quarry.</b> With quarry settings ({@link #quarry(BlockPos, int, int, int[], Settings, Quarry.Settings, Quarry.Facts)})
+ * the levels are the benches of a {@link Quarry}: an opening segment (outer lane cell, opening through the shell, first
+ * bench cell) then its strips, every bench cell a node of the walking graph.
  */
 public final class MineLayout {
 	/** 4 first directions × 2 turning senses. */
@@ -51,7 +55,11 @@ public final class MineLayout {
 		LANDING,
 		MAIN,
 		BRANCH,
-		ROOM
+		ROOM,
+		/** Quarry: from the stairs onto a bench (outer lane cell, opening through the shell, first bench cell). */
+		OPENING,
+		/** Quarry: a straight run of bench cells. */
+		STRIP
 	}
 
 	/** Column of blocks a villager walks in (or a quarry column): {@code height} blocks from {@code feet} up. */
@@ -92,6 +100,10 @@ public final class MineLayout {
 		private final Map<Integer, Segment> byId = new HashMap<>();
 		private final LongOpenHashSet structure = new LongOpenHashSet();
 		private final IntArrayList nodes = new IntArrayList();
+		/** Quarry bench: its plan (null for gallery levels). */
+		private Quarry.@Nullable Bench bench;
+		/** Quarry bench: nodes off the bench grid (opening through the shell). */
+		private final IntArrayList extra = new IntArrayList();
 
 		private Level(int y, int step) {
 			this.y = y;
@@ -100,6 +112,11 @@ public final class MineLayout {
 
 		public int y() {
 			return y;
+		}
+
+		/** Plan of a quarry bench, null for gallery levels. */
+		public Quarry.@Nullable Bench bench() {
+			return bench;
 		}
 
 		/** Stair step at this height (-1: galleries at the fanion's own height). */
@@ -165,8 +182,13 @@ public final class MineLayout {
 	private final IntArrayList nodeSegments = new IntArrayList();
 	private final IntArrayList nodeCells = new IntArrayList();
 	private final Long2IntOpenHashMap nodeByPos = new Long2IntOpenHashMap();
+	/** Quarry of the mine (benches instead of galleries), null for galleries. */
+	private final @Nullable Quarry quarry;
+	private final Quarry.Facts facts;
+	private final int lowestY;
 
-	private MineLayout(BlockPos origin, int orientation, int lowestY, int[] bounds, boolean rooms, Settings settings) {
+	private MineLayout(BlockPos origin, int orientation, int lowestY, int[] bounds, boolean rooms, Settings settings,
+			Quarry.@Nullable Settings quarrySettings, Quarry.Facts facts) {
 		this.origin = origin.immutable();
 		this.orientation = Math.floorMod(orientation, ORIENTATIONS);
 		this.side = clampSide(settings.stairSide());
@@ -174,6 +196,9 @@ public final class MineLayout {
 		this.bounds = bounds.clone();
 		this.rooms = rooms;
 		this.settings = settings;
+		this.quarry = quarrySettings == null ? null : new Quarry(this.origin, this.orientation, side, width, bounds, quarrySettings);
+		this.facts = facts;
+		this.lowestY = lowestY;
 		nodeByPos.defaultReturnValue(-1);
 		addNode(this.origin, -1, STAIRS_LEVEL, -1, -1);
 		stairStructure.add(this.origin.asLong());
@@ -199,7 +224,16 @@ public final class MineLayout {
 	 * @param rooms quarry rooms instead of side branches
 	 */
 	public static MineLayout build(BlockPos origin, int orientation, int lowestY, int[] bounds, boolean rooms, Settings settings) {
-		return new MineLayout(origin, orientation, lowestY, bounds, rooms, settings);
+		return new MineLayout(origin, orientation, lowestY, bounds, rooms, settings, null, Quarry.Facts.NONE);
+	}
+
+	/**
+	 * Layout of a quarry: the same staircase, benches instead of galleries ({@link Quarry}); {@code facts}: what the
+	 * miners learnt (support columns, skipped columns, benches being worked), read when a bench is planned.
+	 */
+	public static MineLayout quarry(BlockPos origin, int orientation, int lowestY, int[] bounds, Settings settings,
+			Quarry.Settings quarry, Quarry.Facts facts) {
+		return new MineLayout(origin, orientation, lowestY, bounds, false, settings, quarry, facts);
 	}
 
 	// ------------------------------------------------------------------ spiral
@@ -396,10 +430,72 @@ public final class MineLayout {
 		if (step < -1 || step >= stairs.size()) {
 			return null;
 		}
+		Quarry plan = quarry;
+		if (plan != null && (!plan.isBench(y) || !facts.open(y))) {
+			return null;
+		}
 		level = new Level(y, step);
 		levels.put(y, level);
-		buildLevel(level);
+		if (plan != null) {
+			buildBench(level, plan);
+		} else {
+			buildLevel(level);
+		}
 		return level;
+	}
+
+	/** Quarry: the opening segment (id 1), then one segment per strip (id = strip index + 2), every cell a node. */
+	private void buildBench(Level level, Quarry plan) {
+		int y = level.y;
+		Quarry.Bench bench = plan.bench(y, stairs.size() - 1, facts);
+		level.bench = bench;
+		Quarry.Opening opening = bench.opening();
+		if (opening == null) {
+			return;
+		}
+		List<Cell> way = new ArrayList<>(3);
+		IntArrayList wayStands = new IntArrayList(3);
+		int parent = stairNode(opening.step());
+		Cell outer = opening.outer();
+		if (outer != null) {
+			way.add(outer);
+			wayStands.add(parent);
+			parent = addNode(outer.feet(), parent, y, 1, way.size() - 1);
+			level.extra.add(parent);
+		}
+		way.add(opening.wall());
+		wayStands.add(parent);
+		parent = addNode(opening.wall().feet(), parent, y, 1, way.size() - 1);
+		level.extra.add(parent);
+		way.add(opening.entry());
+		wayStands.add(parent);
+		int entryNode = addNode(opening.entry().feet(), parent, y, 1, way.size() - 1);
+		level.nodes.add(entryNode);
+		add(level, new Segment(1, Kind.OPENING, List.copyOf(way), wayStands.toIntArray(), -1, 1));
+		int[] nodeOf = new int[plan.columns()];
+		java.util.Arrays.fill(nodeOf, -1);
+		nodeOf[bench.root()] = entryNode;
+		int height = plan.benchHeight();
+		List<Quarry.Strip> strips = bench.strips();
+		for (int i = 0; i < strips.size(); i++) {
+			Quarry.Strip strip = strips.get(i);
+			int id = i + 2;
+			int[] columns = strip.columns();
+			List<Cell> cells = new ArrayList<>(columns.length);
+			int[] stands = new int[columns.length];
+			int previous = nodeOf[strip.parent()];
+			for (int j = 0; j < columns.length; j++) {
+				int c = columns[j];
+				Cell cell = new Cell(new BlockPos(plan.columnX(c), y, plan.columnZ(c)), height);
+				cells.add(cell);
+				stands[j] = previous;
+				previous = addNode(cell.feet(), previous, y, id, j);
+				nodeOf[c] = previous;
+				level.nodes.add(previous);
+			}
+			int parentStrip = bench.stripOf(strip.parent());
+			add(level, new Segment(id, Kind.STRIP, List.copyOf(cells), stands, parentStrip < 0 ? 1 : parentStrip + 2, i + 1));
+		}
 	}
 
 	/** Levels built so far. */
@@ -650,6 +746,11 @@ public final class MineLayout {
 		return rooms;
 	}
 
+	/** Quarry of the mine (benches instead of galleries), null for galleries. */
+	public @Nullable Quarry quarry() {
+		return quarry;
+	}
+
 	public Settings settings() {
 		return settings;
 	}
@@ -732,12 +833,34 @@ public final class MineLayout {
 		if (stairStructure.contains(packed)) {
 			return true;
 		}
+		Quarry plan = quarry;
+		if (plan != null) {
+			// A quarry: veins are followed outside the zone only (the benches dig everything inside, the tower,
+			// the causeway and the margin stay).
+			return plan.inZone(BlockPos.getX(packed), BlockPos.getZ(packed));
+		}
 		for (Level level : levels.subMap(y - MAX_CELL_HEIGHT + 1, true, y + 1, true).values()) {
 			if (level.structure.contains(packed)) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Will be dug by the mine (stairs, galleries, quarry benches): torches never hang there. Unlike {@link #inStructure},
+	 * the quarry's tower, causeway and margin are not.
+	 */
+	public boolean digVolume(BlockPos pos) {
+		Quarry plan = quarry;
+		if (plan == null) {
+			return inStructure(pos);
+		}
+		if (stairStructure.contains(pos.asLong())) {
+			return true;
+		}
+		return plan.inQuarry(pos.getX(), pos.getZ()) && pos.getY() >= lowestY - 1
+				&& pos.getY() <= plan.ground() + plan.settings().clearAbove();
 	}
 
 	/** In the columns of the staircase square, or the fanion's: approach tunnels never go there. */
@@ -831,6 +954,34 @@ public final class MineLayout {
 		}
 		int floorY = (int) Math.floor(y);
 		for (Level level : levels.subMap(floorY - span, true, floorY + span, true).values()) {
+			if (level.bench != null) {
+				// A bench holds thousands of nodes: only those of the columns around.
+				int r = (int) Math.ceil(maxDistance);
+				int bx = (int) Math.floor(x);
+				int bz = (int) Math.floor(z);
+				for (int dx = -r; dx <= r; dx++) {
+					for (int dz = -r; dz <= r; dz++) {
+						int node = nodeByPos.get(BlockPos.asLong(bx + dx, level.y, bz + dz));
+						if (node < 0 || nodeLevels.getInt(node) != level.y) {
+							continue;
+						}
+						double dist = distSq(node, x, y, z);
+						if (dist <= bestSq && walkable.test(node)) {
+							bestSq = dist;
+							best = node;
+						}
+					}
+				}
+				for (int i = 0; i < level.extra.size(); i++) {
+					int node = level.extra.getInt(i);
+					double dist = distSq(node, x, y, z);
+					if (dist <= bestSq && walkable.test(node)) {
+						bestSq = dist;
+						best = node;
+					}
+				}
+				continue;
+			}
 			for (int i = 0; i < level.nodes.size(); i++) {
 				int node = level.nodes.getInt(i);
 				double dist = distSq(node, x, y, z);
