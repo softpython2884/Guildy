@@ -105,6 +105,7 @@ public final class VillagerGui {
 					GuiUtil.clickSound(player);
 					openStorage(player, guild, 0);
 				}));
+		gui.setSlot(50, WorkChunkLoader.menuItem(guild));
 		gui.setSlot(51, GuiUtil.item(Items.BOOK, Lang.get("villager.gui.help"), GuiUtil.lines("villager.gui.help.lore")));
 		if (current < pages - 1) {
 			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), List.of(Lang.get("gui.page", current + 1, pages)))
@@ -169,6 +170,7 @@ public final class VillagerGui {
 			lore.add(wishes);
 		}
 		lore.add(Lang.get("villager.gui.lore.status", statusText(record, villager)));
+		WorkChunkLoader.addLore(lore, record);
 		GuardGui.addLore(lore, record, villager);
 		if (villager != null) {
 			String profession = villager.getVillagerData().profession().unwrapKey()

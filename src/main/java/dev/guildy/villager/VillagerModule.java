@@ -23,6 +23,7 @@ public final class VillagerModule {
 		MineLang.register();
 		VillagerManager.init();
 		VillagerCalls.init();
+		WorkChunkLoader.init();
 		StorageSetup.init();
 		VillagerInteractions.init();
 		ZoneVisualizer.register();

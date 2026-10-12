@@ -85,6 +85,18 @@ public final class VillagerConfig implements Validatable {
 	})
 	public Expeditions expeditions = new Expeditions();
 
+	@Comment({
+			"Chargement des chunks : les villageois au travail gardent leurs chunks actifs pour continuer sans joueur a",
+			"proximite (tickets vanilla non sauvegardes, renouveles toutes les quelques secondes, qui expirent seuls) : autour",
+			"d'eux, de leur destination (coffre de depot ou de stockage, lit a la tombee de la nuit, retour d'expedition) et de",
+			"leur zone de travail. Rien pour les villageois sans tache, en expedition ou couches (ni pour les gardes par defaut).",
+			"Dans ces chunks les cultures et les pousses grandissent (ticks aleatoires), mais aucun monstre n'apparait : les",
+			"apparitions naturelles n'ont lieu qu'a moins de 128 blocs d'un joueur.",
+			"Mode 'always' : mettez pause-when-empty-seconds=0 dans server.properties, sinon le serveur se met en pause sans",
+			"joueur connecte (apres 60 secondes par defaut) et plus rien ne tourne. Etat : /guild admin villager chunks"
+	})
+	public ChunkLoadingConfig chunkLoading = new ChunkLoadingConfig();
+
 	@Comment("Chance (0 a 1) que chaque villageois quitte la guilde apres une vague perdue")
 	public double defeatLeaveChance = 0.2;
 
@@ -694,6 +706,10 @@ public final class VillagerConfig implements Validatable {
 		expeditions.nether.validate();
 		// Version 6 (expedition destinations): files written before receive the default destinations once.
 		ExpeditionDestinations.validateAndLog(expeditions, configVersion < ExpeditionDestinations.CONFIG_VERSION);
+		if (chunkLoading == null) {
+			chunkLoading = new ChunkLoadingConfig();
+		}
+		chunkLoading.validate();
 		if (arrivals == null) {
 			arrivals = new Arrivals();
 		}
