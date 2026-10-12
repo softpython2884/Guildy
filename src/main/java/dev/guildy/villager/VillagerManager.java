@@ -649,52 +649,12 @@ public final class VillagerManager {
 	}
 
 	/**
-	 * "Appeler ici": teleports the villager next to the player, when both are loaded and the player stands in the
-	 * territory or in one of the guild's zones. @return true on success (messages sent either way)
+	 * "Appeler ici": teleports the villager next to the player (who stands in the territory or in one of the guild's
+	 * zones), wherever it is: an unloaded villager is fetched by loading its last known chunk for a moment, see
+	 * {@link VillagerCalls}. Messages are sent either way.
 	 */
-	static boolean summon(ServerPlayer player, Guild guild, VillagerRecord record) {
-		if (record.isAway()) {
-			Msg.send(player, "villager.call.away", record.name);
-			return false;
-		}
-		ServerLevel level = GuildyServer.claimLevel();
-		Villager villager = level == null ? null : entity(level, record.uuid);
-		if (villager == null || !level.isPositionEntityTicking(villager.blockPosition())) {
-			Msg.send(player, "villager.call.unloaded", record.name);
-			return false;
-		}
-		if (player.level() != level || !Zones.inGuildArea(level, guild, player.blockPosition())) {
-			Msg.send(player, "villager.call.outside");
-			return false;
-		}
-		if (villager.isTrading()) {
-			Msg.send(player, "villager.call.busy", record.name);
-			return false;
-		}
-		BlockPos spot = WorldUtil.findSafeSpot(level, player.blockPosition(), 2, true, pos -> true);
-		if (spot == null) {
-			Msg.send(player, "villager.call.no_spot");
-			return false;
-		}
-		if (villager.isPassenger()) {
-			villager.stopRiding();
-		}
-		if (villager.isSleeping()) {
-			villager.stopSleeping();
-		}
-		WorldUtil.portal(level, villager.getX(), villager.getY(), villager.getZ());
-		villager.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
-		villager.getBrain().eraseMemory(MemoryModuleType.PATH);
-		villager.getNavigation().stop();
-		villager.teleportTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5);
-		WorldUtil.portal(level, villager.getX(), villager.getY(), villager.getZ());
-		WorldUtil.playSound(level, villager, SoundEvents.CHORUS_FRUIT_TELEPORT, 0.6f, 1.2f);
-		VillagerRuntime rt = TaskEngine.peek(record.uuid);
-		if (rt != null) {
-			rt.resetAllMovement();
-		}
-		Msg.send(player, "villager.call.done", record.name);
-		return true;
+	static VillagerCalls.Result summon(ServerPlayer player, Guild guild, VillagerRecord record) {
+		return VillagerCalls.call(player, guild, record);
 	}
 
 	static void removeRecord(Guild guild, VillagerRecord record) {

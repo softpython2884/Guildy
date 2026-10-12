@@ -100,7 +100,7 @@ public final class ZoneGui {
 			RouteSelection.start(player, guild, null);
 		}));
 		gui.setSlot(42, GuiUtil.item(Items.BOOK, Lang.get("villager.gui.help"),
-				GuiUtil.lines("villager.gui.zones.help.lore", config.zones.maxZoneDistance, config.zones.autoSearchRadius)));
+				GuiUtil.lines("villager.work.zones.help.lore", config.zones.maxZoneDistance, config.zones.autoSearchRadius)));
 		gui.setSlot(45, GuiUtil.back(() -> VillagerGui.openList(player, guild)));
 		gui.setSlot(53, GuiUtil.close());
 		GuiUtil.fill(gui);
@@ -129,6 +129,10 @@ public final class ZoneGui {
 			lore.add(Lang.get("villager.gui.zone.lore.target", Mines.shownTarget(level, zone)));
 		}
 		lore.add(Lang.get("villager.gui.zone.lore.villagers", Zones.assignedCount(guild, zone)));
+		Component wishes = WishlistMenu.summary(zone);
+		if (wishes != null) {
+			lore.add(wishes);
+		}
 		lore.add(Lang.get(switch (Zones.fanionState(level, zone)) {
 			case PRESENT -> "villager.gui.zone.lore.fanion.present";
 			case ABSENT -> "villager.gui.zone.lore.fanion.absent";
@@ -253,6 +257,9 @@ public final class ZoneGui {
 					}));
 		}
 
+		if (WishlistMenu.supports(zone.type)) {
+			gui.setSlot(15, WishlistMenu.zoneButton(player, guild, zone));
+		}
 		gui.setSlot(16, GuiUtil.item(Items.NAME_TAG, Lang.get("villager.gui.zone.rename"), GuiUtil.lines("villager.gui.zone.rename.lore"))
 				.setCallback((s, type, action, g) -> {
 					if (!VillagerGui.checkPermission(player, guild) || !stillZone(player, guild, zone)) {
@@ -675,7 +682,7 @@ public final class ZoneGui {
 		PatrolRoute currentRoute = Zones.assignedRoute(guild, record);
 		boolean auto = currentZone == null && currentRoute == null;
 
-		List<Component> autoLore = new ArrayList<>(GuiUtil.lines("villager.gui.picker.auto.lore." + zoneType.id(), config().zones.autoSearchRadius));
+		List<Component> autoLore = new ArrayList<>(GuiUtil.lines(WorkLang.autoLoreKey(zoneType), config().zones.autoSearchRadius));
 		autoLore.add(Component.empty());
 		autoLore.add(Lang.get(auto ? "villager.gui.picker.current" : "villager.gui.picker.choose"));
 		GuiElementBuilder autoIcon = GuiUtil.item(Items.COMPASS, Lang.get("villager.gui.picker.auto"), autoLore);
