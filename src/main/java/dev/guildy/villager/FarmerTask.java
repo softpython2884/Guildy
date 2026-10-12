@@ -32,13 +32,16 @@ import java.util.List;
  * give melons and pumpkins (stem kept) and sugar cane (base kept). Incremental nearest-first scan of the surface (+ a
  * band around the fanion height for covered fields), resumed where it stopped, loaded chunks only, never in another
  * guild's territory. Crops giving a wanted item ("objectifs prioritaires") come first, even up to
- * {@code zones.wishlistMargin} blocks outside the area.
+ * {@code zones.wishlistMargin} blocks outside the area. When nothing is ripe it sows empty farmland (and tills
+ * hydrated soil in field zones), see {@link CropSower}.
  */
 final class FarmerTask extends TaskHandler {
 	private enum Phase {
 		SEARCH,
 		GO_CROP,
 		HARVEST,
+		/** Nothing ripe: a sowing round (empty farmland, tilling in field zones, see {@link CropSower}). */
+		PLANT,
 		DEPOSIT,
 		BLOCKED
 	}
@@ -85,6 +88,9 @@ final class FarmerTask extends TaskHandler {
 	/** Where the task started: centre of the automatic search of a guild without territory. */
 	private @Nullable BlockPos home;
 	private final DepositFlow deposit = new DepositFlow();
+	private final CropSower sower = new CropSower();
+	/** No deposit chest usable: sowing goes on meanwhile, the deposit is tried again at this tick. */
+	private long depositRetryAt;
 
 	@Override
 	void tick(WorkContext ctx) {
@@ -104,7 +110,8 @@ final class FarmerTask extends TaskHandler {
 			target = null;
 			lastRead = -1;
 			nextScan = 0;
-			if (phase == Phase.GO_CROP || phase == Phase.HARVEST) {
+			sower.reset();
+			if (phase == Phase.GO_CROP || phase == Phase.HARVEST || phase == Phase.PLANT) {
 				phase = Phase.SEARCH;
 			}
 		}
@@ -112,6 +119,7 @@ final class FarmerTask extends TaskHandler {
 			case SEARCH -> search(ctx);
 			case GO_CROP -> goCrop(ctx);
 			case HARVEST -> harvest(ctx);
+			case PLANT -> plantStep(ctx);
 			case DEPOSIT -> depositStep(ctx);
 			case BLOCKED -> {
 				if (ctx.now >= retryAt) {
@@ -201,13 +209,33 @@ final class FarmerTask extends TaskHandler {
 		nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
 	}
 
-	/** Nothing to harvest: bring the crops home, else wait. */
+	/** Nothing to harvest: bring the crops home, else sow, else wait. */
 	private void idle(WorkContext ctx, String status, Object... args) {
-		if (!ctx.record.carried.isEmpty()) {
+		boolean carrying = Planting.hasDepositable(ctx, sower.keep(ctx, zone));
+		if (carrying && ctx.now >= depositRetryAt) {
+			phase = Phase.DEPOSIT;
+			depositStep(ctx);
+		} else if (home != null && sower.ready(ctx, zone)) {
+			phase = Phase.PLANT;
+			plantStep(ctx);
+		} else if (carrying) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 		} else {
-			ctx.status(status, args);
+			Planting.idleStatus(ctx, sower, status, args);
+		}
+	}
+
+	/** One step of the sowing round; a full bag goes home first, the end of the round goes back to the search. */
+	private void plantStep(WorkContext ctx) {
+		if (ctx.mustReturn()) {
+			phase = Phase.DEPOSIT;
+			depositStep(ctx);
+			return;
+		}
+		BlockPos start = home != null ? home : ctx.villager.blockPosition();
+		if (sower.tick(ctx, zone, start) == Planter.Result.DONE) {
+			phase = Phase.SEARCH;
 		}
 	}
 
@@ -341,7 +369,8 @@ final class FarmerTask extends TaskHandler {
 	}
 
 	private void depositStep(WorkContext ctx) {
-		DepositFlow.State state = deposit.tick(ctx);
+		// One stack of seeds to sow stays in the bag.
+		DepositFlow.State state = deposit.tick(ctx, sower.keep(ctx, zone));
 		switch (state) {
 			case WORKING -> {
 			}
@@ -360,6 +389,7 @@ final class FarmerTask extends TaskHandler {
 					phase = Phase.SEARCH;
 					// Nothing else to do until crops grow: don't retry the deposit every second.
 					nextScan = Math.max(nextScan, ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds));
+					depositRetryAt = nextScan;
 				}
 			}
 		}

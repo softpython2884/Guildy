@@ -19,6 +19,7 @@ public final class VillagerModule {
 		VillagerLang.register();
 		ExpeditionLang.register();
 		WorkLang.register();
+		PlantingLang.register();
 		Guards.init();
 		MineLang.register();
 		VillagerManager.init();
