@@ -37,6 +37,7 @@ final class Guards {
 
 	static void init() {
 		GuardLang.register();
+		GuardGear.init();
 		FriendlyFire.register();
 		GuardCombat.register();
 		Lifecycle.STOPPING.add(server -> FriendlyFire.clear());
@@ -109,7 +110,9 @@ final class Guards {
 				Msg.send(actor, "villager.guard.weapon_returned", record.name);
 				ItemUtil.giveOrDrop(actor, weapon.copy());
 			}
-			GuardEquipment.applyDisplay(villager, data.role);
+			if (villager.level() instanceof ServerLevel level) {
+				GuardEquipment.applyDisplay(level, guild, villager, data.role);
+			}
 		}
 		Msg.send(actor, "villager.guard.role.set", record.name, roleName(record));
 	}
@@ -204,16 +207,22 @@ final class Guards {
 		}
 	}
 
-	/** Released (guild disbanded): the equipment falls at its feet, the display weapon disappears. */
+	/**
+	 * Released (guild disbanded): the equipment falls at its feet, the display weapon disappears, and so do the base armor
+	 * and the extra health of the guild level.
+	 */
 	static void onRelease(ServerLevel level, Villager villager) {
 		GuardEquipment.dropAll(level, villager);
+		GuardGear.clear(villager);
+		VillagerVitality.reset(villager);
 	}
 
 	/**
 	 * Every step of a villager that is not a guard (task changed while unloaded): equipment still on it goes back to
-	 * the storage (else to the ground), with a message to the guild.
+	 * the storage (else to the ground), with a message to the guild; the base armor of the guards goes away.
 	 */
 	static void checkNotGuard(ServerLevel level, Guild guild, VillagerRecord record, Villager villager) {
+		GuardGear.clear(villager);
 		if (!GuardEquipment.hasEquipment(villager)) {
 			return;
 		}

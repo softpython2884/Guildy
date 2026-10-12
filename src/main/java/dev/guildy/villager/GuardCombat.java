@@ -14,6 +14,7 @@ import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
@@ -28,6 +29,8 @@ import java.util.UUID;
  */
 final class GuardCombat {
 	static final int INTERVAL = 4;
+	/** Angle (degrees) of the side bolts of a Multishot crossbow. */
+	private static final double MULTISHOT_ANGLE = 10.0;
 	private static final Map<UUID, Fighter> FIGHTERS = new HashMap<>();
 
 	private GuardCombat() {
@@ -41,6 +44,10 @@ final class GuardCombat {
 		@Nullable VillagerRecord record;
 		@Nullable Mob target;
 		GuardRole role = GuardRole.SWORD;
+		/** What it fights with (storage or base weapon, see {@link GuardGear}), refreshed at each step of the guard. */
+		ItemStack weapon = ItemStack.EMPTY;
+		/** Delay between two hits / shots with that weapon. */
+		int cooldownTicks = 20;
 		/** Retreating: only strikes (or shoots) what is within arm's reach, never chases. */
 		boolean defensive;
 		long lastAttack = -10_000;
@@ -60,6 +67,8 @@ final class GuardCombat {
 		fighter.target = target;
 		fighter.role = role;
 		fighter.defensive = defensive;
+		fighter.weapon = GuardGear.weapon(ctx.level, ctx.guild, ctx.villager, role);
+		fighter.cooldownTicks = GuardGear.cooldownTicks(ctx.level, fighter.weapon, role, ctx.config);
 		FIGHTERS.put(ctx.record.uuid, fighter);
 	}
 
@@ -104,29 +113,31 @@ final class GuardCombat {
 		double distSq = villager.distanceToSqr(target);
 		if (fighter.role == GuardRole.BOW) {
 			double range = fighter.defensive ? cfg.attackReach + 1.5 : cfg.bowRange;
-			if (now - fighter.lastAttack < cfg.bowCooldownTicks || distSq > range * range || !villager.hasLineOfSight(target)) {
+			if (now - fighter.lastAttack < fighter.cooldownTicks || distSq > range * range || !villager.hasLineOfSight(target)) {
 				return true;
 			}
-			shoot(level, guild, villager, target, cfg);
+			shoot(level, guild, villager, target, cfg, fighter.weapon);
 		} else {
 			double reach = cfg.attackReach;
-			if (now - fighter.lastAttack < cfg.attackCooldownTicks || distSq > reach * reach
+			if (now - fighter.lastAttack < fighter.cooldownTicks || distSq > reach * reach
 					|| Math.abs(villager.getY() - target.getY()) > 2.0 || !villager.hasLineOfSight(target)) {
 				return true;
 			}
-			strike(level, guild, villager, target);
+			strike(level, guild, villager, target, fighter.weapon);
 		}
 		fighter.lastAttack = now;
 		return true;
 	}
 
-	/** Melee hit: guard damage + the bonus and enchantments of a sword taken from the chests. */
-	static void strike(ServerLevel level, Guild guild, Villager villager, Mob target) {
-		ItemStack weapon = GuardEquipment.weapon(villager, GuardRole.SWORD);
+	/**
+	 * Melee hit: guard damage (config + guild level + upgrades) + what the sword deals more than a wooden one, and its
+	 * enchantments (storage sword, else the base sword of the guild level).
+	 */
+	static void strike(ServerLevel level, Guild guild, Villager villager, Mob target, ItemStack weapon) {
 		DamageSource source = level.damageSources().mobAttack(villager);
 		float damage = (float) Guards.baseDamage(guild);
 		if (!weapon.isEmpty()) {
-			damage += (float) GuardRules.swordBonus(GuardEquipment.attackDamage(weapon), GuardEquipment.DEFAULT_SWORD_DAMAGE);
+			damage += (float) GuardRules.swordBonus(GuardEquipment.attackDamage(weapon), GuardEquipment.BASELINE_SWORD_DAMAGE);
 			damage = EnchantmentHelper.modifyDamage(level, weapon, target, source, damage);
 		}
 		villager.getLookControl().setLookAt(target, 30.0f, 30.0f);
@@ -141,24 +152,34 @@ final class GuardCombat {
 	}
 
 	/**
-	 * Bow shot like a skeleton's (aims a bit above, real arrow owned by the villager, flies through non-monsters).
-	 * The bow's enchantments act on impact (Power, Punch; Flame sets the monster on fire): the "projectile spawned"
-	 * effects are not applied, a burning arrow could light TNT or campfires in the base.
+	 * Bow or crossbow shot like a skeleton's / pillager's (aims a bit above, real arrow owned by the villager, flies
+	 * through non-monsters). The weapon's enchantments act on impact (Power, Punch; Flame sets the monster on fire;
+	 * Piercing goes through several monsters): the "projectile spawned" effects are not applied, a burning arrow could
+	 * light TNT or campfires in the base. A crossbow hits harder ({@code guardGear.crossbowDamageFactor}) and Multishot
+	 * fires three bolts.
 	 */
-	static void shoot(ServerLevel level, Guild guild, Villager villager, Mob target, VillagerConfig.Guard cfg) {
-		ItemStack bow = GuardEquipment.weapon(villager, GuardRole.BOW);
-		ItemStack weapon = bow.isEmpty() ? new ItemStack(Items.BOW) : bow.copy();
-		boolean flame = !bow.isEmpty() && GuardEquipment.hasFlame(level, bow);
-		GuardArrow arrow = new GuardArrow(level, villager, weapon, Guards.baseDamage(guild) * cfg.bowDamageFactor, flame);
+	static void shoot(ServerLevel level, Guild guild, Villager villager, Mob target, VillagerConfig.Guard cfg, ItemStack weapon) {
+		ItemStack launcher = weapon.isEmpty() ? new ItemStack(Items.BOW) : weapon.copy();
+		boolean crossbow = launcher.is(Items.CROSSBOW);
+		boolean flame = !crossbow && GuardEquipment.hasFlame(level, launcher);
+		double damage = Guards.baseDamage(guild) * cfg.bowDamageFactor * (crossbow ? VillagerModule.config().guardGear.crossbowDamageFactor : 1.0);
+		int arrows = crossbow && GuardEquipment.enchantmentLevel(level, Enchantments.MULTISHOT, launcher) > 0 ? 3 : 1;
 		double xd = target.getX() - villager.getX();
-		double yd = target.getY(1.0 / 3.0) - arrow.getY();
+		double yd = target.getY(1.0 / 3.0) - (villager.getEyeY() - 0.1);
 		double zd = target.getZ() - villager.getZ();
 		double horizontal = Math.sqrt(xd * xd + zd * zd);
 		villager.getLookControl().setLookAt(target, 30.0f, 30.0f);
-		arrow.shoot(xd, yd + horizontal * 0.2, zd, GuardArrow.SPEED, (float) cfg.bowInaccuracy);
-		level.addFreshEntity(arrow);
-		level.playSound(null, villager.getX(), villager.getY(), villager.getZ(), SoundEvents.ARROW_SHOOT, SoundSource.NEUTRAL, 1.0f,
-				1.0f / (villager.getRandom().nextFloat() * 0.4f + 0.8f));
+		for (int i = 0; i < arrows; i++) {
+			// Multishot: the side bolts leave 10 degrees to the left and to the right.
+			double angle = i == 0 ? 0.0 : Math.toRadians(i == 1 ? -MULTISHOT_ANGLE : MULTISHOT_ANGLE);
+			double x = xd * Math.cos(angle) - zd * Math.sin(angle);
+			double z = xd * Math.sin(angle) + zd * Math.cos(angle);
+			GuardArrow arrow = new GuardArrow(level, villager, launcher, damage, flame);
+			arrow.shoot(x, yd + horizontal * 0.2, z, GuardArrow.SPEED, (float) cfg.bowInaccuracy);
+			level.addFreshEntity(arrow);
+		}
+		level.playSound(null, villager.getX(), villager.getY(), villager.getZ(), crossbow ? SoundEvents.CROSSBOW_SHOOT : SoundEvents.ARROW_SHOOT,
+				SoundSource.NEUTRAL, 1.0f, 1.0f / (villager.getRandom().nextFloat() * 0.4f + 0.8f));
 		WorldUtil.swing(villager);
 	}
 }

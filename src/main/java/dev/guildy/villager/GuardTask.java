@@ -43,7 +43,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>
  * Under {@code guard.retreatHealthRatio} of its health a guard stops fighting and runs (speed boost) to its bed to heal
  * (still striking monsters within reach), then goes back to its post at {@code guard.resumeHealthRatio}; out of
- * combat it regenerates slowly and fetches better equipment from the guild storage ({@link GuardEquipment}).
+ * combat it regenerates slowly ({@link VillagerVitality}) and fetches better equipment from the guild storage
+ * ({@link GuardEquipment}) than the base equipment of the guild level ({@link GuardGear}).
  * Unreachable targets are dropped after a timeout and ignored for a while. Never in another guild's territory. Guards
  * never panic or sleep (see TaskEngine brain locks): they heal standing by their bed.
  */
@@ -54,8 +55,6 @@ final class GuardTask extends TaskHandler {
 	private static final int RANDOM_POINT_TRIES = 6;
 	/** Patrol points stay roughly at the height of the fanion (no mountain tops). */
 	private static final int MAX_PATROL_DY = 24;
-	/** Without fighting nor being hurt for this long, the slow passive regeneration starts. */
-	private static final long OUT_OF_COMBAT_TICKS = 10 * 20L;
 	private static final double BED_REACH = 2.5;
 	private static final double SPOT_REACH = 3.0;
 	private static final double CHEST_REACH = 2.5;
@@ -81,8 +80,6 @@ final class GuardTask extends TaskHandler {
 	private int routeDirection = 1;
 	private boolean fought;
 	// health
-	private float lastHealth = -1.0f;
-	private long lastCombat = -OUT_OF_COMBAT_TICKS;
 	private boolean retreating;
 	private GuardRetreat.@Nullable Spot retreatSpot;
 	private int healSteps;
@@ -96,14 +93,7 @@ final class GuardTask extends TaskHandler {
 		if (villager.isSleeping()) {
 			villager.stopSleeping();
 		}
-		if (lastHealth >= 0 && villager.getHealth() < lastHealth - 0.01f) {
-			lastCombat = ctx.now;
-		}
-		try {
-			step(ctx);
-		} finally {
-			lastHealth = villager.getHealth();
-		}
+		step(ctx);
 	}
 
 	@Override
@@ -115,7 +105,8 @@ final class GuardTask extends TaskHandler {
 		ignored.values().removeIf(until -> until < ctx.now);
 		GuardRole role = Guards.role(ctx.guild, ctx.record);
 		GuardEquipment.checkWeapon(ctx, role);
-		GuardEquipment.applyDisplay(ctx.villager, role);
+		GuardEquipment.applyDisplay(ctx.level, ctx.guild, ctx.villager, role);
+		GuardGear.applyArmor(ctx.level, ctx.guild, ctx.villager);
 		GuardEquipment.syncDropChances(ctx.villager, ctx.config.guard);
 		boolean wave = Hooks.isWaveActive.test(ctx.guild);
 		route = wave ? null : Zones.assignedRoute(ctx.guild, ctx.record);
@@ -134,7 +125,6 @@ final class GuardTask extends TaskHandler {
 		}
 		if (route == null && zone == null && heart == null) {
 			GuardCombat.disengage(fighter);
-			regenerate(ctx);
 			ctx.status("villager.status.no_territory");
 			return;
 		}
@@ -148,14 +138,13 @@ final class GuardTask extends TaskHandler {
 			}
 		}
 		if (target != null) {
-			lastCombat = ctx.now;
+			VillagerVitality.markCombat(ctx.record.uuid, ctx.now);
 			fight(ctx, target, role);
 			fought = true;
 			return;
 		}
 		targetId = null;
 		GuardCombat.disengage(fighter);
-		regenerate(ctx);
 		if (equip(ctx, role)) {
 			return;
 		}
@@ -195,6 +184,7 @@ final class GuardTask extends TaskHandler {
 		}
 		Mob threat = nearestThreat(ctx, role);
 		if (threat != null) {
+			VillagerVitality.markCombat(ctx.record.uuid, ctx.now);
 			GuardCombat.engage(fighter, ctx, threat, role, true);
 		} else {
 			GuardCombat.disengage(fighter);
@@ -247,14 +237,6 @@ final class GuardTask extends TaskHandler {
 		return best;
 	}
 
-	/** Slow passive regeneration once out of combat for a while. */
-	private void regenerate(WorkContext ctx) {
-		if (ctx.now - lastCombat >= OUT_OF_COMBAT_TICKS) {
-			VillagerConfig.Guard cfg = ctx.config.guard;
-			heal(ctx, GuardRules.healPerSecond(false, false, true, cfg.healPerSecond, cfg.bedHealPerSecond, cfg.passiveRegenPerSecond));
-		}
-	}
-
 	private static void heal(WorkContext ctx, double amount) {
 		Villager villager = ctx.villager;
 		if (amount > 0 && villager.isAlive() && villager.getHealth() < villager.getMaxHealth()) {
@@ -271,7 +253,10 @@ final class GuardTask extends TaskHandler {
 
 	// ------------------------------------------------------------------ equipment
 
-	/** Out of combat: walks to a storage chest holding better equipment and puts it on. @return true while busy */
+	/**
+	 * Out of combat: walks to a storage chest holding better equipment (than its own and the base equipment of the guild
+	 * level) and puts it on; what the base equipment outclasses goes back to the storage. @return true while busy
+	 */
 	private boolean equip(WorkContext ctx, GuardRole role) {
 		VillagerConfig.Guard cfg = ctx.config.guard;
 		if (!cfg.equipmentFromChests && !cfg.weaponsFromChests) {
@@ -283,6 +268,9 @@ final class GuardTask extends TaskHandler {
 				return false;
 			}
 			nextEquipmentScan = ctx.now + WorkContext.ticks(cfg.equipmentScanSeconds);
+			if (GuardGear.returnOutclassed(ctx, role) > 0) {
+				ctx.status("villager.status.guard.outclassed");
+			}
 			equipmentChest = GuardEquipment.findUpgradeChest(ctx, role);
 			if (equipmentChest == null) {
 				return false;

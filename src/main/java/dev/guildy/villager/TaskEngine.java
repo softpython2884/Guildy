@@ -80,6 +80,7 @@ final class TaskEngine {
 		record.lastPos = villager.blockPosition();
 		VillagerManager.ensureMemberSetup(villager, record);
 		WorkContext ctx = new WorkContext(level, guild, record, villager, rt, VillagerModule.config());
+		VillagerVitality.step(ctx);
 		Task task = record.task;
 		if (task != Task.GUARD) {
 			// Equipment of a former guard (task changed while it was unloaded) goes back to the storage.
@@ -107,6 +108,10 @@ final class TaskEngine {
 		applyBrainLock(level, villager, rt, task);
 		if (task == Task.IDLE) {
 			rt.status("villager.status.idle");
+			return;
+		}
+		if (NightShelter.step(ctx)) {
+			// Evening, night or horde: the worker goes home (see NightShelter).
 			return;
 		}
 		String pause = pauseReason(level, guild, villager, task);

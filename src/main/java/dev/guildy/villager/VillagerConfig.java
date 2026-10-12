@@ -75,6 +75,24 @@ public final class VillagerConfig implements Validatable {
 	@Comment("Tache 'Garde' : patrouille (zone ou parcours) ou defend le coeur ; pendant les vagues, defend toujours le coeur")
 	public Guard guard = new Guard();
 
+	@Comment({
+			"Equipement de base des gardes selon le niveau de la guilde : epee, arc ou arbalete, armure. Gratuit, il ne peut pas",
+			"etre recupere ; un meilleur equipement pris dans les coffres du stockage le remplace."
+	})
+	public GuardGearConfig guardGear = new GuardGearConfig();
+
+	@Comment({
+			"Vie des villageois de la guilde : bonus de vie max selon le niveau de la guilde (plus pour les gardes) et",
+			"regeneration lente hors combat. Affichee dans le menu des villageois."
+	})
+	public VitalityConfig vitality = new VitalityConfig();
+
+	@Comment({
+			"Rentrer avant la nuit (travailleurs seulement : ni les gardes, qui restent dehors, ni les villageois sans tache) :",
+			"ils arretent le travail et rentrent a leur lit, puis sont mis a l'abri a la tombee de la nuit et au debut d'une horde."
+	})
+	public NightConfig night = new NightConfig();
+
 	@Comment("Stockage de la guilde (coffres de depot et coffres par categorie)")
 	public Storage storage = new Storage();
 
@@ -784,6 +802,18 @@ public final class VillagerConfig implements Validatable {
 		guard.ignoredMobs = guard.ignoredMobs == null ? new ArrayList<>() : new ArrayList<>(guard.ignoredMobs);
 		guard.ignoredMobs.removeIf(id -> id == null || id.isBlank());
 		validateGuard(guard);
+		if (guardGear == null) {
+			guardGear = new GuardGearConfig();
+		}
+		guardGear.validate();
+		if (vitality == null) {
+			vitality = new VitalityConfig();
+		}
+		vitality.validate();
+		if (night == null) {
+			night = new NightConfig();
+		}
+		night.validate();
 		// Step 3: the untouched older default categories are replaced by the new set.
 		StorageDefaults.validate(storage, configVersion);
 		storage.maxChests = clamp(storage.maxChests, 1, 256);

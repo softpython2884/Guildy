@@ -26,7 +26,8 @@
 			"dev.guildy.test.UniqueGameTests",
 			"dev.guildy.test.VillageSignGameTests",
 			"dev.guildy.test.WorkGameTests",
-			"dev.guildy.test.StorageGameTests"
+			"dev.guildy.test.StorageGameTests",
+			"dev.guildy.test.VitalityGameTests"
 		]
 	},
 	"depends": {

@@ -55,8 +55,11 @@ final class GuardEquipment {
 	/** Slots holding items of the guild (returned / dropped when the villager stops being a guard). */
 	static final List<EquipmentSlot> SLOTS = List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
 			EquipmentSlot.OFFHAND);
-	/** Attack damage of the default iron sword of a guard (player formula: 1 + 5). */
-	static final double DEFAULT_SWORD_DAMAGE = 6.0;
+	/**
+	 * Attack damage of a wooden sword (player formula: 1 + 3): the configured guard damage is that of a guard hitting with
+	 * it (or with no sword at all); a better sword adds the difference.
+	 */
+	static final double BASELINE_SWORD_DAMAGE = 4.0;
 	/** Drop chance above 1 = always dropped on death, never damaged (vanilla "preserved" equipment). */
 	private static final float GUARANTEED_DROP = 2.0f;
 
@@ -86,9 +89,12 @@ final class GuardEquipment {
 		return GuildyItems.tag(display, KIND_DISPLAY, new CompoundTag());
 	}
 
-	/** Shows the weapon of the role in the main hand (re-applied each step: trade displays may replace it). */
-	static void applyDisplay(Villager villager, GuardRole role) {
-		ItemStack wanted = displayFor(role, weapon(villager, role));
+	/**
+	 * Shows the weapon the guard fights with (storage weapon or base weapon of the guild level) in the main hand
+	 * (re-applied each step: trade displays may replace it).
+	 */
+	static void applyDisplay(ServerLevel level, Guild guild, Villager villager, GuardRole role) {
+		ItemStack wanted = displayFor(role, GuardGear.weapon(level, guild, villager, role));
 		if (!ItemStack.matches(villager.getMainHandItem(), wanted)) {
 			villager.setItemSlot(EquipmentSlot.MAINHAND, wanted);
 		}
@@ -105,8 +111,9 @@ final class GuardEquipment {
 		return fitsRole(stack, role) ? stack : ItemStack.EMPTY;
 	}
 
+	/** Swords for the swordsmen, bows and crossbows for the archers. */
 	static boolean fitsRole(ItemStack stack, GuardRole role) {
-		return !stack.isEmpty() && (role == GuardRole.BOW ? stack.is(Items.BOW) : stack.is(ItemTags.SWORDS));
+		return !stack.isEmpty() && (role == GuardRole.BOW ? stack.is(Items.BOW) || stack.is(Items.CROSSBOW) : stack.is(ItemTags.SWORDS));
 	}
 
 	/** A weapon a guard may take from a chest: fits the role, and no Guildy item (unique weapons stay for players). */
@@ -116,16 +123,23 @@ final class GuardEquipment {
 
 	static double weaponScore(ServerLevel level, ItemStack stack, GuardRole role) {
 		if (role == GuardRole.BOW) {
-			return GuardRules.bowScore(enchantment(level, Enchantments.POWER, stack), enchantment(level, Enchantments.FLAME, stack),
-					enchantment(level, Enchantments.PUNCH, stack));
+			if (stack.is(Items.CROSSBOW)) {
+				return GuardRules.crossbowScore(enchantmentLevel(level, Enchantments.QUICK_CHARGE, stack),
+						enchantmentLevel(level, Enchantments.PIERCING, stack), enchantmentLevel(level, Enchantments.MULTISHOT, stack));
+			}
+			return GuardRules.bowScore(enchantmentLevel(level, Enchantments.POWER, stack), enchantmentLevel(level, Enchantments.FLAME, stack),
+					enchantmentLevel(level, Enchantments.PUNCH, stack));
 		}
-		return GuardRules.swordScore(attackDamage(stack), enchantment(level, Enchantments.SHARPNESS, stack));
+		return GuardRules.swordScore(attackDamage(stack), enchantmentLevel(level, Enchantments.SHARPNESS, stack));
 	}
 
-	/** Score of what the guard fights with now (its real weapon, else the default iron sword / plain bow). */
-	static double currentWeaponScore(ServerLevel level, Villager villager, GuardRole role) {
-		ItemStack weapon = weapon(villager, role);
-		double base = role == GuardRole.BOW ? GuardRules.bowScore(0, 0, 0) : GuardRules.swordScore(DEFAULT_SWORD_DAMAGE, 0);
+	/**
+	 * Score of what the guard fights with now: its storage weapon or the base weapon of the guild level
+	 * ({@link GuardGear}), at least a wooden sword / plain bow.
+	 */
+	static double currentWeaponScore(ServerLevel level, Guild guild, Villager villager, GuardRole role) {
+		ItemStack weapon = GuardGear.weapon(level, guild, villager, role);
+		double base = role == GuardRole.BOW ? GuardRules.bowScore(0, 0, 0) : GuardRules.swordScore(BASELINE_SWORD_DAMAGE, 0);
 		return weapon.isEmpty() ? base : Math.max(base, weaponScore(level, weapon, role));
 	}
 
@@ -136,10 +150,10 @@ final class GuardEquipment {
 	}
 
 	static boolean hasFlame(ServerLevel level, ItemStack bow) {
-		return enchantment(level, Enchantments.FLAME, bow) > 0;
+		return enchantmentLevel(level, Enchantments.FLAME, bow) > 0;
 	}
 
-	private static int enchantment(ServerLevel level, ResourceKey<Enchantment> key, ItemStack stack) {
+	static int enchantmentLevel(ServerLevel level, ResourceKey<Enchantment> key, ItemStack stack) {
 		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).get(key)
 				.map(holder -> EnchantmentHelper.getItemEnchantmentLevel(holder, stack)).orElse(0);
 	}
@@ -167,9 +181,13 @@ final class GuardEquipment {
 		return equippable != null && equippable.slot() == slot && equippable.canBeEquippedBy(villager.typeHolder());
 	}
 
-	/** Index of the best upgrade of {@code slot} in the container (better than what the guard wears), or -1. */
-	private static int bestArmor(Container container, EquipmentSlot slot, Villager villager) {
-		GuardRules.Piece current = piece(villager.getItemBySlot(slot), slot);
+	/**
+	 * Index of the best upgrade of {@code slot} in the container (better than what protects the guard: its worn piece or
+	 * the base piece of the guild level), or -1.
+	 */
+	private static int bestArmor(WorkContext ctx, Container container, EquipmentSlot slot) {
+		Villager villager = ctx.villager;
+		GuardRules.Piece current = GuardGear.effectivePiece(ctx.level, ctx.guild, villager, slot);
 		GuardRules.Piece best = null;
 		int bestIndex = -1;
 		for (int i = 0; i < container.getContainerSize(); i++) {
@@ -186,9 +204,10 @@ final class GuardEquipment {
 		return bestIndex;
 	}
 
-	/** Index of the best weapon upgrade in the container, or -1. */
-	private static int bestWeapon(ServerLevel level, Container container, Villager villager, GuardRole role) {
-		double best = currentWeaponScore(level, villager, role);
+	/** Index of the best weapon upgrade in the container (better than the storage or base weapon), or -1. */
+	private static int bestWeapon(WorkContext ctx, Container container, GuardRole role) {
+		ServerLevel level = ctx.level;
+		double best = currentWeaponScore(level, ctx.guild, ctx.villager, role);
 		int bestIndex = -1;
 		for (int i = 0; i < container.getContainerSize(); i++) {
 			ItemStack stack = container.getItem(i);
@@ -208,12 +227,12 @@ final class GuardEquipment {
 		VillagerConfig.Guard cfg = ctx.config.guard;
 		if (cfg.equipmentFromChests) {
 			for (EquipmentSlot slot : ARMOR) {
-				if (bestArmor(container, slot, ctx.villager) >= 0) {
+				if (bestArmor(ctx, container, slot) >= 0) {
 					return true;
 				}
 			}
 		}
-		return cfg.weaponsFromChests && bestWeapon(ctx.level, container, ctx.villager, role) >= 0;
+		return cfg.weaponsFromChests && bestWeapon(ctx, container, role) >= 0;
 	}
 
 	/** Nearest usable registered chest holding something better than what the guard wears, or null. */
@@ -249,14 +268,14 @@ final class GuardEquipment {
 		int equipped = 0;
 		if (cfg.equipmentFromChests) {
 			for (EquipmentSlot slot : ARMOR) {
-				int index = bestArmor(container, slot, villager);
+				int index = bestArmor(ctx, container, slot);
 				if (index >= 0 && swap(ctx, container, index, slot)) {
 					equipped++;
 				}
 			}
 		}
 		if (cfg.weaponsFromChests) {
-			int index = bestWeapon(ctx.level, container, villager, role);
+			int index = bestWeapon(ctx, container, role);
 			if (index >= 0 && swap(ctx, container, index, WEAPON)) {
 				equipped++;
 			}
