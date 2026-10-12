@@ -1,23 +1,28 @@
 package dev.guildy.villager;
 
 import dev.guildy.core.Hooks;
-import dev.guildy.data.GuildManager;
-import dev.guildy.upgrade.UpgradeEffects;
-import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.Container;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.behavior.EntityTracker;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.WalkTarget;
+import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,20 +37,38 @@ import java.util.concurrent.ThreadLocalRandom;
  * <li>patrol zone: walk random points of the zone, fight inside it (+ a small margin);</li>
  * <li>otherwise (and always during a wave): defend the heart, inside the territory.</li>
  * </ul>
- * Melee within reach with a cooldown; unreachable targets are dropped after a timeout and ignored for a while. Never in
- * another guild's territory. Guards never panic, sleep or flee (see TaskEngine brain locks).
+ * Two roles ({@link GuardRole}): swordsmen chase and strike in melee, archers keep their distance (they step back when
+ * a monster comes too close) and shoot real arrows that only hurt monsters. Hits and shots happen in
+ * {@link GuardCombat} (finer cadence); this once-per-second step picks the target and moves.
+ * <p>
+ * Under {@code guard.retreatHealthRatio} of its health a guard stops fighting and runs (speed boost) to its bed to heal
+ * (still striking monsters within reach), then goes back to its post at {@code guard.resumeHealthRatio}; out of
+ * combat it regenerates slowly and fetches better equipment from the guild storage ({@link GuardEquipment}).
+ * Unreachable targets are dropped after a timeout and ignored for a while. Never in another guild's territory. Guards
+ * never panic or sleep (see TaskEngine brain locks): they heal standing by their bed.
  */
 final class GuardTask extends TaskHandler {
 	private static final float CHASE_SPEED = 0.75f;
+	private static final float BACK_OFF_SPEED = 0.8f;
 	private static final long IGNORE_TICKS = 30 * 20L;
 	private static final int RANDOM_POINT_TRIES = 6;
 	/** Patrol points stay roughly at the height of the fanion (no mountain tops). */
 	private static final int MAX_PATROL_DY = 24;
+	/** Without fighting nor being hurt for this long, the slow passive regeneration starts. */
+	private static final long OUT_OF_COMBAT_TICKS = 10 * 20L;
+	private static final double BED_REACH = 2.5;
+	private static final double SPOT_REACH = 3.0;
+	private static final double CHEST_REACH = 2.5;
+	/** A retreating guard still strikes monsters this close (blocks beyond its attack reach). */
+	private static final double THREAT_MARGIN = 1.0;
+	private static final int SPEED_TICKS = 50;
+	/** Archers look for a visible target among the nearest few monsters. */
+	private static final int MAX_SIGHT_CHECKS = 6;
 
 	private @Nullable UUID targetId;
 	private long chaseStart;
-	private long lastAttack = -10_000;
 	private final Map<UUID, Long> ignored = new HashMap<>();
+	private final GuardCombat.Fighter fighter = new GuardCombat.Fighter();
 	private String modeKey = "";
 	// what the guard protects this step
 	private @Nullable PatrolRoute route;
@@ -57,13 +80,43 @@ final class GuardTask extends TaskHandler {
 	private int routeIndex = -1;
 	private int routeDirection = 1;
 	private boolean fought;
+	// health
+	private float lastHealth = -1.0f;
+	private long lastCombat = -OUT_OF_COMBAT_TICKS;
+	private boolean retreating;
+	private GuardRetreat.@Nullable Spot retreatSpot;
+	private int healSteps;
+	// equipment
+	private long nextEquipmentScan;
+	private @Nullable BlockPos equipmentChest;
 
 	@Override
 	void tick(WorkContext ctx) {
-		if (ctx.villager.isSleeping()) {
-			ctx.villager.stopSleeping();
+		Villager villager = ctx.villager;
+		if (villager.isSleeping()) {
+			villager.stopSleeping();
 		}
+		if (lastHealth >= 0 && villager.getHealth() < lastHealth - 0.01f) {
+			lastCombat = ctx.now;
+		}
+		try {
+			step(ctx);
+		} finally {
+			lastHealth = villager.getHealth();
+		}
+	}
+
+	@Override
+	void stop(WorkContext ctx) {
+		GuardCombat.disengage(fighter);
+	}
+
+	private void step(WorkContext ctx) {
 		ignored.values().removeIf(until -> until < ctx.now);
+		GuardRole role = Guards.role(ctx.guild, ctx.record);
+		GuardEquipment.checkWeapon(ctx, role);
+		GuardEquipment.applyDisplay(ctx.villager, role);
+		GuardEquipment.syncDropChances(ctx.villager, ctx.config.guard);
 		boolean wave = Hooks.isWaveActive.test(ctx.guild);
 		route = wave ? null : Zones.assignedRoute(ctx.guild, ctx.record);
 		zone = wave || route != null ? null : Zones.assignedZone(ctx.guild, ctx.record);
@@ -76,24 +129,36 @@ final class GuardTask extends TaskHandler {
 			routeIndex = -1;
 			pauseUntil = 0;
 		}
+		if (retreat(ctx, role, wave)) {
+			return;
+		}
 		if (route == null && zone == null && heart == null) {
+			GuardCombat.disengage(fighter);
+			regenerate(ctx);
 			ctx.status("villager.status.no_territory");
 			return;
 		}
-		Mob target = currentTarget(ctx);
+		Mob target = currentTarget(ctx, role);
 		if (target == null) {
-			target = findTarget(ctx);
+			target = findTarget(ctx, role);
 			if (target != null) {
 				targetId = target.getUUID();
 				chaseStart = ctx.now;
+				equipmentChest = null;
 			}
 		}
 		if (target != null) {
-			fight(ctx, target);
+			lastCombat = ctx.now;
+			fight(ctx, target, role);
 			fought = true;
 			return;
 		}
 		targetId = null;
+		GuardCombat.disengage(fighter);
+		regenerate(ctx);
+		if (equip(ctx, role)) {
+			return;
+		}
 		if (route != null) {
 			patrolRoute(ctx, route);
 		} else if (zone != null) {
@@ -103,20 +168,171 @@ final class GuardTask extends TaskHandler {
 		}
 	}
 
+	// ------------------------------------------------------------------ retreat & healing
+
+	/** Below the threshold: runs to its bed and heals until the resume threshold. @return true while retreating */
+	private boolean retreat(WorkContext ctx, GuardRole role, boolean wave) {
+		VillagerConfig.Guard cfg = ctx.config.guard;
+		Villager villager = ctx.villager;
+		double health = villager.getHealth();
+		double max = villager.getMaxHealth();
+		if (!retreating) {
+			if (!GuardRules.mustRetreat(health, max, cfg.retreatHealthRatio)) {
+				return false;
+			}
+			retreating = true;
+			retreatSpot = null;
+			targetId = null;
+			equipmentChest = null;
+			patrolPoint = null;
+			Movement.stop(ctx);
+		} else if (GuardRules.canResume(health, max, cfg.resumeHealthRatio)) {
+			retreating = false;
+			retreatSpot = null;
+			// Back to its post: a route guard resumes at the nearest waypoint.
+			fought = true;
+			return false;
+		}
+		Mob threat = nearestThreat(ctx, role);
+		if (threat != null) {
+			GuardCombat.engage(fighter, ctx, threat, role, true);
+		} else {
+			GuardCombat.disengage(fighter);
+		}
+		GuardRetreat.Spot spot = retreatSpot;
+		if (spot == null || (spot.bed() && !GuardRetreat.isBed(ctx.level, spot.pos()))) {
+			spot = GuardRetreat.find(ctx, wave);
+			retreatSpot = spot;
+		}
+		boolean atBed = false;
+		if (spot != null) {
+			switch (Movement.moveTo(ctx, spot.pos(), spot.bed() ? BED_REACH : SPOT_REACH, ctx.config.work.walkTimeoutSeconds)) {
+				case MOVING -> {
+					speedUp(ctx);
+					heal(ctx, GuardRules.healPerSecond(true, false, false, cfg.healPerSecond, cfg.bedHealPerSecond, cfg.passiveRegenPerSecond));
+					ctx.status("villager.status.guard.retreating");
+					return true;
+				}
+				case UNREACHABLE -> retreatSpot = null;
+				case ARRIVED -> {
+					// Faster healing only really next to the bed (not when the walk fell back to a remote action).
+					atBed = spot.bed() && ctx.distSq(spot.pos()) <= (BED_REACH + 1.0) * (BED_REACH + 1.0);
+					Movement.hold(ctx, threat == null ? spot.pos() : null);
+				}
+			}
+		}
+		heal(ctx, GuardRules.healPerSecond(true, atBed, false, cfg.healPerSecond, cfg.bedHealPerSecond, cfg.passiveRegenPerSecond));
+		if (atBed && healSteps++ % 3 == 0) {
+			ctx.level.sendParticles(ParticleTypes.HEART, villager.getX(), villager.getY() + villager.getBbHeight() + 0.3, villager.getZ(),
+					1, 0.2, 0.1, 0.2, 0.0);
+		}
+		ctx.status(atBed ? "villager.status.guard.healing_bed" : "villager.status.guard.healing",
+				GuardRules.displayHealth(villager.getHealth()), GuardRules.displayHealth(max));
+		return true;
+	}
+
+	/** Nearest monster within arm's reach of a retreating guard (it strikes back without stopping). */
+	private @Nullable Mob nearestThreat(WorkContext ctx, GuardRole role) {
+		double range = ctx.config.guard.attackReach + THREAT_MARGIN;
+		AABB box = ctx.villager.getBoundingBox().inflate(range, 2.0, range);
+		Mob best = null;
+		double bestDist = range * range;
+		for (Mob mob : ctx.level.getEntitiesOfClass(Mob.class, box, mob -> isValidTarget(ctx, mob, role) && !ctx.foreign(mob.blockPosition()))) {
+			double dist = mob.distanceToSqr(ctx.villager);
+			if (dist <= bestDist) {
+				bestDist = dist;
+				best = mob;
+			}
+		}
+		return best;
+	}
+
+	/** Slow passive regeneration once out of combat for a while. */
+	private void regenerate(WorkContext ctx) {
+		if (ctx.now - lastCombat >= OUT_OF_COMBAT_TICKS) {
+			VillagerConfig.Guard cfg = ctx.config.guard;
+			heal(ctx, GuardRules.healPerSecond(false, false, true, cfg.healPerSecond, cfg.bedHealPerSecond, cfg.passiveRegenPerSecond));
+		}
+	}
+
+	private static void heal(WorkContext ctx, double amount) {
+		Villager villager = ctx.villager;
+		if (amount > 0 && villager.isAlive() && villager.getHealth() < villager.getMaxHealth()) {
+			villager.heal((float) amount);
+		}
+	}
+
+	private static void speedUp(WorkContext ctx) {
+		int level = ctx.config.guard.retreatSpeedLevel;
+		if (level > 0) {
+			ctx.villager.addEffect(new MobEffectInstance(MobEffects.SPEED, SPEED_TICKS, level - 1, false, false));
+		}
+	}
+
+	// ------------------------------------------------------------------ equipment
+
+	/** Out of combat: walks to a storage chest holding better equipment and puts it on. @return true while busy */
+	private boolean equip(WorkContext ctx, GuardRole role) {
+		VillagerConfig.Guard cfg = ctx.config.guard;
+		if (!cfg.equipmentFromChests && !cfg.weaponsFromChests) {
+			equipmentChest = null;
+			return false;
+		}
+		if (equipmentChest == null) {
+			if (ctx.now < nextEquipmentScan) {
+				return false;
+			}
+			nextEquipmentScan = ctx.now + WorkContext.ticks(cfg.equipmentScanSeconds);
+			equipmentChest = GuardEquipment.findUpgradeChest(ctx, role);
+			if (equipmentChest == null) {
+				return false;
+			}
+		}
+		BlockPos chestPos = equipmentChest;
+		StorageChest chest = ctx.guild.villagers.chestAt(chestPos);
+		if (chest == null || !Storage.usable(ctx.level, ctx.guild, chest)) {
+			equipmentChest = null;
+			return false;
+		}
+		switch (Movement.moveTo(ctx, chestPos, CHEST_REACH, ctx.config.work.walkTimeoutSeconds)) {
+			case MOVING -> {
+				ctx.status("villager.status.guard.equipping", chestPos.getX(), chestPos.getY(), chestPos.getZ());
+				return true;
+			}
+			case UNREACHABLE -> {
+				equipmentChest = null;
+				return false;
+			}
+			default -> {
+				equipmentChest = null;
+				Container container = Storage.container(ctx.level, chestPos);
+				int equipped = container == null ? 0 : GuardEquipment.equipFrom(ctx, container, role);
+				if (equipped <= 0) {
+					return false;
+				}
+				Movement.hold(ctx, chestPos);
+				WorldUtil.swing(ctx.villager);
+				// Another chest may hold more: look again at the next step.
+				nextEquipmentScan = ctx.now;
+				ctx.status("villager.status.guard.equipped", equipped);
+				return true;
+			}
+		}
+	}
+
 	// ------------------------------------------------------------------ fighting
 
-	private void fight(WorkContext ctx, Mob target) {
-		ServerLevel level = ctx.level;
+	private void fight(WorkContext ctx, Mob target, GuardRole role) {
+		ctx.villager.getBrain().setMemory(MemoryModuleType.LOOK_TARGET, new EntityTracker(target, true));
+		GuardCombat.engage(fighter, ctx, target, role, false);
+		if (role == GuardRole.BOW) {
+			archer(ctx, target);
+			return;
+		}
 		double reach = ctx.config.guard.attackReach;
 		boolean inReach = ctx.villager.distanceToSqr(target) <= reach * reach && Math.abs(ctx.villager.getY() - target.getY()) <= 2.0;
-		ctx.villager.getBrain().setMemory(MemoryModuleType.LOOK_TARGET, new EntityTracker(target, true));
 		if (!inReach) {
-			if (ctx.now - chaseStart > WorkContext.ticks(ctx.config.guard.chaseTimeoutSeconds)) {
-				// Unreachable (flying, across water...): give up for a while.
-				ignored.put(target.getUUID(), ctx.now + IGNORE_TICKS);
-				targetId = null;
-				Movement.stop(ctx);
-				ctx.status("villager.status.guard.patrol");
+			if (giveUp(ctx, target)) {
 				return;
 			}
 			Movement.follow(ctx, target, CHASE_SPEED);
@@ -126,52 +342,93 @@ final class GuardTask extends TaskHandler {
 		chaseStart = ctx.now;
 		Movement.follow(ctx, target, CHASE_SPEED);
 		ctx.status("villager.status.guard.fighting");
-		if (ctx.now - lastAttack < ctx.config.guard.attackCooldownTicks) {
-			return;
-		}
-		lastAttack = ctx.now;
-		WorldUtil.swing(ctx.villager);
-		float damage = (float) Upgrades.boost(ctx.guild, UpgradeEffects.GUARD_DAMAGE_PCT, ctx.config.guardDamage(ctx.guild.level));
-		boolean hurt = target.hurtServer(level, level.damageSources().mobAttack(ctx.villager), damage);
-		if (hurt) {
-			level.sendParticles(ParticleTypes.CRIT, target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ(), 8, 0.3, 0.3, 0.3, 0.1);
-			WorldUtil.playSound(level, ctx.villager, SoundEvents.PLAYER_ATTACK_STRONG, 0.8f, 1.1f);
-		}
-		if (!target.isAlive()) {
-			ctx.record.stats.kills++;
-			targetId = null;
-			GuildManager.markDirty();
+	}
+
+	/** Archer: closes in until in range and sight, steps back when the target is too close, else stands and shoots. */
+	private void archer(WorkContext ctx, Mob target) {
+		VillagerConfig.Guard cfg = ctx.config.guard;
+		Villager villager = ctx.villager;
+		switch (GuardRules.archerMove(villager.distanceTo(target), villager.hasLineOfSight(target), cfg.bowMinDistance, cfg.bowRange)) {
+			case APPROACH -> {
+				if (giveUp(ctx, target)) {
+					return;
+				}
+				Movement.follow(ctx, target, CHASE_SPEED);
+				ctx.status("villager.status.guard.chasing");
+			}
+			case BACK_OFF -> {
+				chaseStart = ctx.now;
+				backOff(ctx, target);
+				ctx.status("villager.status.guard.backing_off");
+			}
+			case HOLD -> {
+				chaseStart = ctx.now;
+				Movement.hold(ctx, null);
+				villager.getBrain().setMemory(MemoryModuleType.LOOK_TARGET, new EntityTracker(target, true));
+				ctx.status("villager.status.guard.shooting");
+			}
 		}
 	}
 
-	private @Nullable Mob currentTarget(WorkContext ctx) {
+	/** A few blocks away from the target (never into another guild's land); cornered: stands and shoots. */
+	private static void backOff(WorkContext ctx, Mob target) {
+		Vec3 away = DefaultRandomPos.getPosAway(ctx.villager, 6, 3, target.position());
+		Brain<Villager> brain = ctx.villager.getBrain();
+		if (away == null || ctx.foreign(BlockPos.containing(away))) {
+			Movement.hold(ctx, null);
+		} else {
+			brain.setMemory(MemoryModuleType.WALK_TARGET, new WalkTarget(away, BACK_OFF_SPEED, 0));
+			ctx.runtime.resetMovement();
+		}
+		brain.setMemory(MemoryModuleType.LOOK_TARGET, new EntityTracker(target, true));
+	}
+
+	/** Unreachable target (flying, across water...): given up after the chase timeout and ignored for a while. */
+	private boolean giveUp(WorkContext ctx, Mob target) {
+		if (ctx.now - chaseStart <= WorkContext.ticks(ctx.config.guard.chaseTimeoutSeconds)) {
+			return false;
+		}
+		ignored.put(target.getUUID(), ctx.now + IGNORE_TICKS);
+		targetId = null;
+		GuardCombat.disengage(fighter);
+		Movement.stop(ctx);
+		ctx.status("villager.status.guard.patrol");
+		return true;
+	}
+
+	private @Nullable Mob currentTarget(WorkContext ctx, GuardRole role) {
 		if (targetId == null) {
 			return null;
 		}
 		Entity entity = ctx.level.getEntity(targetId);
-		if (entity instanceof Mob mob && isValidTarget(ctx, mob) && guarded(ctx, mob, 4.0)) {
+		if (entity instanceof Mob mob && isValidTarget(ctx, mob, role) && guarded(ctx, mob, 4.0)) {
 			return mob;
 		}
 		targetId = null;
 		return null;
 	}
 
-	/** Nearest valid target: around the heart (heart defence), around the guard (patrols). */
-	private @Nullable Mob findTarget(WorkContext ctx) {
+	/**
+	 * Nearest valid target: around the heart (heart defence), around the guard (patrols). Archers prefer the nearest
+	 * monster they can see.
+	 */
+	private @Nullable Mob findTarget(WorkContext ctx, GuardRole role) {
 		int radius = ctx.config.guard.radius;
 		BlockPos center = route == null && zone == null && heart != null ? heart : ctx.villager.blockPosition();
 		AABB box = new AABB(center).inflate(radius, Math.min(radius, 12), radius);
-		List<Mob> mobs = ctx.level.getEntitiesOfClass(Mob.class, box, mob -> isValidTarget(ctx, mob) && guarded(ctx, mob, 0.0));
-		Mob best = null;
-		double bestDist = Double.MAX_VALUE;
-		for (Mob mob : mobs) {
-			double dist = mob.distanceToSqr(ctx.villager);
-			if (dist < bestDist) {
-				bestDist = dist;
-				best = mob;
+		List<Mob> mobs = new ArrayList<>(ctx.level.getEntitiesOfClass(Mob.class, box, mob -> isValidTarget(ctx, mob, role) && guarded(ctx, mob, 0.0)));
+		if (mobs.isEmpty()) {
+			return null;
+		}
+		mobs.sort(Comparator.comparingDouble(mob -> mob.distanceToSqr(ctx.villager)));
+		if (role == GuardRole.BOW) {
+			for (int i = 0; i < Math.min(mobs.size(), MAX_SIGHT_CHECKS); i++) {
+				if (ctx.villager.hasLineOfSight(mobs.get(i))) {
+					return mobs.get(i);
+				}
 			}
 		}
-		return best;
+		return mobs.getFirst();
 	}
 
 	/** The mob is in the area this guard protects ({@code slack} blocks of tolerance for a target being chased). */
@@ -193,12 +450,14 @@ final class GuardTask extends TaskHandler {
 		return slack <= 0 || mob.distanceToSqr(post.getX() + 0.5, post.getY(), post.getZ() + 0.5) <= max * max;
 	}
 
-	private boolean isValidTarget(WorkContext ctx, Mob mob) {
+	/** A monster of the guard's role (archers have their own ignore list), alive and not ignored for a while. */
+	private boolean isValidTarget(WorkContext ctx, Mob mob, GuardRole role) {
 		if (!(mob instanceof Enemy) || !mob.isAlive() || mob.isRemoved() || ignored.containsKey(mob.getUUID())) {
 			return false;
 		}
 		String id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString();
-		return !ctx.config.guard.ignoredMobs.contains(id);
+		List<String> ignoredMobs = role == GuardRole.BOW ? ctx.config.guard.bowIgnoredMobs : ctx.config.guard.ignoredMobs;
+		return !ignoredMobs.contains(id);
 	}
 
 	// ------------------------------------------------------------------ walking

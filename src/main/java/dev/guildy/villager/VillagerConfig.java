@@ -319,6 +319,58 @@ public final class VillagerConfig implements Validatable {
 		public int chaseTimeoutSeconds = 20;
 		@Comment("Monstres ignores par les gardes")
 		public List<String> ignoredMobs = new ArrayList<>(List.of("minecraft:creeper", "minecraft:phantom", "minecraft:ghast", "minecraft:enderman"));
+		@Comment({
+				"Roles : epeiste (corps a corps) ou archer (fleches). Role 'Auto' (par defaut, modifiable dans le menu du garde) :",
+				"le role qui rapproche la part d'archers parmi les gardes de la guilde de cette valeur (0 = que des epeistes,",
+				"1 = que des archers, 0.5 = moitie-moitie)"
+		})
+		public double archerShare = 0.5;
+		@Comment("Archers : portee maximum de tir (blocs ; il faut voir le monstre)")
+		public int bowRange = 16;
+		@Comment("Archers : en dessous de cette distance (blocs), l'archer recule pour garder ses distances")
+		public double bowMinDistance = 5.0;
+		@Comment("Archers : degats d'une fleche = degats d'un coup d'epee (damage, damagePerLevel, arbre d'evolution) x ce facteur")
+		public double bowDamageFactor = 1.0;
+		@Comment("Archers : delai (ticks, 20 = 1 seconde) entre deux tirs")
+		public int bowCooldownTicks = 30;
+		@Comment("Archers : imprecision des tirs (0 = parfait ; un squelette en difficulte difficile = 2)")
+		public double bowInaccuracy = 2.0;
+		@Comment({
+				"Monstres ignores par les archers (liste a part : ils peuvent tirer sur des monstres que les epeistes ne",
+				"peuvent pas atteindre, comme les phantoms). Leurs fleches ne touchent que les monstres : jamais un joueur,",
+				"un villageois, un animal de compagnie ou un animal passif."
+		})
+		public List<String> bowIgnoredMobs = new ArrayList<>(List.of("minecraft:creeper", "minecraft:enderman"));
+		@Comment({
+				"Repli : sous cette part de sa vie (0 a 1, 0 = jamais), le garde arrete de combattre et court (bonus de vitesse)",
+				"se soigner a son lit (sinon le lit le plus proche du territoire, sinon le bureau d'accueil ou le coeur), meme",
+				"pendant une horde. Il frappe encore les monstres a portee de bras en chemin."
+		})
+		public double retreatHealthRatio = 0.4;
+		@Comment("Repli : le garde reprend son poste (patrouille, parcours, defense du coeur) une fois soigne a cette part de sa vie")
+		public double resumeHealthRatio = 0.9;
+		@Comment("Soin pendant le repli, loin d'un lit (points de vie par seconde ; 2 points = 1 coeur, un villageois en a 20)")
+		public double healPerSecond = 0.5;
+		@Comment("Soin a cote de son lit (points de vie par seconde)")
+		public double bedHealPerSecond = 1.0;
+		@Comment("Regeneration lente hors combat (points de vie par seconde, 0 = aucune ; les villageois ne regenerent pas seuls)")
+		public double passiveRegenPerSecond = 0.1;
+		@Comment("Repli : niveau de l'effet Vitesse pendant la course vers le lit (0 = aucun, 2 = Vitesse II)")
+		public int retreatSpeedLevel = 2;
+		@Comment({
+				"Equipement : hors combat, les gardes vont prendre les meilleures pieces d'armure (points d'armure, puis",
+				"robustesse ; toute matiere, enchantees ou non) dans les coffres du stockage enregistres (menu Villageois ->",
+				"Stockage : depot et categories) et rapportent l'ancienne piece. Une piece cassee est remplacee plus tard."
+		})
+		public boolean equipmentFromChests = true;
+		@Comment("Equipement : les gardes prennent aussi une meilleure epee (epeistes) ou un meilleur arc enchante (archers)")
+		public boolean weaponsFromChests = true;
+		@Comment("Equipement : intervalle (secondes) entre deux recherches d'equipement dans les coffres")
+		public int equipmentScanSeconds = 30;
+		@Comment("Equipement : les armures des gardes s'usent quand ils sont blesses (comme celles des joueurs)")
+		public boolean armorWear = true;
+		@Comment("Equipement : a la mort d'un garde, son equipement (armure, arme des coffres) tombe au sol (false = perdu avec lui)")
+		public boolean dropEquipmentOnDeath = true;
 	}
 
 	@Json5.Section
@@ -704,6 +756,7 @@ public final class VillagerConfig implements Validatable {
 		guard.chaseTimeoutSeconds = clamp(guard.chaseTimeoutSeconds, 3, 300);
 		guard.ignoredMobs = guard.ignoredMobs == null ? new ArrayList<>() : new ArrayList<>(guard.ignoredMobs);
 		guard.ignoredMobs.removeIf(id -> id == null || id.isBlank());
+		validateGuard(guard);
 		if (storage.categories == null) {
 			storage.categories = defaultCategories();
 		}
@@ -737,6 +790,24 @@ public final class VillagerConfig implements Validatable {
 			}
 		}
 		configVersion = CURRENT_VERSION;
+	}
+
+	private static void validateGuard(Guard guard) {
+		guard.archerShare = clamp(guard.archerShare, 0.0, 1.0);
+		guard.bowRange = clamp(guard.bowRange, 4, 48);
+		guard.bowMinDistance = clamp(guard.bowMinDistance, 0.0, guard.bowRange - 1.0);
+		guard.bowDamageFactor = clamp(guard.bowDamageFactor, 0.0, 10.0);
+		guard.bowCooldownTicks = clamp(guard.bowCooldownTicks, 5, 200);
+		guard.bowInaccuracy = clamp(guard.bowInaccuracy, 0.0, 20.0);
+		guard.bowIgnoredMobs = guard.bowIgnoredMobs == null ? new ArrayList<>() : new ArrayList<>(guard.bowIgnoredMobs);
+		guard.bowIgnoredMobs.removeIf(id -> id == null || id.isBlank());
+		guard.retreatHealthRatio = clamp(guard.retreatHealthRatio, 0.0, 0.95);
+		guard.resumeHealthRatio = clamp(guard.resumeHealthRatio, Math.min(1.0, guard.retreatHealthRatio + 0.05), 1.0);
+		guard.healPerSecond = clamp(guard.healPerSecond, 0.0, 20.0);
+		guard.bedHealPerSecond = clamp(guard.bedHealPerSecond, 0.0, 20.0);
+		guard.passiveRegenPerSecond = clamp(guard.passiveRegenPerSecond, 0.0, 20.0);
+		guard.retreatSpeedLevel = clamp(guard.retreatSpeedLevel, 0, 5);
+		guard.equipmentScanSeconds = clamp(guard.equipmentScanSeconds, 5, 600);
 	}
 
 	private static void validateRealMining(RealMining real) {

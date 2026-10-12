@@ -583,6 +583,7 @@ public final class VillagerManager {
 	static void release(ServerLevel level, Villager villager) {
 		villager.removeTag(TAG_VILLAGER);
 		villager.removeTag(TAG_CANDIDATE);
+		Guards.onRelease(level, villager);
 		if (TaskEngine.isTaskTool(villager.getMainHandItem())) {
 			villager.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
 		}
@@ -599,8 +600,10 @@ public final class VillagerManager {
 		if (record.task == task) {
 			return;
 		}
+		Task previous = record.task;
 		record.task = task;
 		Missions.reset(record);
+		Guards.onTaskChange(guild, record, previous, task, actor);
 		// The zone / route assignment is kept: ignored while it does not match the task, back when it does again.
 		if ((task == Task.IDLE || task == Task.GUARD) && !record.carried.isEmpty()) {
 			for (ItemStack stack : record.carried) {
@@ -619,6 +622,7 @@ public final class VillagerManager {
 		removeRecord(guild, record);
 		if (villager != null) {
 			dropCarried(level, record, villager.position());
+			Guards.onLeave(level, guild, villager);
 			WorldUtil.playSound(level, villager, SoundEvents.VILLAGER_NO, 1.0f, 0.9f);
 			WorldUtil.poof(level, villager);
 			villager.discard();
@@ -645,6 +649,7 @@ public final class VillagerManager {
 			ItemUtil.giveOrDrop(player, stack);
 		}
 		record.carried.clear();
+		Guards.onDismiss(player, record);
 		leave(guild, record, "villager.dismissed");
 	}
 
@@ -731,6 +736,7 @@ public final class VillagerManager {
 			if (guild.villagers.leaving.remove(id)) {
 				GuildManager.markDirty();
 				defer(villager, () -> {
+					Guards.onLeave(level, guild, villager);
 					WorldUtil.poof(level, villager);
 					villager.discard();
 				});

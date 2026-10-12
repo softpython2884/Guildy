@@ -81,6 +81,10 @@ final class TaskEngine {
 		VillagerManager.ensureMemberSetup(villager, record);
 		WorkContext ctx = new WorkContext(level, guild, record, villager, rt, VillagerModule.config());
 		Task task = record.task;
+		if (task != Task.GUARD) {
+			// Equipment of a former guard (task changed while it was unloaded) goes back to the storage.
+			Guards.checkNotGuard(level, guild, record, villager);
+		}
 		if (rt.handler == null || rt.handlerTask != task || rt.restart) {
 			if (rt.handler != null) {
 				rt.handler.stop(ctx);
@@ -96,7 +100,8 @@ final class TaskEngine {
 				villager.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
 			}
 		}
-		if (task != Task.IDLE) {
+		if (task != Task.IDLE && task != Task.GUARD) {
+			// Guards show the weapon of their role themselves (GuardEquipment.applyDisplay).
 			applyHandItem(villager, task);
 		}
 		applyBrainLock(level, villager, rt, task);
@@ -160,6 +165,9 @@ final class TaskEngine {
 	}
 
 	static boolean isTaskTool(ItemStack stack) {
+		if (GuardEquipment.isDisplay(stack)) {
+			return true;
+		}
 		for (Task task : Task.values()) {
 			Item item = task.handItem();
 			if (item != null && stack.is(item)) {
