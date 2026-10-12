@@ -25,7 +25,8 @@
 			"dev.guildy.test.QuestGameTests",
 			"dev.guildy.test.UniqueGameTests",
 			"dev.guildy.test.VillageSignGameTests",
-			"dev.guildy.test.WorkGameTests"
+			"dev.guildy.test.WorkGameTests",
+			"dev.guildy.test.StorageGameTests"
 		]
 	},
 	"depends": {

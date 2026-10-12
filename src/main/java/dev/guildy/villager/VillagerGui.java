@@ -36,7 +36,6 @@ import java.util.UUID;
  */
 public final class VillagerGui {
 	private static final int PER_PAGE = 36;
-	private static final int CHESTS_PER_PAGE = 45;
 	private static final int CARRIED_LINES = 8;
 	/** Carried stacks listed in the villager list (the detail menu shows more). */
 	private static final int LIST_CARRIED_LINES = 3;
@@ -477,153 +476,14 @@ public final class VillagerGui {
 
 	// ================================================================ storage
 
+	/** Storage menu (see {@link StorageGui}). */
 	static void openStorage(ServerPlayer player, Guild guild, int page) {
-		ServerLevel level = GuildyServer.claimLevel();
-		if (level != null) {
-			Storage.cleanup(level, guild);
-		}
-		List<StorageChest> chests = new ArrayList<>(guild.villagers.chests);
-		int pages = GuiUtil.pages(chests.size(), CHESTS_PER_PAGE);
-		int current = Math.max(0, Math.min(page, pages - 1));
-		SimpleGui gui = chest(player, 6, Lang.get("villager.gui.storage.title", chests.size()));
-		for (int i = 0; i < CHESTS_PER_PAGE; i++) {
-			int index = current * CHESTS_PER_PAGE + i;
-			if (index >= chests.size()) {
-				break;
-			}
-			StorageChest chest = chests.get(index);
-			gui.setSlot(i, chestIcon(level, chest).setCallback((slot, type, action, g) -> {
-				if (!checkPermission(player, guild)) {
-					return;
-				}
-				GuiUtil.confirm(player, Lang.get("villager.gui.storage.remove.confirm"),
-						List.of(Lang.get("villager.gui.storage.entry.lore.pos", chest.pos.getX(), chest.pos.getY(), chest.pos.getZ())),
-						() -> {
-							if (guild.villagers.chests.remove(chest)) {
-								GuildManager.markDirty();
-								Msg.send(player, "villager.storage.removed");
-							}
-							openStorage(player, guild, current);
-						},
-						() -> openStorage(player, guild, current));
-			}));
-		}
-		gui.setSlot(45, GuiUtil.back(() -> openList(player, guild, 0)));
-		if (current > 0) {
-			gui.setSlot(46, GuiUtil.item(Items.ARROW, Lang.get("gui.page.prev"), List.of(Lang.get("gui.page", current + 1, pages)))
-					.setCallback((slot, type, action, g) -> openStorage(player, guild, current - 1)));
-		}
-		gui.setSlot(47, categoriesIcon());
-		gui.setSlot(49, GuiUtil.item(Items.CHEST, Lang.get("villager.gui.storage.add"), GuiUtil.lines("villager.gui.storage.add.lore",
-				VillagerInteractions.SELECTION_SECONDS)).glow().setCallback((slot, type, action, g) -> {
-			if (!checkPermission(player, guild)) {
-				return;
-			}
-			if (guild.villagers.chests.size() >= VillagerModule.config().storage.maxChests) {
-				Msg.send(player, "villager.storage.limit", VillagerModule.config().storage.maxChests);
-				GuiUtil.errorSound(player);
-				return;
-			}
-			g.close();
-			GuiUtil.clickSound(player);
-			VillagerInteractions.startSelection(player, guild);
-		}));
-		gui.setSlot(51, GuiUtil.item(Items.PAPER, Lang.get("villager.gui.help"),
-				GuiUtil.lines("villager.gui.storage.help.lore", Storage.categories().fallback())));
-		if (current < pages - 1) {
-			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), List.of(Lang.get("gui.page", current + 1, pages)))
-					.setCallback((slot, type, action, g) -> openStorage(player, guild, current + 1)));
-		}
-		gui.setSlot(53, GuiUtil.close());
-		GuiUtil.fill(gui);
-		gui.open();
+		StorageGui.openStorage(player, guild, page);
 	}
 
-	private static GuiElementBuilder chestIcon(@Nullable ServerLevel level, StorageChest chest) {
-		Item icon = chest.isDeposit() ? Items.HOPPER : Storage.isFallback(chest) ? Items.BARREL : Items.CHEST;
-		List<Component> lore = new ArrayList<>();
-		lore.add(Lang.get("villager.gui.storage.entry.lore.pos", chest.pos.getX(), chest.pos.getY(), chest.pos.getZ()));
-		if (level == null || !level.isLoaded(chest.pos)) {
-			lore.add(Lang.get("villager.gui.storage.entry.lore.unloaded"));
-		} else {
-			int[] fill = Storage.fill(level, chest.pos);
-			if (fill == null) {
-				lore.add(Lang.get("villager.gui.storage.entry.lore.missing"));
-			} else {
-				lore.add(Lang.get("villager.gui.storage.entry.lore.fill", fill[0], fill[1]));
-			}
-		}
-		lore.add(Lang.get("villager.gui.storage.entry.lore.remove"));
-		Component name = chest.isDeposit() ? Lang.get("villager.gui.storage.entry.deposit") : Lang.get("villager.gui.storage.entry.category", chest.category);
-		return GuiUtil.item(icon, name, lore);
-	}
-
-	private static GuiElementBuilder categoriesIcon() {
-		List<Component> lore = new ArrayList<>();
-		StorageCategories categories = Storage.categories();
-		for (String name : categories.names()) {
-			lore.add(Lang.get("villager.gui.storage.categories.line", name));
-		}
-		lore.add(Lang.get("villager.gui.storage.categories.line", categories.fallback()));
-		lore.addAll(GuiUtil.lines("villager.gui.storage.categories.lore"));
-		return GuiUtil.item(Items.BOOKSHELF, Lang.get("villager.gui.storage.categories"), lore);
-	}
-
-	/** Role choice after right-clicking a container in selection mode. */
+	/** Role choice after right-clicking a container in selection mode (see {@link StorageGui}). */
 	static void openRolePicker(ServerPlayer player, Guild guild, BlockPos pos) {
-		StorageCategories categories = Storage.categories();
-		List<String> names = new ArrayList<>(categories.names());
-		int options = Math.min(45, names.size() + 2);
-		int rows = Math.min(6, (options + 8) / 9 + 1);
-		SimpleGui gui = chest(player, rows, Lang.get("villager.gui.role.title", pos.getX(), pos.getY(), pos.getZ()));
-		int slot = 0;
-		gui.setSlot(slot++, GuiUtil.item(Items.HOPPER, Lang.get("villager.gui.role.deposit"), GuiUtil.lines("villager.gui.role.deposit.lore"))
-				.setCallback((s, type, action, g) -> assign(player, guild, pos, StorageChest.Role.DEPOSIT, "")));
-		for (String name : names) {
-			if (slot >= options - 1) {
-				break;
-			}
-			gui.setSlot(slot++, GuiUtil.item(Items.CHEST, Lang.get("villager.gui.role.category", name), GuiUtil.lines("villager.gui.role.category.lore"))
-					.setCallback((s, type, action, g) -> assign(player, guild, pos, StorageChest.Role.CATEGORY, name)));
-		}
-		String fallback = categories.fallback();
-		gui.setSlot(slot, GuiUtil.item(Items.BARREL, Lang.get("villager.gui.role.category", fallback), GuiUtil.lines("villager.gui.role.fallback.lore"))
-				.setCallback((s, type, action, g) -> assign(player, guild, pos, StorageChest.Role.CATEGORY, fallback)));
-		gui.setSlot((rows - 1) * 9, GuiUtil.back(() -> openStorage(player, guild, 0)));
-		gui.setSlot(rows * 9 - 1, GuiUtil.close());
-		GuiUtil.fill(gui);
-		gui.open();
-	}
-
-	private static void assign(ServerPlayer player, Guild guild, BlockPos pos, StorageChest.Role role, String category) {
-		if (!checkPermission(player, guild)) {
-			return;
-		}
-		ServerLevel level = GuildyServer.claimLevel();
-		if (level == null || !Storage.isStorageBlock(level.getBlockEntity(pos)) || GuildManager.at(level, pos) != guild) {
-			Msg.send(player, "villager.storage.not_territory");
-			GuiUtil.errorSound(player);
-			player.closeContainer();
-			return;
-		}
-		StorageChest existing = Storage.registered(level, guild, pos);
-		if (existing != null) {
-			existing.role = role;
-			existing.category = category;
-			Msg.send(player, "villager.storage.updated", Storage.roleName(existing));
-		} else {
-			if (guild.villagers.chests.size() >= VillagerModule.config().storage.maxChests) {
-				Msg.send(player, "villager.storage.limit", VillagerModule.config().storage.maxChests);
-				player.closeContainer();
-				return;
-			}
-			StorageChest chest = new StorageChest(pos.immutable(), role, category);
-			guild.villagers.chests.add(chest);
-			Msg.send(player, "villager.storage.added", Storage.roleName(chest), pos.getX(), pos.getY(), pos.getZ());
-		}
-		GuildManager.markDirty();
-		GuiUtil.successSound(player);
-		openStorage(player, guild, 0);
+		StorageGui.openRolePicker(player, guild, pos, 0);
 	}
 
 	// ================================================================ helpers

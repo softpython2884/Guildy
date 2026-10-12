@@ -5,7 +5,6 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.WorldlyContainer;
@@ -44,30 +43,38 @@ final class Storage {
 	static StorageCategories categories() {
 		VillagerConfig config = VillagerModule.config();
 		if (cachedCategories == null || cachedFor != config) {
-			cachedCategories = new StorageCategories(config.storage.categories, config.storage.fallbackCategory);
+			cachedCategories = new StorageCategories(StorageDefaults.rules(config.storage.categories), config.storage.fallbackCategory);
 			cachedFor = config;
 		}
 		return cachedCategories;
 	}
 
+	/** Storage category of a stack (ids, tags, patterns, item properties, creative tabs: see {@link ItemClassifier}). */
 	static String categoryOf(ItemStack stack) {
-		String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-		List<String> tags = stack.tags().map(tag -> tag.location().toString()).toList();
-		return categories().categoryOf(id, tags);
+		return ItemClassifier.categoryOf(stack);
+	}
+
+	/**
+	 * Category a CATEGORY chest really receives: its category, or the fallback when that category no longer exists
+	 * (removed or renamed in villagers.json5).
+	 */
+	static String effectiveCategory(StorageChest chest) {
+		String canonical = categories().canonical(chest.category);
+		return canonical == null ? categories().fallback() : canonical;
 	}
 
 	static boolean isFallback(StorageChest chest) {
-		return chest.role == StorageChest.Role.CATEGORY && chest.category.equalsIgnoreCase(categories().fallback());
+		return chest.role == StorageChest.Role.CATEGORY && effectiveCategory(chest).equalsIgnoreCase(categories().fallback());
 	}
 
-	/** Same kind of destination: both deposit chests, or category chests of the same category. */
+	/** Same kind of destination: both deposit chests, or category chests of the same (effective) category. */
 	static boolean sameDestination(StorageChest a, StorageChest b) {
-		return a.role == b.role && (a.isDeposit() || a.category.equalsIgnoreCase(b.category));
+		return a.role == b.role && (a.isDeposit() || effectiveCategory(a).equalsIgnoreCase(effectiveCategory(b)));
 	}
 
-	/** Display name of a chest role ("Dépôt" or the category). */
+	/** Display name of a chest role ("Dépôt" or the effective category). */
 	static String roleName(StorageChest chest) {
-		return chest.isDeposit() ? Lang.raw("villager.storage.role.deposit") : chest.category;
+		return chest.isDeposit() ? Lang.raw("villager.storage.role.deposit") : effectiveCategory(chest);
 	}
 
 	// ------------------------------------------------------------------ containers
@@ -242,7 +249,7 @@ final class Storage {
 		String category = categoryOf(stack);
 		boolean isFallback = category.equalsIgnoreCase(categories().fallback());
 		if (!isFallback) {
-			StorageChest chest = nearestWithSpace(ctx, stack, excluded, c -> c.role == StorageChest.Role.CATEGORY && c.category.equalsIgnoreCase(category));
+			StorageChest chest = nearestWithSpace(ctx, stack, excluded, c -> c.role == StorageChest.Role.CATEGORY && effectiveCategory(c).equalsIgnoreCase(category));
 			if (chest != null) {
 				return chest;
 			}

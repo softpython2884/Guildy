@@ -22,6 +22,7 @@ public final class VillagerModule {
 		Guards.init();
 		VillagerManager.init();
 		VillagerCalls.init();
+		StorageSetup.init();
 		VillagerInteractions.init();
 		ZoneVisualizer.register();
 		VillagerCommands.init();
