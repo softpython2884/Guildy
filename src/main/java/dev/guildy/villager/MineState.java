@@ -67,8 +67,20 @@ public class MineState {
 	/** Bumped by a reset: the miners start over. */
 	public int epoch;
 	public int format;
+	/**
+	 * Quarry: columns (x, z as {@code BlockPos.asLong(x, 0, z)}) left as natural support columns under a non-natural
+	 * block (never dug on any bench), at most {@link #MAX_SUPPORT_COLUMNS}.
+	 */
+	public List<Long> supportColumns = new ArrayList<>();
+	/** Quarry: bumped when a column is given up (the benches are planned again around it). */
+	public int quarryRevision;
+	/** Quarry: blocks dug by the benches. */
+	public long quarried;
 
-	/** Progress of one level. */
+	/** Support columns kept at most (beyond, a column given up under a building is only skipped on its bench). */
+	public static final int MAX_SUPPORT_COLUMNS = 4096;
+
+	/** Progress of one level (or of one bench of a quarry). */
 	public static class Level {
 		public int y;
 		/** Finished segments. */
@@ -78,6 +90,12 @@ public class MineState {
 		public boolean finished;
 		public long ores;
 		public long wanted;
+		/** Quarry bench: columns dug (bit set over the quarry square, see {@link Quarry#column}). */
+		public List<Long> cleared = new ArrayList<>();
+		/** Quarry bench: columns given up on this bench (water above, cave-in...). */
+		public List<Long> skipped = new ArrayList<>();
+		/** Quarry bench: blocks dug. */
+		public long quarried;
 
 		public Level() {
 		}
@@ -145,6 +163,18 @@ public class MineState {
 		abandoned.clear();
 		bottomY = null;
 		exhausted = false;
+		supportColumns.clear();
+		quarryRevision++;
+	}
+
+	/** Quarry: the column stays as a natural support column (false when it already was, or when the list is full). */
+	boolean addSupport(int x, int z) {
+		long packed = BlockPos.asLong(x, 0, z);
+		if (supportColumns.contains(packed) || supportColumns.size() >= MAX_SUPPORT_COLUMNS) {
+			return false;
+		}
+		supportColumns.add(packed);
+		return true;
 	}
 
 	@Nullable Level level(int y) {
@@ -211,7 +241,18 @@ public class MineState {
 			level.abandoned.removeIf(id -> id == null);
 			level.ores = Math.max(0, level.ores);
 			level.wanted = Math.max(0, level.wanted);
+			level.cleared = level.cleared == null ? new ArrayList<>() : new ArrayList<>(level.cleared);
+			level.cleared.replaceAll(word -> word == null ? 0L : word);
+			level.skipped = level.skipped == null ? new ArrayList<>() : new ArrayList<>(level.skipped);
+			level.skipped.replaceAll(word -> word == null ? 0L : word);
+			level.quarried = Math.max(0, level.quarried);
 		}
+		supportColumns = supportColumns == null ? new ArrayList<>() : new ArrayList<>(supportColumns);
+		supportColumns.removeIf(column -> column == null);
+		while (supportColumns.size() > MAX_SUPPORT_COLUMNS) {
+			supportColumns.removeLast();
+		}
+		quarried = Math.max(0, quarried);
 		veins = veins == null ? new ArrayList<>() : new ArrayList<>(veins);
 		veins.removeIf(vein -> vein == null || vein.seed == null || vein.stand == null);
 		while (veins.size() > MAX_VEINS) {

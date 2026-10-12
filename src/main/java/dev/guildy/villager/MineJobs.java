@@ -32,7 +32,9 @@ public final class MineJobs {
 		/** A segment of a level (landing, main tunnel, branch, quarry room). */
 		SEGMENT,
 		/** A pending vein. */
-		VEIN
+		VEIN,
+		/** Quarry: the opening onto a bench (id 1) or one of its strips (id = strip index + 2). */
+		STRIP
 	}
 
 	/**
@@ -50,6 +52,11 @@ public final class MineJobs {
 
 		public static Job segment(int levelY, int id) {
 			return new Job(Type.SEGMENT, levelY, id, null, levelY + ":" + id);
+		}
+
+		/** Quarry: the opening onto the bench at {@code benchY} (id 1) or a strip (id = strip index + 2). */
+		public static Job strip(int benchY, int id, String key) {
+			return new Job(Type.STRIP, benchY, id, null, key);
 		}
 
 		public static Job vein(MineState.Vein vein) {
@@ -106,7 +113,10 @@ public final class MineJobs {
 				}
 			}
 		}
-		for (int y : levels) {
+		if (layout.quarry() != null) {
+			QuarryJobs.addCandidates(list, layout, state, QuarryJobs.window(levels, state));
+		}
+		for (int y : layout.quarry() != null ? List.<Integer>of() : levels) {
 			if (!reached(layout, state, y)) {
 				continue;
 			}
