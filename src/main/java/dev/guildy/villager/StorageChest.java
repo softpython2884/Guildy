@@ -17,6 +17,11 @@ public class StorageChest {
 	public Role role = Role.DEPOSIT;
 	/** Category name when role = CATEGORY. */
 	public String category = "";
+	/**
+	 * Custom name Guildy last gave to the container ("Dépôt", "Minerais et lingots"), "" if none: it is only replaced or
+	 * removed while the container still bears it (see {@link StorageLabels}).
+	 */
+	public String label = "";
 
 	public StorageChest() {
 	}
@@ -37,6 +42,9 @@ public class StorageChest {
 		}
 		if (category == null) {
 			category = "";
+		}
+		if (label == null) {
+			label = "";
 		}
 	}
 }

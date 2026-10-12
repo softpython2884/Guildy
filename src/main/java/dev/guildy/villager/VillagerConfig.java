@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -24,7 +23,7 @@ public final class VillagerConfig implements Validatable {
 	 * Current file format; older files get their untouched old defaults migrated in {@link #validate()} (each step:
 	 * {@code if (configVersion < N) {...}}, only values still equal to the old default are changed).
 	 */
-	public static final int CURRENT_VERSION = 1;
+	public static final int CURRENT_VERSION = 3;
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int configVersion = 0;
@@ -318,14 +317,39 @@ public final class VillagerConfig implements Validatable {
 	@Json5.Section
 	public static final class Storage {
 		@Comment({
-				"Categories de rangement, dans l'ordre de priorite (la premiere qui correspond l'emporte).",
-				"Chaque valeur est un id d'objet (minecraft:diamond) ou un tag d'objet precede de # (#minecraft:logs)."
+				"Categories de rangement (ordre du fichier = ordre des menus) : \"Nom\": { icon, description, rules }.",
+				"  icon : objet affiche dans les menus ; description : exemples affiches dans les menus ;",
+				"  rules : regles qui designent les objets de la categorie (espace de noms facultatif, majuscules ignorees) :",
+				"    minecraft:diamond      un objet precis",
+				"    #minecraft:logs        un tag d'objets (vanilla ou c: des tags communs Fabric)",
+				"    *_ore, stripped_*      un motif d'id (* = n'importe quel texte ; sans espace de noms : tous les mods)",
+				"    @food @armor @tool @weapon @potion @enchanted_book @enchanted @music_disc @banner_pattern",
+				"    @smithing_template @spawn_egg @dye @block      une propriete de l'objet",
+				"    @tab:building_blocks   un onglet de l'inventaire creatif (building_blocks, colored_blocks, natural_blocks,",
+				"                           functional_blocks, redstone_blocks, tools_and_utilities, combat, food_and_drinks,",
+				"                           ingredients, spawn_eggs)",
+				"La regle la plus precise l'emporte : objet precis, puis tag (le plus petit d'abord), puis motif (le plus long",
+				"d'abord), puis propriete, puis onglet ; a egalite, la premiere categorie du fichier. Aucune regle : 'Divers'.",
+				"Chevauchements des categories par defaut : le butin de monstres est liste objet par objet, il gagne donc sur",
+				"Nourriture, Nether et End (chair putrefiee, yeux d'araignee, batons de blaze, larmes de ghast, carapaces de",
+				"shulker, tetes et cranes...) ; les fleches (meme a effet) vont dans Armes ; chorus et pierre de l'End dans End ;",
+				"quartz, roche noire et basalte dans Nether, mais les minerais du Nether dans Minerais et le bois du Nether dans",
+				"Bois ; boutons, plaques de pression et rails dans Redstone ; dalles, escaliers et murets suivent leur matiere",
+				"(pierre, bois, Nether, End...), sinon Blocs de construction. Un coffre dont la categorie n'existe plus sert de",
+				"coffre 'Divers'."
 		})
-		public LinkedHashMap<String, List<String>> categories = defaultCategories();
-		@Comment("Categorie implicite des objets qui ne correspondent a aucune categorie (ou sans coffre dedie)")
+		public LinkedHashMap<String, StorageCategory> categories = defaultCategories();
+		@Comment({
+				"Categorie implicite des objets qui ne correspondent a aucune categorie ; ses coffres recoivent aussi ce qui n'a",
+				"pas de coffre dedie (ou dont les coffres sont pleins). Sans coffre 'Divers', ces objets restent au depot."
+		})
 		public String fallbackCategory = "Divers";
 		@Comment("Nombre maximum de conteneurs enregistres par guilde")
 		public int maxChests = 48;
+		@Comment("Nommer les conteneurs enregistres (titre affiche a l'ouverture : 'Depot', 'Minerais et lingots'...)")
+		public boolean labelChests = true;
+		@Comment("Duree (secondes) du bouton 'Afficher les coffres' (particules visibles par le joueur seul)")
+		public int showSeconds = 20;
 	}
 
 	@Json5.Section
@@ -541,39 +565,9 @@ public final class VillagerConfig implements Validatable {
 		return tables;
 	}
 
-	public static LinkedHashMap<String, List<String>> defaultCategories() {
-		LinkedHashMap<String, List<String>> map = new LinkedHashMap<>();
-		map.put("Bois", new ArrayList<>(List.of(
-				"#minecraft:logs", "#minecraft:planks", "#minecraft:wooden_slabs", "#minecraft:wooden_stairs",
-				"#minecraft:wooden_fences", "#minecraft:saplings", "#minecraft:leaves", "minecraft:stick")));
-		map.put("Pierre & terre", new ArrayList<>(List.of(
-				"#minecraft:stone_crafting_materials", "#minecraft:stone_tool_materials", "#minecraft:dirt", "#minecraft:grass_blocks",
-				"#minecraft:mud", "#minecraft:moss_blocks", "#minecraft:sand",
-				"#minecraft:stone_bricks", "minecraft:cobblestone", "minecraft:stone", "minecraft:cobbled_deepslate",
-				"minecraft:deepslate", "minecraft:granite", "minecraft:diorite", "minecraft:andesite", "minecraft:tuff",
-				"minecraft:calcite", "minecraft:gravel", "minecraft:clay_ball", "minecraft:netherrack")));
-		map.put("Minerais & lingots", new ArrayList<>(List.of(
-				"#minecraft:coals", "#minecraft:iron_ores", "#minecraft:gold_ores", "#minecraft:copper_ores",
-				"#minecraft:coal_ores", "#minecraft:diamond_ores", "#minecraft:emerald_ores", "#minecraft:lapis_ores",
-				"#minecraft:redstone_ores", "minecraft:raw_iron", "minecraft:raw_gold", "minecraft:raw_copper",
-				"minecraft:iron_ingot", "minecraft:gold_ingot", "minecraft:copper_ingot", "minecraft:iron_nugget",
-				"minecraft:gold_nugget", "minecraft:diamond", "minecraft:emerald", "minecraft:lapis_lazuli",
-				"minecraft:redstone", "minecraft:quartz", "minecraft:amethyst_shard", "minecraft:flint")));
-		map.put("Cultures & nourriture", new ArrayList<>(List.of(
-				"#minecraft:villager_plantable_seeds", "#minecraft:meat", "#minecraft:fishes", "minecraft:wheat",
-				"minecraft:carrot", "minecraft:potato", "minecraft:beetroot", "minecraft:bread", "minecraft:apple",
-				"minecraft:melon_slice", "minecraft:pumpkin", "minecraft:sugar_cane", "minecraft:egg")));
-		map.put("Butin de monstres", new ArrayList<>(List.of(
-				"minecraft:rotten_flesh", "minecraft:bone", "minecraft:bone_meal", "minecraft:string",
-				"minecraft:spider_eye", "minecraft:gunpowder", "minecraft:ender_pearl", "minecraft:slime_ball",
-				"minecraft:phantom_membrane", "minecraft:blaze_rod", "minecraft:ghast_tear", "minecraft:magma_cream")));
-		map.put("Outils & armes", new ArrayList<>(List.of(
-				"#minecraft:swords", "#minecraft:axes", "#minecraft:pickaxes", "#minecraft:shovels", "#minecraft:hoes",
-				"#minecraft:spears", "#minecraft:head_armor", "#minecraft:chest_armor", "#minecraft:leg_armor",
-				"#minecraft:foot_armor", "#minecraft:arrows", "minecraft:bow", "minecraft:crossbow", "minecraft:shield",
-				"minecraft:trident", "minecraft:mace", "minecraft:fishing_rod", "minecraft:shears",
-				"minecraft:flint_and_steel")));
-		return map;
+	/** Default storage categories (see {@link StorageDefaults}). */
+	public static LinkedHashMap<String, StorageCategory> defaultCategories() {
+		return StorageDefaults.categories();
 	}
 
 	// ------------------------------------------------------------------ helpers
@@ -678,26 +672,10 @@ public final class VillagerConfig implements Validatable {
 		guard.chaseTimeoutSeconds = clamp(guard.chaseTimeoutSeconds, 3, 300);
 		guard.ignoredMobs = guard.ignoredMobs == null ? new ArrayList<>() : new ArrayList<>(guard.ignoredMobs);
 		guard.ignoredMobs.removeIf(id -> id == null || id.isBlank());
-		if (storage.categories == null) {
-			storage.categories = defaultCategories();
-		}
-		LinkedHashMap<String, List<String>> categories = new LinkedHashMap<>();
-		for (Map.Entry<String, List<String>> entry : storage.categories.entrySet()) {
-			if (entry.getKey() == null || entry.getKey().isBlank()) {
-				continue;
-			}
-			List<String> values = entry.getValue() == null ? new ArrayList<>() : new ArrayList<>(entry.getValue());
-			values.removeIf(value -> value == null || value.isBlank());
-			categories.put(entry.getKey().trim(), values);
-		}
-		storage.categories = categories;
-		if (storage.fallbackCategory == null || storage.fallbackCategory.isBlank()) {
-			storage.fallbackCategory = "Divers";
-		}
-		storage.fallbackCategory = storage.fallbackCategory.trim();
-		String fallback = storage.fallbackCategory;
-		storage.categories.keySet().removeIf(name -> name.equalsIgnoreCase(fallback));
+		// Step 3: the untouched older default categories are replaced by the new set.
+		StorageDefaults.validate(storage, configVersion);
 		storage.maxChests = clamp(storage.maxChests, 1, 256);
+		storage.showSeconds = clamp(storage.showSeconds, 3, 120);
 		defeatLeaveChance = clamp(defeatLeaveChance, 0.0, 1.0);
 		names = names == null ? new ArrayList<>() : new ArrayList<>(names);
 		names.removeIf(name -> name == null || name.isBlank());

@@ -18,6 +18,7 @@ public final class VillagerModule {
 		config = ConfigManager.register("villagers.json5", VillagerConfig.class, VillagerConfig::new);
 		VillagerLang.register();
 		VillagerManager.init();
+		StorageSetup.init();
 		VillagerInteractions.init();
 		ZoneVisualizer.register();
 		VillagerCommands.init();
