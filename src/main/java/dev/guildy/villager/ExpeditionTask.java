@@ -4,8 +4,9 @@ import net.minecraft.core.BlockPos;
 
 /**
  * EXPLORER / NETHER: empty the bag, walk to the departure point (reception or heart; a nether portal of the territory
- * for the Nether), then leave — the villager is away (see {@link Expeditions}) and comes back later with loot. Back
- * home, the loot is deposited, then the mission goal decides: leave again (continuous), or end the mission.
+ * for the Nether), then leave for the chosen destination — the villager is away (see {@link Expeditions}) and comes
+ * back later with loot. Back home, the loot is deposited, then the mission goal decides: leave again (continuous), or
+ * end the mission.
  */
 final class ExpeditionTask extends TaskHandler {
 	private static final long RETRY_TICKS = 10 * 20L;
@@ -42,7 +43,7 @@ final class ExpeditionTask extends TaskHandler {
 				ctx.status("villager.status.departure_unloaded");
 				retryAt = ctx.now + RETRY_TICKS;
 			}
-			case MOVING -> ctx.status("villager.status.going_departure");
+			case MOVING -> ctx.status("villager.status.going_departure_to", Expeditions.name(Expeditions.destination(ctx.guild, ctx.record, type)));
 			case ARRIVED -> Expeditions.depart(ctx, type, departure);
 		}
 	}

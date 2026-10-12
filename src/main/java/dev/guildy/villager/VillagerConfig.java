@@ -24,7 +24,7 @@ public final class VillagerConfig implements Validatable {
 	 * Current file format; older files get their untouched old defaults migrated in {@link #validate()} (each step:
 	 * {@code if (configVersion < N) {...}}, only values still equal to the old default are changed).
 	 */
-	public static final int CURRENT_VERSION = 1;
+	public static final int CURRENT_VERSION = 6;
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int configVersion = 0;
@@ -330,10 +330,27 @@ public final class VillagerConfig implements Validatable {
 
 	@Json5.Section
 	public static final class Expeditions {
-		@Comment("Expedition 'Exploration' (foret, plaines, grottes de surface)")
+		@Comment({
+				"Expedition 'Exploration' (foret, plaines, grottes de surface) = destination par defaut des explorations",
+				"(id plains, nom dans lang.json : villager.destination.plains)"
+		})
 		public Expedition exploration = Expedition.exploration();
-		@Comment("Expedition 'Nether' (necessite un portail du Nether dans le territoire)")
+		@Comment({
+				"Expedition 'Nether' (necessite un portail du Nether dans le territoire) = destination par defaut des",
+				"expeditions au Nether (id nether_wastes, nom dans lang.json : villager.destination.nether_wastes)"
+		})
 		public Expedition nether = Expedition.nether();
+		@Comment("Objets des 'objectifs prioritaires' d'un villageois : leur poids dans la table de la destination est multiplie (1 a 20)")
+		public double wishlistWeightMultiplier = 3.0;
+		@Comment({
+				"Autres destinations, choisies dans le menu du villageois (bouton 'Destination') : biomes, constructions, Nether.",
+				"id (unique : lettres minuscules, chiffres, _), name (nom affiche), icon (objet), kind (exploration, ou nether :",
+				"portail du Nether requis), minLevel (niveau de guilde), durationSeconds (0 = durationMultiplier x la duree de la",
+				"destination par defaut du meme type), lossChance, rolls, treasureMapChance, uniqueChanceMultiplier (x la chance",
+				"'expedition' d'uniques.json5 ; 0 = jamais), loot (meme format ; minecraft:enchanted_book = livre a enchantement",
+				"aleatoire). Destination inconnue ou retiree : le villageois part vers la destination par defaut de son type."
+		})
+		public List<ExpeditionDestination> destinations = ExpeditionDestinations.defaults();
 	}
 
 	/** One kind of expedition: duration, risk and loot. */
@@ -600,6 +617,8 @@ public final class VillagerConfig implements Validatable {
 		}
 		expeditions.exploration.validate();
 		expeditions.nether.validate();
+		// Version 6 (expedition destinations): files written before receive the default destinations once.
+		ExpeditionDestinations.validateAndLog(expeditions, configVersion < ExpeditionDestinations.CONFIG_VERSION);
 		if (arrivals == null) {
 			arrivals = new Arrivals();
 		}
