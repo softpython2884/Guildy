@@ -112,7 +112,8 @@ public class ZoneGameTests {
 	@GameTest(maxTicks = 200)
 	public void fanionRulesRemovalAndMenus(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		BlockPos ground = TestSupport.region(level, 4);
+		// Flat ground up to the fanion planted outside the territory (+36): natural terrain differs between regions.
+		BlockPos ground = TestSupport.region(level, 40);
 		TestSupport.forceChunks(level, ground, 3);
 		ServerPlayer leader = TestSupport.player(helper, ground);
 		Guild guild = TestSupport.foundGuild(helper, leader, ground, "Fanion");
@@ -179,7 +180,8 @@ public class ZoneGameTests {
 	static Recruit recruit(GameTestHelper helper, String prefix) {
 		ServerLevel level = helper.getLevel();
 		TestSupport.console(level, "time set 1000");
-		BlockPos ground = TestSupport.region(level, 12);
+		// Flat ground up to the zones planted outside the territory (+36..+40): natural terrain differs between regions.
+		BlockPos ground = TestSupport.region(level, 44);
 		TestSupport.forceChunks(level, ground, 3);
 		ServerPlayer leader = TestSupport.player(helper, ground);
 		Guild guild = TestSupport.foundGuild(helper, leader, ground, prefix);

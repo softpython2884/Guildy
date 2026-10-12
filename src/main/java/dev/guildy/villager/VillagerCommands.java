@@ -21,6 +21,13 @@ import net.minecraft.server.level.ServerPlayer;
 final class VillagerCommands {
 	private static final SuggestionProvider<CommandSourceStack> GUILD_NAMES = (ctx, builder) ->
 			SharedSuggestionProvider.suggest(GuildManager.all().stream().map(guild -> guild.name), builder);
+	/** Names of the candidates waiting for the player's guild. */
+	private static final SuggestionProvider<CommandSourceStack> CANDIDATE_NAMES = (ctx, builder) -> {
+		ServerPlayer player = ctx.getSource().getPlayer();
+		Guild guild = player == null ? null : GuildManager.of(player);
+		return SharedSuggestionProvider.suggest(guild == null ? java.util.stream.Stream.<String>empty()
+				: VillagerManager.candidates(guild).stream().map(VillagerManager.Candidate::name), builder);
+	};
 
 	private VillagerCommands() {
 	}
@@ -43,12 +50,22 @@ final class VillagerCommands {
 					ServerPlayer player = GuildCommand.player(ctx);
 					Safe.run("villager.command.accept", () -> VillagerManager.accept(player));
 					return 1;
-				}))
+				}).then(Commands.argument("candidate", StringArgumentType.greedyString()).suggests(CANDIDATE_NAMES).executes(ctx -> {
+					ServerPlayer player = GuildCommand.player(ctx);
+					String name = StringArgumentType.getString(ctx, "candidate");
+					Safe.run("villager.command.accept", () -> VillagerManager.accept(player, name));
+					return 1;
+				})))
 				.then(Commands.literal("refuse").executes(ctx -> {
 					ServerPlayer player = GuildCommand.player(ctx);
 					Safe.run("villager.command.refuse", () -> VillagerManager.refuse(player));
 					return 1;
-				}))
+				}).then(Commands.argument("candidate", StringArgumentType.greedyString()).suggests(CANDIDATE_NAMES).executes(ctx -> {
+					ServerPlayer player = GuildCommand.player(ctx);
+					String name = StringArgumentType.getString(ctx, "candidate");
+					Safe.run("villager.command.refuse", () -> VillagerManager.refuse(player, name));
+					return 1;
+				})))
 				.then(Commands.literal("zones").executes(ctx -> {
 					ServerPlayer player = GuildCommand.player(ctx);
 					Safe.run("villager.command.zones", () -> {
@@ -124,7 +141,7 @@ final class VillagerCommands {
 			source.sendFailure(Msg.prefixed(Lang.get(error)));
 			return 0;
 		}
-		VillagerManager.Candidate candidate = VillagerManager.candidate(guild);
+		VillagerManager.Candidate candidate = VillagerManager.lastCandidate(guild);
 		String candidateName = candidate == null ? "?" : candidate.name();
 		source.sendSuccess(() -> Msg.prefixed(Lang.get("villager.admin.spawned", candidateName, guild.name)), true);
 		return 1;

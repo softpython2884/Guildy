@@ -100,12 +100,14 @@ final class VillagerInteractions {
 		}
 		VillagerManager.Candidate pending = null;
 		Guild candidateGuild = null;
+		search:
 		for (Guild guild : GuildManager.all()) {
-			VillagerManager.Candidate c = VillagerManager.candidate(guild);
-			if (c != null && c.entity().equals(villager.getUUID())) {
-				pending = c;
-				candidateGuild = guild;
-				break;
+			for (VillagerManager.Candidate c : VillagerManager.candidates(guild)) {
+				if (c.entity().equals(villager.getUUID())) {
+					pending = c;
+					candidateGuild = guild;
+					break search;
+				}
 			}
 		}
 		if (pending == null) {

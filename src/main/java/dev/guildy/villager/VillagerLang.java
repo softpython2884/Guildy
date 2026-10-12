@@ -169,6 +169,8 @@ final class VillagerLang {
 		m.put("villager.candidate.button.refuse", "&c&l[Refuser]");
 		m.put("villager.candidate.button.refuse.hover", "&7Renvoyer ce candidat");
 		m.put("villager.candidate.none", "&cAucun villageois ne demande à rejoindre la guilde.");
+		m.put("villager.candidate.unknown", "&cAucun candidat ne s'appelle « {0} ».");
+		m.put("villager.arrival.group", "&e{0} villageois&7 se présentent ensemble au bureau d'accueil !");
 		m.put("villager.candidate.accepted", "&a{0} a rejoint la guilde ! &7Donnez-lui une tâche : &e/guild villagers");
 		m.put("villager.candidate.refused", "&7{0} a été refusé et repart sur les routes.");
 		m.put("villager.candidate.timeout", "&7{0} n'a pas reçu de réponse et repart sur les routes.");
@@ -335,6 +337,7 @@ final class VillagerLang {
 		m.put("villager.sign.title", "&lAccueil");
 		m.put("villager.sign.count", "Villageois {0}/{1}");
 		m.put("villager.sign.candidate", "Candidat : {0}");
+		m.put("villager.sign.candidates", "{0} candidats");
 		m.put("villager.sign.click", "Clic : gérer");
 		// menus
 		m.put("villager.gui.yes", "&aoui");
@@ -360,6 +363,7 @@ final class VillagerLang {
 		m.put("villager.gui.candidate.lore", "&7Souhaite rejoindre la guilde.\n&7Repart dans &f{0} s&7 sans réponse.");
 		m.put("villager.gui.candidate.accept", "&a&lAccepter {0}");
 		m.put("villager.gui.candidate.refuse", "&c&lRefuser {0}");
+		m.put("villager.gui.candidate.click", "&aClic gauche : accepter\n&cClic droit : refuser");
 		m.put("villager.gui.candidate.none", "&7Aucun candidat");
 		m.put("villager.gui.candidate.none.lore", "&7Chaque matin, un villageois a &f{4} %&7 de chance\n&7de se présenter au bureau d'accueil si :\n&8- &7bureau d'accueil construit : {0}\n&8- &7place dans la guilde : &f{1}/{2}\n&8- &7lit libre dans le territoire : {3}");
 		m.put("villager.gui.beds.not_required", "&7non requis");

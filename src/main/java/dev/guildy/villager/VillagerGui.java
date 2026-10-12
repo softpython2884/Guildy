@@ -116,22 +116,46 @@ public final class VillagerGui {
 	}
 
 	private static void candidateSection(SimpleGui gui, ServerPlayer player, Guild guild, @Nullable ServerLevel level) {
-		VillagerManager.Candidate candidate = VillagerManager.candidate(guild);
-		if (candidate != null) {
+		List<VillagerManager.Candidate> candidates = VillagerManager.candidates(guild);
+		if (candidates.size() == 1) {
+			VillagerManager.Candidate candidate = candidates.getFirst();
 			gui.setSlot(40, GuiUtil.item(Items.VILLAGER_SPAWN_EGG, Lang.get("villager.gui.candidate.name", candidate.name()),
 					GuiUtil.lines("villager.gui.candidate.lore", VillagerManager.remainingSeconds(candidate))).glow());
 			gui.setSlot(39, GuiUtil.item(Items.CONCRETE.pick(DyeColor.LIME), Lang.get("villager.gui.candidate.accept", candidate.name()), List.of())
 					.setCallback((slot, type, action, g) -> {
 						GuiUtil.clickSound(player);
-						VillagerManager.accept(player);
+						VillagerManager.accept(player, candidate.name());
 						openList(player, guild, 0);
 					}));
 			gui.setSlot(41, GuiUtil.item(Items.CONCRETE.pick(DyeColor.RED), Lang.get("villager.gui.candidate.refuse", candidate.name()), List.of())
 					.setCallback((slot, type, action, g) -> {
 						GuiUtil.clickSound(player);
-						VillagerManager.refuse(player);
+						VillagerManager.refuse(player, candidate.name());
 						openList(player, guild, 0);
 					}));
+			return;
+		}
+		if (candidates.size() > 1) {
+			// Several candidates: one icon each, left click = accept, right click = refuse.
+			int shown = Math.min(candidates.size(), 5);
+			int first = 40 - (shown - 1);
+			for (int i = 0; i < shown; i++) {
+				VillagerManager.Candidate candidate = candidates.get(i);
+				List<Component> lore = GuiUtil.lines("villager.gui.candidate.lore", VillagerManager.remainingSeconds(candidate));
+				lore.addAll(GuiUtil.lines("villager.gui.candidate.click"));
+				gui.setSlot(first + 2 * i, GuiUtil.item(Items.VILLAGER_SPAWN_EGG, Lang.get("villager.gui.candidate.name", candidate.name()), lore)
+						.glow().setCallback((slot, type, action, g) -> {
+							GuiUtil.clickSound(player);
+							if (type.isRight) {
+								VillagerManager.refuse(player, candidate.name());
+							} else if (type.isLeft) {
+								VillagerManager.accept(player, candidate.name());
+							} else {
+								return;
+							}
+							openList(player, guild, 0);
+						}));
+			}
 			return;
 		}
 		boolean reception = guild.structures.find(VillagerManager.RECEPTION) != null;

@@ -40,11 +40,14 @@ final class ReceptionBehavior implements StructureBehavior {
 	@Override
 	public @Nullable List<Component> signText(Guild guild, BuiltStructure structure, int signIndex) {
 		return Safe.get("villager.reception.sign", () -> {
-			VillagerManager.Candidate candidate = VillagerManager.candidate(guild);
+			List<VillagerManager.Candidate> candidates = VillagerManager.candidates(guild);
+			Component waiting = candidates.isEmpty() ? Component.empty()
+					: candidates.size() == 1 ? Lang.get("villager.sign.candidate", candidates.getFirst().name())
+					: Lang.get("villager.sign.candidates", candidates.size());
 			return List.of(
 					Lang.get("villager.sign.title"),
 					Lang.get("villager.sign.count", guild.villagers.members.size(), VillagerManager.maxVillagers(guild)),
-					candidate != null ? Lang.get("villager.sign.candidate", candidate.name()) : Component.empty(),
+					waiting,
 					Lang.get("villager.sign.click"));
 		}, null);
 	}

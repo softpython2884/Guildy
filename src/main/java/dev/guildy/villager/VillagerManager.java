@@ -88,8 +88,8 @@ public final class VillagerManager {
 		FORCED
 	}
 
-	/** Guild id → candidate. */
-	private static final Map<UUID, Candidate> CANDIDATES = new HashMap<>();
+	/** Guild id → candidates waiting at the reception, in arrival order. */
+	private static final Map<UUID, List<Candidate>> CANDIDATES = new HashMap<>();
 	private static boolean ready;
 	private static long lastDay = -1;
 
@@ -122,8 +122,62 @@ public final class VillagerManager {
 		return VillagerModule.config().maxVillagers(guild.level) + Upgrades.count(guild, UpgradeEffects.EXTRA_VILLAGERS);
 	}
 
+	/** Oldest waiting candidate (null when none). */
 	static @Nullable Candidate candidate(Guild guild) {
-		return CANDIDATES.get(guild.id);
+		List<Candidate> list = CANDIDATES.get(guild.id);
+		return list == null || list.isEmpty() ? null : list.getFirst();
+	}
+
+	/** Every waiting candidate of the guild, in arrival order. */
+	static List<Candidate> candidates(Guild guild) {
+		List<Candidate> list = CANDIDATES.get(guild.id);
+		return list == null ? List.of() : List.copyOf(list);
+	}
+
+	/** Latest candidate (admin feedback). */
+	static @Nullable Candidate lastCandidate(Guild guild) {
+		List<Candidate> list = CANDIDATES.get(guild.id);
+		return list == null || list.isEmpty() ? null : list.getLast();
+	}
+
+	/** Candidate of this guild with this name (case-insensitive), the oldest one when {@code name} is null or blank. */
+	static @Nullable Candidate findCandidate(Guild guild, @Nullable String name) {
+		List<Candidate> list = CANDIDATES.get(guild.id);
+		if (list == null || list.isEmpty()) {
+			return null;
+		}
+		if (name == null || name.isBlank()) {
+			return list.getFirst();
+		}
+		for (Candidate candidate : list) {
+			if (candidate.name().equalsIgnoreCase(name.trim())) {
+				return candidate;
+			}
+		}
+		return null;
+	}
+
+	/** Removes this candidate from its guild's list. @return true when it was waiting */
+	private static boolean removeCandidate(Guild guild, Candidate candidate) {
+		List<Candidate> list = CANDIDATES.get(guild.id);
+		if (list == null || !list.remove(candidate)) {
+			return false;
+		}
+		if (list.isEmpty()) {
+			CANDIDATES.remove(guild.id);
+		}
+		return true;
+	}
+
+	/** Removes the candidate whose entity is {@code entity} (death, conversion, unload...). @return it, or null */
+	private static @Nullable Candidate removeCandidateEntity(Guild guild, UUID entity) {
+		for (Candidate candidate : candidates(guild)) {
+			if (candidate.entity().equals(entity)) {
+				removeCandidate(guild, candidate);
+				return candidate;
+			}
+		}
+		return null;
 	}
 
 	static @Nullable Owner owner(UUID entity) {
@@ -137,9 +191,11 @@ public final class VillagerManager {
 	}
 
 	private static @Nullable Guild candidateGuild(UUID entity) {
-		for (Map.Entry<UUID, Candidate> entry : CANDIDATES.entrySet()) {
-			if (entry.getValue().entity().equals(entity)) {
-				return GuildManager.get(entry.getKey());
+		for (Map.Entry<UUID, List<Candidate>> entry : CANDIDATES.entrySet()) {
+			for (Candidate candidate : entry.getValue()) {
+				if (candidate.entity().equals(entity)) {
+					return GuildManager.get(entry.getKey());
+				}
 			}
 		}
 		return null;
@@ -211,10 +267,12 @@ public final class VillagerManager {
 		ServerLevel level = GuildyServer.claimLevel();
 		if (level != null) {
 			// Candidates are transient: remove them before the final save.
-			for (Candidate candidate : CANDIDATES.values()) {
-				Villager villager = entity(level, candidate.entity());
-				if (villager != null) {
-					villager.discard();
+			for (List<Candidate> list : CANDIDATES.values()) {
+				for (Candidate candidate : list) {
+					Villager villager = entity(level, candidate.entity());
+					if (villager != null) {
+						villager.discard();
+					}
 				}
 			}
 		}
@@ -285,17 +343,25 @@ public final class VillagerManager {
 		}
 		lastDay = day;
 
-		Iterator<Map.Entry<UUID, Candidate>> it = CANDIDATES.entrySet().iterator();
+		Iterator<Map.Entry<UUID, List<Candidate>>> it = CANDIDATES.entrySet().iterator();
 		List<Runnable> departures = new ArrayList<>();
 		while (it.hasNext()) {
-			Map.Entry<UUID, Candidate> entry = it.next();
+			Map.Entry<UUID, List<Candidate>> entry = it.next();
 			Guild guild = GuildManager.get(entry.getKey());
-			Candidate candidate = entry.getValue();
 			if (guild == null) {
 				it.remove();
-			} else if (Scheduler.ticks() >= candidate.expiresAt()) {
+				continue;
+			}
+			Iterator<Candidate> waiting = entry.getValue().iterator();
+			while (waiting.hasNext()) {
+				Candidate candidate = waiting.next();
+				if (Scheduler.ticks() >= candidate.expiresAt()) {
+					waiting.remove();
+					departures.add(() -> candidateLeaves(level, guild, candidate, "villager.candidate.timeout"));
+				}
+			}
+			if (entry.getValue().isEmpty()) {
 				it.remove();
-				departures.add(() -> candidateLeaves(level, guild, candidate, "villager.candidate.timeout"));
 			}
 		}
 		for (Runnable departure : departures) {
@@ -319,13 +385,19 @@ public final class VillagerManager {
 		});
 	}
 
-	/** Tries to bring a candidate to the guild. @return null on success, otherwise a lang key explaining why not. */
+	/**
+	 * Tries to bring candidates to the guild: a group of {@code arrivals.groupMin..groupMax} (one for the admin command),
+	 * within the free places, free beds and {@code arrivals.maxCandidates}.
+	 *
+	 * @return null on success (at least one candidate came), otherwise a lang key explaining why not
+	 */
 	static @Nullable String tryArrival(ServerLevel level, Guild guild, ArrivalMode mode) {
 		VillagerConfig config = VillagerModule.config();
 		if (!guild.isFounded()) {
 			return "villager.error.not_founded";
 		}
-		if (CANDIDATES.containsKey(guild.id)) {
+		int waiting = candidates(guild).size();
+		if (mode != ArrivalMode.FORCED && waiting >= config.arrivals.maxCandidates) {
 			return "villager.error.already_candidate";
 		}
 		BuiltStructure reception = guild.structures.find(RECEPTION);
@@ -339,17 +411,41 @@ public final class VillagerManager {
 		if (!level.isLoaded(anchor)) {
 			return "villager.error.not_loaded";
 		}
-		if (mode != ArrivalMode.FORCED && guild.villagers.members.size() >= maxVillagers(guild)) {
-			return "villager.error.full";
+		int room = maxVillagers(guild) - guild.villagers.members.size() - waiting;
+		if (mode != ArrivalMode.FORCED && room <= 0) {
+			return waiting > 0 ? "villager.error.already_candidate" : "villager.error.full";
 		}
 		if (mode == ArrivalMode.MORNING && ThreadLocalRandom.current().nextDouble() >= config.arrivals.arrivalChance) {
 			return "villager.error.no_luck";
 		}
-		if (mode != ArrivalMode.FORCED && config.arrivals.requireFreeBed && freeBeds(level, guild) <= 0) {
-			Msg.guild(guild, "villager.arrival.no_bed");
-			return "villager.arrival.no_bed";
+		int count = 1;
+		if (mode != ArrivalMode.FORCED) {
+			VillagerConfig.Arrivals arrivals = config.arrivals;
+			count = arrivals.groupMin + ThreadLocalRandom.current().nextInt(arrivals.groupMax - arrivals.groupMin + 1);
+			count = Math.min(count, Math.min(room, arrivals.maxCandidates - waiting));
+			if (arrivals.requireFreeBed) {
+				int beds = freeBeds(level, guild) - waiting;
+				if (beds <= 0) {
+					Msg.guild(guild, "villager.arrival.no_bed");
+					return "villager.arrival.no_bed";
+				}
+				count = Math.min(count, beds);
+			}
 		}
-		return spawnCandidate(level, guild, anchor);
+		if (count > 1) {
+			Msg.guild(guild, "villager.arrival.group", count);
+		}
+		String error = null;
+		int arrived = 0;
+		for (int i = 0; i < count; i++) {
+			String result = spawnCandidate(level, guild, anchor);
+			if (result == null) {
+				arrived++;
+			} else if (error == null) {
+				error = result;
+			}
+		}
+		return arrived > 0 ? null : error;
 	}
 
 	/** Free beds in the loaded claimed chunks, minus loaded guild villagers that have no bed yet. */
@@ -416,9 +512,9 @@ public final class VillagerManager {
 		long timeout = VillagerModule.config().arrivals.candidateTimeoutSeconds * 20L;
 		Candidate candidate = new Candidate(villager.getUUID(), name, Scheduler.ticks() + timeout);
 		// Tracked before being added: the load event must not discard it as an orphan candidate.
-		CANDIDATES.put(guild.id, candidate);
+		CANDIDATES.computeIfAbsent(guild.id, id -> new ArrayList<>()).add(candidate);
 		if (!level.addFreshEntity(villager)) {
-			CANDIDATES.remove(guild.id);
+			removeCandidate(guild, candidate);
 			return "villager.error.spawn_failed";
 		}
 		WorldUtil.poof(level, villager);
@@ -433,6 +529,9 @@ public final class VillagerManager {
 		for (VillagerRecord record : guild.villagers.members.values()) {
 			used.add(record.name);
 		}
+		for (Candidate candidate : candidates(guild)) {
+			used.add(candidate.name());
+		}
 		List<String> free = new ArrayList<>();
 		for (String name : names) {
 			if (!used.contains(name)) {
@@ -445,9 +544,11 @@ public final class VillagerManager {
 
 	private static void announce(Guild guild, Candidate candidate) {
 		MutableComponent message = Msg.prefixed(Lang.get("villager.candidate.arrived", candidate.name()))
-				.append(Msg.button("villager.candidate.button.accept", "/guild villagers accept", "villager.candidate.button.accept.hover"))
+				.append(Msg.button("villager.candidate.button.accept", "/guild villagers accept " + candidate.name(),
+						"villager.candidate.button.accept.hover"))
 				.append(Component.literal(" "))
-				.append(Msg.button("villager.candidate.button.refuse", "/guild villagers refuse", "villager.candidate.button.refuse.hover"));
+				.append(Msg.button("villager.candidate.button.refuse", "/guild villagers refuse " + candidate.name(),
+						"villager.candidate.button.refuse.hover"));
 		for (ServerPlayer player : guild.onlineMembers()) {
 			player.sendSystemMessage(message);
 			Msg.sound(player, SoundEvents.VILLAGER_AMBIENT, 0.8f, 1.0f);
@@ -457,6 +558,11 @@ public final class VillagerManager {
 	// ================================================================ accept / refuse
 
 	static void accept(ServerPlayer player) {
+		accept(player, null);
+	}
+
+	/** Accepts the candidate with this name (the oldest one when null). */
+	static void accept(ServerPlayer player, @Nullable String name) {
 		Guild guild = GuildManager.of(player);
 		if (guild == null) {
 			Msg.send(player, "error.no_guild");
@@ -466,16 +572,16 @@ public final class VillagerManager {
 			Msg.send(player, "error.no_permission");
 			return;
 		}
-		Candidate candidate = CANDIDATES.get(guild.id);
+		Candidate candidate = findCandidate(guild, name);
 		if (candidate == null) {
-			Msg.send(player, "villager.candidate.none");
+			Msg.send(player, name == null || name.isBlank() ? "villager.candidate.none" : "villager.candidate.unknown", name == null ? "" : name);
 			return;
 		}
 		if (guild.villagers.members.size() >= maxVillagers(guild)) {
 			Msg.send(player, "villager.error.full_count", maxVillagers(guild));
 			return;
 		}
-		CANDIDATES.remove(guild.id);
+		removeCandidate(guild, candidate);
 		VillagerRecord record = new VillagerRecord(candidate.entity(), candidate.name());
 		guild.villagers.members.put(record.uuid, record);
 		guild.villagers.leaving.remove(record.uuid);
@@ -492,6 +598,11 @@ public final class VillagerManager {
 	}
 
 	static void refuse(ServerPlayer player) {
+		refuse(player, null);
+	}
+
+	/** Sends the candidate with this name away (the oldest one when null). */
+	static void refuse(ServerPlayer player, @Nullable String name) {
 		Guild guild = GuildManager.of(player);
 		if (guild == null) {
 			Msg.send(player, "error.no_guild");
@@ -501,11 +612,12 @@ public final class VillagerManager {
 			Msg.send(player, "error.no_permission");
 			return;
 		}
-		Candidate candidate = CANDIDATES.remove(guild.id);
+		Candidate candidate = findCandidate(guild, name);
 		if (candidate == null) {
-			Msg.send(player, "villager.candidate.none");
+			Msg.send(player, name == null || name.isBlank() ? "villager.candidate.none" : "villager.candidate.unknown", name == null ? "" : name);
 			return;
 		}
+		removeCandidate(guild, candidate);
 		ServerLevel level = GuildyServer.claimLevel();
 		if (level != null) {
 			candidateLeaves(level, guild, candidate, "villager.candidate.refused");
@@ -772,7 +884,7 @@ public final class VillagerManager {
 		UUID id = villager.getUUID();
 		Guild candidateGuild = candidateGuild(id);
 		if (candidateGuild != null) {
-			Candidate candidate = CANDIDATES.remove(candidateGuild.id);
+			Candidate candidate = removeCandidateEntity(candidateGuild, id);
 			if (candidate != null) {
 				Msg.guild(candidateGuild, "villager.candidate.lost", candidate.name());
 			}
@@ -795,7 +907,7 @@ public final class VillagerManager {
 		UUID id = villager.getUUID();
 		Guild candidateGuild = candidateGuild(id);
 		if (candidateGuild != null) {
-			Candidate candidate = CANDIDATES.remove(candidateGuild.id);
+			Candidate candidate = removeCandidateEntity(candidateGuild, id);
 			if (candidate != null) {
 				Msg.guild(candidateGuild, "villager.candidate.died", candidate.name());
 			}
@@ -820,7 +932,7 @@ public final class VillagerManager {
 		UUID id = villager.getUUID();
 		Guild candidateGuild = candidateGuild(id);
 		if (candidateGuild != null) {
-			Candidate candidate = CANDIDATES.remove(candidateGuild.id);
+			Candidate candidate = removeCandidateEntity(candidateGuild, id);
 			if (candidate != null) {
 				Msg.guild(candidateGuild, "villager.candidate.lost", candidate.name());
 			}
@@ -837,9 +949,11 @@ public final class VillagerManager {
 
 	private static void onDisband(Guild guild) {
 		ServerLevel level = GuildyServer.claimLevel();
-		Candidate candidate = CANDIDATES.remove(guild.id);
-		if (candidate != null && level != null) {
-			candidateLeaves(level, guild, candidate, null);
+		List<Candidate> waiting = CANDIDATES.remove(guild.id);
+		if (waiting != null && level != null) {
+			for (Candidate candidate : waiting) {
+				candidateLeaves(level, guild, candidate, null);
+			}
 		}
 		for (VillagerRecord record : List.copyOf(guild.villagers.members.values())) {
 			Villager villager = level == null ? null : entity(level, record.uuid);

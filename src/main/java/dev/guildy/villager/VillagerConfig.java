@@ -111,6 +111,13 @@ public final class VillagerConfig implements Validatable {
 		public int candidateTimeoutSeconds = 600;
 		@Comment("Exiger au moins un lit libre dans le territoire pour qu'un villageois se presente")
 		public boolean requireFreeBed = true;
+		@Comment({
+				"Nombre de candidats qui se presentent ensemble : tire entre groupMin et groupMax, dans la limite des",
+				"places libres, des lits libres et de maxCandidates (candidats en attente en meme temps, 1 a 5)"
+		})
+		public int groupMin = 1;
+		public int groupMax = 3;
+		public int maxCandidates = 3;
 	}
 
 	@Json5.Section
@@ -754,6 +761,9 @@ public final class VillagerConfig implements Validatable {
 		arrivals.arrivalChance = clamp(arrivals.arrivalChance, 0.0, 1.0);
 		arrivals.firstArrivalDelaySeconds = clamp(arrivals.firstArrivalDelaySeconds, 1, 3600);
 		arrivals.candidateTimeoutSeconds = clamp(arrivals.candidateTimeoutSeconds, 30, 24 * 3600);
+		arrivals.maxCandidates = clamp(arrivals.maxCandidates, 1, 5);
+		arrivals.groupMin = clamp(arrivals.groupMin, 1, arrivals.maxCandidates);
+		arrivals.groupMax = clamp(arrivals.groupMax, arrivals.groupMin, arrivals.maxCandidates);
 		work.carryStacks = clamp(work.carryStacks, 1, 36);
 		work.walkTimeoutSeconds = clamp(work.walkTimeoutSeconds, 5, 600);
 		work.stuckSeconds = clamp(work.stuckSeconds, 3, 300);
