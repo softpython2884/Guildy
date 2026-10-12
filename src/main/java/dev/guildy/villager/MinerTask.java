@@ -131,7 +131,7 @@ final class MinerTask extends TaskHandler {
 		if (!reevaluate && current != null && current.auto() && stillValid(ctx, current)) {
 			return current;
 		}
-		WorkZone nearest = Zones.nearestActive(ctx.level, ctx.guild, ZoneType.MINE, ctx.villager.blockPosition());
+		WorkZone nearest = nearestMine(ctx);
 		if (nearest != null) {
 			reevaluate = false;
 			return zoneSite(nearest, true);
@@ -145,6 +145,33 @@ final class MinerTask extends TaskHandler {
 			reevaluate = false;
 		}
 		return found;
+	}
+
+	/**
+	 * Automatic mode: the nearest mine of the guild in a loaded chunk, skipping finished real mines and real mines that
+	 * already have their maximum of miners at work.
+	 */
+	private static @Nullable WorkZone nearestMine(WorkContext ctx) {
+		WorkZone best = null;
+		double bestDist = Double.MAX_VALUE;
+		int max = ctx.config.realMining.maxMinersPerZone;
+		for (WorkZone zone : ctx.guild.villagers.zones) {
+			if (zone.type != ZoneType.MINE || !ctx.ticking(zone.pos) || (zone.isRealMine() && zone.mine().exhausted)) {
+				continue;
+			}
+			if (zone.isRealMine()) {
+				java.util.Map<java.util.UUID, Integer> miners = Mines.activeMiners(ctx.guild, zone, ctx.now);
+				if (!miners.containsKey(ctx.record.uuid) && miners.size() >= max) {
+					continue;
+				}
+			}
+			double dist = zone.pos.distSqr(ctx.villager.blockPosition());
+			if (dist < bestDist) {
+				bestDist = dist;
+				best = zone;
+			}
+		}
+		return best;
 	}
 
 	private static boolean stillValid(WorkContext ctx, Site current) {
@@ -288,6 +315,12 @@ final class MinerTask extends TaskHandler {
 		// Trip over: an automatic miner may pick a closer / newly available mine for the next one.
 		reevaluate = true;
 		VillagerConfig.DepthTable table = DepthLoot.tableFor(ctx.config.miner.tables(current.objective()), current.depth());
+		// "Objectifs prioritaires": wanted items come out more often.
+		List<String> wantedIds = new ArrayList<>();
+		for (Item item : Wishlist.items(ctx.record, current.zone())) {
+			wantedIds.add(ItemUtil.id(item));
+		}
+		table = DepthLoot.boosted(table, wantedIds, ctx.config.miner.wishlistWeight);
 		int produced = 0;
 		for (DepthLoot.Drop drop : DepthLoot.roll(table, ctx.config.miner.rolls(current.objective()), ThreadLocalRandom.current())) {
 			Item item = ItemUtil.item(drop.item());

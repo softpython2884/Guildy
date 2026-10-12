@@ -4,6 +4,7 @@ import dev.guildy.core.GuildyServer;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
+import dev.guildy.core.Scheduler;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.gui.GuiUtil;
@@ -297,7 +298,8 @@ public final class ZoneGui {
 					record -> Zones.assign(record, zone),
 					record -> Zones.assign(record, null),
 					() -> stillZone(player, guild, zone),
-					() -> openZone(player, guild, zone.id));
+					() -> openZone(player, guild, zone.id),
+					record -> Mines.refuseAssign(player, guild, zone, record));
 		}));
 		gui.setSlot(23, GuiUtil.item(ZoneFlags.icon(zone.type), Lang.get(zone.fanion ? "villager.gui.zone.move" : "villager.gui.zone.plant"),
 				GuiUtil.lines(zone.fanion ? "villager.gui.zone.move.lore" : "villager.gui.zone.plant.lore"))
@@ -354,7 +356,7 @@ public final class ZoneGui {
 			return;
 		}
 		VillagerConfig.RealMining settings = config().realMining;
-		int step = settings.levelSpacing;
+		int step = Mines.spacing(zone, settings);
 		gui.setSlot(30, GuiUtil.item(Items.CONCRETE.pick(DyeColor.RED), Lang.get("villager.gui.mine.deeper", step),
 				GuiUtil.lines("villager.gui.mine.depth.lore")).setCallback((s, type, action, g) -> changeTarget(player, guild, zone, -step)));
 		int target = Mines.shownTarget(level, zone);
@@ -368,22 +370,15 @@ public final class ZoneGui {
 		gui.setSlot(31, GuiUtil.item(Items.DEEPSLATE, Lang.get("villager.gui.mine.target", target), targetLore));
 		gui.setSlot(32, GuiUtil.item(Items.CONCRETE.pick(DyeColor.LIME), Lang.get("villager.gui.mine.higher", step),
 				GuiUtil.lines("villager.gui.mine.depth.lore")).setCallback((s, type, action, g) -> changeTarget(player, guild, zone, step)));
-		List<Component> info = new ArrayList<>(Mines.describe(level, zone));
+		List<Component> info = new ArrayList<>(Mines.describe(level, guild, zone, Scheduler.ticks()));
 		info.add(Component.empty());
-		info.addAll(GuiUtil.lines("villager.gui.mine.reset.click"));
+		info.addAll(GuiUtil.lines("villager.gui.mine.view.click"));
 		gui.setSlot(34, GuiUtil.item(Items.IRON_PICKAXE, Lang.get("villager.gui.mine.info"), info).setCallback((s, type, action, g) -> {
-			if (!VillagerGui.checkPermission(player, guild) || !stillZone(player, guild, zone)) {
+			if (!stillZone(player, guild, zone)) {
 				return;
 			}
-			GuiUtil.confirm(player, Lang.get("villager.gui.mine.reset.confirm", zone.name), GuiUtil.lines("villager.gui.mine.reset.lore"),
-					() -> {
-						if (VillagerGui.checkPermission(player, guild) && guild.villagers.zones.contains(zone)) {
-							Zones.resetMine(guild, zone);
-							Msg.guild(guild, "villager.mine.reset", player.getName().getString(), zone.name);
-						}
-						openZone(player, guild, zone.id);
-					},
-					() -> openZone(player, guild, zone.id));
+			GuiUtil.clickSound(player);
+			MineGui.open(player, guild, zone.id, 0);
 		}));
 	}
 
@@ -591,6 +586,13 @@ public final class ZoneGui {
 	private static void openAssignees(ServerPlayer player, Guild guild, Component title, Task task, String targetName,
 			Predicate<VillagerRecord> assigned, Consumer<VillagerRecord> assign, Consumer<VillagerRecord> unassign,
 			java.util.function.BooleanSupplier stillThere, Runnable back) {
+		openAssignees(player, guild, title, task, targetName, assigned, assign, unassign, stillThere, back, record -> false);
+	}
+
+	/** Same, {@code refuse}: true when the villager may not be added (the predicate tells the player why). */
+	private static void openAssignees(ServerPlayer player, Guild guild, Component title, Task task, String targetName,
+			Predicate<VillagerRecord> assigned, Consumer<VillagerRecord> assign, Consumer<VillagerRecord> unassign,
+			java.util.function.BooleanSupplier stillThere, Runnable back, Predicate<VillagerRecord> refuse) {
 		ServerLevel level = GuildyServer.claimLevel();
 		SimpleGui gui = VillagerGui.chest(player, 6, title);
 		int slot = 0;
@@ -633,6 +635,9 @@ public final class ZoneGui {
 					unassign.accept(record);
 					Msg.send(player, "villager.assign.auto_done", record.name);
 				} else {
+					if (refuse.test(record)) {
+						return;
+					}
 					if (record.task != task) {
 						VillagerManager.setTask(guild, record, task, player);
 						Msg.send(player, "villager.task.set", record.name, Lang.raw(task.langKey()));
@@ -641,7 +646,7 @@ public final class ZoneGui {
 					Msg.send(player, "villager.assign.done", record.name, targetName);
 				}
 				GuiUtil.successSound(player);
-				openAssignees(player, guild, title, task, targetName, assigned, assign, unassign, stillThere, back);
+				openAssignees(player, guild, title, task, targetName, assigned, assign, unassign, stillThere, back, refuse);
 			}));
 		}
 		if (guild.villagers.members.isEmpty()) {
@@ -704,7 +709,8 @@ public final class ZoneGui {
 				icon.glow();
 			}
 			gui.setSlot(slot++, icon.setCallback((s, type, action, g) -> {
-				if (!VillagerGui.checkPermission(player, guild) || !VillagerGui.stillMember(player, guild, record) || !stillZone(player, guild, zone)) {
+				if (!VillagerGui.checkPermission(player, guild) || !VillagerGui.stillMember(player, guild, record) || !stillZone(player, guild, zone)
+						|| Mines.refuseAssign(player, guild, zone, record)) {
 					return;
 				}
 				Zones.assign(record, zone);

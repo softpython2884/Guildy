@@ -101,6 +101,50 @@ class DepthLootTest {
 	}
 
 	@Test
+	void wantedItemsComeOutMoreOften() {
+		VillagerConfig.DepthTable table = new VillagerConfig.DepthTable(0, List.of(new VillagerConfig.LootEntry("minecraft:cobblestone", 1, 1, 4),
+				new VillagerConfig.LootEntry("minecraft:diorite", 1, 1, 1)));
+		assertTrue(DepthLoot.boosted(table, List.of(), 4) == table, "no wish: same table");
+		assertTrue(DepthLoot.boosted(table, List.of("minecraft:granite"), 4) == table, "wish not in the table: same table");
+		VillagerConfig.DepthTable boosted = DepthLoot.boosted(table, List.of("minecraft:diorite"), 4);
+		assertEquals(4, boosted.entries.get(1).weight);
+		assertEquals(4, boosted.entries.get(0).weight);
+		assertEquals(1, table.entries.get(1).weight, "the config table is not changed");
+		Random random = new Random(11);
+		int diorite = 0;
+		for (int i = 0; i < 2000; i++) {
+			for (DepthLoot.Drop drop : DepthLoot.roll(boosted, 1, random)) {
+				diorite += drop.item().equals("minecraft:diorite") ? 1 : 0;
+			}
+		}
+		assertTrue(diorite > 800 && diorite < 1200, "about half the rolls (" + diorite + ")");
+	}
+
+	@Test
+	void configMigrationRaisesOldDefaults() {
+		VillagerConfig config = new VillagerConfig();
+		config.configVersion = 1;
+		config.realMining.levelSpacing = 8;
+		config.realMining.maxVeinBlocks = 16;
+		config.validate();
+		assertEquals(6, config.realMining.levelSpacing);
+		assertEquals(64, config.realMining.maxVeinBlocks);
+		assertEquals(VillagerConfig.CURRENT_VERSION, config.configVersion);
+		VillagerConfig custom = new VillagerConfig();
+		custom.configVersion = 1;
+		custom.realMining.levelSpacing = 10;
+		custom.realMining.maxVeinBlocks = 32;
+		custom.validate();
+		assertEquals(10, custom.realMining.levelSpacing, "values changed by the admin stay");
+		assertEquals(32, custom.realMining.maxVeinBlocks);
+		VillagerConfig current = new VillagerConfig();
+		current.configVersion = 2;
+		current.realMining.levelSpacing = 8;
+		current.validate();
+		assertEquals(8, current.realMining.levelSpacing, "already migrated");
+	}
+
+	@Test
 	void validateSortsAndCleansTables() {
 		VillagerConfig config = new VillagerConfig();
 		config.miner.depthTables = new ArrayList<>(tables());

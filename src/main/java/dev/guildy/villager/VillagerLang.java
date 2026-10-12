@@ -212,7 +212,7 @@ final class VillagerLang {
 		m.put("villager.objective.mixed", "Tout venant");
 		m.put("villager.objective.mixed.desc", "&7Pierre et minerais mélangés : beaucoup\n&7de matériaux, quelques minerais.\n&7Mine réelle : galeries à mi-profondeur,\n&7suit les filons, garde tout.");
 		m.put("villager.objective.ores", "Minerais");
-		m.put("villager.objective.ores.desc", "&7Uniquement des minerais (moins de tirages).\n&7Diamants seulement en profondeur (Y < -24).\n&7Mine réelle : galeries tout en bas (diamants),\n&7suit les filons, laisse les gravats.");
+		m.put("villager.objective.ores.desc", "&7Uniquement des minerais (moins de tirages).\n&7Diamants seulement en profondeur (Y < -24).\n&7Mine réelle : niveaux jusqu'en bas (diamants),\n&7suit les filons, laisse les gravats.");
 		m.put("villager.objective.stone", "Pierre et variantes");
 		m.put("villager.objective.stone.desc", "&7Pierre en quantité : pierre taillée, andésite,\n&7diorite, granite, tuf, calcite, gravier...\n&7(pierre des abîmes en profondeur).\n&7Mine réelle : salles de carrière peu profondes.");
 		m.put("villager.objective.any_wood", "Tous les arbres");
@@ -411,7 +411,7 @@ final class VillagerLang {
 		m.put("villager.gui.zone.lore.mode", "&7Mode : &f{0}");
 		m.put("villager.gui.zone.lore.target", "&7Profondeur cible : &fY {0}");
 		m.put("villager.gui.mine.mode", "&6&lMode : &e{0}");
-		m.put("villager.gui.mine.mode.real.lore", "&7Les mineurs creusent vraiment : un escalier\n&7en colimaçon depuis le fanion jusqu'à la\n&7profondeur cible, puis des galeries dans le\n&7carré de la zone (rayon). Seuls les blocs\n&7naturels sont cassés, jamais une construction\n&7ni ce qui la porte ; eau et lave colmatées.");
+		m.put("villager.gui.mine.mode.real.lore", "&7Les mineurs creusent vraiment : un escalier\n&7en colimaçon depuis le fanion, un niveau de\n&7galeries tous les quelques blocs jusqu'à la\n&7profondeur cible, dans le carré de la zone\n&7(rayon). Seuls les blocs naturels sont cassés,\n&7jamais une construction ni ce qui la porte ;\n&7eau et lave colmatées.");
 		m.put("villager.gui.mine.mode.simulated.lore", "&7Minage simulé au fanion : aucun bloc cassé,\n&7butin selon la hauteur du fanion.");
 		m.put("villager.gui.mine.mode.click", "&eClic : changer de mode");
 		m.put("villager.gui.mine.deeper", "&c&l▼ Plus profond &7(-{0})");
@@ -420,7 +420,7 @@ final class VillagerLang {
 		m.put("villager.gui.mine.target", "&6&lProfondeur cible : &eY {0}");
 		m.put("villager.gui.mine.target.default", "&7Valeur par défaut de l'objectif.");
 		m.put("villager.gui.mine.target.custom", "&7Choisie dans ce menu (Y {0} à Y {1}).");
-		m.put("villager.gui.mine.target.next", "&7Un niveau fini, les mineurs ouvrent le\n&7suivant ({0} blocs plus bas, sinon plus haut).");
+		m.put("villager.gui.mine.target.next", "&7Un niveau tous les {0} blocs jusqu'à la cible ;\n&7ensuite (ou si des mineurs manquent de\n&7travail), l'escalier descend plus bas.");
 		m.put("villager.gui.mine.info", "&6&lExploitation");
 		m.put("villager.gui.mine.reset.click", "&eClic : réinitialiser l'exploitation");
 		m.put("villager.gui.mine.reset.confirm", "Réinitialiser {0} ?");

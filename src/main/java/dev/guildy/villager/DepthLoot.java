@@ -37,6 +37,29 @@ public final class DepthLoot {
 		return best != null ? best : highest;
 	}
 
+	/**
+	 * The table with the weight of the {@code wanted} items ("objectifs prioritaires") multiplied by {@code factor};
+	 * the table itself when nothing changes.
+	 */
+	public static VillagerConfig.DepthTable boosted(VillagerConfig.DepthTable table, java.util.Collection<String> wanted, int factor) {
+		if (table == null || table.entries == null || wanted.isEmpty() || factor <= 1) {
+			return table;
+		}
+		boolean any = false;
+		List<VillagerConfig.LootEntry> entries = new ArrayList<>(table.entries.size());
+		for (VillagerConfig.LootEntry entry : table.entries) {
+			if (entry != null && entry.item != null && wanted.contains(entry.item)) {
+				VillagerConfig.LootEntry copy = new VillagerConfig.LootEntry(entry.item, entry.min, entry.max,
+						(int) Math.min(Integer.MAX_VALUE / 64, (long) entry.weight * factor));
+				entries.add(copy);
+				any = true;
+			} else {
+				entries.add(entry);
+			}
+		}
+		return any ? new VillagerConfig.DepthTable(table.maxY, entries) : table;
+	}
+
 	/** Rolls {@code rolls} weighted entries; drops of the same item are merged (insertion order kept). */
 	public static List<Drop> roll(VillagerConfig.DepthTable table, int rolls, RandomGenerator random) {
 		List<Drop> result = new ArrayList<>();
