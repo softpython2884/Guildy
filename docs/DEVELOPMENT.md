@@ -57,18 +57,23 @@ command/      GuildCommand (racine /guild + /gld, admin sous guildy.admin), Guil
               actions de guilde, partagées entre commandes et menus), GuildAdminCommands, GuildRules (pur)
 gui/          GuiUtil, GuildMenus + GuildGui (base) + menus NoGuild/Main/Members/Member/Invite/Territory/Treasury/Banner
 wave/         WaveManager (nuit, démarrage), WaveSession (une horde), WaveSpawner, WavePlanner/WaveFormula/WeightedPicker
-              (purs, testés), WaveApi + NightModifiers (événements), WaveLoot, MoveToHeartGoal, WaveMenu, WaveConfig
+              (purs, testés), WaveTruce (trêve, pur), WaveApi + NightModifiers (événements), WaveLoot, MoveToHeartGoal,
+              WaveMenu, WaveConfig
 structure/    StructureManager (validation au plan, panneaux gérés, intégrité), PatternMatcher/StructurePattern (purs),
-              StructureIndex, StructureMenus, StructureConfig ; StructureBehavior = API pour les autres modules
+              StructureIndex, StructureMenus, StructureConfig, VillageSignBehavior (panneau du village) ;
+              StructureBehavior = API pour les autres modules ; clé de motif `*` = n'importe quel bloc plein
 quest/        QuestManager, QuestGenerator (pur), QuestHooks + quest/mixin (artisanat, cuisson, pêche, élevage,
               apprivoisement, commerce, enchantement), QuestBoardBehavior, QuestMenus, TreasureMaps, QuestConfig
 shop/         ShopTransactions (achat/vente atomiques), ShopMenus, ShopValidator (pur), PlainItems, ShopConfig
 trade/        TradeHub (carrefour commercial), Merchants (marchands de passage), TradeOffers/TradeRolls, menus, TradeConfig
 event/        EventManager (nuit de sang, raid de pillards, caravane, érudit), EventRules (pur), EventState, EventConfig
 villager/     VillagerManager (arrivées, candidats, départs), TaskEngine + *Task (Sorter, Miner, Lumberjack, Farmer,
-              Guard, Expedition), Movement (cibles de marche + délais + repli), zones (WorkZone, ZoneFlags, WorkArea,
-              PatrolRoute), mine réelle (MineLayout, MineRules, MineWorld, Mines, RealMiner), Missions, Expeditions,
-              Storage/StorageCategories (pur), DepthLoot (pur), VillagerGui, ZoneGui, VillagerConfig
+              Guard, Expedition), Movement (cibles de marche + délais + repli), VillagerCalls (« Appeler ici »),
+              zones (WorkZone, ZoneFlags, WorkArea, WorkAnchor, PatrolRoute), mine réelle (MineLayout, MineRules,
+              MineWorld, Mines, RealMiner), objectifs prioritaires (Wishlist, WishMatch, WorkWishes, WishlistMenu),
+              gardes (Guards, GuardRules, GuardCombat, GuardArrow, GuardEquipment, GuardRetreat, FriendlyFire),
+              Missions, Expeditions + ExpeditionDestinations, stockage (Storage, ItemClassifier, StorageCategories
+              (pur), StorageDefaults, StorageLabels, StorageGui), DepthLoot (pur), VillagerGui, ZoneGui, VillagerConfig
 upgrade/      UpgradeTree/UpgradeRules/UpgradeMath/UpgradeEffects (purs, testés), Upgrades (bonus lus par les autres
               modules), UpgradeService (déblocage atomique), UpgradeMenu, UpgradeBuffs, UpgradeConfig
 unique/       UniqueItems (fabrique), UniqueRolls (tables de butin), UniquePowers + Combat/Lightning/MiningPowers,
@@ -184,6 +189,39 @@ Ressources : `data/guildy/enchantment` (10 enchantements data-driven), `data/gui
     purement visuelle ; minage via `gameMode.destroyBlock` + protections ; double saut = autorisation de vol accordée
     au sol (nettoyée à la connexion). `item_model` posé seulement si un pack est garanti (Polymer présent, ou
     `customModels: "on"`).
+26. **Trêve** : `WaveTruce` (pur) compte les défaites d'affilée (hordes de nuit et vagues d'événement, une victoire
+    remet à zéro) ; au seuil, `truceNights` nuits sans horde. Une nuit n'est décomptée qu'une fois (`truceDay` = jour
+    de la nuit épargnée, les tentatives de démarrage suivantes de la même nuit restent épargnées) ; `WaveApi.inTruce`
+    / `truceBlocksRaids` pour le module des événements (pas de raid de pillards pendant la trêve).
+27. **Panneau du village** : construction d'un seul bloc dont la clé `*` accepte n'importe quel bloc plein ; son
+    panneau affiche nom, niveau, membres en ligne (ou horde en cours) ; clic = constructions, accroupi = menu principal
+    (via `Hooks`). Ajouté aux anciens `structures.json5` par `knownDefaults`.
+28. **Objectifs prioritaires** : listes d'au plus 9 ids d'objets sur `VillagerRecord.wishlist` et `WorkZone.wishlist`
+    (fusionnées par `Wishlist.items`) ; éditeur « fantôme » (l'objet du joueur n'est jamais pris) ; bûcheron / fermier :
+    cibles voulues d'abord, jusqu'à `zones.wishlistMargin` blocs hors zone, jamais chez une autre guilde ; expéditions :
+    poids des objets voulus multipliés.
+29. **Bûcheron et fermier** : le scan d'une zone reprend un chunk à la colonne où il s'était arrêté (sinon une forêt
+    dense bouclait sur le même chunk) et un arbre rejeté est ignoré 5 minutes ; le mode automatique est ancré sur le
+    point du territoire le plus proche (`WorkAnchor`), jamais recentré sur la position du villageois (plus de dérive).
+    « Appeler ici » (`VillagerCalls`) charge 3×3 chunks autour de la dernière position connue avec un ticket vanilla
+    non sauvegardé, attend l'entité (10 s max) puis la téléporte.
+30. **Destinations d'expédition** : `expeditions.destinations` (données) + les deux sections historiques comme
+    destinations par défaut ; la destination du voyage est enregistrée (`awayDestination`) pour un retour correct après
+    un redémarrage ; un id inconnu ou verrouillé retombe sur la destination par défaut ; les livres enchantés du butin
+    tirent dans `#minecraft:on_random_loot`.
+31. **Gardes** : rôle épéiste / archer (équilibré en mode Auto, stable), flèches vanilla taguées qui ne blessent que
+    des monstres (`ALLOW_DAMAGE` + tag, aussi après rechargement) ; l'arme réelle prise au stockage est gardée en main
+    secondaire (la main principale est effacée par le comportement vanilla des villageois, une copie d'affichage y est
+    posée) ; meilleure armure par emplacement prise dans les coffres enregistrés, l'ancienne y retourne ; repli sous
+    `retreatHealthRatio` vers le lit (mémoire HOME, sinon lit libre) avec soins, debout (l'activité REST reste verrouillée
+    pour les gardes). Pas de tir ami : `AttackEntityCallback` + `ALLOW_DAMAGE` annulent coups, projectiles et animaux
+    des membres sur les villageois de leur guilde.
+32. **Rangement par thème** : `ItemClassifier` applique des règles par catégorie (`storage.categories` : id, `#tag`,
+    motif `*_ore`, propriétés `@food/@armor/@tool/…`, onglets créatifs `@tab:` construits côté serveur avec
+    `CreativeModeTabs.tryRebuildTabContents`) ; la règle la plus précise gagne (id > plus petit tag > plus long motif >
+    propriété > onglet, puis ordre du fichier) ; résultat mis en cache par objet. Les coffres enregistrés prennent le nom
+    de leur rôle (jamais par-dessus un nom donné par un joueur). Migration n° 3 : anciennes catégories par défaut
+    remplacées seulement si non modifiées, anciens noms de catégorie des coffres convertis.
 
 ## Notes API Minecraft 26.3
 
