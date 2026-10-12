@@ -542,13 +542,13 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<div class="table-wrap"><table>
 					<thead><tr><th>Tâche</th><th>Ce qu'il fait</th><th>Il faut</th></tr></thead>
 					<tbody>
-						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de sa catégorie.</td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
+						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de son thème (19 catégories). <a href="#rangement">Détails</a></td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
 						<tr><td>Mineur</td><td>Creuse vraiment sa mine : un escalier en colimaçon jusqu'à la profondeur choisie, puis des galeries qui suivent les filons (ou des salles de carrière pour la pierre). Il remonte vider son sac et ne casse jamais vos constructions. <a href="#mine">Détails</a></td><td>Un coffre de dépôt ; une zone de mine (sinon : la pierre à nu la plus proche, en minage simulé)</td></tr>
-						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois), seulement l'essence choisie si vous en choisissez une, et replante.</td><td>Un coffre de dépôt ; une zone de coupe (sinon : les arbres les plus proches)</td></tr>
-						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes ») et replante.</td><td>Un coffre de dépôt ; une zone de champs (sinon : les cultures les plus proches)</td></tr>
-						<tr><td>Garde</td><td>Patrouille dans sa zone ou suit son parcours de garde, tue les monstres, défend le cœur pendant les hordes. Ne dort pas, ne fuit pas.</td><td>Facultatif : une zone de patrouille ou un parcours (sinon : autour du cœur)</td></tr>
-						<tr><td>Exploration</td><td>Quitte la base pendant 8 minutes et revient avec graines, pousses, cuir, émeraudes, parfois une carte au trésor. <span class="pill red">5 % de risque de perte</span></td><td>Le bureau d'accueil (sinon il part du cœur)</td></tr>
-						<tr><td>Expédition au Nether</td><td>Passe par votre portail pendant 12 minutes et revient avec quartz, or, poudre lumineuse, bâtons de blaze… <span class="pill red">12 % de risque de perte</span></td><td>Un portail du Nether dans le territoire</td></tr>
+						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois), seulement l'essence choisie si vous en choisissez une, et replante.</td><td>Un coffre de dépôt ; une zone de coupe (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
+						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes ») et replante.</td><td>Un coffre de dépôt ; une zone de champs (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
+						<tr><td>Garde</td><td>Épéiste ou archer : patrouille dans sa zone ou suit son parcours, tue les monstres, défend le cœur pendant les hordes. S'équipe dans vos coffres et se replie pour se soigner. <a href="#gardes">Détails</a></td><td>Facultatif : une zone de patrouille ou un parcours ; des armures dans les coffres ; des lits</td></tr>
+						<tr><td>Exploration</td><td>Part vers la destination choisie (forêt, désert, village, temples…) et revient quelques minutes plus tard avec son butin. <a href="#destinations">Destinations</a> <span class="pill red">5 à 25 % de risque de perte</span></td><td>Le bureau d'accueil (sinon il part du cœur)</td></tr>
+						<tr><td>Expédition au Nether</td><td>Passe par votre portail vers la destination choisie (forteresse, bastion, forêts…) et revient avec son butin. <span class="pill red">10 à 22 % de risque de perte</span></td><td>Un portail du Nether dans le territoire</td></tr>
 					</tbody>
 				</table></div>
 				<p class="hint">Chaque expédition, exploration ou Nether, a aussi 2 % de chance de rapporter une <a href="#uniques">arme unique</a>.</p>
@@ -558,7 +558,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<li><button class="cmd" type="button">/guild villagers zones</button> (ou menu Villageois → Zones et parcours) → « Créer une zone » → choisissez le type : <strong>Mine</strong>, <strong>Coupe de bois</strong>, <strong>Champs</strong> ou <strong>Patrouille</strong>. Vous recevez un <strong>fanion</strong>.</li>
 					<li>Plantez le fanion (clic droit au sol) au centre de la zone. Pour une mine, plantez-le en surface sur un sol naturel : l'escalier des mineurs partira de là. Clic droit sur le type crée la zone directement à vos pieds, sans fanion.</li>
 					<li>Dans le menu de la zone, réglez le <strong>rayon en chunks</strong> (0 = le chunk du fanion, 1 = 3 × 3 chunks, jusqu'à 3) et l'<strong>objectif</strong> : minerais, pierre et variantes ou tout venant pour une mine ; toutes essences ou une seule (chêne, sapin, bouleau, cerisier…) pour la coupe ; toutes cultures ou une seule pour les champs.</li>
-					<li>Dans le menu du villageois, « Zone de travail » → choisissez la zone. « Automatique » le laisse chercher tout seul autour de lui (arbres ou cultures dans un rayon de 48 blocs, mine la plus proche).</li>
+					<li>Dans le menu du villageois, « Zone de travail » → choisissez la zone. « Automatique » le laisse travailler seul dans le territoire et jusqu'à 48 blocs autour (la mine la plus proche pour un mineur).</li>
 				</ol>
 				<p>« Afficher » dessine la zone en particules pendant 20 secondes. Un membre qui gère les villageois peut casser le fanion pour supprimer la zone ; les autres joueurs ne peuvent pas y toucher. Les villageois ne travaillent une zone que lorsqu'un joueur est dans les parages (zone chargée).</p>
 				<h3 id="mine">Mine réelle</h3>
@@ -578,7 +578,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<p class="hint">Les villageois ne savent pas monter aux échelles : ils passent toujours par l'escalier. Une mine réelle n'avance que si un joueur est dans les parages (zone chargée).</p>
 				<h3>Parcours de garde</h3>
 				<p>Menu Zones et parcours → « Nouveau parcours » (ou <button class="cmd" type="button">/guild villagers route new</button>). Faites clic droit sur les endroits par où passer (jusqu'à 16 points, un aperçu en particules suit votre tracé), puis <strong>accroupi + clic droit</strong> pour terminer. Assignez des gardes au parcours : ils le suivent en boucle ou en aller-retour, s'arrêtent à chaque point, combattent les monstres proches puis reprennent leur ronde.</p>
-				<p><strong>Appeler ici :</strong> le bouton du menu du villageois le fait venir à côté de vous, si vous êtes dans le territoire ou dans une de ses zones.</p>
+				<p><strong>Appeler ici :</strong> le bouton du menu du villageois le fait venir à côté de vous, où qu'il soit, si vous êtes dans le territoire ou dans une de ses zones (« Appel en cours… » quand il est loin).</p>
 				<h3>Missions</h3>
 				<p>Pour le mineur, le bûcheron, le fermier et les expéditions, le bouton cible du menu choisit quand il s'arrête :</p>
 				<div class="cards">
@@ -586,9 +586,83 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>Remplir son sac et rentrer</h3><p>Un sac plein (ou une expédition), vidé au coffre, puis il s'arrête.</p></div>
 					<div class="card"><h3>Rapporter une quantité</h3><p>Par exemple 64 fer brut : réglez la quantité, tenez l'objet en main et cliquez sur « Objet recherché ». Il s'arrête une fois le compte atteint.</p></div>
 				</div>
-				<h3>Coffres de stockage</h3>
-				<p>Menu Villageois → Stockage → « Ajouter un coffre », puis clic droit sur un coffre (ou tonneau) du territoire dans les 30 secondes. Choisissez son rôle : <strong>dépôt</strong> (les travailleurs y vident leur sac) ou une <strong>catégorie</strong> : Bois, Pierre &amp; terre, Minerais &amp; lingots, Cultures &amp; nourriture, Butin de monstres, Outils &amp; armes, Divers.</p>
-				<div class="note"><p>La nuit et pendant les hordes, les travailleurs vont se coucher (statut « Repos »), et les gardes restent dehors. Un villageois peut <strong>mourir</strong> dans une horde : protégez-les.</p></div>
+				<h3 id="objectifs">Objectifs prioritaires</h3>
+				<p>Bouton « Objectifs prioritaires » du menu d'un mineur, d'un bûcheron ou d'un fermier, ou du menu d'une zone : jusqu'à <strong>9 objets</strong> que le villageois va chercher en priorité, même un peu hors de sa zone (16 blocs, jamais chez une autre guilde).</p>
+				<ul>
+					<li>Cliquez sur une case libre avec l'objet sur le curseur, ou faites un shift-clic dessus dans votre inventaire : seul son type est noté, votre objet n'est ni pris ni déplacé. Un clic sur un objectif le retire, « Vider » efface la liste.</li>
+					<li>Bûcheron : bûches ou planches d'une essence, pousses, pommes, bâtons (il récolte alors aussi le feuillage). Fermier : blé, carottes, pommes de terre, betteraves, melons, citrouilles, canne à sucre. Mineur : pierres et minerais.</li>
+					<li>Les objectifs d'une zone s'ajoutent à ceux de chacun de ses villageois. Pour une expédition, les objets voulus sont 3 fois plus fréquents dans le butin.</li>
+				</ul>
+				<h3 id="gardes">Gardes</h3>
+				<div class="cards">
+					<div class="card"><h3>Épéistes et archers</h3><p>En mode Auto, un nouveau garde prend le rôle qui équilibre la guilde ; le bouton « Rôle » de son menu permet de l'imposer. Les archers tirent jusqu'à 16 blocs et reculent quand un monstre approche ; leurs flèches ne touchent que les monstres.</p></div>
+					<div class="card"><h3>Équipement</h3><p>Hors combat, les gardes prennent la meilleure armure (et une meilleure épée ou un arc enchanté) dans les coffres du Stockage et y rapportent l'ancienne pièce. Leur armure se voit dans leur menu, pas sur le villageois en jeu.</p></div>
+					<div class="card"><h3>Repli</h3><p>Sous 40 % de vie, un garde quitte le combat, même pendant une horde, et court se soigner à un lit. Il reprend son poste à 90 %. Posez des lits près du cœur !</p></div>
+				</div>
+				<div class="note good"><p><strong>Pas de tir ami :</strong> vous ne pouvez pas blesser les villageois de votre guilde, ni à l'épée, ni à l'arc, ni au trident. Pour vous en séparer, utilisez « Renvoyer » dans son menu.</p></div>
+				<h3 id="destinations">Destinations d'expédition</h3>
+				<p>Pour un explorateur ou une expédition au Nether, le bouton « Destination » de son menu choisit où il part. Chaque destination indique sa durée, son risque, son butin typique et le niveau de guilde requis. Plus le lieu est dangereux, meilleur est le butin, et plus les armes uniques sont fréquentes.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Exploration</th><th class="num">Niveau</th><th class="num">Durée</th><th class="num">Risque</th><th>Butin</th></tr></thead>
+					<tbody>
+						<tr><td>Forêt et plaines (par défaut)</td><td class="num">1</td><td class="num">8 min</td><td class="num">5 %</td><td>graines, pousses, cuir, émeraudes, carte au trésor rare</td></tr>
+						<tr><td>Désert</td><td class="num">1</td><td class="num">8 min</td><td class="num">6 %</td><td>sable, grès, cactus, os, peau de lapin, quelques pépites d'or</td></tr>
+						<tr><td>Jungle</td><td class="num">1</td><td class="num">~9 min</td><td class="num">7 %</td><td>bambou, fèves de cacao, pastèque, pousses d'acajou, lianes</td></tr>
+						<tr><td>Taïga et neige</td><td class="num">1</td><td class="num">~9 min</td><td class="num">6 %</td><td>pousses de sapin, baies sucrées, boules de neige, glace, lapin</td></tr>
+						<tr><td>Océan et plage</td><td class="num">1</td><td class="num">~9 min</td><td class="num">7 %</td><td>varech, poissons, cornichons de mer, prismarine, coquille de nautile rare</td></tr>
+						<tr><td>Marais et mangrove</td><td class="num">1</td><td class="num">~9 min</td><td class="num">7 %</td><td>argile, boue, propagules, nénuphars, slime</td></tr>
+						<tr><td>Cerisiers</td><td class="num">2</td><td class="num">~9 min</td><td class="num">5 %</td><td>pétales roses, pousses de cerisier, rayons de miel</td></tr>
+						<tr><td>Montagnes</td><td class="num">2</td><td class="num">~10 min</td><td class="num">8 %</td><td>pierre, charbon, fer et cuivre bruts, émeraudes et corne de chèvre rares</td></tr>
+						<tr><td>Village</td><td class="num">2</td><td class="num">10 min</td><td class="num">6 %</td><td>pain, blé, carottes, pommes de terre, fer, émeraudes, selle rare</td></tr>
+						<tr><td>Puits de mine abandonné</td><td class="num">3</td><td class="num">10 min</td><td class="num">10 %</td><td>rails, charbon, fer brut, baies lumineuses, étiquette rare</td></tr>
+						<tr><td>Épave et ruines</td><td class="num">3</td><td class="num">10 min</td><td class="num">8 %</td><td>papier, charbon, émeraudes, carte au trésor 25 %</td></tr>
+						<tr><td>Temple du désert</td><td class="num">4</td><td class="num">12 min</td><td class="num">12 %</td><td>os, poudre à canon, TNT, émeraudes, or, livre enchanté et diamant rares</td></tr>
+						<tr><td>Temple de la jungle</td><td class="num">4</td><td class="num">12 min</td><td class="num">12 %</td><td>bambou, flèches, émeraudes, livre enchanté et diamant rares</td></tr>
+						<tr><td>Avant-poste de pillards</td><td class="num">5</td><td class="num">12 min</td><td class="num">18 %</td><td>flèches, chêne noir, émeraudes, arbalète, fioles d'expérience</td></tr>
+						<tr><td>Monument océanique</td><td class="num">6</td><td class="num">14 min</td><td class="num">20 %</td><td>éclats et cristaux de prismarine, lanternes aquatiques, éponge rare</td></tr>
+						<tr><td>Ville ancienne</td><td class="num">7</td><td class="num">16 min</td><td class="num">25 %</td><td>sculk, bougies, améthyste, éclat d'écho et fragments de disque rares</td></tr>
+					</tbody>
+				</table></div>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Nether</th><th class="num">Niveau</th><th class="num">Durée</th><th class="num">Risque</th><th>Butin</th></tr></thead>
+					<tbody>
+						<tr><td>Terres du Nether (par défaut)</td><td class="num">1</td><td class="num">12 min</td><td class="num">12 %</td><td>quartz, or, poudre lumineuse, bâtons de blaze…</td></tr>
+						<tr><td>Forêt carmin</td><td class="num">2</td><td class="num">12 min</td><td class="num">12 %</td><td>tiges et champignons carmin, blocs de verrues, champilampes</td></tr>
+						<tr><td>Forêt biscornue</td><td class="num">2</td><td class="num">12 min</td><td class="num">10 %</td><td>tiges et champignons biscornus, lianes, perles de l'Ender rares</td></tr>
+						<tr><td>Vallée des âmes</td><td class="num">3</td><td class="num">~13 min</td><td class="num">15 %</td><td>sable et terre des âmes, os, larme de ghast rare</td></tr>
+						<tr><td>Deltas de basalte</td><td class="num">3</td><td class="num">~13 min</td><td class="num">15 %</td><td>basalte, roche noire, crème et blocs de magma</td></tr>
+						<tr><td>Forteresse du Nether</td><td class="num">4</td><td class="num">15 min</td><td class="num">16 %</td><td>verrues du Nether, bâtons de blaze, briques du Nether, crâne de wither squelette très rare</td></tr>
+						<tr><td>Bastion</td><td class="num">6</td><td class="num">18 min</td><td class="num">22 %</td><td>pépites d'or, roche noire, débris antiques rares, fragment de netherite très rare</td></tr>
+					</tbody>
+				</table></div>
+				<h3 id="rangement">Rangement par thème</h3>
+				<p>Menu Villageois → Stockage → « Ajouter un coffre », puis clic droit sur un coffre (ou tonneau) du territoire. Choisissez son rôle : <strong>dépôt</strong> (les travailleurs y vident leur sac) ou une <strong>catégorie</strong>. Le coffre prend le nom de son rôle, visible quand vous l'ouvrez. Le trieur (tâche « Ranger la base ») range chaque objet dans le coffre de sa catégorie ; sans coffre de sa catégorie, l'objet va dans « Divers », sinon il reste au dépôt.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Catégorie</th><th>Exemples</th></tr></thead>
+					<tbody>
+						<tr><td>Bois</td><td>bûches, planches, dalles, escaliers, barrières, portes et panneaux en bois, bâtons</td></tr>
+						<tr><td>Pierre</td><td>pierre, galets, pierre des abîmes, andésite, diorite, granite, tuf, calcite, grès, briques de pierre</td></tr>
+						<tr><td>Terre, sable et gravier</td><td>terre, herbe, podzol, boue, argile, sable, gravier, neige, glace</td></tr>
+						<tr><td>Blocs de construction</td><td>briques, verre, béton, terre cuite, laine, tapis, cuivre, prismarine</td></tr>
+						<tr><td>Mobilier et décoration</td><td>établi, fours, coffres, enclumes, lits, torches, lanternes, bougies, échelles, tableaux, bannières</td></tr>
+						<tr><td>Minerais et lingots</td><td>minerais, minerais bruts, lingots, pépites, gemmes, charbon, netherite, améthyste</td></tr>
+						<tr><td>Redstone</td><td>redstone, répéteurs, pistons, leviers, plaques de pression, trémies, rails, TNT</td></tr>
+						<tr><td>Outils</td><td>pioches, haches, pelles, houes, cisailles, cannes à pêche, seaux, boussoles, cartes, bateaux</td></tr>
+						<tr><td>Armes</td><td>épées, arcs, arbalètes, trident, masse, flèches</td></tr>
+						<tr><td>Armures</td><td>casques, plastrons, jambières, bottes, bouclier, élytres, armures de cheval</td></tr>
+						<tr><td>Livres et enchantements</td><td>livres enchantés, livres, papier, fioles d'expérience, bibliothèques</td></tr>
+						<tr><td>Potions et alchimie</td><td>potions, fioles, alambic, poudre de blaze, œil d'araignée fermenté</td></tr>
+						<tr><td>Nourriture</td><td>viandes, poissons, pain, fruits, légumes, gâteau, soupes, œufs, lait, blé</td></tr>
+						<tr><td>Graines et pousses</td><td>graines, pousses, propagules, azalées, fèves de cacao</td></tr>
+						<tr><td>Plantes et fleurs</td><td>fleurs, feuilles, lianes, mousses, champignons, coraux, canne à sucre, bambou, cactus</td></tr>
+						<tr><td>Butin de monstres</td><td>os, ficelle, poudre à canon, chair putréfiée, perles de l'Ender, bâtons de blaze, cuir, plumes, <strong>têtes et crânes</strong>, carapaces de shulker</td></tr>
+						<tr><td>Nether</td><td>netherrack, briques du Nether, quartz, sable des âmes, basalte, roche noire, verrues, pierre lumineuse, obsidienne</td></tr>
+						<tr><td>End</td><td>pierre de l'End, purpur, chorus, barres de l'End, œil de l'Ender, boîtes de Shulker</td></tr>
+						<tr><td>Colorants</td><td>les 16 colorants</td></tr>
+					</tbody>
+				</table></div>
+				<p class="hint">Dans le menu Stockage : clic gauche sur un coffre pour changer son rôle, clic droit pour le retirer. « Afficher les coffres » les signale en particules colorées pendant 20 s ; « Où ranger l'objet en main ? » indique sa catégorie.</p>
+				<div class="note"><p>La nuit et pendant les hordes, les travailleurs vont se coucher (statut « Repos »), et les gardes restent dehors. Un villageois peut <strong>mourir</strong> dans une horde : équipez vos gardes et posez des lits près du cœur.</p></div>
 			</section>
 
 			<!-- ================================================================ UNIQUE WEAPONS -->
@@ -737,6 +811,10 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Regardez son statut dans <button class="cmd" type="button">/guild villagers</button>. La nuit et pendant une horde, il se repose. Les causes habituelles sont ensuite : pas de coffre de dépôt, zone de travail non chargée (aucun joueur à proximité), rien à faire dans la zone (pas d'arbre de l'essence choisie, pas de culture mûre), ou tâche « Inactif ». En mode automatique, son statut dit ce qu'il a choisi. S'il est bloqué en chemin, il finit par se téléporter à côté de sa destination.</p></details>
 				<details><summary>Mon mineur ne creuse pas</summary>
 					<p>Ouvrez le menu de sa zone, puis « Exploitation » : le dernier incident (lave, eau, construction…) dit ce qui bloque. Le fanion doit être planté sur un sol naturel avec de la roche dessous, la zone doit être chargée (un joueur à proximité) et il faut un coffre de dépôt. Si l'escalier est coincé, changez la profondeur cible ou utilisez « Réinitialiser l'exploitation ».</p></details>
+				<details><summary>Mes gardes meurent toutes les nuits</summary>
+					<p>Mettez des armures (et des épées, des arcs) dans un coffre du Stockage : les gardes s'équipent seuls. Posez des lits près du cœur : sous 40 % de vie, ils vont s'y soigner. Mélangez archers et épéistes (mode Auto), et entourez le cœur de murs.</p></details>
+				<details><summary>Je n'arrive pas à frapper un villageois de ma guilde</summary>
+					<p>C'est voulu : les coups, flèches et tridents des membres ne blessent jamais les villageois de la guilde, pour éviter les accidents pendant les hordes. Pour vous en séparer, utilisez « Renvoyer » dans son menu.</p></details>
 				<details><summary>La boutique refuse de m'acheter un objet</summary>
 					<p>Seuls les objets « normaux » se vendent (pas enchantés, renommés ni abîmés), jamais en créatif, et certains articles demandent un niveau de guilde.</p></details>
 				<details><summary>Nous avons perdu une horde, qu'est-ce qu'on perd ?</summary>
