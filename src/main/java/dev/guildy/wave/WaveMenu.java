@@ -126,6 +126,7 @@ final class WaveMenu {
 			int expected = WaveFormula.mobCount(cfg.difficulty, difficulty, 1.0);
 			long elite = Math.round(WaveFormula.eliteChance(cfg.difficulty, difficulty, 0) * 100);
 			List<Component> lore = new ArrayList<>(WaveManager.truceLore(guild));
+			lore.addAll(WaveManager.scheduleLore(guild));
 			lore.addAll(GuiUtil.lines("wave.gui.next.lore", night, WaveSession.formatDifficulty(difficulty), expected, elite,
 					Upgrades.boost(guild, UpgradeEffects.HEART_INTEGRITY_PCT, WaveFormula.heartIntegrity(cfg.heart, guild.level))));
 			lore.addAll(GuiUtil.lines("wave.gui.next.players", players, WaveSession.formatDifficulty(cfg.difficulty.perExtraPlayer)));

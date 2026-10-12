@@ -19,7 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Locale;
 
 /**
- * /guild waves (menu) and /guild admin wave start|stop|status|setnight|truce (guild names may contain spaces).
+ * /guild waves (menu) and /guild admin wave start|stop|status|setnight|truce|schedule (guild names may contain spaces).
  */
 final class WaveCommands {
 	/** Guild names (greedy argument: spaces allowed). */
@@ -62,7 +62,9 @@ final class WaveCommands {
 				.then(Commands.literal("setnight")
 						.then(Commands.argument("args", StringArgumentType.greedyString()).suggests(GUILD_AND_NIGHT).executes(WaveCommands::setNight)))
 				.then(Commands.literal("truce")
-						.then(Commands.argument("args", StringArgumentType.greedyString()).suggests(GUILD_AND_NIGHT).executes(WaveCommands::truce)))));
+						.then(Commands.argument("args", StringArgumentType.greedyString()).suggests(GUILD_AND_NIGHT).executes(WaveCommands::truce)))
+				.then(Commands.literal("schedule")
+						.then(Commands.argument("args", StringArgumentType.greedyString()).suggests(GUILD_AND_NIGHT).executes(WaveCommands::schedule)))));
 	}
 
 	private static int openMenu(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
@@ -178,6 +180,32 @@ final class WaveCommands {
 		guild.waves.truceDay = -1;
 		GuildManager.markDirty();
 		success(ctx, Lang.get("wave.cmd.truce", guild.name, nights));
+		return 1;
+	}
+
+	/** Sets the night of the next horde (0 = tonight). */
+	private static int schedule(CommandContext<CommandSourceStack> ctx) {
+		String raw = StringArgumentType.getString(ctx, "args").trim();
+		int space = raw.lastIndexOf(' ');
+		if (space <= 0) {
+			return fail(ctx, "wave.cmd.usage.schedule");
+		}
+		int nights;
+		try {
+			nights = Integer.parseInt(raw.substring(space + 1).trim());
+		} catch (NumberFormatException e) {
+			return fail(ctx, "wave.cmd.usage.schedule");
+		}
+		if (nights < 0 || nights > 30) {
+			return fail(ctx, "wave.cmd.usage.schedule");
+		}
+		Guild guild = guildArg(ctx, raw.substring(0, space));
+		if (guild == null) {
+			return 0;
+		}
+		guild.waves.nextWaveDay = WaveFormula.dayIndex(WaveManager.clock()) + nights;
+		GuildManager.markDirty();
+		success(ctx, Lang.get("wave.cmd.schedule", guild.name, nights));
 		return 1;
 	}
 

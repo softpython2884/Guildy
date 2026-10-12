@@ -105,6 +105,12 @@ public final class WaveConfig implements Validatable {
 		public boolean endWhenHordeDefeated = true;
 		@Comment("Securite : duree maximale d'une horde (minutes) ; au-dela elle se termine comme a l'aube")
 		public int maxWaveMinutes = 20;
+		@Comment({
+				"Jours entre deux hordes d'une guilde : tire au hasard entre minDaysBetweenHordes et maxDaysBetweenHordes",
+				"apres chaque horde (1 et 1 = une horde chaque nuit). Une nuit de sang amene toujours une horde."
+		})
+		public int minDaysBetweenHordes = 1;
+		public int maxDaysBetweenHordes = 3;
 	}
 
 	@Json5.Section
@@ -596,6 +602,8 @@ public final class WaveConfig implements Validatable {
 		t.absentCancelSeconds = clamp(t.absentCancelSeconds, 10, 3600);
 		t.maxClockJumpTicks = clamp(t.maxClockJumpTicks, 40, 24000);
 		t.maxWaveMinutes = clamp(t.maxWaveMinutes, 1, 120);
+		t.minDaysBetweenHordes = clamp(t.minDaysBetweenHordes, 1, 30);
+		t.maxDaysBetweenHordes = clamp(t.maxDaysBetweenHordes, t.minDaysBetweenHordes, 30);
 
 		DifficultySettings d = difficulty;
 		d.base = clamp(d.base, 0, 1000);

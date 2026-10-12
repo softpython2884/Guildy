@@ -204,6 +204,14 @@ public final class WaveManager {
 			}
 			return; // truce after repeated defeats: no horde tonight
 		}
+		if (!WaveSchedule.due(guild.waves, day) && !eventNight(guild, clock)) {
+			if (guild.waves.quietDay != day) {
+				guild.waves.quietDay = day;
+				GuildManager.markDirty();
+				Msg.guild(guild, "wave.quiet.night", WaveSchedule.nightsUntil(guild.waves, day));
+			}
+			return; // hordes come every few nights (waves.json5 timing.min/maxDaysBetweenHordes)
+		}
 		if ((seconds + index) % cfg.timing.startRetrySeconds != 0) {
 			return;
 		}
@@ -312,6 +320,9 @@ public final class WaveManager {
 		SESSIONS.put(guild.id, session);
 		if (request.kind() == Kind.NIGHT || request.kind() == Kind.TEST && inNight) {
 			guild.waves.lastWaveDay = day;
+		}
+		if (request.kind() == Kind.NIGHT) {
+			guild.waves.nextWaveDay = WaveSchedule.next(cfg.timing, day, RANDOM);
 		}
 		GuildManager.markDirty();
 		Safe.run("wave.start", () -> session.start(level));
@@ -461,12 +472,32 @@ public final class WaveManager {
 			double difficulty = estimateDifficulty(guild);
 			List<Component> truce = truceLore(guild);
 			lines.addAll(truce);
+			lines.addAll(scheduleLore(guild));
 			lines.add(Lang.get("wave.lore.idle", WaveSession.formatDifficulty(difficulty)));
 			lines.add(Lang.get("wave.lore.expected", WaveFormula.mobCount(cfg.difficulty, difficulty, 1.0)));
 			lines.add(Lang.get("wave.lore.stats", guild.waves.victories, guild.waves.defeats));
 		}
 		lines.addAll(eventLore(guild));
 		return lines;
+	}
+
+	/** An event (blood night...) changes tonight's hordes: it always brings one, even off schedule. */
+	private static boolean eventNight(Guild guild, long clock) {
+		NightModifiers modifiers = Safe.get("wave.modifiers", () -> WaveApi.nightModifiers.apply(guild, clock), NightModifiers.NONE);
+		return modifiers != null && modifiers.hasLabel();
+	}
+
+	/** "Prochaine horde" line: tonight or in N nights (empty during a truce, which has its own line). */
+	static List<Component> scheduleLore(Guild guild) {
+		long day = WaveFormula.dayIndex(clock());
+		if (WaveTruce.active(WaveModule.config().truce, guild.waves, day)) {
+			return List.of();
+		}
+		int nights = WaveSchedule.nightsUntil(guild.waves, day);
+		if (nights <= 0 && guild.waves.lastWaveDay == day) {
+			nights = 1; // tonight's horde already happened
+		}
+		return List.of(nights <= 0 ? Lang.get("wave.lore.next.tonight") : Lang.get("wave.lore.next.in", nights));
 	}
 
 	/** "Trêve" line while a truce is running (empty otherwise). */

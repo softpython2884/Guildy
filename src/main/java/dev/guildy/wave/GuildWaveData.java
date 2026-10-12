@@ -20,6 +20,10 @@ public class GuildWaveData {
 	public int truceNights;
 	/** Overworld day index of the last night spared by the truce (-1 = none). */
 	public long truceDay = -1;
+	/** Overworld day index from which the next night horde may start (-1 = not scheduled yet: tonight). */
+	public long nextWaveDay = -1;
+	/** Overworld day index of the last quiet night announced (no horde scheduled). */
+	public long quietDay = -1;
 
 	// Details of the last wave (shown in the waves menu).
 	/** Theme display name ('&' codes) of the last wave. */

@@ -86,6 +86,11 @@ final class WaveLang {
 		m.put("wave.lore.expected", "&7Monstres attendus : &f~{0}");
 		m.put("wave.lore.stats", "&7Victoires : &a{0} &8| &7Défaites : &c{1}");
 		m.put("wave.lore.truce", "&a☮ Trêve : encore &f{0}&a nuit(s) sans horde");
+		m.put("wave.lore.next.tonight", "&c☾ Prochaine horde : cette nuit");
+		m.put("wave.lore.next.in", "&7☾ Prochaine horde : dans &f{0}&7 nuit(s)");
+		m.put("wave.quiet.night", "&7☾ La nuit tombe, mais aucune horde n'est en vue cette nuit (prochaine dans &f{0}&7 nuit(s)).");
+		m.put("wave.cmd.schedule", "&aProchaine horde de &e{0}&a : dans &f{1}&a nuit(s) (0 = cette nuit).");
+		m.put("wave.cmd.usage.schedule", "&cUsage : /guild admin wave schedule <guilde> <nuits> (0 = cette nuit)");
 		m.put("wave.truce.started", "&a☮ Trêve ! Après &f{0}&a défaites d'affilée, aucune horde n'attaquera votre base pendant &f{1}&a nuit(s). Profitez-en pour vous renforcer.");
 		m.put("wave.truce.night", "&a☮ Trêve : pas de horde cette nuit (encore &f{0}&a nuit(s) de trêve ensuite).");
 		m.put("wave.truce.last", "&a☮ Trêve : pas de horde cette nuit. &7C'est la dernière nuit de trêve.");
