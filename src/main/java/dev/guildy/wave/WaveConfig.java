@@ -227,6 +227,12 @@ public final class WaveConfig implements Validatable {
 		public double bossScale = 1.3;
 		public double bossKnockbackResistance = 0.6;
 		public boolean bossGlowing = true;
+		@Comment({
+				"Les monstres de la horde attaquent aussi les villageois (comportement vanilla des zombies et illageois, qui",
+				"les traquent ensuite meme hors de vue). false : ils les ignorent (villageois de la guilde, candidats,",
+				"marchands), sauf un villageois qui vient de les frapper (un garde qui les combat)"
+		})
+		public boolean targetVillagers = false;
 	}
 
 	@Json5.Section

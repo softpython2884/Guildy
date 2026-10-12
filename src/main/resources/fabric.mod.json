@@ -21,7 +21,8 @@
 	},
 	"mixins": [
 		"guildy.mixins.json",
-		"guildy.quest.mixins.json"
+		"guildy.quest.mixins.json",
+		"guildy.wave.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.19.5",

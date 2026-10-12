@@ -105,11 +105,19 @@ final class GuardRules {
 		return 1.0 + (power > 0 ? 0.5 * power + 0.5 : 0.0) + (flame > 0 ? 0.5 : 0.0) + 0.25 * Math.max(0, punch);
 	}
 
+	/**
+	 * Weapon score of a crossbow (archers): a plain crossbow is worth a Power I bow (its bolts hit harder, see
+	 * {@code guardGear.crossbowDamageFactor}), + Quick Charge (faster shots), Piercing (0.5 per level), Multishot.
+	 */
+	static double crossbowScore(int quickCharge, int piercing, int multishot) {
+		return 2.0 + 0.5 * Math.max(0, quickCharge) + 0.5 * Math.max(0, piercing) + (multishot > 0 ? 0.75 : 0.0);
+	}
+
 	static boolean betterWeapon(double candidate, double current) {
 		return candidate > current + EPSILON;
 	}
 
-	/** Extra melee damage of a sword compared to the guard's default iron sword. */
+	/** Extra melee damage of a sword compared to the baseline sword (a wooden one: the configured damage). */
 	static double swordBonus(double attackDamage, double baseline) {
 		return Math.max(0.0, attackDamage - baseline);
 	}

@@ -57,8 +57,8 @@ final class GuardLang {
 		m.put("villager.gui.guard.slot.worn", " &8({0} %)");
 		m.put("villager.gui.guard.slot.default", " &8(de base)");
 		m.put("villager.gui.guard.unloaded", "&8Garde hors de portée : équipement inconnu.");
-		m.put("villager.gui.guard.equipment.lore", "&7Hors combat, les gardes prennent les meilleures\n&7pièces d'armure des coffres du &bstockage&7 (dépôt\n&7et catégories) et y rapportent l'ancienne.\n&7Une pièce cassée est remplacée plus tard.");
-		m.put("villager.gui.guard.equipment.weapons", "&7Ils prennent aussi une meilleure épée ou un\n&7meilleur arc enchanté.");
+		m.put("villager.gui.guard.equipment.lore", "&7Hors combat, les gardes prennent dans les coffres\n&7du &bstockage&7 (dépôt et catégories) les pièces\n&7d'armure meilleures que les leurs et que leur\n&7équipement de base, et y rapportent l'ancienne.\n&7Une pièce cassée est remplacée plus tard.");
+		m.put("villager.gui.guard.equipment.weapons", "&7Ils prennent aussi une meilleure épée, un\n&7meilleur arc ou une arbalète.");
 		m.put("villager.gui.guard.equipment.off", "&8(prise d'équipement désactivée sur ce serveur)");
 		m.put("villager.gui.guard.equipment.retreat", "&7Sous &f{0} %&7 de sa vie, il court se soigner à son\n&7lit, puis reprend son poste à &f{1} %&7.");
 		m.put("villager.gui.guard.equipment.take", "&eMaj + clic : récupérer son équipement");

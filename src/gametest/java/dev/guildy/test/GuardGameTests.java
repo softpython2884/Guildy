@@ -240,8 +240,7 @@ public class GuardGameTests {
 		level.addFreshEntity(husk);
 		ZoneGameTests.setTask(recruit, Task.GUARD);
 		helper.succeedWhen(() -> {
-			helper.assertTrue(guard.getMainHandItem().is(Items.IRON_SWORD) || guard.getMainHandItem().is(Items.DIAMOND_SWORD),
-					"the swordsman shows a sword");
+			helper.assertTrue(guard.getMainHandItem().is(Items.DIAMOND_SWORD), "the swordsman shows the better sword taken from the chest");
 			helper.assertTrue(!husk.isAlive(), "waiting for the swordsman to kill the husk (" + husk.getHealth() + " HP)");
 			helper.assertTrue(record.stats.kills >= 1, "kill counted for the guard");
 			GuildManager.disband(recruit.guild());
