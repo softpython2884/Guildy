@@ -347,6 +347,43 @@ public final class VillagerConfig implements Validatable {
 		public int maxLogsPerTree = 160;
 		@Comment("Replanter une pousse a la base de l'arbre coupe (si le sol le permet)")
 		public boolean replant = true;
+		@Comment({
+				"Plantation : quand il n'a plus d'arbre a couper, le bucheron plante de nouvelles pousses sur le sol naturel libre de",
+				"sa coupe de bois (herbe, terre, podzol, mousse, boue ; jamais un chemin, une terre labouree, a cote d'un bloc pose par",
+				"un joueur ni a moins de 4 blocs d'une autre guilde). Essence : celle de la zone, puis celles des objectifs prioritaires,",
+				"puis les pousses de son sac ou des coffres du stockage (Graines et pousses, depot, Divers) pour une zone 'Tous les arbres'.",
+				"Chene noir et chene pale ne poussent qu'en carre : plantes par 4 (sur sol plat), sinon ignores"
+		})
+		public boolean plantSaplings = true;
+		@Comment("Planter aussi en mode automatique (sans zone : dans le territoire et autour)")
+		public boolean plantInAutoMode = false;
+		@Comment("Ecart (blocs) : aucune buche ni pousse a cette distance ou moins d'une nouvelle pousse (4 = 4 blocs libres entre deux troncs ; 2 a 12)")
+		public int plantSpacing = 4;
+		@Comment("Densite : arbres (troncs et pousses) par chunk au-dela desquels il ne plante plus dans ce chunk (1 a 64)")
+		public int plantMaxPerChunk = 8;
+		@Comment("Hauteur libre (blocs) exigee au-dessus d'une pousse (2 a 16)")
+		public int plantHeadroom = 6;
+		@Comment("Pousses plantees par tournee avant de chercher de nouveau des arbres a couper (1 a 64)")
+		public int plantPerRound = 12;
+		@Comment("Prendre des pousses dans les coffres du stockage quand son sac n'en a plus")
+		public boolean plantFromStorage = true;
+		@Comment("Pousses prises au stockage en un voyage (1 a 64)")
+		public int plantFetchAmount = 16;
+		@Comment("Attente (secondes) avant de reessayer quand il n'y a plus de place ou plus de pousses (10 a 3600)")
+		public int plantPauseSeconds = 60;
+		@Comment("Ramasser les pousses tombees au sol pres de lui (feuillage qui se decompose apres une coupe)")
+		public boolean pickUpSaplings = true;
+		@Comment("Mettre de la poudre d'os (sac, sinon stockage) sur les pousses plantees")
+		public boolean useBoneMeal = false;
+
+		void validatePlanting() {
+			plantSpacing = clamp(plantSpacing, 2, 12);
+			plantMaxPerChunk = clamp(plantMaxPerChunk, 1, 64);
+			plantHeadroom = clamp(plantHeadroom, 2, 16);
+			plantPerRound = clamp(plantPerRound, 1, 64);
+			plantFetchAmount = clamp(plantFetchAmount, 1, 64);
+			plantPauseSeconds = clamp(plantPauseSeconds, 10, 3600);
+		}
 	}
 
 	@Json5.Section
@@ -358,6 +395,35 @@ public final class VillagerConfig implements Validatable {
 		public int verticalRange = 3;
 		@Comment("Nombre maximum de cultures recoltees par seconde")
 		public int harvestPerSecond = 3;
+		@Comment({
+				"Semis : quand rien n'est mur, le fermier seme les terres labourees vides de ses champs : d'abord les cultures des",
+				"objectifs prioritaires, puis celle de la zone, puis les graines, carottes, pommes de terre ou graines de betterave de",
+				"son sac ou des coffres du stockage (Graines et pousses, Nourriture, depot, Divers) pour une zone 'Toutes les cultures'.",
+				"Melons, citrouilles et canne a sucre ne sont pas semes (la tige et la base restent a la recolte)"
+		})
+		public boolean sow = true;
+		@Comment("Semer aussi en mode automatique (sans zone : terres labourees du territoire et autour)")
+		public boolean sowInAutoMode = true;
+		@Comment({
+				"Zones de champs seulement : labourer (puis semer) l'herbe et la terre a l'air libre a moins de 4 blocs d'une eau (portee",
+				"d'hydratation vanilla), rien dessus, jamais un chemin, ni a cote d'un bloc pose par un joueur (sauf terre labouree, eau,",
+				"barrieres, torches)"
+		})
+		public boolean tillSoil = true;
+		@Comment("Cultures semees par tournee avant de chercher de nouveau des cultures mures (1 a 256)")
+		public int sowPerRound = 32;
+		@Comment("Prendre des graines dans les coffres du stockage quand son sac n'en a plus")
+		public boolean sowFromStorage = true;
+		@Comment("Graines prises au stockage en un voyage (1 a 64)")
+		public int sowFetchAmount = 32;
+		@Comment("Attente (secondes) avant de reessayer quand il n'y a plus rien a semer ou plus de graines (10 a 3600)")
+		public int sowPauseSeconds = 30;
+
+		void validatePlanting() {
+			sowPerRound = clamp(sowPerRound, 1, 256);
+			sowFetchAmount = clamp(sowFetchAmount, 1, 64);
+			sowPauseSeconds = clamp(sowPauseSeconds, 10, 3600);
+		}
 	}
 
 	@Json5.Section
@@ -818,6 +884,8 @@ public final class VillagerConfig implements Validatable {
 		lumberjack.maxLogsPerTree = clamp(lumberjack.maxLogsPerTree, 1, 256);
 		farmer.verticalRange = clamp(farmer.verticalRange, 0, 8);
 		farmer.harvestPerSecond = clamp(farmer.harvestPerSecond, 1, 16);
+		lumberjack.validatePlanting();
+		farmer.validatePlanting();
 		guard.radius = clamp(guard.radius, 2, 48);
 		guard.zoneMargin = clamp(guard.zoneMargin, 0, 32);
 		guard.damage = clamp(guard.damage, 0.0, 100.0);

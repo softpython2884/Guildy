@@ -78,6 +78,9 @@ public class VillagerRecord {
 		/** Expeditions completed and items they brought back. */
 		public long expeditions;
 		public long found;
+		/** Saplings planted by a lumberjack (replanting at a cut trunk not included) and crops sown by a farmer. */
+		public long planted;
+		public long sown;
 	}
 
 	public VillagerRecord() {

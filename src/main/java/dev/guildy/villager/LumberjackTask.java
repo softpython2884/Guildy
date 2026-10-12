@@ -44,6 +44,7 @@ import java.util.Set;
  * "Objectifs prioritaires" ({@link Wishlist}): trees giving a wanted item (their logs, or leaf drops such as saplings,
  * apples and sticks) come first, even up to {@code zones.wishlistMargin} blocks outside the area; for wanted leaf drops
  * the canopy is harvested before the trunk. One log per second, top-down; saplings are replanted at the trunk base.
+ * With nothing left to cut it plants new saplings in its forest ({@link SaplingPlanter}).
  */
 final class LumberjackTask extends TaskHandler {
 	private enum Phase {
@@ -51,6 +52,8 @@ final class LumberjackTask extends TaskHandler {
 		GO_TREE,
 		LEAVES,
 		CUT,
+		/** Nothing to cut: a planting round (new saplings, see {@link SaplingPlanter}). */
+		PLANT,
 		DEPOSIT,
 		BLOCKED
 	}
@@ -112,6 +115,9 @@ final class LumberjackTask extends TaskHandler {
 	/** Where the task started: centre of the automatic search of a guild without territory. */
 	private @Nullable BlockPos home;
 	private final DepositFlow deposit = new DepositFlow();
+	private final SaplingPlanter planter = new SaplingPlanter();
+	/** No deposit chest usable: planting goes on meanwhile, the deposit is tried again at this tick. */
+	private long depositRetryAt;
 
 	@Override
 	void tick(WorkContext ctx) {
@@ -125,8 +131,9 @@ final class LumberjackTask extends TaskHandler {
 			areaKey = key;
 			wishes = WorkWishes.of(ctx.record, zone);
 			resetSearch();
+			planter.reset();
 			nextScan = 0;
-			if (phase == Phase.GO_TREE || phase == Phase.LEAVES || phase == Phase.CUT) {
+			if (phase == Phase.GO_TREE || phase == Phase.LEAVES || phase == Phase.CUT || phase == Phase.PLANT) {
 				tree = null;
 				phase = Phase.SEARCH;
 			}
@@ -146,6 +153,7 @@ final class LumberjackTask extends TaskHandler {
 					bonusCuts = 0;
 				}
 			}
+			case PLANT -> plantStep(ctx);
 			case DEPOSIT -> depositStep(ctx);
 			case BLOCKED -> {
 				if (ctx.now >= retryAt) {
@@ -276,11 +284,32 @@ final class LumberjackTask extends TaskHandler {
 	}
 
 	private void idle(WorkContext ctx, String status, Object... args) {
-		if (!ctx.record.carried.isEmpty()) {
+		boolean carrying = Planting.hasDepositable(ctx, planter.keep(ctx, zone));
+		if (carrying && ctx.now >= depositRetryAt) {
+			phase = Phase.DEPOSIT;
+			depositStep(ctx);
+		} else if (home != null && planter.ready(ctx, zone)) {
+			// Nothing to cut: plant new saplings until the next search.
+			phase = Phase.PLANT;
+			plantStep(ctx);
+		} else if (carrying) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 		} else {
-			ctx.status(status, args);
+			Planting.idleStatus(ctx, planter, status, args);
+		}
+	}
+
+	/** One step of the planting round; a full bag goes home first, the end of the round goes back to the search. */
+	private void plantStep(WorkContext ctx) {
+		if (ctx.mustReturn()) {
+			phase = Phase.DEPOSIT;
+			depositStep(ctx);
+			return;
+		}
+		BlockPos start = home != null ? home : ctx.villager.blockPosition();
+		if (planter.tick(ctx, zone, start) == Planter.Result.DONE) {
+			phase = Phase.SEARCH;
 		}
 	}
 
@@ -390,6 +419,10 @@ final class LumberjackTask extends TaskHandler {
 		WorldUtil.swing(ctx.villager);
 		level.destroyBlock(log, false, ctx.villager);
 		carry(ctx, drops);
+		if (ctx.config.lumberjack.pickUpSaplings) {
+			// Saplings of the foliage decaying around: planted later between cuts.
+			Planting.pickUp(ctx, 3.0, Planting::isSapling);
+		}
 		ctx.record.stats.logs++;
 		GuildManager.markDirty();
 		if (zone != null) {
@@ -434,7 +467,8 @@ final class LumberjackTask extends TaskHandler {
 	}
 
 	private void depositStep(WorkContext ctx) {
-		DepositFlow.State state = deposit.tick(ctx);
+		// One stack of saplings to plant stays in the bag.
+		DepositFlow.State state = deposit.tick(ctx, planter.keep(ctx, zone));
 		switch (state) {
 			case WORKING -> {
 			}
@@ -451,6 +485,7 @@ final class LumberjackTask extends TaskHandler {
 					retryAt = ctx.now + WorkContext.ticks(10);
 				} else {
 					phase = tree != null ? Phase.GO_TREE : Phase.SEARCH;
+					depositRetryAt = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
 				}
 			}
 		}

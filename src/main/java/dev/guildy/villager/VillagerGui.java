@@ -229,6 +229,7 @@ public final class VillagerGui {
 		if (stats.crops > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.crops", stats.crops));
 		}
+		Planting.statLore(lore, stats);
 		if (stats.kills > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.kills", stats.kills));
 		}

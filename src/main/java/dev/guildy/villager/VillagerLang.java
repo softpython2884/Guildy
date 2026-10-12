@@ -24,8 +24,8 @@ final class VillagerLang {
 		m.put("villager.task.idle.desc", "&7Comportement normal d'un villageois :\n&7commerce, promenade, sommeil.");
 		m.put("villager.task.sorter.desc", "&7Vide les coffres de &bdépôt&7 et range chaque\n&7objet dans le coffre de son thème (bois, pierre,\n&7minerais, butin de monstres... 19 catégories).");
 		m.put("villager.task.miner.desc", "&7Mine à sa zone (fanion « Mine ») et rapporte\n&7pierre et minerais. Mine réelle : creuse un\n&7escalier puis des galeries jusqu'à la profondeur\n&7cible. Mine simulée : butin selon la hauteur du\n&7fanion. Sans zone : la mine la plus proche,\n&7sinon la pierre à découvert.");
-		m.put("villager.task.lumberjack.desc", "&7Coupe les arbres naturels de sa zone (fanion\n&7« Coupe de bois ») et replante des pousses.\n&7Sans zone : dans le territoire et jusqu'à\n&748 blocs autour.");
-		m.put("villager.task.farmer.desc", "&7Récolte les cultures mûres de sa zone (fanion\n&7« Champs ») et les replante. Sans zone : dans\n&7le territoire et jusqu'à 48 blocs autour.");
+		m.put("villager.task.lumberjack.desc", "&7Coupe les arbres naturels de sa zone (fanion\n&7« Coupe de bois »), replante et plante de\n&7nouvelles pousses. Sans zone : dans le territoire\n&7et jusqu'à 48 blocs autour.");
+		m.put("villager.task.farmer.desc", "&7Récolte les cultures mûres de sa zone (fanion\n&7« Champs »), les replante et sème les terres\n&7vides (laboure près de l'eau). Sans zone : dans\n&7le territoire et jusqu'à 48 blocs autour.");
 		m.put("villager.task.guard.desc", "&7Épéiste ou archer : patrouille dans sa zone ou\n&7sur son parcours et attaque les monstres. Sans\n&7zone : défend le cœur et le territoire. Toujours\n&7au cœur pendant les vagues. S'équipe dans les\n&7coffres du stockage, va se soigner à son lit.");
 		m.put("villager.task.explorer", "Exploration");
 		m.put("villager.task.explorer.desc", "&7Part vers la &edestination&7 choisie (forêt, désert,\n&7village, temples...) par le bureau d'accueil\n&7(ou le cœur) et revient quelques minutes plus\n&7tard avec le butin du lieu.\n&cRisque de ne jamais revenir (selon la destination).");
