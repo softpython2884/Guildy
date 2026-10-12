@@ -229,6 +229,27 @@ Ressources : `data/guildy/enchantment` (10 enchantements data-driven), `data/gui
     propriété > onglet, puis ordre du fichier) ; résultat mis en cache par objet. Les coffres enregistrés prennent le nom
     de leur rôle (jamais par-dessus un nom donné par un joueur). Migration n° 3 : anciennes catégories par défaut
     remplacées seulement si non modifiées, anciens noms de catégorie des coffres convertis.
+34. **Rythme des hordes et candidats** : `WaveSchedule` (pur) tire la prochaine nuit de horde 1 à 3 jours après chaque
+    horde de nuit (`GuildWaveData.nextWaveDay`) ; une horde manquée (personne au cœur) reste due ; une nuit d'événement
+    (`NightModifiers.hasLabel`) en amène toujours une ; la trêve passe avant. Les candidats villageois sont une liste par
+    guilde (groupes de `arrivals.groupMin..groupMax`, bornés par les places, les lits libres et `maxCandidates`),
+    acceptés ou refusés par nom.
+35. **Chunks des villageois** : `ChunkLoadPlanner` (pur) choisit les chunks à garder actifs (villageois au travail, leur
+    destination, leur zone, les coffres utiles ; plafonds par guilde et serveur, tour de rôle) et `WorkChunkLoader` pose
+    des tickets non sauvegardés qui expirent seuls (niveau ≤ 31 = entités actives, `addTicketWithRadius(r + 2)`), en
+    mode `online` (un membre connecté), `always` ou `never`. En 26.3 les ticks aléatoires ont lieu dans ces chunks, pas
+    les apparitions de monstres ; `pause-when-empty-seconds` met le serveur en pause sans joueur.
+36. **Survie des villageois** : `VillagerVitality` (modificateur `guildy:guild_vitality` : PV par niveau de guilde, plus
+    pour les gardes, régénération hors combat) ; `NightShelter` (retour au lit à `night.homeTime` avec Vitesse, mise à
+    l'abri par téléportation à `shelterTime` et au début d'une horde ; le repos vanilla abandonnait un lit inaccessible
+    en 1200 ticks) ; `HordeTargets` + mixin `NearestAttackableTargetGoal.findTarget` (`guildy.wave.mixins.json`) : les
+    monstres tagués `guildy_wave` ignorent les villageois sauf riposte ; `GuardGear` : équipement de base par niveau
+    (table configurable, armure = modificateur d'attributs, jamais un objet), arbalète pour les archers à partir du
+    niveau 6.
+37. **Plantation** : `PlantingRules` (pur) + `Planter` / `SaplingPlanter` / `CropSower` : tournées de plantation entre
+    deux récoltes, emplacements naturels espacés et plafonnés par chunk, jamais près d'un bloc non naturel ou d'une autre
+    guilde ; pousses / graines prises au sac puis au stockage (`PlantStock`, retrait réel) ; labour seulement en zone
+    Champs, près d'une eau.
 
 ## Notes API Minecraft 26.3
 
