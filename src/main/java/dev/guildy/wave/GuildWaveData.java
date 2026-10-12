@@ -14,6 +14,12 @@ public class GuildWaveData {
 	public String lastResult = "";
 	/** Overworld day index of the last wave start (prevents two waves in the same night). */
 	public long lastWaveDay = -1;
+	/** Defeats in a row (night hordes and event waves), reset by a victory: triggers the truce. */
+	public int defeatsInRow;
+	/** Nights of truce still to come (no horde, no raid), see {@link WaveTruce}. */
+	public int truceNights;
+	/** Overworld day index of the last night spared by the truce (-1 = none). */
+	public long truceDay = -1;
 
 	// Details of the last wave (shown in the waves menu).
 	/** Theme display name ('&' codes) of the last wave. */

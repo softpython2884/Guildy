@@ -80,6 +80,16 @@ public final class WaveApi {
 		return WaveManager.isActive(guild);
 	}
 
+	/** A truce after repeated defeats spares this guild (no night horde). */
+	public static boolean inTruce(Guild guild) {
+		return WaveManager.inTruce(guild);
+	}
+
+	/** The truce also keeps event raids away (waves.json5 truce.blocksRaids). */
+	public static boolean truceBlocksRaids(Guild guild) {
+		return WaveModule.config().truce.blocksRaids && WaveManager.inTruce(guild);
+	}
+
 	/** Online members near the heart or inside the territory (the rule that starts night hordes). */
 	public static int nearbyMembers(Guild guild) {
 		return WaveManager.nearbyMembers(GuildyServer.claimLevel(), guild);

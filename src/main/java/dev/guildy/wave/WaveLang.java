@@ -85,6 +85,10 @@ final class WaveLang {
 		m.put("wave.lore.idle", "&7Prochaine horde : difficulté &f{0}");
 		m.put("wave.lore.expected", "&7Monstres attendus : &f~{0}");
 		m.put("wave.lore.stats", "&7Victoires : &a{0} &8| &7Défaites : &c{1}");
+		m.put("wave.lore.truce", "&a☮ Trêve : encore &f{0}&a nuit(s) sans horde");
+		m.put("wave.truce.started", "&a☮ Trêve ! Après &f{0}&a défaites d'affilée, aucune horde n'attaquera votre base pendant &f{1}&a nuit(s). Profitez-en pour vous renforcer.");
+		m.put("wave.truce.night", "&a☮ Trêve : pas de horde cette nuit (encore &f{0}&a nuit(s) de trêve ensuite).");
+		m.put("wave.truce.last", "&a☮ Trêve : pas de horde cette nuit. &7C'est la dernière nuit de trêve.");
 		m.put("wave.lore.notfounded", "&8Plantez le drapeau fondateur pour affronter les hordes.");
 		m.put("wave.lore.disabled", "&8Les hordes nocturnes sont désactivées.");
 		// GUI
@@ -155,6 +159,8 @@ final class WaveLang {
 		m.put("wave.cmd.none", "&c&e{0}&c n'a aucune horde en cours.");
 		m.put("wave.cmd.night", "&aPalier de nuit de &e{0}&a réglé sur &f{1}&a.");
 		m.put("wave.cmd.usage.setnight", "&cUsage : /guild admin wave setnight <guilde> <palier>");
+		m.put("wave.cmd.truce", "&aTrêve de &e{0}&a : &f{1}&a nuit(s) sans horde.");
+		m.put("wave.cmd.usage.truce", "&cUsage : /guild admin wave truce <guilde> <nuits> (0 = fin de la trêve)");
 		m.put("wave.cmd.status.active", "&e{0}&7 : horde {1}&7 - {2}/{3} tués, {4} vivants, {5} à venir, cœur {6}/{7}, D={8}{9}");
 		m.put("wave.cmd.status.idle", "&e{0}&7 : aucune horde - palier {1}, difficulté estimée {2}, dernière horde jour {3} (jour actuel {4})");
 		m.put("wave.cmd.disabled", "&cLes hordes sont désactivées (waves.json5).");

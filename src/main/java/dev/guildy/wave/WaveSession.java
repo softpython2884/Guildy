@@ -882,6 +882,7 @@ final class WaveSession {
 		long loss = 0;
 		int rolls = 0;
 		int nightBefore = data.night;
+		boolean truceStarted = false;
 		// Event waves (raids...) count as hordes for the statistics but never move the night step.
 		boolean nightStep = !isEvent();
 		switch (result) {
@@ -894,6 +895,7 @@ final class WaveSession {
 					data.night++;
 				}
 				data.victories++;
+				WaveTruce.onVictory(data);
 				data.streak++;
 				data.bestStreak = Math.max(data.bestStreak, data.streak);
 				data.lastResult = "wave.result.victory";
@@ -909,6 +911,7 @@ final class WaveSession {
 					data.night = WaveFormula.nightAfterDefeat(cfg.defeat, data.night);
 				}
 				data.defeats++;
+				truceStarted = WaveTruce.onDefeat(cfg.truce, data);
 				data.streak = 0;
 				data.lastResult = "wave.result.defeat";
 				data.lastGold = loss;
@@ -931,6 +934,10 @@ final class WaveSession {
 		GuildManager.markDirty();
 
 		announceEnd(level, result, reason, gold, xp, rolls, loss, nightBefore, data.night, cfg);
+		if (truceStarted) {
+			Msg.guild(guild, "wave.truce.started", cfg.truce.defeatsInARow, data.truceNights);
+			Msg.guildSound(guild, SoundEvents.BELL_RESONATE, 0.8F, 1.0F);
+		}
 		if (result == Result.VICTORY) {
 			if (xp > 0) {
 				GuildManager.addXp(guild, xp); // may announce a level-up: after the recap

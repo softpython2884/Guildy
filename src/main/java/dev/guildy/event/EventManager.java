@@ -164,8 +164,9 @@ public final class EventManager {
 		EventConfig cfg = cfg();
 		GuildEventData data = guild.events;
 		EventConfig.PillagerRaid raid = cfg.pillagerRaid;
-		if (!data.raidPending() && EventRules.guildEligible(raid.enabled, true, guild.level, raid.minGuildLevel, day,
-				data.last(EventType.PILLAGER_RAID.id), raid.cooldownDays) && random.nextDouble() < raid.chance) {
+		// No raid during a truce after repeated defeats (waves.json5 truce.blocksRaids).
+		if (!data.raidPending() && !WaveApi.truceBlocksRaids(guild) && EventRules.guildEligible(raid.enabled, true, guild.level,
+				raid.minGuildLevel, day, data.last(EventType.PILLAGER_RAID.id), raid.cooldownDays) && random.nextDouble() < raid.chance) {
 			data.raidDay = day;
 			data.raidAt = 0;
 			data.lastDay.put(EventType.PILLAGER_RAID.id, day);

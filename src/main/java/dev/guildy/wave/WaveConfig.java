@@ -58,6 +58,12 @@ public final class WaveConfig implements Validatable {
 	})
 	public Defeat defeat = new Defeat();
 
+	@Comment({
+			"Treve : apres plusieurs defaites d'affilee (hordes de nuit et raids), la base est epargnee quelques nuits",
+			"pour se relever. Une victoire remet le compte des defaites a zero."
+	})
+	public Truce truce = new Truce();
+
 	@Comment("Butin supplementaire lache par les monstres de la horde a leur mort")
 	public KillLoot killLoot = new KillLoot();
 
@@ -273,6 +279,18 @@ public final class WaveConfig implements Validatable {
 		public int treasuryLossPercent = 25;
 		@Comment("Le palier de nuit recule de N (minimum 0)")
 		public int nightRollback = 2;
+	}
+
+	@Json5.Section
+	public static final class Truce {
+		@Comment("Activer la treve")
+		public boolean enabled = true;
+		@Comment("Nombre de defaites d'affilee qui declenchent une treve (1 a 10)")
+		public int defeatsInARow = 2;
+		@Comment("Nombre de nuits sans horde pendant la treve (0 a 30)")
+		public int nights = 3;
+		@Comment("Pendant la treve, les pillards ne lancent pas de raid non plus")
+		public boolean blocksRaids = true;
 	}
 
 	@Json5.Section
@@ -559,6 +577,9 @@ public final class WaveConfig implements Validatable {
 		if (defeat == null) {
 			defeat = new Defeat();
 		}
+		if (truce == null) {
+			truce = new Truce();
+		}
 		if (killLoot == null) {
 			killLoot = new KillLoot();
 		}
@@ -656,6 +677,8 @@ public final class WaveConfig implements Validatable {
 
 		defeat.treasuryLossPercent = clamp(defeat.treasuryLossPercent, 0, 100);
 		defeat.nightRollback = clamp(defeat.nightRollback, 0, 1000);
+		truce.defeatsInARow = clamp(truce.defeatsInARow, 1, 10);
+		truce.nights = clamp(truce.nights, 0, 30);
 
 		KillLoot k = killLoot;
 		k.nuggetChance = clamp(k.nuggetChance, 0, 1);

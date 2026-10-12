@@ -4,6 +4,7 @@ import dev.guildy.Guildy;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Lifecycle;
+import dev.guildy.core.Msg;
 import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
 import dev.guildy.data.ChunkKey;
@@ -187,8 +188,21 @@ public final class WaveManager {
 			return; // (the snapshot may still hold a guild disbanded during this second)
 		}
 		WaveConfig cfg = WaveModule.config();
-		if (guild.waves.lastWaveDay == WaveFormula.dayIndex(clock)) {
+		long day = WaveFormula.dayIndex(clock);
+		if (guild.waves.lastWaveDay == day) {
 			return; // at most one wave per night
+		}
+		WaveTruce.Night truce = WaveTruce.spareTonight(cfg.truce, guild.waves, day);
+		if (truce != WaveTruce.Night.NONE) {
+			if (truce == WaveTruce.Night.SPARED_NOW) {
+				GuildManager.markDirty();
+				if (guild.waves.truceNights > 0) {
+					Msg.guild(guild, "wave.truce.night", guild.waves.truceNights);
+				} else {
+					Msg.guild(guild, "wave.truce.last");
+				}
+			}
+			return; // truce after repeated defeats: no horde tonight
 		}
 		if ((seconds + index) % cfg.timing.startRetrySeconds != 0) {
 			return;
@@ -445,12 +459,29 @@ public final class WaveManager {
 			lines.add(Lang.get("wave.lore.notfounded"));
 		} else {
 			double difficulty = estimateDifficulty(guild);
+			List<Component> truce = truceLore(guild);
+			lines.addAll(truce);
 			lines.add(Lang.get("wave.lore.idle", WaveSession.formatDifficulty(difficulty)));
 			lines.add(Lang.get("wave.lore.expected", WaveFormula.mobCount(cfg.difficulty, difficulty, 1.0)));
 			lines.add(Lang.get("wave.lore.stats", guild.waves.victories, guild.waves.defeats));
 		}
 		lines.addAll(eventLore(guild));
 		return lines;
+	}
+
+	/** "Trêve" line while a truce is running (empty otherwise). */
+	static List<Component> truceLore(Guild guild) {
+		WaveConfig cfg = WaveModule.config();
+		long day = WaveFormula.dayIndex(clock());
+		if (!WaveTruce.active(cfg.truce, guild.waves, day)) {
+			return List.of();
+		}
+		return List.of(Lang.get("wave.lore.truce", WaveTruce.nightsLeft(guild.waves, day)));
+	}
+
+	/** A truce is running for this guild (no horde, and no raid when the config says so). */
+	static boolean inTruce(Guild guild) {
+		return WaveTruce.active(WaveModule.config().truce, guild.waves, WaveFormula.dayIndex(clock()));
 	}
 
 	/** Event lines from the event module (never fails). */
