@@ -83,7 +83,10 @@ tient une carte qui couvre la base. L'éditeur gratuit (sans ressources) peut ê
 - Limite de chunks selon le niveau de guilde ; distance minimale entre deux guildes ; pas de base près du spawn.
 
 ### 3. Les nuits : la horde attaque
-Chaque nuit, si un membre est près du cœur, une **horde** sort des **frontières** du territoire et marche vers le cœur.
+Tous les **1 à 3 jours** (tiré au hasard pour chaque guilde ; une nuit de sang en amène toujours une), si un membre est
+près du cœur à la tombée de la nuit, une **horde** sort des **frontières** du territoire et marche vers le cœur. Le menu
+des hordes indique la prochaine (« cette nuit » ou « dans N nuits ») ; un soir sans horde, un message prévient la guilde.
+Les monstres de la horde **ignorent les villageois**, sauf ceux qui les frappent (les gardes).
 
 - Thèmes variés : mort-vivants, arachnides, illageois, créatures du Nether, créatures de l'End, horde d'élite,
   nuit du boss. Monstres **élites** (brillants, plus forts) et **boss** réguliers.
@@ -161,8 +164,10 @@ son inventaire. Le **trésor de guilde** (menu Trésor, `/guild deposit`, `/guil
 les constructions et les bannières décoratives. Les niveaux de guilde débloquent plus d'articles et de quêtes.
 
 ### 7. Villageois
-Avec un **bureau d'accueil** et un **lit libre** dans le territoire, un villageois se présente certains matins :
-**[Accepter] / [Refuser]** dans le chat (ou dans le menu). Nombre maximum : 2 + 1 par niveau de guilde.
+Avec un **bureau d'accueil** et un **lit libre** dans le territoire, des villageois se présentent certains matins, parfois
+**plusieurs à la fois** (1 à 3, dans la limite des places et des lits libres) : **[Accepter] / [Refuser]** dans le chat
+pour chacun (ou dans le menu : clic gauche = accepter, clic droit = refuser ; `/guild villagers accept <nom>`).
+Nombre maximum : 2 + 1 par niveau de guilde.
 Menu « Villageois » (`/guild villagers`, ou accroupi + clic droit sur un villageois) : la liste montre la tâche, la zone,
 le statut et ce que chacun transporte ; le menu d'un villageois règle sa tâche, sa **zone de travail** et sa mission,
 permet de l'**appeler** à côté de soi (« Appeler ici », depuis le territoire ou une zone de la guilde, où que soit le
@@ -172,8 +177,8 @@ villageois : s'il est loin, sa dernière position est chargée un instant, « Ap
 |---|---|
 | **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (19 thèmes, voir « Rangement par thème ») |
 | **Mineur** | creuse vraiment sa **mine** (mode réel, voir plus bas) : escalier en colimaçon puis galeries, pierre et/ou minerais selon l'objectif ; ou minage simulé au fanion (mode simulé) |
-| **Bûcheron** | coupe les arbres naturels de sa **coupe de bois** (ou autour de lui) et replante |
-| **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui) et replante |
+| **Bûcheron** | coupe les arbres naturels de sa **coupe de bois** (ou autour de lui), replante, et **plante de nouvelles pousses** dans sa zone (voir « Plantation ») |
+| **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui), replante, **sème les terres vides** et laboure près de l'eau (voir « Plantation ») |
 | **Garde** | **épéiste** ou **archer** ; patrouille dans sa zone ou sur son **parcours de garde**, sinon défend le cœur ; toujours au cœur pendant les hordes ; s'équipe dans les coffres et se replie pour se soigner (voir « Gardes ») |
 | **Exploration** | part vers la **destination** choisie (biome ou construction, voir « Destinations d'expédition ») : il quitte vraiment la base et revient quelques minutes plus tard avec le butin du lieu — risque de ne pas revenir |
 | **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** vers la destination choisie (forteresse, bastion, forêts…) — risque plus élevé |
@@ -290,6 +295,48 @@ retire, « Vider » efface la liste. Les objectifs d'une zone s'ajoutent à ceux
   reprend son poste à 90 % ; hors combat, il se soigne lentement.
 - **Pas de tir ami** : impossible de blesser les villageois de votre guilde (coups, balayage, flèches, tridents…). Pour
   vous en séparer, utilisez « Renvoyer » dans son menu.
+- **Équipement de base selon le niveau de la guilde** (gratuit, il ne tombe pas et ne s'use pas ; un meilleur
+  équipement pris dans les coffres reste prioritaire) :
+
+| Niveau | Épée | Tir | Armure |
+|---|---|---|---|
+| 1 | bois | arc | aucune |
+| 2-3 | pierre | arc (Puissance I au niv. 3) | cuir |
+| 4-5 | fer | arc Puissance I / II | mailles |
+| 6 | fer Tranchant I | **arbalète** Charge rapide I | fer |
+| 7-8 | diamant (Tranchant I au niv. 8) | arbalète Charge rapide, Perforation I | fer |
+| 9 | diamant Tranchant II | arbalète Charge rapide II, Perforation II | diamant |
+| 10 | netherite Tranchant II | arbalète Charge rapide III, Perforation II | diamant |
+
+#### Vie, nuit et refuge
+- **Plus de vie avec le niveau** : chaque villageois de la guilde gagne +4 PV (2 cœurs) par niveau de guilde au-delà du
+  premier, les gardes encore plus (×1,5 + 10 PV) ; hors combat, ils se soignent lentement. La vie s'affiche dans le menu.
+- **Retour avant la nuit** : en fin de journée (heure 11000), les travailleurs posent leurs outils et rentrent **en
+  courant** à leur lit (sans lit : un lit libre du territoire, sinon le bureau d'accueil ou le cœur). À la tombée de la
+  nuit, ou dès qu'une horde arrive, un travailleur encore dehors est **mis à l'abri** près de son lit (téléporté).
+  Les gardes restent dehors.
+
+#### Plantation
+- **Bûcheron** : quand il n'a plus d'arbre à couper dans sa coupe de bois, il plante de nouvelles pousses sur le sol
+  naturel libre (herbe, terre, podzol, mousse, boue), espacées de 5 blocs, 8 arbres au plus par chunk ; jamais sur un
+  chemin, une terre labourée, à côté de vos constructions ni près d'une autre guilde. Essence de la zone d'abord, puis
+  celles de vos objectifs prioritaires ; chêne noir et chêne pâle par carrés de 4. Les pousses viennent de son sac (il
+  ramasse celles qui tombent du feuillage), sinon des coffres « Graines et pousses », de dépôt ou « Divers ».
+- **Fermier** : quand rien n'est mûr, il sème les terres labourées vides (blé, carottes, pommes de terre, betteraves),
+  avec les graines de son sac ou du stockage ; dans une zone Champs, il **laboure** aussi l'herbe et la terre à moins de
+  4 blocs d'une eau (jamais un chemin ni à côté de vos constructions).
+- Le statut dit ce qu'il fait (« Plante des pousses de chêne (3/12) », « Sème du blé », « Va chercher des graines au
+  stockage ») et pourquoi il s'arrête quand il n'a plus rien à planter.
+
+#### Travail à distance (chunks chargés)
+Un villageois au travail garde chargés ses alentours, l'endroit où il se rend (coffre de dépôt, lit le soir, retour
+d'expédition) et sa zone de travail : bûcherons, fermiers, mineurs et trieurs **continuent quand vous êtes loin**.
+Par défaut, il suffit qu'un membre de la guilde soit connecté (`villagers.json5` → `chunkLoading`, mode `online`) ;
+`always` les fait travailler même serveur vide (mettez alors `pause-when-empty-seconds=0` dans `server.properties`,
+sinon le serveur se met en pause sans joueur), `never` revient à l'ancien fonctionnement. Rien n'est chargé pour un
+villageois sans tâche, en expédition ou couché, ni pour les gardes. Les cultures et les pousses y grandissent, aucun
+monstre n'y apparaît. Limites : 64 chunks par guilde, 512 pour le serveur (menu Villageois « Chunks des villageois »,
+`/guild admin villager chunks`).
 
 #### Destinations d'expédition
 Pour un explorateur ou une expédition au Nether, le bouton « **Destination** » du menu du villageois choisit où il part.
@@ -362,8 +409,8 @@ l'ouvre. Dans le menu Stockage : clic gauche sur un coffre pour changer son rôl
 indique où ira l'objet que vous tenez. Les catégories (règles : objets, tags, propriétés) se règlent dans
 `villagers.json5`.
 
-La nuit, les travailleurs vont se coucher ; les gardes restent dehors. Les villageois peuvent **mourir**
-pendant les hordes : protégez-les (gardes en armure, lits pour se replier) ! Seuls les membres peuvent commercer avec eux.
+La nuit, les travailleurs dorment ; les gardes restent dehors. Les villageois peuvent encore **mourir** (gardes au
+combat, flèches perdues) : posez des lits près du cœur et équipez vos gardes. Seuls les membres peuvent commercer avec eux.
 
 ### 8. Arbre d'évolution
 Menu « Arbre d'évolution » (`/guild upgrades`, ou le bouton du menu principal) : la guilde dépense l'**or du
@@ -543,10 +590,10 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin info\|disband <guilde>` · `forcejoin <joueur> <guilde>` | Gestion des guildes |
 | `/guild admin setlevel\|addxp\|addgold <guilde> <valeur>` | Progression et trésor |
 | `/guild admin giveflag <joueur> extension [n]` · `giveflag <joueur> founding <guilde>` · `tp <guilde>` | Drapeaux, téléport au cœur |
-| `/guild admin wave start\|stop\|status <guilde>` · `wave setnight <guilde> <n>` · `wave truce <guilde> <nuits>` | Hordes (start = horde de test immédiate ; truce = nuits de trêve restantes, 0 = fin) |
+| `/guild admin wave start\|stop\|status <guilde>` · `wave setnight <guilde> <n>` · `wave truce <guilde> <nuits>` · `wave schedule <guilde> <nuits>` | Hordes (start = horde de test immédiate ; truce = nuits de trêve restantes, 0 = fin ; schedule = prochaine horde dans N nuits, 0 = cette nuit) |
 | `/guild admin structure unlock <guilde> <id>` · `structure check <guilde>` | Constructions |
 | `/guild admin quest reroll <guilde>` · `quest complete <guilde> <slot>` · `quest map <guilde>` · `quest legendary <guilde> <slot>` | Quêtes (`legendary` : remplace la quête du panneau par un contrat légendaire) |
-| `/guild admin villager spawn <guilde>` | Faire venir un candidat villageois |
+| `/guild admin villager spawn <guilde>` · `villager chunks` | Faire venir un candidat villageois ; chunks gardés chargés pour les villageois (par guilde) |
 | `/guild admin upgrade unlock\|lock <guilde> <id>` | Arbre d'évolution : `unlock` débloque gratuitement (avec les prérequis manquants), `lock` retire l'amélioration et celles qui en dépendent |
 | `/guild admin event list` | Événements : réglages, nuit de sang prévue, raids en attente, marchands présents par guilde |
 | `/guild admin event start\|stop <événement> [guilde]` | `blood_night` (tout le serveur : la nuit en cours ou la prochaine), `pillager_raid` (immédiat si un membre est au cœur, sinon dès qu'il y en a un), `caravan`, `book_merchant`, `merchant` (visite du Carrefour) ; `stop` annule / renvoie le marchand |
@@ -563,11 +610,11 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | Fichier | Contenu |
 |---|---|
 | `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, seuils d'XP des niveaux, bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles |
-| `waves.json5` | Horaires, formule de difficulté, taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, trêve après plusieurs défaites, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
+| `waves.json5` | Horaires, jours entre deux hordes (1 à 3), formule de difficulté, taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, trêve après plusieurs défaites, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
-| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres), destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite |
+| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
