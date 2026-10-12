@@ -1,6 +1,7 @@
 package dev.guildy.villager;
 
 import dev.guildy.core.Lang;
+import dev.guildy.data.ChunkKey;
 import dev.guildy.data.GuildManager;
 import dev.guildy.upgrade.Upgrades;
 import net.minecraft.core.BlockPos;
@@ -25,21 +26,30 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * Real tree cutting in the villager's forest zone (or, without zone, around itself). An incremental nearest-first scan
- * (a couple of loaded chunks per second, one heightmap lookup per column + a short trunk walk) collects tree bases; a
- * tree is only accepted when it carries natural (non-persistent) leaves, is made of the zone's wood, and has no log in
- * another guild's territory, so player buildings are never cut. One log per second, top-down; saplings are replanted
- * at the trunk base.
+ * Real tree cutting in the villager's forest zone or, without zone, around the territory: the automatic search is a
+ * disc centred on the nearest point of the territory (on itself while inside it, see {@link WorkAnchor}), so tree after
+ * tree it never drifts away. An incremental nearest-first scan (a few loaded chunks per second, one heightmap lookup
+ * per column + a short trunk walk, resumed at the column where it stopped) collects tree bases; a tree is only accepted
+ * when it carries natural (non-persistent) leaves, is made of the zone's wood, and has no log in another guild's
+ * territory, so player buildings are never cut. Rejected trees are not looked at again for a few minutes.
+ * <p>
+ * "Objectifs prioritaires" ({@link Wishlist}): trees giving a wanted item (their logs, or leaf drops such as saplings,
+ * apples and sticks) come first, even up to {@code zones.wishlistMargin} blocks outside the area; for wanted leaf drops
+ * the canopy is harvested before the trunk. One log per second, top-down; saplings are replanted at the trunk base.
  */
 final class LumberjackTask extends TaskHandler {
 	private enum Phase {
 		SEARCH,
 		GO_TREE,
+		LEAVES,
 		CUT,
 		DEPOSIT,
 		BLOCKED
@@ -48,38 +58,75 @@ final class LumberjackTask extends TaskHandler {
 	/** Trees validated (bounded flood fill) per step. */
 	private static final int MAX_VALIDATIONS = 2;
 	private static final int CHUNKS_PER_STEP = 2;
+	/** With wanted items the whole area is read before ordinary trees are taken: it is read faster. */
+	private static final int WISH_CHUNKS_PER_STEP = 4;
 	private static final int MAX_PENDING = 48;
 	private static final int MAX_TRUNK_HEIGHT = 40;
 	private static final int MAX_TREE_SPREAD = 6;
 	private static final int MIN_NATURAL_LEAVES = 3;
+	/** Canopy harvested for wanted leaf drops: at most this many leaves per tree, a few per second. */
+	private static final int MAX_LEAVES = 96;
+	private static final int LEAVES_PER_STEP = 6;
+	/** A rejected tree (not natural, too big, partly another guild's) is not examined again for 5 minutes. */
+	private static final long REJECT_TICKS = 5 * 60 * 20L;
+	private static final int MAX_REJECTED = 2048;
+	/** Nothing loaded in the area: look again soon (a player may come back). */
+	private static final long UNLOADED_RETRY_TICKS = 3 * 20L;
 	private static final ItemStack AXE = new ItemStack(Items.IRON_AXE);
 
-	private record Tree(BlockPos base, Block log, ArrayDeque<BlockPos> logs, List<BlockPos> plantSpots, @Nullable Block sapling) {
+	/** A trunk base found by the scan; {@code core}: inside the area (not only in the margin of wanted items). */
+	private record Candidate(BlockPos base, boolean core) {
+	}
+
+	private record Tree(BlockPos base, Block log, ArrayDeque<BlockPos> logs, ArrayDeque<BlockPos> leaves, List<BlockPos> plantSpots,
+			@Nullable Block sapling, boolean wanted) {
+	}
+
+	/** Outcome of the last complete scan, for the idle status. */
+	private record ScanResult(int read, int unloaded) {
 	}
 
 	private Phase phase = Phase.SEARCH;
 	private @Nullable Tree tree;
 	private @Nullable WorkZone zone;
+	private WorkWishes wishes = WorkWishes.NONE;
 	private String areaKey = "";
 	private WorkArea.@Nullable Scan scan;
-	/** Tree bases found by the scan, not validated yet. */
-	private final List<BlockPos> pending = new ArrayList<>();
+	/** Automatic mode: centre of the current search (candidates nearest to it first); null = nearest to the villager. */
+	private @Nullable BlockPos anchor;
+	/** Bases of trees that may give a wanted item (examined first). */
+	private final List<Candidate> wanted = new ArrayList<>();
+	/** Other bases found inside the area. */
+	private final List<Candidate> normal = new ArrayList<>();
+	/** Column (x, z) → tick until which its tree is ignored. */
+	private final Map<Long, Long> rejected = new HashMap<>();
+	/** Base column of a tree rejected for its size → same expiry (counted by every search, for the status). */
+	private final Map<Long, Long> bigBases = new HashMap<>();
+	/** Trees too big to be cut seen by the current search. */
+	private int bigTrees;
+	private @Nullable ScanResult lastScan;
 	private long nextScan;
 	private long retryAt;
 	/** Extra logs earned by the work speed upgrade (fractional rate accumulated across steps). */
 	private double bonusCuts;
+	/** Where the task started: centre of the automatic search of a guild without territory. */
+	private @Nullable BlockPos home;
 	private final DepositFlow deposit = new DepositFlow();
 
 	@Override
 	void tick(WorkContext ctx) {
+		if (home == null) {
+			home = ctx.villager.blockPosition();
+		}
 		zone = Zones.assignedZone(ctx.guild, ctx.record);
-		String key = areaKey(zone);
+		String wishKey = WorkWishes.keyOf(ctx.record, zone);
+		String key = areaKey(zone) + "|" + wishKey;
 		if (!key.equals(areaKey)) {
 			areaKey = key;
-			scan = null;
-			pending.clear();
+			wishes = WorkWishes.of(ctx.record, zone);
+			resetSearch();
 			nextScan = 0;
-			if (phase == Phase.GO_TREE || phase == Phase.CUT) {
+			if (phase == Phase.GO_TREE || phase == Phase.LEAVES || phase == Phase.CUT) {
 				tree = null;
 				phase = Phase.SEARCH;
 			}
@@ -87,6 +134,7 @@ final class LumberjackTask extends TaskHandler {
 		switch (phase) {
 			case SEARCH -> search(ctx);
 			case GO_TREE -> goTree(ctx);
+			case LEAVES -> harvestLeaves(ctx);
 			case CUT -> {
 				cut(ctx);
 				bonusCuts += Upgrades.workRate(ctx.guild) - 1;
@@ -108,49 +156,55 @@ final class LumberjackTask extends TaskHandler {
 		}
 	}
 
+	private void resetSearch() {
+		scan = null;
+		anchor = null;
+		wanted.clear();
+		normal.clear();
+		lastScan = null;
+		bigTrees = 0;
+	}
+
+	// ------------------------------------------------------------------ search
+
 	private void search(WorkContext ctx) {
 		if (ctx.mustReturn()) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 			return;
 		}
-		WorkZone current = zone;
-		if (current != null && !ctx.ticking(current.pos)) {
-			// Far zone without any player around: nothing can be cut there right now.
-			scan = null;
-			pending.clear();
-			idle(ctx, "villager.status.zone_unloaded", current.name);
-			return;
-		}
-		if (scan == null && pending.isEmpty()) {
+		if (scan == null && wanted.isEmpty() && normal.isEmpty()) {
 			if (ctx.now < nextScan) {
-				idleNoTree(ctx);
+				idleAfterScan(ctx);
 				return;
 			}
-			BlockPos from = ctx.villager.blockPosition();
-			WorkArea area = current != null ? WorkArea.of(current) : WorkArea.auto(ctx.guild, from, ctx.config);
-			scan = new WorkArea.Scan(area, from);
-			nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
+			startScan(ctx);
 		}
 		int[] budget = {MAX_VALIDATIONS};
-		Tree found = validatePending(ctx, budget);
+		Tree found = validateNext(ctx, budget);
 		WorkArea.Scan running = scan;
 		if (found == null && running != null) {
-			for (int i = 0; i < CHUNKS_PER_STEP && pending.size() < MAX_PENDING; i++) {
+			int chunks = wishes.isEmpty() ? CHUNKS_PER_STEP : WISH_CHUNKS_PER_STEP;
+			for (int i = 0; i < chunks && wanted.size() < MAX_PENDING; i++) {
 				LevelChunk chunk = running.next(ctx);
 				if (chunk == null) {
 					break;
 				}
-				if (!collectBases(running.area, chunk)) {
-					// Dense forest: the rest of this chunk is read again once some bases are handled.
-					running.retry();
+				int stop = collectBases(ctx, running.area, chunk, running.startColumn());
+				if (stop >= 0) {
+					// Lists full (dense forest): the rest of this chunk is read once some bases are handled.
+					running.resumeAt(stop);
 					break;
 				}
 			}
 			if (running.done()) {
+				lastScan = new ScanResult(running.readChunks(), running.unloadedChunks());
+				if (running.readChunks() == 0) {
+					nextScan = Math.min(nextScan, ctx.now + UNLOADED_RETRY_TICKS);
+				}
 				scan = null;
 			}
-			found = validatePending(ctx, budget);
+			found = validateNext(ctx, budget);
 		}
 		if (found != null) {
 			tree = found;
@@ -158,22 +212,66 @@ final class LumberjackTask extends TaskHandler {
 			goTree(ctx);
 			return;
 		}
-		if (scan == null && pending.isEmpty()) {
-			idleNoTree(ctx);
-		} else if (current != null) {
-			ctx.status("villager.status.lumberjack.searching_zone", current.name);
+		if (scan == null && wanted.isEmpty() && normal.isEmpty()) {
+			idleAfterScan(ctx);
 		} else {
-			ctx.status("villager.status.lumberjack.searching");
+			searchingStatus(ctx);
 		}
 	}
 
-	/** Nothing to cut: bring the logs home, else wait. */
-	private void idleNoTree(WorkContext ctx) {
+	private void startScan(WorkContext ctx) {
+		BlockPos villager = ctx.villager.blockPosition();
+		int margin = wishes.isEmpty() ? 0 : ctx.config.zones.wishlistMargin;
 		WorkZone current = zone;
+		WorkArea area;
 		if (current != null) {
+			area = WorkArea.of(current, margin);
+			anchor = null;
+		} else {
+			area = WorkArea.anchored(ctx.guild, villager, home != null ? home : villager, ctx.config, margin);
+			anchor = area.center();
+		}
+		scan = new WorkArea.Scan(area, anchor != null ? anchor : villager);
+		bigTrees = 0;
+		nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
+	}
+
+	private void searchingStatus(WorkContext ctx) {
+		WorkArea.Scan running = scan;
+		int position = running == null ? 1 : running.position();
+		int total = running == null ? 1 : running.total();
+		WorkZone current = zone;
+		if (!wishes.isEmpty() && (running != null || !wanted.isEmpty())) {
+			ctx.status("villager.work.lumberjack.searching_wanted", position, total);
+		} else if (current != null) {
+			ctx.status("villager.work.lumberjack.searching_zone", current.name, position, total);
+		} else {
+			ctx.status("villager.work.lumberjack.searching_auto", position, total);
+		}
+	}
+
+	/** Nothing to cut (last scan): bring the logs home, else say why. */
+	private void idleAfterScan(WorkContext ctx) {
+		WorkZone current = zone;
+		ScanResult result = lastScan;
+		int radius = ctx.config.zones.autoSearchRadius;
+		if (result != null && result.read() == 0 && result.unloaded() > 0) {
+			if (current != null) {
+				idle(ctx, "villager.status.zone_unloaded", current.name);
+			} else {
+				idle(ctx, "villager.work.area_unloaded");
+			}
+		} else if (bigTrees > 0) {
+			int max = ctx.config.lumberjack.maxLogsPerTree;
+			if (current != null) {
+				idle(ctx, "villager.work.lumberjack.no_tree_zone_big", current.name, Lang.raw(current.objective.langKey()), bigTrees, max);
+			} else {
+				idle(ctx, "villager.work.lumberjack.no_tree_auto_big", radius, bigTrees, max);
+			}
+		} else if (current != null) {
 			idle(ctx, "villager.status.lumberjack.no_tree_zone", current.name, Lang.raw(current.objective.langKey()));
 		} else {
-			idle(ctx, "villager.status.lumberjack.no_tree_auto", ctx.config.zones.autoSearchRadius);
+			idle(ctx, "villager.work.lumberjack.no_tree_auto", radius);
 		}
 	}
 
@@ -185,6 +283,8 @@ final class LumberjackTask extends TaskHandler {
 			ctx.status(status, args);
 		}
 	}
+
+	// ------------------------------------------------------------------ cutting
 
 	private void goTree(WorkContext ctx) {
 		Tree current = tree;
@@ -198,17 +298,68 @@ final class LumberjackTask extends TaskHandler {
 				phase = Phase.SEARCH;
 			}
 			case MOVING -> {
-				if (zone != null) {
+				if (current.wanted) {
+					ctx.status("villager.work.lumberjack.going_wanted", current.base.getX(), current.base.getY(), current.base.getZ());
+				} else if (zone != null) {
 					ctx.status("villager.status.lumberjack.going_zone", zone.name);
 				} else {
 					ctx.status("villager.status.lumberjack.going_auto", current.base.getX(), current.base.getY(), current.base.getZ());
 				}
 			}
 			case ARRIVED -> {
-				phase = Phase.CUT;
-				cut(ctx);
+				if (current.leaves.isEmpty()) {
+					phase = Phase.CUT;
+					cut(ctx);
+				} else {
+					phase = Phase.LEAVES;
+					harvestLeaves(ctx);
+				}
 			}
 		}
+	}
+
+	/** Wanted leaf drops (saplings, apples, sticks): the canopy is taken before the trunk, so it does not decay first. */
+	private void harvestLeaves(WorkContext ctx) {
+		Tree current = tree;
+		if (current == null) {
+			phase = Phase.SEARCH;
+			return;
+		}
+		if (!Movement.near(ctx, current.base, 5.0, 6.0)) {
+			phase = Phase.GO_TREE;
+			goTree(ctx);
+			return;
+		}
+		if (ctx.mustReturn()) {
+			phase = Phase.DEPOSIT;
+			depositStep(ctx);
+			return;
+		}
+		ServerLevel level = ctx.level;
+		int budget = (int) Math.max(1, Math.round(LEAVES_PER_STEP * Upgrades.workRate(ctx.guild)));
+		int done = 0;
+		while (done < budget && !current.leaves.isEmpty() && !ctx.mustReturn()) {
+			BlockPos pos = current.leaves.poll();
+			if (!ctx.loaded(pos) || ctx.foreign(pos)) {
+				continue;
+			}
+			BlockState state = level.getBlockState(pos);
+			if (!isNaturalLeaves(state)) {
+				continue;
+			}
+			List<ItemStack> drops = Block.getDrops(state, level, pos, null, ctx.villager, ItemStack.EMPTY);
+			level.destroyBlock(pos, false, ctx.villager);
+			carry(ctx, drops);
+			done++;
+		}
+		if (done > 0) {
+			Movement.hold(ctx, current.base.above(3));
+			WorldUtil.swing(ctx.villager);
+		}
+		if (current.leaves.isEmpty()) {
+			phase = Phase.CUT;
+		}
+		ctx.status("villager.work.lumberjack.leaves", current.leaves.size());
 	}
 
 	private void cut(WorkContext ctx) {
@@ -238,20 +389,28 @@ final class LumberjackTask extends TaskHandler {
 		Movement.hold(ctx, log);
 		WorldUtil.swing(ctx.villager);
 		level.destroyBlock(log, false, ctx.villager);
-		for (ItemStack drop : drops) {
-			ItemStack leftover = ctx.addCarried(drop);
-			if (!leftover.isEmpty()) {
-				ItemEntity entity = new ItemEntity(level, ctx.villager.getX(), ctx.villager.getY() + 0.5, ctx.villager.getZ(), leftover);
-				entity.setDefaultPickUpDelay();
-				level.addFreshEntity(entity);
-			}
-		}
+		carry(ctx, drops);
 		ctx.record.stats.logs++;
 		GuildManager.markDirty();
 		if (zone != null) {
 			ctx.status("villager.status.lumberjack.cutting", current.logs.size());
 		} else {
 			ctx.status("villager.status.lumberjack.cutting_auto", current.base.getX(), current.base.getY(), current.base.getZ(), current.logs.size());
+		}
+	}
+
+	/** Into the bag; what does not fit falls at the villager's feet. */
+	private static void carry(WorkContext ctx, List<ItemStack> drops) {
+		for (ItemStack drop : drops) {
+			if (drop.isEmpty()) {
+				continue;
+			}
+			ItemStack leftover = ctx.addCarried(drop);
+			if (!leftover.isEmpty()) {
+				ItemEntity entity = new ItemEntity(ctx.level, ctx.villager.getX(), ctx.villager.getY() + 0.5, ctx.villager.getZ(), leftover);
+				entity.setDefaultPickUpDelay();
+				ctx.level.addFreshEntity(entity);
+			}
 		}
 	}
 
@@ -266,12 +425,12 @@ final class LumberjackTask extends TaskHandler {
 			}
 		}
 		tree = null;
-		if (scan == null && pending.isEmpty()) {
+		if (scan == null && wanted.isEmpty() && normal.isEmpty()) {
 			// Every tree found by the last search is done: look again right away (new trees around, skipped ones).
 			nextScan = ctx.now;
 		}
 		phase = ctx.mustReturn() ? Phase.DEPOSIT : Phase.SEARCH;
-		ctx.status("villager.status.lumberjack.searching");
+		searchingStatus(ctx);
 	}
 
 	private void depositStep(WorkContext ctx) {
@@ -315,93 +474,167 @@ final class LumberjackTask extends TaskHandler {
 	}
 
 	/**
-	 * Trunk bases of the chunk's columns inside the area: top block (no leaves) is a matching log standing on soil.
+	 * Trunk bases of the chunk's columns inside the area (or its margin, for wanted trees), from column {@code start}:
+	 * top block (no leaves) is a log standing on soil.
 	 *
-	 * @return false when the pending list filled up before the end of the chunk
+	 * @return the column where reading stopped because the lists are full, -1 when the chunk is done
 	 */
-	private boolean collectBases(WorkArea area, LevelChunk chunk) {
+	private int collectBases(WorkContext ctx, WorkArea area, LevelChunk chunk, int start) {
 		ZoneObjective objective = objective();
+		boolean wishing = !wishes.isEmpty();
 		int x0 = chunk.getPos().getMinBlockX();
 		int z0 = chunk.getPos().getMinBlockZ();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-		for (int dx = 0; dx < 16; dx++) {
-			for (int dz = 0; dz < 16; dz++) {
-				int x = x0 + dx;
-				int z = z0 + dz;
-				if (!area.contains(x, z)) {
-					continue;
-				}
-				if (pending.size() >= MAX_PENDING) {
-					return false;
-				}
-				int top = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-				BlockState state = chunk.getBlockState(pos.set(x, top, z));
-				if (!state.is(BlockTags.LOGS) || !objective.acceptsLog(blockId(state.getBlock()))) {
-					continue;
-				}
-				int y = top;
-				int steps = 0;
-				while (steps < MAX_TRUNK_HEIGHT && chunk.getBlockState(pos.set(x, y - 1, z)).is(state.getBlock())) {
-					y--;
-					steps++;
-				}
-				BlockPos base = new BlockPos(x, y, z);
-				if (isSoil(chunk.getBlockState(base.below())) && !pending.contains(base)) {
-					pending.add(base);
-				}
+		for (int index = Math.max(0, start); index < 256; index++) {
+			int x = x0 + (index >> 4);
+			int z = z0 + (index & 15);
+			boolean core = area.contains(x, z);
+			if (!core && (!wishing || !area.reaches(x, z))) {
+				continue;
 			}
+			if (isRejected(x, z, ctx.now)) {
+				if (bigBases.containsKey(ChunkKey.of(x, z))) {
+					bigTrees++;
+				}
+				continue;
+			}
+			int top = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+			BlockState state = chunk.getBlockState(pos.set(x, top, z));
+			if (!state.is(BlockTags.LOGS)) {
+				continue;
+			}
+			Block log = state.getBlock();
+			boolean want = wishing && (wishes.logWanted(log) || wishes.leavesMayGive(log));
+			if (!want && (!core || !objective.acceptsLog(blockId(log)))) {
+				continue;
+			}
+			int y = top;
+			int steps = 0;
+			while (steps < MAX_TRUNK_HEIGHT && chunk.getBlockState(pos.set(x, y - 1, z)).is(log)) {
+				y--;
+				steps++;
+			}
+			BlockPos base = new BlockPos(x, y, z);
+			if (!isSoil(chunk.getBlockState(base.below()))) {
+				continue;
+			}
+			Candidate candidate = new Candidate(base, core);
+			if (want) {
+				if (wanted.size() >= MAX_PENDING) {
+					return index;
+				}
+				addCandidate(wanted, candidate);
+			} else if (normal.size() < MAX_PENDING) {
+				addCandidate(normal, candidate);
+			} else if (!wishing) {
+				return index;
+			}
+			// With wanted items, ordinary trees beyond the list are found again by the next search.
 		}
-		return true;
+		return -1;
 	}
 
-	/** Validates pending bases nearest first (within the step budget). */
-	private @Nullable Tree validatePending(WorkContext ctx, int[] budget) {
-		if (pending.isEmpty()) {
+	private static void addCandidate(List<Candidate> list, Candidate candidate) {
+		for (Candidate other : list) {
+			if (other.base.equals(candidate.base)) {
+				return;
+			}
+		}
+		list.add(candidate);
+	}
+
+	/**
+	 * The next tree to cut: trees that may give a wanted item first (nearest first); ordinary trees right away without
+	 * wanted items, otherwise only once the whole area was read and no wanted tree is left.
+	 */
+	private @Nullable Tree validateNext(WorkContext ctx, int[] budget) {
+		Tree found = validateFrom(ctx, wanted, budget, true);
+		if (found != null || !wanted.isEmpty() || (!wishes.isEmpty() && scan != null)) {
+			return found;
+		}
+		return validateFrom(ctx, normal, budget, false);
+	}
+
+	private @Nullable Tree validateFrom(WorkContext ctx, List<Candidate> list, int[] budget, boolean wantedList) {
+		if (list.isEmpty() || budget[0] <= 0) {
 			return null;
 		}
-		pending.sort(Comparator.comparingDouble(ctx::distSq));
+		BlockPos reference = anchor;
+		if (reference != null) {
+			list.sort(Comparator.comparingDouble(candidate -> candidate.base.distSqr(reference)));
+		} else {
+			list.sort(Comparator.comparingDouble(candidate -> ctx.distSq(candidate.base)));
+		}
 		Set<BlockPos> covered = new HashSet<>();
 		Tree found = null;
-		while (found == null && !pending.isEmpty() && budget[0] > 0) {
-			BlockPos base = pending.removeFirst();
-			if (covered.contains(base)) {
+		while (found == null && !list.isEmpty() && budget[0] > 0) {
+			Candidate candidate = list.removeFirst();
+			if (covered.contains(candidate.base)) {
 				continue;
 			}
 			budget[0]--;
-			found = validate(ctx, base, covered);
+			found = validate(ctx, candidate, covered, wantedList);
 		}
 		// Other bases of the same tree (large trunks) or of rejected trees are done.
-		pending.removeIf(covered::contains);
+		Iterator<Candidate> it = list.iterator();
+		while (it.hasNext()) {
+			if (covered.contains(it.next().base)) {
+				it.remove();
+			}
+		}
 		return found;
 	}
 
-	/** Collects the connected logs of the tree (same block, bounded) and checks it is a natural tree we may cut. */
-	private @Nullable Tree validate(WorkContext ctx, BlockPos base, Set<BlockPos> covered) {
+	/**
+	 * Collects the connected logs of the tree (same block, bounded) and checks it is a natural tree we may cut: from the
+	 * wanted list, a tree that turns out to give nothing wanted waits in the ordinary list (inside the area) or is
+	 * skipped (margin).
+	 */
+	private @Nullable Tree validate(WorkContext ctx, Candidate candidate, Set<BlockPos> covered, boolean wantedList) {
 		ServerLevel level = ctx.level;
+		BlockPos base = candidate.base;
 		if (!ctx.loaded(base)) {
 			return null;
 		}
 		BlockState baseState = level.getBlockState(base);
 		Block logBlock = baseState.getBlock();
-		if (!baseState.is(BlockTags.LOGS) || !objective().acceptsLog(blockId(logBlock))) {
+		if (!baseState.is(BlockTags.LOGS)) {
+			return null;
+		}
+		boolean logWanted = wishes.logWanted(logBlock);
+		boolean leafMaybe = wishes.leavesMayGive(logBlock);
+		boolean ordinary = candidate.core && objective().acceptsLog(blockId(logBlock));
+		if (!logWanted && !leafMaybe && !ordinary) {
 			return null;
 		}
 		int maxLogs = ctx.config.lumberjack.maxLogsPerTree;
 		Set<BlockPos> logs = new HashSet<>();
+		Set<BlockPos> leafSeeds = new HashSet<>();
+		Set<Block> leafTypes = new HashSet<>();
 		ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 		queue.add(base);
 		logs.add(base);
 		int naturalLeaves = 0;
+		int topY = base.getY();
 		boolean valid = true;
 		while (!queue.isEmpty()) {
 			BlockPos current = queue.poll();
+			topY = Math.max(topY, current.getY());
 			if (ctx.foreign(current)) {
 				valid = false;
 			}
 			for (Direction direction : Direction.values()) {
 				BlockPos side = current.relative(direction);
-				if (ctx.loaded(side) && isNaturalLeaves(level.getBlockState(side))) {
+				if (!ctx.loaded(side)) {
+					continue;
+				}
+				BlockState sideState = level.getBlockState(side);
+				if (isNaturalLeaves(sideState)) {
 					naturalLeaves++;
+					leafTypes.add(sideState.getBlock());
+					if (leafSeeds.size() < MAX_LEAVES) {
+						leafSeeds.add(side);
+					}
 				}
 			}
 			for (int dx = -1; dx <= 1; dx++) {
@@ -418,6 +651,9 @@ final class LumberjackTask extends TaskHandler {
 						}
 						if (logs.size() >= maxLogs) {
 							covered.addAll(logs);
+							reject(logs, ctx.now);
+							bigBases.put(ChunkKey.of(base.getX(), base.getZ()), ctx.now + REJECT_TICKS);
+							bigTrees++;
 							return null;
 						}
 						logs.add(next);
@@ -428,7 +664,30 @@ final class LumberjackTask extends TaskHandler {
 		}
 		covered.addAll(logs);
 		if (!valid || naturalLeaves < MIN_NATURAL_LEAVES) {
+			reject(logs, ctx.now);
 			return null;
+		}
+		boolean leavesWanted = false;
+		if (leafMaybe) {
+			for (Block leaves : leafTypes) {
+				if (wishes.leavesWanted(leaves)) {
+					leavesWanted = true;
+					break;
+				}
+			}
+		}
+		boolean want = logWanted || leavesWanted;
+		if (!want) {
+			if (ordinary && wantedList) {
+				// Its leaves give nothing wanted (an azalea tree on oak logs...): an ordinary tree, after the wanted ones.
+				if (normal.size() < MAX_PENDING) {
+					addCandidate(normal, new Candidate(base, true));
+				}
+				return null;
+			}
+			if (!ordinary) {
+				return null;
+			}
 		}
 		List<BlockPos> sorted = new ArrayList<>(logs);
 		sorted.sort((a, b) -> Integer.compare(b.getY(), a.getY()));
@@ -438,7 +697,64 @@ final class LumberjackTask extends TaskHandler {
 				plantSpots.add(log);
 			}
 		}
-		return new Tree(base, logBlock, new ArrayDeque<>(sorted), plantSpots, saplingFor(logBlock));
+		ArrayDeque<BlockPos> canopy = leavesWanted ? canopy(ctx, leafSeeds, base, topY) : new ArrayDeque<>();
+		return new Tree(base, logBlock, new ArrayDeque<>(sorted), canopy, plantSpots, saplingFor(logBlock), want);
+	}
+
+	/** Natural leaves of the tree (spreading from those touching its logs), bounded, top-down. */
+	private static ArrayDeque<BlockPos> canopy(WorkContext ctx, Set<BlockPos> seeds, BlockPos base, int topY) {
+		ArrayDeque<BlockPos> queue = new ArrayDeque<>(seeds);
+		Set<BlockPos> seen = new HashSet<>(seeds);
+		List<BlockPos> found = new ArrayList<>();
+		int spread = MAX_TREE_SPREAD + 2;
+		while (!queue.isEmpty() && found.size() < MAX_LEAVES) {
+			BlockPos pos = queue.poll();
+			if (ctx.foreign(pos)) {
+				continue;
+			}
+			found.add(pos);
+			for (Direction direction : Direction.values()) {
+				BlockPos next = pos.relative(direction);
+				if (seen.size() >= MAX_LEAVES * 4 || Math.abs(next.getX() - base.getX()) > spread || Math.abs(next.getZ() - base.getZ()) > spread
+						|| next.getY() < base.getY() || next.getY() > topY + 3 || !seen.add(next)) {
+					continue;
+				}
+				if (ctx.loaded(next) && isNaturalLeaves(ctx.level.getBlockState(next))) {
+					queue.add(next);
+				}
+			}
+		}
+		found.sort((a, b) -> Integer.compare(b.getY(), a.getY()));
+		return new ArrayDeque<>(found);
+	}
+
+	private boolean isRejected(int x, int z, long now) {
+		long key = ChunkKey.of(x, z);
+		Long until = rejected.get(key);
+		if (until == null) {
+			return false;
+		}
+		if (until <= now) {
+			rejected.remove(key);
+			bigBases.remove(key);
+			return false;
+		}
+		return true;
+	}
+
+	/** The columns of a rejected tree are skipped by the next searches for a while. */
+	private void reject(Set<BlockPos> logs, long now) {
+		if (rejected.size() >= MAX_REJECTED) {
+			rejected.values().removeIf(until -> until <= now);
+			bigBases.values().removeIf(until -> until <= now);
+			if (rejected.size() >= MAX_REJECTED) {
+				rejected.clear();
+				bigBases.clear();
+			}
+		}
+		for (BlockPos log : logs) {
+			rejected.put(ChunkKey.of(log.getX(), log.getZ()), now + REJECT_TICKS);
+		}
 	}
 
 	private static String blockId(Block block) {

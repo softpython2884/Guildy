@@ -165,6 +165,10 @@ public final class VillagerGui {
 		if (destination != null) {
 			lore.add(destination);
 		}
+		Component wishes = WishlistMenu.summary(guild, record);
+		if (wishes != null) {
+			lore.add(wishes);
+		}
 		lore.add(Lang.get("villager.gui.lore.status", statusText(record, villager)));
 		if (villager != null) {
 			String profession = villager.getVillagerData().profession().unwrapKey()
@@ -283,19 +287,28 @@ public final class VillagerGui {
 			// Expeditions use no work zone: their destination takes the button's place.
 			gui.setSlot(19, ExpeditionMenu.button(player, guild, record));
 		}
+		if (WishlistMenu.supports(record.task)) {
+			gui.setSlot(20, WishlistMenu.villagerButton(player, guild, record));
+		}
 		missionControls(gui, player, guild, record);
 		gui.setSlot(25, carriedIcon(record));
 
-		gui.setSlot(29, GuiUtil.item(Items.ENDER_PEARL, Lang.get("villager.gui.call"), GuiUtil.lines("villager.gui.call.lore", record.name))
+		gui.setSlot(29, GuiUtil.item(Items.ENDER_PEARL, Lang.get("villager.gui.call"), GuiUtil.lines("villager.work.call.lore", record.name))
 				.setCallback((slot, type, action, g) -> {
 					if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
 						return;
 					}
-					if (VillagerManager.summon(player, guild, record)) {
-						GuiUtil.successSound(player);
-						openDetail(player, guild, uuid);
-					} else {
-						GuiUtil.errorSound(player);
+					switch (VillagerManager.summon(player, guild, record)) {
+						case DONE -> {
+							GuiUtil.successSound(player);
+							openDetail(player, guild, uuid);
+						}
+						case PENDING -> {
+							// Its chunk is loading: it arrives in a moment (watch it come).
+							GuiUtil.clickSound(player);
+							g.close();
+						}
+						case FAILED -> GuiUtil.errorSound(player);
 					}
 				}));
 		gui.setSlot(33, GuiUtil.item(Items.OAK_DOOR, Lang.get("villager.gui.dismiss", record.name), GuiUtil.lines("villager.gui.dismiss.lore"))
@@ -332,7 +345,7 @@ public final class VillagerGui {
 		} else if (zone != null) {
 			button = ZoneGui.zoneIcon(level, guild, zone, false);
 		} else {
-			button = GuiUtil.item(Items.COMPASS, name, GuiUtil.lines("villager.gui.picker.auto.lore." + type.id(),
+			button = GuiUtil.item(Items.COMPASS, name, GuiUtil.lines(WorkLang.autoLoreKey(type),
 					VillagerModule.config().zones.autoSearchRadius));
 		}
 		button.setName(GuiUtil.noItalic(name));

@@ -21,16 +21,18 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * Harvests the mature crops of the villager's field zone (or, without zone, around itself). Wheat, carrots, potatoes,
- * beetroots and other crops are replanted at age 0 with one seed of their own drops; "any crop" fields also give
- * melons and pumpkins (stem kept) and sugar cane (base kept). Incremental nearest-first scan of the surface (+ a band
- * around the fanion height for covered fields), loaded chunks only, never in another guild's territory.
+ * Harvests the mature crops of the villager's field zone or, without zone, around the territory (disc centred on the
+ * nearest point of the territory, see {@link WorkAnchor}: it never drifts away field after field). Wheat, carrots,
+ * potatoes, beetroots and other crops are replanted at age 0 with one seed of their own drops; "any crop" fields also
+ * give melons and pumpkins (stem kept) and sugar cane (base kept). Incremental nearest-first scan of the surface (+ a
+ * band around the fanion height for covered fields), resumed where it stopped, loaded chunks only, never in another
+ * guild's territory. Crops giving a wanted item ("objectifs prioritaires") come first, even up to
+ * {@code zones.wishlistMargin} blocks outside the area.
  */
 final class FarmerTask extends TaskHandler {
 	private enum Phase {
@@ -53,29 +55,54 @@ final class FarmerTask extends TaskHandler {
 
 	private static final int MAX_QUEUE = 96;
 	private static final int CHUNKS_PER_STEP = 1;
+	/** With wanted items the whole area is read before ordinary crops are taken: it is read faster. */
+	private static final int WISH_CHUNKS_PER_STEP = 3;
 	private static final int MAX_CANE = 16;
 	private static final double HARVEST_REACH_SQ = 3.0 * 3.0;
+	/** Nothing loaded in the area: look again soon (a player may come back). */
+	private static final long UNLOADED_RETRY_TICKS = 3 * 20L;
 	private static final ItemStack HOE = new ItemStack(Items.IRON_HOE);
 
 	private Phase phase = Phase.SEARCH;
-	private ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+	/** Ripe plants giving a wanted item (harvested first, also in the margin). */
+	private final List<BlockPos> wanted = new ArrayList<>();
+	/** Other ripe plants of the area. */
+	private final List<BlockPos> queue = new ArrayList<>();
 	private @Nullable BlockPos target;
+	private boolean targetWanted;
 	private @Nullable WorkZone zone;
+	private WorkWishes wishes = WorkWishes.NONE;
 	private String areaKey = "";
 	private WorkArea.@Nullable Scan scan;
+	/** Area of the last search (inside / margin checks). */
+	private @Nullable WorkArea area;
+	/** Automatic mode: centre of the current search (plants nearest to it first); null = nearest to the villager. */
+	private @Nullable BlockPos anchor;
+	private int lastRead = -1;
+	private int lastUnloaded;
 	private long nextScan;
 	private long retryAt;
+	/** Where the task started: centre of the automatic search of a guild without territory. */
+	private @Nullable BlockPos home;
 	private final DepositFlow deposit = new DepositFlow();
 
 	@Override
 	void tick(WorkContext ctx) {
+		if (home == null) {
+			home = ctx.villager.blockPosition();
+		}
 		zone = Zones.assignedZone(ctx.guild, ctx.record);
-		String key = areaKey(zone);
+		String key = areaKey(zone) + "|" + WorkWishes.keyOf(ctx.record, zone);
 		if (!key.equals(areaKey)) {
 			areaKey = key;
+			wishes = WorkWishes.of(ctx.record, zone);
 			scan = null;
+			area = null;
+			anchor = null;
+			wanted.clear();
 			queue.clear();
 			target = null;
+			lastRead = -1;
 			nextScan = 0;
 			if (phase == Phase.GO_CROP || phase == Phase.HARVEST) {
 				phase = Phase.SEARCH;
@@ -105,52 +132,73 @@ final class FarmerTask extends TaskHandler {
 			depositStep(ctx);
 			return;
 		}
-		WorkZone current = zone;
-		if (current != null && !ctx.ticking(current.pos)) {
-			scan = null;
-			queue.clear();
-			idle(ctx, "villager.status.zone_unloaded", current.name);
-			return;
-		}
 		target = pollValid(ctx);
 		if (target == null) {
-			if (scan == null && ctx.now >= nextScan) {
-				BlockPos from = ctx.villager.blockPosition();
-				WorkArea area = current != null ? WorkArea.of(current) : WorkArea.auto(ctx.guild, from, ctx.config);
-				scan = new WorkArea.Scan(area, from);
-				nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
+			if (scan == null && wanted.isEmpty() && queue.isEmpty() && ctx.now >= nextScan) {
+				startScan(ctx);
 			}
 			WorkArea.Scan running = scan;
 			if (running != null) {
-				for (int i = 0; i < CHUNKS_PER_STEP && queue.size() < MAX_QUEUE; i++) {
+				int chunks = wishes.isEmpty() ? CHUNKS_PER_STEP : WISH_CHUNKS_PER_STEP;
+				for (int i = 0; i < chunks && wanted.size() < MAX_QUEUE; i++) {
 					LevelChunk chunk = running.next(ctx);
 					if (chunk == null) {
 						break;
 					}
-					if (!collect(ctx, running.area, chunk)) {
-						// Big field: the chunk is read again once the queue is harvested.
-						running.retry();
+					int stop = collect(ctx, running.area, chunk, running.startColumn());
+					if (stop >= 0) {
+						// Big field: the rest of this chunk is read once the queue is harvested.
+						running.resumeAt(stop);
 						break;
 					}
 				}
 				if (running.done()) {
+					lastRead = running.readChunks();
+					lastUnloaded = running.unloadedChunks();
+					if (lastRead == 0) {
+						nextScan = Math.min(nextScan, ctx.now + UNLOADED_RETRY_TICKS);
+					}
 					scan = null;
 				}
 				target = pollValid(ctx);
 			}
 		}
 		if (target == null) {
-			if (scan != null) {
-				ctx.status("villager.status.farmer.searching");
+			WorkZone current = zone;
+			if (scan != null || !wanted.isEmpty() || !queue.isEmpty()) {
+				ctx.status(wishes.isEmpty() ? "villager.status.farmer.searching" : "villager.work.farmer.searching_wanted");
+			} else if (lastRead == 0 && lastUnloaded > 0) {
+				if (current != null) {
+					idle(ctx, "villager.status.zone_unloaded", current.name);
+				} else {
+					idle(ctx, "villager.work.area_unloaded");
+				}
 			} else if (current != null) {
 				idle(ctx, "villager.status.farmer.waiting_zone", current.name, Lang.raw(current.objective.langKey()));
 			} else {
-				idle(ctx, "villager.status.farmer.waiting_auto", ctx.config.zones.autoSearchRadius);
+				idle(ctx, "villager.work.farmer.waiting_auto", ctx.config.zones.autoSearchRadius);
 			}
 			return;
 		}
 		phase = Phase.GO_CROP;
 		goCrop(ctx);
+	}
+
+	private void startScan(WorkContext ctx) {
+		BlockPos villager = ctx.villager.blockPosition();
+		int margin = wishes.isEmpty() ? 0 : ctx.config.zones.wishlistMargin;
+		WorkZone current = zone;
+		WorkArea next;
+		if (current != null) {
+			next = WorkArea.of(current, margin);
+			anchor = null;
+		} else {
+			next = WorkArea.anchored(ctx.guild, villager, home != null ? home : villager, ctx.config, margin);
+			anchor = next.center();
+		}
+		area = next;
+		scan = new WorkArea.Scan(next, anchor != null ? anchor : villager);
+		nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
 	}
 
 	/** Nothing to harvest: bring the crops home, else wait. */
@@ -165,7 +213,7 @@ final class FarmerTask extends TaskHandler {
 
 	private void goCrop(WorkContext ctx) {
 		BlockPos current = target;
-		if (current == null || !ctx.loaded(current) || detect(ctx.level, current, ctx.level.getBlockState(current), objective()) == Kind.NONE) {
+		if (current == null || !ctx.loaded(current) || kindAt(ctx, current, targetWanted) == Kind.NONE) {
 			phase = Phase.SEARCH;
 			return;
 		}
@@ -175,7 +223,9 @@ final class FarmerTask extends TaskHandler {
 				phase = Phase.SEARCH;
 			}
 			case MOVING -> {
-				if (zone != null) {
+				if (targetWanted) {
+					ctx.status("villager.work.farmer.going_wanted", current.getX(), current.getY(), current.getZ());
+				} else if (zone != null) {
 					ctx.status("villager.status.farmer.going_zone", zone.name);
 				} else {
 					ctx.status("villager.status.farmer.going_auto", current.getX(), current.getY(), current.getZ());
@@ -191,21 +241,14 @@ final class FarmerTask extends TaskHandler {
 	private void harvest(WorkContext ctx) {
 		int budget = (int) Math.max(1, Math.round(ctx.config.farmer.harvestPerSecond * Upgrades.workRate(ctx.guild)));
 		int done = 0;
-		if (target != null && harvestOne(ctx, target)) {
+		if (target != null && harvestOne(ctx, target, targetWanted)) {
 			done++;
 		}
 		target = null;
-		// Neighbouring ripe crops within reach, same second.
-		Iterator<BlockPos> it = queue.iterator();
-		while (it.hasNext() && done < budget && !ctx.mustReturn()) {
-			BlockPos pos = it.next();
-			if (ctx.villager.position().distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > HARVEST_REACH_SQ) {
-				continue;
-			}
-			it.remove();
-			if (harvestOne(ctx, pos)) {
-				done++;
-			}
+		// Neighbouring ripe plants within reach, same second (wanted ones first).
+		done += harvestAround(ctx, wanted, true, budget - done);
+		if (wishes.isEmpty() || (scan == null && wanted.isEmpty())) {
+			done += harvestAround(ctx, queue, false, budget - done);
 		}
 		if (done > 0) {
 			WorldUtil.swing(ctx.villager);
@@ -214,14 +257,30 @@ final class FarmerTask extends TaskHandler {
 		phase = ctx.mustReturn() ? Phase.DEPOSIT : Phase.SEARCH;
 	}
 
+	private int harvestAround(WorkContext ctx, List<BlockPos> list, boolean wantedOnly, int budget) {
+		int done = 0;
+		Iterator<BlockPos> it = list.iterator();
+		while (it.hasNext() && done < budget && !ctx.mustReturn()) {
+			BlockPos pos = it.next();
+			if (ctx.villager.position().distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > HARVEST_REACH_SQ) {
+				continue;
+			}
+			it.remove();
+			if (harvestOne(ctx, pos, wantedOnly)) {
+				done++;
+			}
+		}
+		return done;
+	}
+
 	/** Harvests one ripe plant (real drops). @return true when something was harvested */
-	private boolean harvestOne(WorkContext ctx, BlockPos pos) {
+	private boolean harvestOne(WorkContext ctx, BlockPos pos, boolean wantedOnly) {
 		ServerLevel level = ctx.level;
 		if (!ctx.loaded(pos) || ctx.foreign(pos)) {
 			return false;
 		}
 		BlockState state = level.getBlockState(pos);
-		Kind kind = detect(level, pos, state, objective());
+		Kind kind = kindAt(ctx, pos, wantedOnly);
 		if (kind == Kind.NONE) {
 			return false;
 		}
@@ -306,12 +365,40 @@ final class FarmerTask extends TaskHandler {
 		}
 	}
 
+	/**
+	 * Next plant to harvest, nearest first (to the anchor in automatic mode): wanted ones first; ordinary ones right away
+	 * without wanted items, otherwise once the whole area was read and no wanted plant is left.
+	 */
 	private @Nullable BlockPos pollValid(WorkContext ctx) {
-		int checks = 0;
-		ZoneObjective objective = objective();
-		while (!queue.isEmpty() && checks++ < 16) {
-			BlockPos pos = queue.poll();
-			if (ctx.loaded(pos) && !ctx.foreign(pos) && detect(ctx.level, pos, ctx.level.getBlockState(pos), objective) != Kind.NONE) {
+		int[] checks = {0};
+		BlockPos found = pollNearest(ctx, wanted, true, checks);
+		if (found != null) {
+			targetWanted = true;
+			return found;
+		}
+		if (!wishes.isEmpty() && (scan != null || !wanted.isEmpty())) {
+			return null;
+		}
+		found = pollNearest(ctx, queue, false, checks);
+		targetWanted = false;
+		return found;
+	}
+
+	private @Nullable BlockPos pollNearest(WorkContext ctx, List<BlockPos> list, boolean wantedOnly, int[] checks) {
+		while (!list.isEmpty() && checks[0]++ < 16) {
+			int best = 0;
+			double bestDist = Double.MAX_VALUE;
+			BlockPos reference = anchor;
+			for (int i = 0; i < list.size(); i++) {
+				BlockPos pos = list.get(i);
+				double dist = reference != null ? pos.distSqr(reference) : ctx.distSq(pos);
+				if (dist < bestDist) {
+					bestDist = dist;
+					best = i;
+				}
+			}
+			BlockPos pos = list.remove(best);
+			if (ctx.loaded(pos) && !ctx.foreign(pos) && kindAt(ctx, pos, wantedOnly) != Kind.NONE) {
 				return pos;
 			}
 		}
@@ -319,50 +406,84 @@ final class FarmerTask extends TaskHandler {
 	}
 
 	/**
-	 * Ripe plants of one chunk (columns inside the area): surface first, plus the band around the reference height.
-	 *
-	 * @return false when they did not all fit in the queue
+	 * What can be harvested at {@code pos}: a plant giving a wanted item (whatever the zone objective, also in the
+	 * margin), else (unless {@code wantedOnly}) a plant of the objective inside the area.
 	 */
-	private boolean collect(WorkContext ctx, WorkArea area, LevelChunk chunk) {
-		ZoneObjective objective = objective();
+	private Kind kindAt(WorkContext ctx, BlockPos pos, boolean wantedOnly) {
+		BlockState state = ctx.level.getBlockState(pos);
+		Kind any = detect(ctx.level, pos, state, ZoneObjective.ANY_CROP);
+		if (any == Kind.NONE) {
+			return Kind.NONE;
+		}
+		if (wishes.cropWanted(state.getBlock())) {
+			return any;
+		}
+		WorkArea current = area;
+		if (wantedOnly || (current != null && !current.contains(pos))) {
+			return Kind.NONE;
+		}
+		return detect(ctx.level, pos, state, objective());
+	}
+
+	/**
+	 * Ripe plants of the chunk's columns (inside the area, or its margin for wanted plants), from column {@code start}:
+	 * surface first, plus the band around the reference height.
+	 *
+	 * @return the column where reading stopped because the lists are full, -1 when the chunk is done
+	 */
+	private int collect(WorkContext ctx, WorkArea area, LevelChunk chunk, int start) {
+		boolean wishing = !wishes.isEmpty();
 		int vertical = ctx.config.farmer.verticalRange;
 		int x0 = chunk.getPos().getMinBlockX();
 		int z0 = chunk.getPos().getMinBlockZ();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		List<BlockPos> found = new ArrayList<>();
-		for (int dx = 0; dx < 16; dx++) {
-			for (int dz = 0; dz < 16; dz++) {
-				int x = x0 + dx;
-				int z = z0 + dz;
-				if (!area.contains(x, z)) {
-					continue;
+		for (int index = Math.max(0, start); index < 256; index++) {
+			int x = x0 + (index >> 4);
+			int z = z0 + (index & 15);
+			boolean core = area.contains(x, z);
+			if (!core && (!wishing || !area.reaches(x, z))) {
+				continue;
+			}
+			found.clear();
+			// Top motion-blocking block: farmland under a crop, the ground under sugar cane, a melon itself.
+			int surface = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+			for (int y = surface; y <= surface + 2; y++) {
+				check(ctx.level, chunk, pos.set(x, y, z), found);
+			}
+			for (int y = area.refY - vertical; y <= area.refY + vertical; y++) {
+				if (y < surface || y > surface + 2) {
+					check(ctx.level, chunk, pos.set(x, y, z), found);
 				}
-				// Top motion-blocking block: farmland under a crop, the ground under sugar cane, a melon itself.
-				int surface = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-				for (int y = surface; y <= surface + 2; y++) {
-					check(ctx.level, chunk, pos.set(x, y, z), objective, found);
-				}
-				for (int y = area.refY - vertical; y <= area.refY + vertical; y++) {
-					if (y < surface || y > surface + 2) {
-						check(ctx.level, chunk, pos.set(x, y, z), objective, found);
+			}
+			for (BlockPos plant : found) {
+				BlockState state = chunk.getBlockState(plant);
+				if (wishing && wishes.cropWanted(state.getBlock())) {
+					if (wanted.size() >= MAX_QUEUE) {
+						return index;
 					}
+					if (!wanted.contains(plant)) {
+						wanted.add(plant);
+					}
+				} else if (core && detect(ctx.level, plant, state, objective()) != Kind.NONE) {
+					if (queue.size() < MAX_QUEUE) {
+						if (!queue.contains(plant)) {
+							queue.add(plant);
+						}
+					} else if (!wishing) {
+						return index;
+					}
+					// With wanted items, ordinary plants beyond the queue are found again by the next search.
 				}
 			}
 		}
-		BlockPos villager = ctx.villager.blockPosition();
-		found.sort((a, b) -> Double.compare(a.distSqr(villager), b.distSqr(villager)));
-		for (BlockPos plant : found) {
-			if (queue.size() >= MAX_QUEUE) {
-				return false;
-			}
-			queue.add(plant);
-		}
-		return true;
+		return -1;
 	}
 
-	private static void check(ServerLevel level, LevelChunk chunk, BlockPos.MutableBlockPos pos, ZoneObjective objective, List<BlockPos> found) {
+	/** Any ripe plant (the objective is checked by the caller). */
+	private static void check(ServerLevel level, LevelChunk chunk, BlockPos.MutableBlockPos pos, List<BlockPos> found) {
 		BlockState state = chunk.getBlockState(pos);
-		if (!state.isAir() && detect(level, pos, state, objective) != Kind.NONE) {
+		if (!state.isAir() && detect(level, pos, state, ZoneObjective.ANY_CROP) != Kind.NONE) {
 			found.add(pos.immutable());
 		}
 	}

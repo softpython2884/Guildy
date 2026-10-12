@@ -23,7 +23,8 @@
 			"dev.guildy.test.EventGameTests",
 			"dev.guildy.test.QuestGameTests",
 			"dev.guildy.test.UniqueGameTests",
-			"dev.guildy.test.VillageSignGameTests"
+			"dev.guildy.test.VillageSignGameTests",
+			"dev.guildy.test.WorkGameTests"
 		]
 	},
 	"depends": {

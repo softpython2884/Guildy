@@ -122,10 +122,16 @@ public final class VillagerConfig implements Validatable {
 		@Comment("Distance maximum (blocs) entre le coeur et un fanion de zone ou un point de parcours")
 		public int maxZoneDistance = 192;
 		@Comment({
-				"Mode automatique (aucune zone choisie) : rayon (blocs) de recherche autour du villageois",
-				"(arbres, cultures, pierre), toujours a moins de maxZoneDistance du coeur"
+				"Mode automatique (aucune zone choisie) : rayon (blocs) de recherche, toujours a moins de maxZoneDistance du coeur.",
+				"Bucheron et fermier : autour du point du territoire le plus proche d'eux (autour d'eux dans le territoire), donc",
+				"jamais plus loin que ce rayon du territoire ; mineur (pierre a decouvert) : autour de lui"
 		})
 		public int autoSearchRadius = 48;
+		@Comment({
+				"Objectifs prioritaires (menu d'un villageois ou d'une zone) : distance (blocs) hors de la zone (ou de la zone",
+				"automatique) jusqu'ou un bucheron ou un fermier va chercher les objets voulus ; jamais chez une autre guilde (0 a 64)"
+		})
+		public int wishlistMargin = 16;
 		@Comment("Duree (secondes) d'affichage des limites d'une zone ou d'un parcours (bouton 'Afficher')")
 		public int showSeconds = 20;
 	}
@@ -278,8 +284,8 @@ public final class VillagerConfig implements Validatable {
 
 	@Json5.Section
 	public static final class Lumberjack {
-		@Comment("Nombre maximum de buches d'un arbre (les arbres plus grands sont ignores)")
-		public int maxLogsPerTree = 80;
+		@Comment("Nombre maximum de buches d'un arbre (les arbres plus grands sont ignores ; 160 : sapins et acajous geants compris)")
+		public int maxLogsPerTree = 160;
 		@Comment("Replanter une pousse a la base de l'arbre coupe (si le sol le permet)")
 		public boolean replant = true;
 	}
@@ -658,6 +664,7 @@ public final class VillagerConfig implements Validatable {
 		zones.defaultRadiusChunks = clamp(zones.defaultRadiusChunks, 0, zones.maxRadiusChunks);
 		zones.maxZoneDistance = clamp(zones.maxZoneDistance, 16, 1024);
 		zones.autoSearchRadius = clamp(zones.autoSearchRadius, 8, 96);
+		zones.wishlistMargin = clamp(zones.wishlistMargin, 0, 64);
 		zones.showSeconds = clamp(zones.showSeconds, 3, 120);
 		routes.maxRoutes = clamp(routes.maxRoutes, 0, 9);
 		routes.maxWaypoints = clamp(routes.maxWaypoints, 2, 32);
@@ -722,6 +729,12 @@ public final class VillagerConfig implements Validatable {
 		names.removeIf(name -> name == null || name.isBlank());
 		if (names.isEmpty()) {
 			names = new ArrayList<>(new VillagerConfig().names);
+		}
+		if (configVersion < 5) {
+			// Giant spruces and jungle trees (up to ~150 logs) were all ignored with the old default.
+			if (lumberjack.maxLogsPerTree == 80) {
+				lumberjack.maxLogsPerTree = 160;
+			}
 		}
 		configVersion = CURRENT_VERSION;
 	}
