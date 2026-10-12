@@ -165,17 +165,18 @@ Avec un **bureau d'accueil** et un **lit libre** dans le territoire, un villageo
 **[Accepter] / [Refuser]** dans le chat (ou dans le menu). Nombre maximum : 2 + 1 par niveau de guilde.
 Menu « Villageois » (`/guild villagers`, ou accroupi + clic droit sur un villageois) : la liste montre la tâche, la zone,
 le statut et ce que chacun transporte ; le menu d'un villageois règle sa tâche, sa **zone de travail** et sa mission,
-permet de l'**appeler** à côté de soi (« Appeler ici », dans le territoire ou une zone de la guilde) ou de le renvoyer.
+permet de l'**appeler** à côté de soi (« Appeler ici », depuis le territoire ou une zone de la guilde, où que soit le
+villageois : s'il est loin, sa dernière position est chargée un instant, « Appel en cours… ») ou de le renvoyer.
 
 | Tâche | Ce qu'il fait |
 |---|---|
-| **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (Bois, Pierre, Minerais, Cultures, Butin, Outils, Divers) |
+| **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (19 thèmes, voir « Rangement par thème ») |
 | **Mineur** | creuse vraiment sa **mine** (mode réel, voir plus bas) : escalier en colimaçon puis galeries, pierre et/ou minerais selon l'objectif ; ou minage simulé au fanion (mode simulé) |
 | **Bûcheron** | coupe les arbres naturels de sa **coupe de bois** (ou autour de lui) et replante |
 | **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui) et replante |
-| **Garde** | patrouille dans sa zone ou sur son **parcours de garde**, sinon défend le cœur ; toujours au cœur pendant les hordes |
-| **Exploration** | part explorer les terres sauvages (il quitte vraiment la base) et revient quelques minutes plus tard avec du butin : graines, pousses, cuir, émeraudes, parfois une carte au trésor — petit risque de ne pas revenir |
-| **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** et revient avec quartz, or, poudre lumineuse, bâtons de blaze… — risque plus élevé |
+| **Garde** | **épéiste** ou **archer** ; patrouille dans sa zone ou sur son **parcours de garde**, sinon défend le cœur ; toujours au cœur pendant les hordes ; s'équipe dans les coffres et se replie pour se soigner (voir « Gardes ») |
+| **Exploration** | part vers la **destination** choisie (biome ou construction, voir « Destinations d'expédition ») : il quitte vraiment la base et revient quelques minutes plus tard avec le butin du lieu — risque de ne pas revenir |
+| **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** vers la destination choisie (forteresse, bastion, forêts…) — risque plus élevé |
 
 #### Zones de travail (fanions)
 Menu Villageois → **Zones et parcours** → « Créer une zone » : choisissez le type (**Mine**, **Coupe de bois**,
@@ -199,11 +200,11 @@ fanion (pratique au fond d'une mine).
   peuvent pas le retirer. Si le fanion disparaît autrement, la zone continue de fonctionner (« fanion absent »).
 - Menu d'un villageois → « Zone de travail » : une zone de son type, un parcours (gardes) ou **Automatique**.
 
-**Mode automatique** (aucune zone choisie) : le bûcheron coupe les arbres naturels les plus proches de lui, le fermier
-récolte les cultures mûres les plus proches (à moins de 48 blocs de lui et de 192 blocs du cœur, jamais chez une autre
-guilde) ; le mineur va à la mine de la guilde la plus proche (sauf une mine réelle épuisée), sinon mine (en simulé) la
-pierre à découvert la plus proche (sinon au cœur) ; le garde défend le cœur. Le statut indique ce qu'il a choisi
-(« Coupe auto près de x y z »).
+**Mode automatique** (aucune zone choisie) : le bûcheron et le fermier travaillent **dans le territoire et jusqu'à 48 blocs
+autour**, jamais plus loin (les arbres / cultures les plus proches du territoire d'abord, jamais chez une autre guilde) ;
+le mineur va à la mine de la guilde la plus proche (sauf une mine réelle épuisée), sinon mine (en simulé) la pierre à
+découvert la plus proche (sinon au cœur) ; le garde défend le cœur. Le statut indique ce qu'il a choisi
+(« Coupe auto près de x y z »). Le bûcheron coupe les arbres jusqu'à 160 bûches (sapins et acajous géants compris).
 
 #### Mine réelle
 Une zone **Mine** est en mode **Réel** par défaut (bouton « Mode : Réel / Simulé » de son menu ; le mode simulé garde
@@ -254,9 +255,106 @@ plus de 16 blocs du parcours) puis reprennent au point le plus proche. Le parcou
 - **Rapporter une quantité** : par exemple « 64 fer brut » ou « 128 bûches de chêne » (prenez l'objet en main
   et cliquez sur « Objet recherché ») — il continue jusqu'à les avoir rapportés, puis s'arrête et prévient la guilde.
 
-Coffres : menu Villageois → Stockage → « Ajouter un coffre », puis clic droit sur un coffre du territoire.
+#### Objectifs prioritaires
+Bouton « Objectifs prioritaires » du menu d'un **mineur**, d'un **bûcheron** ou d'un **fermier**, ou du menu d'une zone
+(mine, coupe, champs) : jusqu'à **9 objets** que le villageois va chercher **en priorité**, même un peu hors de sa zone
+(16 blocs, jamais chez une autre guilde). Cliquez sur une case libre avec l'objet sur le curseur, ou faites un shift-clic
+dessus dans votre inventaire : seul son type est noté, votre objet n'est ni pris ni déplacé. Un clic sur un objectif le
+retire, « Vider » efface la liste. Les objectifs d'une zone s'ajoutent à ceux de chacun de ses villageois.
+- Bûcheron : bûches ou planches d'une essence, pousses, pommes, bâtons (il récolte alors aussi le feuillage).
+- Fermier : blé, graines, carottes, pommes de terre, betteraves, melons, citrouilles, canne à sucre.
+- Mineur : pierres et minerais (voir « Mine réelle »).
+- Expéditions : les objets voulus présents dans le butin de la destination sont 3 fois plus fréquents.
+
+#### Gardes : épéistes et archers
+- Chaque garde est **épéiste** (corps à corps) ou **archer**. En mode **Auto** (par défaut), un nouveau garde prend le
+  rôle qui équilibre les gardes de la guilde ; le bouton « Rôle » de son menu permet de l'imposer (Auto → Épéiste →
+  Archer). Les archers tirent de vraies flèches jusqu'à 16 blocs et reculent quand un monstre s'approche ; leurs flèches
+  traversent joueurs, villageois et animaux : elles ne touchent que les monstres.
+- **Équipement** : hors combat, les gardes vont chercher les meilleures pièces d'armure (et une meilleure épée ou un arc
+  enchanté) dans les coffres du **Stockage** de la guilde et y rapportent l'ancienne pièce. L'armure s'use puis est
+  remplacée. Le menu du garde affiche sa vie, son armure et ses pièces (Maj + clic : récupérer son équipement).
+  L'équipement retourne au stockage si le garde change de tâche, au joueur qui le renvoie, et tombe au sol s'il meurt.
+  Les clients vanilla n'affichent pas d'armure sur un villageois : elle se voit dans le menu.
+- **Repli** : sous 40 % de sa vie, un garde quitte le combat et court se soigner à son lit (« Se replie pour se
+  soigner », puis « Se soigne (12/20 ❤) »), même pendant une horde, en frappant encore ce qui est à portée de bras. Il
+  reprend son poste à 90 % ; hors combat, il se soigne lentement.
+- **Pas de tir ami** : impossible de blesser les villageois de votre guilde (coups, balayage, flèches, tridents…). Pour
+  vous en séparer, utilisez « Renvoyer » dans son menu.
+
+#### Destinations d'expédition
+Pour un explorateur ou une expédition au Nether, le bouton « **Destination** » du menu du villageois choisit où il part.
+Chaque destination indique sa durée, son risque de ne jamais revenir, son butin typique, ses trouvailles rares et le
+niveau de guilde requis ; plus le lieu est dangereux, meilleur est le butin (et plus les armes uniques sont fréquentes).
+Le choix vaut pour les départs suivants et s'affiche dans la liste, au départ et au retour.
+
+| Exploration | Niveau | Durée | Risque | Butin |
+|---|---|---|---|---|
+| Forêt et plaines (par défaut) | 1 | 8 min | 5 % | graines, pousses, cuir, émeraudes, carte au trésor rare |
+| Désert | 1 | 8 min | 6 % | sable, grès, cactus, os, peau de lapin, quelques pépites d'or |
+| Jungle | 1 | ~9 min | 7 % | bambou, fèves de cacao, pastèque, pousses d'acajou, lianes |
+| Taïga et neige | 1 | ~9 min | 6 % | pousses de sapin, baies sucrées, boules de neige, glace, lapin |
+| Océan et plage | 1 | ~9 min | 7 % | varech, poissons, cornichons de mer, prismarine, coquille de nautile rare, cartes au trésor |
+| Marais et mangrove | 1 | ~9 min | 7 % | argile, boue, propagules, nénuphars, slime |
+| Cerisiers | 2 | ~9 min | 5 % | pétales roses, pousses de cerisier, rayons de miel |
+| Montagnes | 2 | ~10 min | 8 % | pierre, charbon, fer et cuivre bruts, émeraudes et corne de chèvre rares |
+| Village | 2 | 10 min | 6 % | pain, blé, carottes, pommes de terre, fer, émeraudes, selle rare |
+| Puits de mine abandonné | 3 | 10 min | 10 % | rails, charbon, fer brut, baies lumineuses, étiquette rare |
+| Épave et ruines | 3 | 10 min | 8 % | papier, charbon, émeraudes, carte au trésor 25 % |
+| Temple du désert | 4 | 12 min | 12 % | os, poudre à canon, TNT, émeraudes, or, livre enchanté et diamant rares |
+| Temple de la jungle | 4 | 12 min | 12 % | bambou, flèches, émeraudes, livre enchanté et diamant rares |
+| Avant-poste de pillards | 5 | 12 min | 18 % | flèches, chêne noir, émeraudes, arbalète, fioles d'expérience |
+| Monument océanique | 6 | 14 min | 20 % | éclats et cristaux de prismarine, lanternes aquatiques, éponge rare |
+| Ville ancienne | 7 | 16 min | 25 % | sculk, bougies, améthyste, éclat d'écho et fragments de disque rares |
+
+| Nether (portail dans le territoire) | Niveau | Durée | Risque | Butin |
+|---|---|---|---|---|
+| Terres du Nether (par défaut) | 1 | 12 min | 12 % | quartz, or, poudre lumineuse, bâtons de blaze… |
+| Forêt carmin | 2 | 12 min | 12 % | tiges et champignons carmin, blocs de verrues, champilampes |
+| Forêt biscornue | 2 | 12 min | 10 % | tiges et champignons biscornus, lianes, perles de l'Ender rares |
+| Vallée des âmes | 3 | ~13 min | 15 % | sable et terre des âmes, os, larme de ghast rare |
+| Deltas de basalte | 3 | ~13 min | 15 % | basalte, roche noire, crème et blocs de magma |
+| Forteresse du Nether | 4 | 15 min | 16 % | verrues du Nether, bâtons de blaze, briques du Nether, crâne de wither squelette très rare |
+| Bastion | 6 | 18 min | 22 % | pépites d'or, roche noire, débris antiques rares, fragment de netherite très rare |
+
+Les destinations (durées, risques, tables de butin) se règlent dans `villagers.json5` (`expeditions.destinations`).
+
+#### Rangement par thème
+Le trieur (tâche « Ranger la base ») vide les coffres de **dépôt** et range chaque objet dans le coffre de sa
+**catégorie** ; un objet sans coffre de sa catégorie va dans un coffre « **Divers** », sinon il reste au dépôt.
+Quasiment tous les objets du jeu sont reconnus.
+
+| Catégorie | Exemples |
+|---|---|
+| Bois | bûches, planches, dalles / escaliers / barrières / portes / trappes / panneaux en bois, bâtons, bols |
+| Pierre | pierre, galets, pierre des abîmes, andésite, diorite, granite, tuf, calcite, grès, briques de pierre et dérivés |
+| Terre, sable et gravier | terre, herbe, podzol, boue, argile, sable, gravier, neige, glace |
+| Blocs de construction | briques, verre, vitres, béton, terre cuite, laine, tapis, cuivre, prismarine, barreaux |
+| Mobilier et décoration | établi, fours, coffres, enclumes, lits, torches, lanternes, bougies, échelles, tableaux, cadres, pots, bannières, disques |
+| Minerais et lingots | minerais, minerais bruts, lingots, pépites, gemmes, charbon, netherite, améthyste, blocs de minerai, silex |
+| Redstone | redstone, répéteurs, pistons, leviers, boutons, plaques de pression, trémies, rails, wagonnets, TNT |
+| Outils | pioches, haches, pelles, houes, cisailles, briquet, canne à pêche, seaux, boussoles, cartes, longue-vue, selle, bateaux |
+| Armes | épées, arcs, arbalètes, trident, masse, flèches, charges de vent |
+| Armures | casques, plastrons, jambières, bottes, bouclier, élytres, armures de cheval et de loup, modèles de forge |
+| Livres et enchantements | livres enchantés, livres, papier, fioles d'expérience, bibliothèques, pupitre |
+| Potions et alchimie | potions, fioles, alambic, chaudron, poudre de blaze, œil d'araignée fermenté, souffle de dragon |
+| Nourriture | viandes, poissons, pain, fruits, légumes, gâteau, soupes, œufs, lait, sucre, blé |
+| Graines et pousses | graines, pousses, propagule, azalées, fèves de cacao |
+| Plantes et fleurs | fleurs, feuilles, herbes, lianes, mousses, champignons, coraux, algues, canne à sucre, bambou, cactus |
+| Butin de monstres | os, ficelle, poudre à canon, chair putréfiée, perles de l'Ender, bâtons de blaze, larmes de ghast, cuir, plumes, peaux de lapin, poches d'encre, **têtes et crânes**, carapaces de shulker, coquilles de nautile, totems, œufs d'apparition |
+| Nether | netherrack, briques du Nether, quartz, sable et terre des âmes, basalte, roche noire, verrues, pierre lumineuse, obsidienne, magma |
+| End | pierre de l'End, purpur, chorus, barres de l'End, œil de l'Ender, cristal de l'End, boîtes de Shulker, œuf de dragon |
+| Colorants | les 16 colorants |
+
+Menu Villageois → **Stockage** → « Ajouter un coffre », puis clic droit sur un coffre du territoire et choisissez son
+rôle (chaque catégorie montre son icône et des exemples) : le coffre **prend le nom de son rôle**, affiché quand on
+l'ouvre. Dans le menu Stockage : clic gauche sur un coffre pour changer son rôle, clic droit pour le retirer ;
+« **Afficher les coffres** » les signale par des particules colorées pendant 20 s ; « **Où ranger l'objet en main ?** »
+indique où ira l'objet que vous tenez. Les catégories (règles : objets, tags, propriétés) se règlent dans
+`villagers.json5`.
+
 La nuit, les travailleurs vont se coucher ; les gardes restent dehors. Les villageois peuvent **mourir**
-pendant les hordes : protégez-les ! Seuls les membres peuvent commercer avec eux.
+pendant les hordes : protégez-les (gardes en armure, lits pour se replier) ! Seuls les membres peuvent commercer avec eux.
 
 ### 8. Arbre d'évolution
 Menu « Arbre d'évolution » (`/guild upgrades`, ou le bouton du menu principal) : la guilde dépense l'**or du
@@ -460,7 +558,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
-| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, pauses, laisse), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite |
+| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres), destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |

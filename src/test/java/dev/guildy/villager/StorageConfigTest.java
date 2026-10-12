@@ -36,7 +36,7 @@ class StorageConfigTest {
 		assertEquals(new ArrayList<>(StorageDefaults.categories().keySet()), new ArrayList<>(config.storage.categories.keySet()));
 		assertEquals("minecraft:skeleton_skull", config.storage.categories.get("Butin de monstres").icon);
 		assertEquals(VillagerConfig.CURRENT_VERSION, config.configVersion);
-		assertEquals(3, VillagerConfig.CURRENT_VERSION);
+		assertTrue(VillagerConfig.CURRENT_VERSION >= 3, "step 3 is part of the current format");
 	}
 
 	@Test
