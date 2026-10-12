@@ -186,6 +186,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .b-wool { background: var(--b-wool); }
 .b-emerald { background: var(--b-emerald); }
 .b-carto { background: var(--b-carto); }
+.b-any { background: linear-gradient(135deg, #8a8a8a 0 33%, #9a6b3f 33% 66%, #6f9b4a 66%); }
+.grid3.grid1 { grid-template-columns: 64px; }
 
 /* ---------- cards ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .9rem; margin: 1rem 0; }
@@ -344,6 +346,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>Défaite</h3><p>Les monstres au contact du cœur l'abîment chaque seconde. À 0 : la horde repart, la guilde perd 25 % du trésor et 2 paliers de difficulté, et chaque villageois a 20 % de chance de partir.</p></div>
 					<div class="card"><h3>Ce qui n'est jamais perdu</h3><p>Votre équipement et vos objets. Une défaite ne touche ni vos inventaires ni vos coffres.</p></div>
 				</div>
+				<div class="note good"><p><strong>Trêve :</strong> après 2 défaites d'affilée (hordes ou raids), votre base est épargnée pendant 3 nuits : ni horde, ni raid de pillards. Une victoire remet le compte à zéro. Le menu <button class="cmd" type="button">/guild waves</button> affiche les nuits de trêve restantes.</p></div>
 				<h3>Le cœur</h3>
 				<p>Il a <strong>150 points</strong> d'intégrité, plus 30 par niveau de guilde, visibles dans la barre rouge en haut de l'écran. Chaque seconde, un monstre à moins de 3 blocs lui retire 1 point, une élite 3, un boss 8. Une deuxième barre montre la progression de la horde.</p>
 				<h3>Les thèmes</h3>
@@ -387,7 +390,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="constructions">
 				<div class="eyebrow">Bâtir</div>
 				<h2>Constructions</h2>
-				<p>Quatre petits murs de 3 blocs de large × 2 de haut × 1 d'épaisseur donnent accès à des fonctions. Les plans ci-dessous sont vus <strong>de face</strong>. Dans <button class="cmd" type="button">/guild build</button>, débloquez la construction, prenez le plan (un papier brillant, gratuit), bâtissez le mur dans votre territoire, puis faites <strong>clic droit avec le plan sur sa face avant</strong>.</p>
+				<p>Quatre petits murs de 3 blocs de large × 2 de haut × 1 d'épaisseur, plus un simple panneau, donnent accès à des fonctions. Les plans ci-dessous sont vus <strong>de face</strong>. Dans <button class="cmd" type="button">/guild build</button>, débloquez la construction, prenez le plan (un papier brillant, gratuit), bâtissez le mur dans votre territoire, puis faites <strong>clic droit avec le plan sur sa face avant</strong>.</p>
 				<div class="builds">
 					<article class="build">
 						<h3>Tableau de quêtes</h3>
@@ -445,6 +448,17 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<li><b class="b-barrel"></b> Tonneau</li>
 						</ul>
 						<p class="hint">Fait venir des marchands. <a href="#carrefour">Voir plus bas</a>.</p>
+					</article>
+					<article class="build">
+						<h3>Panneau du village</h3>
+						<div class="meta"><span class="pill green">Gratuit</span><span class="pill gold">Niveau 1</span><span class="pill green">4 max</span></div>
+						<div class="grid3 grid1" role="img" aria-label="Un seul bloc plein, n'importe lequel, avec un panneau.">
+							<div class="slot"><b class="b-any"></b><i class="sign"></i></div>
+						</div>
+						<ul class="legend">
+							<li><b class="b-any"></b> N'importe quel bloc plein</li>
+						</ul>
+						<p class="hint">Le panneau affiche le nom de la guilde, son niveau et les membres en ligne (ou « Horde en cours »). Clic droit : menu des constructions ; accroupi + clic droit : menu de la guilde, sans taper <button class="cmd" type="button">/guild</button>.</p>
 					</article>
 				</div>
 				<p>Si le plan refuse, le message dit quel bloc est attendu et où. Casser un bloc d'une construction la désactive (ses panneaux disparaissent) : il suffit de la réparer et de la revalider. Les panneaux eux-mêmes ne se cassent pas.</p>
@@ -749,6 +763,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin tp &lt;guilde&gt;</button></td><td>Aller au cœur d'une guilde</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin wave start|stop|status &lt;guilde&gt;</button></td><td>Lancer une horde de test (même de jour), l'arrêter, son état</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin wave setnight &lt;guilde&gt; &lt;palier&gt;</button></td><td>Régler le palier de difficulté</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin wave truce &lt;guilde&gt; &lt;nuits&gt;</button></td><td>Régler les nuits de trêve restantes (0 = fin de la trêve)</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin structure unlock &lt;guilde&gt; &lt;id&gt;</button></td><td>Débloquer une construction</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin quest reroll|complete|map &lt;guilde&gt;</button></td><td>Quêtes : tout renouveler, terminer un emplacement, donner une carte au trésor</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin villager spawn &lt;guilde&gt;</button></td><td>Faire venir un candidat villageois</td></tr>
@@ -766,7 +781,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<thead><tr><th>Fichier</th><th>Contenu</th></tr></thead>
 						<tbody>
 							<tr><td><code>config.json5</code></td><td>Guildes, territoire, protections, économie, niveaux, bannière et cartes, rôles</td></tr>
-							<tr><td><code>waves.json5</code></td><td>Horaires, difficulté, thèmes, boss, cœur, récompenses, défaite</td></tr>
+							<tr><td><code>waves.json5</code></td><td>Horaires, difficulté, thèmes, boss, cœur, récompenses, défaite, trêve</td></tr>
 							<tr><td><code>structures.json5</code></td><td>Plans, coûts et niveaux des constructions</td></tr>
 							<tr><td><code>quests.json5</code></td><td>Modèles de quêtes et récompenses</td></tr>
 							<tr><td><code>shop.json5</code></td><td>Catalogue de la boutique</td></tr>

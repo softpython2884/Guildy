@@ -95,6 +95,9 @@ Chaque nuit, si un membre est près du cœur, une **horde** sort des **frontièr
 - **Défaite** : les monstres au contact du cœur l'endommagent ; à 0 c'est la défaite → la horde se disperse,
   la guilde perd **25 % du trésor**, recule de **2 paliers** de difficulté, et chaque villageois a **20 %** de
   chance de partir. Le stuff des joueurs n'est jamais touché.
+- **Trêve** : après **2 défaites d'affilée** (hordes ou raids), la base est épargnée pendant **3 nuits** : ni
+  horde, ni raid de pillards. Une victoire remet le compte à zéro. La trêve s'affiche dans le menu des hordes
+  (réglages : `truce` dans `waves.json5`).
 - Impossible de dormir pendant une horde. Une nuit sautée (sommeil, `/time`) ou une base désertée annule la
   horde sans récompense ni pénalité.
 
@@ -110,6 +113,7 @@ les blocs et pose des **panneaux gérés** devant.
 | **Comptoir de commerce** | planches · bloc d'or · planches / tonneau · tonneau · tonneau | 20 or, niv. 1 | la boutique |
 | **Bureau d'accueil** | pierre taillée · botte de foin · pierre taillée / pierre taillée · établi · pierre taillée | 40 or, niv. 2 | arrivée des villageois |
 | **Carrefour commercial** | laine (toute couleur) · bloc d'émeraude · laine / tonneau · table de cartographie · tonneau | 60 or, niv. 2 | marchands de passage (voir § 9) |
+| **Panneau du village** | **un seul bloc plein, n'importe lequel** | gratuit, niv. 1 (4 max) | panneau au nom de la guilde (niveau, membres en ligne, horde en cours) ; clic droit = menu des constructions, accroupi + clic droit = menu de la guilde |
 
 Casser un bloc de la construction la désactive (les panneaux disparaissent) ; les plans se redemandent gratuitement.
 
@@ -432,7 +436,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin info\|disband <guilde>` · `forcejoin <joueur> <guilde>` | Gestion des guildes |
 | `/guild admin setlevel\|addxp\|addgold <guilde> <valeur>` | Progression et trésor |
 | `/guild admin giveflag <joueur> extension [n]` · `giveflag <joueur> founding <guilde>` · `tp <guilde>` | Drapeaux, téléport au cœur |
-| `/guild admin wave start\|stop\|status <guilde>` · `wave setnight <guilde> <n>` | Hordes (start = horde de test immédiate) |
+| `/guild admin wave start\|stop\|status <guilde>` · `wave setnight <guilde> <n>` · `wave truce <guilde> <nuits>` | Hordes (start = horde de test immédiate ; truce = nuits de trêve restantes, 0 = fin) |
 | `/guild admin structure unlock <guilde> <id>` · `structure check <guilde>` | Constructions |
 | `/guild admin quest reroll <guilde>` · `quest complete <guilde> <slot>` · `quest map <guilde>` · `quest legendary <guilde> <slot>` | Quêtes (`legendary` : remplace la quête du panneau par un contrat légendaire) |
 | `/guild admin villager spawn <guilde>` | Faire venir un candidat villageois |
@@ -452,8 +456,8 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | Fichier | Contenu |
 |---|---|
 | `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, seuils d'XP des niveaux, bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles |
-| `waves.json5` | Horaires, formule de difficulté, taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
-| `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`), coûts, niveaux, panneaux |
+| `waves.json5` | Horaires, formule de difficulté, taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, trêve après plusieurs défaites, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
+| `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, pauses, laisse), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite |
@@ -470,7 +474,7 @@ Formules par défaut (modifiables) :
 - **Taille de la horde** = 6 + 3 × D monstres (5 à 80), au plus 30 en vie par base et 150 sur le serveur.
 - **Cœur** : 150 + 30 × (niveau − 1) points ; −1/s par monstre au contact (élite −3, boss −8).
 - **Victoire** : or = (4 + 2D) × facteur, XP = (20 + 10D) × facteur, facteur = 0,25 + 0,75 × (tués / total).
-- **Défaite** : −25 % du trésor, −2 paliers de nuit, 20 % de départ par villageois.
+- **Défaite** : −25 % du trésor, −2 paliers de nuit, 20 % de départ par villageois ; 2 défaites d'affilée → 3 nuits de trêve.
 
 ## Données
 
