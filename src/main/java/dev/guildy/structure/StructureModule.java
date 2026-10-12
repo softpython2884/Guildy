@@ -16,6 +16,7 @@ public final class StructureModule {
 		StructureLang.register();
 		StructureManager.init(config);
 		StructureCommands.register();
+		StructureBehavior.register(VillageSignBehavior.ID, new VillageSignBehavior());
 		Hooks.openStructures = StructureMenus::openList;
 	}
 }

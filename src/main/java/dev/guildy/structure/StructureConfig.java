@@ -23,12 +23,13 @@ import java.util.Set;
 		"Une construction = id, name, description, tutorial (texte montre a la premiere construction), icon,",
 		"minLevel (niveau de guilde requis), unlockCost (or du tresor pour la debloquer, 0 = debloquee d'office),",
 		"maxPerGuild, rows (lignes de HAUT en BAS, caracteres de GAUCHE a DROITE vus de face, '.' = n'importe quel bloc),",
-		"key (caractere -> bloc 'minecraft:bookshelf' ou tag de blocs '#minecraft:logs'), keyLabels (noms affiches),",
+		"key (caractere -> bloc 'minecraft:bookshelf', tag de blocs '#minecraft:logs' ou '*' = n'importe quel bloc plein),",
+		"keyLabels (noms affiches),",
 		"signCells : cases [colonne, ligne] (0 = gauche / haut) qui recoivent un panneau gere sur leur face avant ;",
 		"l'ordre de la liste = numero du panneau (tableau de quetes : panneau n = quete n).",
 		"Les blocs portant un panneau doivent etre des blocs pleins. Taille maximale : 9 de large, 4 de haut.",
-		"Les ids 'quest_board', 'shop', 'reception' et 'trade_hub' sont utilises par les quetes, la boutique, les villageois",
-		"et le commerce (Carrefour commercial).",
+		"Les ids 'quest_board', 'shop', 'reception', 'trade_hub' et 'village_sign' sont utilises par les quetes, la boutique,",
+		"les villageois, le commerce (Carrefour commercial) et le panneau du village (raccourci vers les menus).",
 		"Validation en jeu : clic droit sur un bloc de la construction avec le Plan (menu /guild build)."
 })
 public final class StructureConfig implements Validatable {
@@ -238,6 +239,28 @@ public final class StructureConfig implements Validatable {
 		hub.keyLabels = map("W", "Laine (toute couleur)");
 		hub.signCells = cells(1, 0);
 		list.add(hub);
+
+		StructureDefinition sign = new StructureDefinition();
+		sign.id = "village_sign";
+		sign.name = "Panneau du village";
+		sign.icon = "minecraft:oak_sign";
+		sign.description = new ArrayList<>(List.of(
+				"&7Un simple panneau au nom de la guilde,",
+				"&7posé sur n'importe quel bloc plein.",
+				"&7Clic droit : constructions ; accroupi : menu de guilde."));
+		sign.tutorial = new ArrayList<>(List.of(
+				"&6&lPanneau du village posé !",
+				"&7Il affiche le nom et le niveau de la guilde.",
+				"&7Clic droit dessus : menu des constructions.",
+				"&7Accroupi + clic droit : menu principal de la guilde (comme &e/guild&7)."));
+		sign.minLevel = 1;
+		sign.unlockCost = 0;
+		sign.maxPerGuild = 4;
+		sign.rows = new ArrayList<>(List.of("X"));
+		sign.key = map("X", BlockKey.ANY_FULL_BLOCK);
+		sign.keyLabels = map("X", "Bloc plein (n'importe lequel)");
+		sign.signCells = cells(0, 0);
+		list.add(sign);
 		return list;
 	}
 

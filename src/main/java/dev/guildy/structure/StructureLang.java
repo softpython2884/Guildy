@@ -59,6 +59,12 @@ final class StructureLang {
 		m.put("structure.sign.default.hint", "&8Clic droit");
 		m.put("structure.sign.protected", "&cCe panneau fait partie d'une construction. Démontez-la depuis le menu &e/guild build&c.");
 		m.put("structure.sign.foreign", "&cCe panneau appartient à la guilde &e{0}&c.");
+		m.put("structure.key.any", "N'importe quel bloc plein");
+		m.put("structure.village_sign.line1", "&l{0}");
+		m.put("structure.village_sign.line2", "Niveau {0}");
+		m.put("structure.village_sign.online", "{0} en ligne");
+		m.put("structure.village_sign.wave", "&4⚔ Horde en cours");
+		m.put("structure.village_sign.hint", "&8Clic : constructions");
 		// menus
 		m.put("structure.gui.title", "Constructions de la guilde");
 		m.put("structure.gui.none", "&cAucune construction n'est configurée.");

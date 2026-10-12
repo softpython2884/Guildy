@@ -16,9 +16,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A key of a structure pattern: a single block ("minecraft:bookshelf") or a block tag ("#minecraft:logs").
+ * A key of a structure pattern: a single block ("minecraft:bookshelf"), a block tag ("#minecraft:logs") or
+ * {@value #ANY_FULL_BLOCK} for any full solid block.
  */
 public final class BlockKey {
+	/** Key value matching any full solid block (village sign: "un bloc quelconque"). */
+	public static final String ANY_FULL_BLOCK = "*";
+
 	private final String raw;
 	private final @Nullable Block block;
 	private final @Nullable TagKey<Block> tag;
@@ -35,6 +39,9 @@ public final class BlockKey {
 			return null;
 		}
 		String text = value.trim();
+		if (text.equals(ANY_FULL_BLOCK)) {
+			return new BlockKey(text, null, null);
+		}
 		if (text.startsWith("#")) {
 			Identifier id = Identifier.tryParse(text.substring(1));
 			return id == null ? null : new BlockKey(text, null, TagKey.create(Registries.BLOCK, id));
@@ -46,8 +53,17 @@ public final class BlockKey {
 		return new BlockKey(text, BuiltInRegistries.BLOCK.getValue(id), null);
 	}
 
+	@SuppressWarnings("deprecation") // isSolid() is what WallSignBlock.canSurvive checks
 	public boolean test(BlockState state) {
+		if (isAny()) {
+			return !state.isAir() && state.isSolid() && state.isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+		}
 		return tag != null ? state.is(tag) : state.is(block);
+	}
+
+	/** Matches any full solid block. */
+	public boolean isAny() {
+		return block == null && tag == null;
 	}
 
 	public boolean isTag() {
@@ -74,6 +90,9 @@ public final class BlockKey {
 
 	/** Item shown for this key in menus (first item of the tag for tags, barrier if none). */
 	public Item displayItem() {
+		if (isAny()) {
+			return Items.COBBLESTONE;
+		}
 		if (block != null) {
 			Item item = block.asItem();
 			return item == Items.AIR ? Items.BARRIER : item;
@@ -96,6 +115,9 @@ public final class BlockKey {
 		}
 		if (block != null) {
 			return block.getName();
+		}
+		if (isAny()) {
+			return Lang.get("structure.key.any");
 		}
 		return Component.literal(raw);
 	}
