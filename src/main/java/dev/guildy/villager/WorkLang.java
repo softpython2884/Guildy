@@ -52,6 +52,8 @@ final class WorkLang {
 		m.put("villager.call.already", "&e{0} est déjà appelé, un instant…");
 		m.put("villager.call.no_position", "&c{0} n'a pas de position connue : allez le chercher.");
 		m.put("villager.call.not_found", "&c{0} est introuvable près de sa dernière position connue ({1} {2} {3}).");
+		m.put("villager.call.nether", "&7{0} n'est pas près de sa dernière position : recherche du côté du Nether…");
+		m.put("villager.repatriated", "&e{0}&7 s'était égaré dans une autre dimension : il est revenu au village.");
 		m.put("villager.call.too_many", "&cTrop d'appels en cours, réessayez dans quelques secondes.");
 		// wishlist ("objectifs prioritaires")
 		m.put("villager.wishlist.button", "&6&lObjectifs prioritaires");

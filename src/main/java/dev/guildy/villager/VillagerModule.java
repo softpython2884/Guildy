@@ -26,6 +26,7 @@ public final class VillagerModule {
 		MineLang.register();
 		VillagerManager.init();
 		VillagerCalls.init();
+		Repatriation.init();
 		WorkChunkLoader.init();
 		StorageSetup.init();
 		VillagerInteractions.init();

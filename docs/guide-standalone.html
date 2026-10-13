@@ -845,6 +845,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Ouvrez le menu de sa zone, puis « Exploitation » : le dernier incident (lave, eau, construction…) dit ce qui bloque. Le fanion doit être planté sur un sol naturel avec de la roche dessous, la zone doit être chargée (un joueur à proximité) et il faut un coffre de dépôt. Si l'escalier est coincé, changez la profondeur cible ou utilisez « Réinitialiser l'exploitation ».</p></details>
 				<details><summary>Mes gardes meurent toutes les nuits</summary>
 					<p>Ils gagnent de la vie et un meilleur équipement de base à chaque niveau de guilde. Mettez aussi des armures (et des épées, des arcs) dans un coffre du Stockage : les gardes s'équipent seuls. Posez des lits près du cœur : sous 40 % de vie, ils vont s'y soigner. Mélangez archers et épéistes (mode Auto), et entourez le cœur de murs.</p></details>
+				<details><summary>Mon villageois est « introuvable »</summary>
+					<p>Les villageois de guilde ne passent plus par les portails. Un villageois parti dans le Nether avant cette version revient tout seul au village dès que son chunk se charge, et « Appeler ici » va aussi le chercher côté Nether (autour des coordonnées de sa dernière position divisées par 8).</p></details>
 				<details><summary>Je n'arrive pas à frapper un villageois de ma guilde</summary>
 					<p>C'est voulu : les coups, flèches et tridents des membres ne blessent jamais les villageois de la guilde, pour éviter les accidents pendant les hordes. Pour vous en séparer, utilisez « Renvoyer » dans son menu.</p></details>
 				<details><summary>La boutique refuse de m'acheter un objet</summary>
@@ -859,7 +861,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.3.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.3.1.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -909,7 +911,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.3.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.3.1.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

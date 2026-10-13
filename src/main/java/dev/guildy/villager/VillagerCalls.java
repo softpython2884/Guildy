@@ -17,6 +17,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,7 +29,9 @@ import java.util.UUID;
  * "Appeler ici": brings a guild villager next to the player, wherever it is. A villager whose chunk is not loaded is
  * looked for at its last known position: the chunks around it are loaded for a moment (a vanilla ticket that is not
  * saved and expires by itself two seconds after its last refresh), the villager is teleported as soon as its entity is
- * loaded, then the ticket is removed. Rules: the player stands in the territory or in one of the guild's zones; the
+ * loaded, then the ticket is removed. Not there: it may have walked through a Nether portal (before portals were closed
+ * to guild villagers), so the Nether around the matching coordinates (÷ 8) is loaded too; once loaded there it is
+ * brought back by {@link Repatriation}. Rules: the player stands in the territory or in one of the guild's zones; the
  * villager is not trading nor away on an expedition.
  */
 final class VillagerCalls {
@@ -45,8 +48,11 @@ final class VillagerCalls {
 	/** Not loaded / not found after this delay: the call fails. */
 	private static final long MAX_WAIT_TICKS = 10 * 20L;
 	private static final int MAX_CALLS = 16;
+	/** Ticket radius of the Nether search (portal exits land near the overworld coordinates divided by 8). */
+	private static final int NETHER_RADIUS = 2;
 
-	private record Call(UUID player, UUID guild, UUID villager, ChunkPos chunk, BlockPos lastPos, long startedAt) {
+	/** {@code nether}: second phase, {@code chunk} is a Nether chunk. */
+	private record Call(UUID player, UUID guild, UUID villager, ChunkPos chunk, BlockPos lastPos, long startedAt, boolean nether) {
 	}
 
 	/** Villager UUID → call in progress. */
@@ -77,6 +83,9 @@ final class VillagerCalls {
 			return Result.FAILED;
 		}
 		Villager villager = VillagerManager.entity(level, record.uuid);
+		if (villager == null) {
+			villager = fromOtherDimension(level, record);
+		}
 		if (villager != null) {
 			return bring(level, player, record, villager) ? Result.DONE : Result.FAILED;
 		}
@@ -95,7 +104,7 @@ final class VillagerCalls {
 		}
 		ChunkPos chunk = ChunkPos.containing(last);
 		level.getChunkSource().addTicketWithRadius(TicketType.ENDER_PEARL, chunk, RADIUS);
-		CALLS.put(record.uuid, new Call(player.getUUID(), guild.id, record.uuid, chunk, last, Scheduler.ticks()));
+		CALLS.put(record.uuid, new Call(player.getUUID(), guild.id, record.uuid, chunk, last, Scheduler.ticks(), false));
 		Msg.send(player, "villager.call.loading", record.name, last.getX(), last.getY(), last.getZ());
 		return Result.PENDING;
 	}
@@ -127,6 +136,9 @@ final class VillagerCalls {
 			return true;
 		}
 		Villager villager = VillagerManager.entity(level, call.villager());
+		if (villager == null) {
+			villager = fromOtherDimension(level, record);
+		}
 		if (villager != null) {
 			// Released before the teleport: its old chunk may unload as soon as it is gone.
 			release(level, call);
@@ -149,7 +161,22 @@ final class VillagerCalls {
 			}
 			return true;
 		}
-		if (entitiesLoaded(level, call.chunk()) || Scheduler.ticks() - call.startedAt() > MAX_WAIT_TICKS) {
+		ServerLevel searched = call.nether() ? level.getServer().getLevel(Level.NETHER) : level;
+		int radius = call.nether() ? NETHER_RADIUS : RADIUS;
+		if (searched == null || entitiesLoaded(searched, call.chunk(), radius) || Scheduler.ticks() - call.startedAt() > MAX_WAIT_TICKS) {
+			ServerLevel nether = level.getServer().getLevel(Level.NETHER);
+			if (!call.nether() && nether != null) {
+				// Not near its last position: maybe through a Nether portal. Look around the matching Nether coordinates.
+				release(level, call);
+				BlockPos last = call.lastPos();
+				ChunkPos netherChunk = new ChunkPos((last.getX() >> 3) >> 4, (last.getZ() >> 3) >> 4);
+				nether.getChunkSource().addTicketWithRadius(TicketType.ENDER_PEARL, netherChunk, NETHER_RADIUS);
+				CALLS.put(call.villager(), new Call(call.player(), call.guild(), call.villager(), netherChunk, last, Scheduler.ticks(), true));
+				if (player != null) {
+					Msg.send(player, "villager.call.nether", record.name);
+				}
+				return false;
+			}
 			if (player != null) {
 				BlockPos last = call.lastPos();
 				Msg.send(player, "villager.call.not_found", record.name, last.getX(), last.getY(), last.getZ());
@@ -158,14 +185,24 @@ final class VillagerCalls {
 			return true;
 		}
 		// Still loading: keep the chunks loaded (the ticket expires 2 s after its last refresh).
-		level.getChunkSource().addTicketWithRadius(TicketType.ENDER_PEARL, call.chunk(), RADIUS);
+		searched.getChunkSource().addTicketWithRadius(TicketType.ENDER_PEARL, call.chunk(), radius);
 		return false;
 	}
 
+	/** The villager loaded in another dimension (Nether...): sent back home first. */
+	private static @org.jspecify.annotations.Nullable Villager fromOtherDimension(ServerLevel home, VillagerRecord record) {
+		for (ServerLevel other : home.getServer().getAllLevels()) {
+			if (other != home && other.getEntity(record.uuid) instanceof Villager stray && !stray.isRemoved()) {
+				return Repatriation.repatriate(stray);
+			}
+		}
+		return null;
+	}
+
 	/** Every chunk of the loaded square has its entities: the villager is not there. */
-	private static boolean entitiesLoaded(ServerLevel level, ChunkPos center) {
-		for (int dx = -RADIUS; dx <= RADIUS; dx++) {
-			for (int dz = -RADIUS; dz <= RADIUS; dz++) {
+	private static boolean entitiesLoaded(ServerLevel level, ChunkPos center, int radius) {
+		for (int dx = -radius; dx <= radius; dx++) {
+			for (int dz = -radius; dz <= radius; dz++) {
 				if (!level.areEntitiesLoaded(ChunkPos.pack(center.x() + dx, center.z() + dz))) {
 					return false;
 				}
@@ -176,7 +213,10 @@ final class VillagerCalls {
 
 	private static void release(ServerLevel level, Call call) {
 		if (CALLS.remove(call.villager()) != null) {
-			level.getChunkSource().removeTicketWithRadius(TicketType.ENDER_PEARL, call.chunk(), RADIUS);
+			ServerLevel searched = call.nether() ? level.getServer().getLevel(Level.NETHER) : level;
+			if (searched != null) {
+				searched.getChunkSource().removeTicketWithRadius(TicketType.ENDER_PEARL, call.chunk(), call.nether() ? NETHER_RADIUS : RADIUS);
+			}
 		}
 	}
 

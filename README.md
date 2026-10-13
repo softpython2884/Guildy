@@ -690,6 +690,8 @@ Formules par défaut (modifiables) :
   premier niveau.
 - Les projectiles de visiteurs peuvent encore abîmer cadres et tableaux (le corps-à-corps est bloqué) ;
   plaques de pression, fils et piétinement des cultures ne sont pas protégés.
+- Les villageois de guilde ne franchissent pas les portails ; un villageois déjà parti dans une autre dimension est
+  ramené au village dès que son chunk se charge (« Appeler ici » le cherche aussi côté Nether).
 - Le cooldown de `/guild home` est remis à zéro au redémarrage.
 - Un panneau de construction arraché par une explosion/un piston peut tomber en objet (la construction est
   retirée à la vérification suivante, 30 s).

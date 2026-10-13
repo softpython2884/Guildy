@@ -6,6 +6,7 @@
 		"BannerBlockMixin",
 		"FireBlockMixin",
 		"FlowingFluidMixin",
+		"LivingEntityPortalMixin",
 		"PistonStructureResolverMixin",
 		"ProjectileMixin",
 		"ServerExplosionMixin"
