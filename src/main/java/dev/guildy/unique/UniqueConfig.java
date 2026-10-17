@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 })
 public final class UniqueConfig implements Validatable {
 	/** Current file format: 2 = drop tables of the ruin bosses added to older files. */
-	public static final int CURRENT_VERSION = 2;
+	public static final int CURRENT_VERSION = 3;
 	/** Drop sources used by the other modules (UniqueDrops.roll). */
 	public static final List<String> SOURCES = List.of("boss", "blood_boss", "quest", "legendary_quest", "expedition", "trade",
 			"ruin_boss", "nether_ruin_boss");
@@ -665,18 +665,25 @@ public final class UniqueConfig implements Validatable {
 
 	/**
 	 * Format 2: the ruin boss drop tables are added to files written before them (only when absent: a table removed or
-	 * edited by the admin afterwards is never touched again, the version is saved).
+	 * edited by the admin afterwards is never touched again, the version is saved). Format 3: the crossbow got its
+	 * texture, its model is set when still the old default (empty).
 	 */
 	void migrate() {
-		if (configVersion >= 2) {
-			return;
+		if (configVersion < 2) {
+			if (drops == null) {
+				drops = defaultDrops();
+			}
+			Map<String, DropTable> defaults = defaultDrops();
+			for (String source : RUIN_SOURCES) {
+				drops.putIfAbsent(source, defaults.get(source));
+			}
 		}
-		if (drops == null) {
-			drops = defaultDrops();
-		}
-		Map<String, DropTable> defaults = defaultDrops();
-		for (String source : RUIN_SOURCES) {
-			drops.putIfAbsent(source, defaults.get(source));
+		if (configVersion < 3 && items != null) {
+			for (UniqueDef def : items) {
+				if (def != null && "arbalete_du_traqueur".equals(def.id) && (def.model == null || def.model.isBlank())) {
+					def.model = "arbalete_du_traqueur";
+				}
+			}
 		}
 	}
 
@@ -764,7 +771,6 @@ public final class UniqueConfig implements Validatable {
 				.story("Ce qu'elle marque", "ne lui échappe jamais.")
 				.ench("minecraft:quick_charge", 3).ench("minecraft:multishot", 1).ench("minecraft:piercing", 4)
 				.ench("guildy:marque", 2).ench("minecraft:unbreaking", 3).ench("minecraft:mending", 1));
-		list.getLast().model = "";
 		list.add(def("trident_du_leviathan", "trident", "Trident du Léviathan", UniqueRarity.MYTHIC, UniquePower.TIDE_CALL, true)
 				.story("Arraché aux abysses par un marin oublié,", "il commande encore aux tempêtes.")
 				// No vanilla Channeling: its storm bolts are real ones (fire). Its lightning is the power's visual one.
