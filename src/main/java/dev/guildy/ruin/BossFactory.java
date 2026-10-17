@@ -162,7 +162,7 @@ final class BossFactory {
 				stack.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
 			}
 		}
-		if (mob.getType().is(EntityTypeTags.BURN_IN_DAYLIGHT) && mob.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
+		if (mob.is(EntityTypeTags.BURN_IN_DAYLIGHT) && mob.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
 			mob.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
 		}
 	}
