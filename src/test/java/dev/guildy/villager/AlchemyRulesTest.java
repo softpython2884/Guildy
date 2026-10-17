@@ -1,11 +1,22 @@
 package dev.guildy.villager;
 
+import dev.guildy.config.Json5;
+import dev.guildy.scroll.ScrollConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AlchemyRulesTest {
@@ -118,5 +129,216 @@ class AlchemyRulesTest {
 		cfg.secondsPerLevel = 1000;
 		cfg.validate();
 		assertTrue(AlchemyRules.workSeconds(AlchemyRules.maxLevel(15), cfg.secondsPerLevel) <= 3600, "one book takes an hour at most");
+	}
+
+	// ------------------------------------------------------------------ spell scrolls
+
+	/** Rarities of the default scrolls.json5. */
+	private static Function<String, String> defaultRarities() {
+		ScrollConfig scrolls = new ScrollConfig();
+		scrolls.rebuild(id -> true);
+		return id -> {
+			ScrollConfig.ScrollDef def = scrolls.scroll(id);
+			return def == null ? null : def.rarity().name();
+		};
+	}
+
+	@Test
+	void scrollOutcomeChanceCapAndPaper() {
+		// chance
+		assertEquals(AlchemyRules.Outcome.SCROLL, AlchemyRules.outcome(0.10, 0.15, true, 0, 2, 2, 2));
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.15, 0.15, true, 0, 2, 2, 2), "roll above the chance: a book");
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.0, 0.0, true, 0, 2, 64, 2), "chance 0: never a scroll");
+		assertEquals(AlchemyRules.Outcome.SCROLL, AlchemyRules.outcome(0.9999, 1.0, true, 0, 2, 2, 2), "chance 1: always a scroll");
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.5, Double.NaN, true, 0, 2, 2, 2), "NaN chance: never");
+		// no scroll possible at that level, daily scroll cap
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.0, 1.0, false, 0, 2, 2, 2), "nothing possible at that level");
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.0, 1.0, true, 2, 2, 2, 2), "daily scroll cap reached");
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.0, 1.0, true, 0, 0, 2, 2), "cap 0: never");
+		assertEquals(AlchemyRules.Outcome.SCROLL, AlchemyRules.outcome(0.0, 1.0, true, 1, 2, 2, 2));
+		// paper
+		assertEquals(AlchemyRules.Outcome.BOOK_NO_PAPER, AlchemyRules.outcome(0.0, 1.0, true, 0, 2, 1, 2), "not enough paper: a book instead");
+		assertEquals(AlchemyRules.Outcome.BOOK_NO_PAPER, AlchemyRules.outcome(0.0, 1.0, true, 0, 2, 0, 2));
+		assertEquals(AlchemyRules.Outcome.SCROLL, AlchemyRules.outcome(0.0, 1.0, true, 0, 2, 0, 0), "no paper needed");
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.0, 1.0, true, 2, 2, 0, 2), "the cap comes before the paper message");
+		assertEquals(AlchemyRules.Outcome.BOOK, AlchemyRules.outcome(0.5, 0.15, true, 0, 2, 0, 2), "no roll: no paper message");
+	}
+
+	@Test
+	void rarerScrollsNeedTheirLevel() {
+		assertTrue(AlchemyRules.scrollAllowed("RARE", 1, 30), "basic scrolls at any level");
+		assertFalse(AlchemyRules.scrollAllowed("EPIC", 29, 30));
+		assertTrue(AlchemyRules.scrollAllowed("EPIC", 30, 30), "epic scrolls with a full table");
+		assertFalse(AlchemyRules.scrollAllowed("LEGENDARY", 8, 30));
+		assertTrue(AlchemyRules.scrollAllowed("MYTHIC", 12, 10));
+		assertFalse(AlchemyRules.scrollAllowed(null, 30, 31), "unknown rarity: a rare one only from the level");
+
+		Map<String, Double> table = new LinkedHashMap<>();
+		table.put("blizzard", 50.0);
+		table.put("rappel", 1.0);
+		Function<String, String> rarity = defaultRarities();
+		for (int i = 0; i < 100; i++) {
+			assertEquals("rappel", AlchemyRules.pickScroll(table, rarity, AlchemyRules.maxLevel(0), 30, i / 100.0),
+					"a bare table only writes rare scrolls");
+		}
+		assertTrue(AlchemyRules.anyScroll(table, rarity, 8, 30));
+		Map<String, Double> epicOnly = Map.of("blizzard", 1.0, "egide", 1.0);
+		assertFalse(AlchemyRules.anyScroll(epicOnly, rarity, 29, 30), "only epic scrolls below level 30: none possible");
+		assertNull(AlchemyRules.pickScroll(epicOnly, rarity, 29, 30, 0.3));
+		assertTrue(AlchemyRules.anyScroll(epicOnly, rarity, 30, 30));
+	}
+
+	@Test
+	void scrollPickFollowsTheWeights() {
+		Map<String, Double> table = new LinkedHashMap<>();
+		table.put("rappel", 6.0);
+		table.put("unknown_scroll", 100.0);
+		table.put("benediction", 3.0);
+		table.put("revelation", 0.0);
+		table.put("seisme", 1.0);
+		Function<String, String> rarity = defaultRarities();
+		// Unknown ids and weights of 0 are left out: rappel [0, 0.6), benediction [0.6, 0.9), seisme [0.9, 1).
+		assertEquals("rappel", AlchemyRules.pickScroll(table, rarity, 30, 30, 0.0));
+		assertEquals("rappel", AlchemyRules.pickScroll(table, rarity, 30, 30, 0.59));
+		assertEquals("benediction", AlchemyRules.pickScroll(table, rarity, 30, 30, 0.61));
+		assertEquals("seisme", AlchemyRules.pickScroll(table, rarity, 30, 30, 0.95));
+		assertEquals("seisme", AlchemyRules.pickScroll(table, rarity, 30, 30, 1.0), "roll out of range: clamped");
+		// Below the epic level the share of the rare ones grows: rappel 6/9.
+		assertEquals("benediction", AlchemyRules.pickScroll(table, rarity, 10, 30, 0.95));
+
+		Map<String, Integer> counts = new HashMap<>();
+		Random random = new Random(7);
+		Map<String, Double> defaults = AlchemistConfig.defaultScrolls();
+		for (int i = 0; i < 20000; i++) {
+			counts.merge(AlchemyRules.pickScroll(defaults, rarity, 30, 30, random.nextDouble()), 1, Integer::sum);
+		}
+		assertTrue(counts.get("rappel") > counts.get("benediction") && counts.get("benediction") > counts.get("revelation"),
+				"Rappel the most common, then Bénédiction, Révélation: " + counts);
+		int epic = counts.getOrDefault("blizzard", 0) + counts.getOrDefault("seisme", 0) + counts.getOrDefault("egide", 0)
+				+ counts.getOrDefault("tempete_de_foudre", 0);
+		assertTrue(epic > 0 && epic < 20000 / 5, "epic scrolls are rare even at a full table: " + epic);
+		assertNull(AlchemyRules.pickScroll(Map.of(), rarity, 30, 30, 0.5), "empty table");
+		assertNull(AlchemyRules.pickScroll(null, rarity, 30, 30, 0.5));
+		assertNull(AlchemyRules.pickScroll(table, id -> null, 30, 30, 0.5), "scroll module absent: nothing known");
+	}
+
+	@Test
+	void defaultScrollTable() {
+		AlchemistConfig cfg = new AlchemistConfig();
+		cfg.validate();
+		assertEquals(0.15, cfg.scrollChance);
+		assertEquals(2, cfg.scrollPaper);
+		assertEquals(2, cfg.maxScrollsPerDay);
+		assertEquals(30, cfg.epicScrollLevel);
+		assertTrue(cfg.cleanScrolls().isEmpty());
+		Function<String, String> rarity = defaultRarities();
+		assertTrue(cfg.unknownScrolls(rarity).isEmpty(), "every default id exists in scrolls.json5");
+		String best = null;
+		for (Map.Entry<String, Double> entry : cfg.scrolls.entrySet()) {
+			String found = rarity.apply(entry.getKey());
+			assertTrue("RARE".equals(found) || "EPIC".equals(found), "never legendary or mythic by default: " + entry.getKey());
+			if (best == null || entry.getValue() > cfg.scrolls.get(best)) {
+				best = entry.getKey();
+			}
+		}
+		assertEquals("rappel", best, "Rappel is the most common");
+		assertTrue(AlchemyRules.anyScroll(cfg.scrolls, rarity, 1, cfg.epicScrollLevel), "a bare table writes basic scrolls");
+	}
+
+	@Test
+	void scrollSettingsAreBounded() {
+		AlchemistConfig cfg = new AlchemistConfig();
+		cfg.scrollChance = 4;
+		cfg.scrollPaper = -1;
+		cfg.maxBooksPerDay = 3;
+		cfg.maxScrollsPerDay = 10;
+		cfg.epicScrollLevel = 99;
+		cfg.validate();
+		assertEquals(1.0, cfg.scrollChance);
+		assertEquals(0, cfg.scrollPaper);
+		assertEquals(3, cfg.maxScrollsPerDay, "inside the daily cap of books");
+		assertEquals(30, cfg.epicScrollLevel);
+		cfg.scrollChance = Double.NaN;
+		cfg.maxScrollsPerDay = -4;
+		cfg.epicScrollLevel = 0;
+		cfg.scrollPaper = 500;
+		cfg.validate();
+		assertEquals(0.0, cfg.scrollChance);
+		assertEquals(0, cfg.maxScrollsPerDay);
+		assertEquals(1, cfg.epicScrollLevel);
+		assertEquals(64, cfg.scrollPaper);
+
+		Map<String, Double> table = new LinkedHashMap<>();
+		table.put(" Rappel ", 5.0);
+		table.put("Bad id!", 3.0);
+		table.put("seisme", -1.0);
+		table.put("egide", null);
+		table.put("revelation", Double.POSITIVE_INFINITY);
+		table.put("pas_un_parchemin", 2.0);
+		cfg.scrolls = table;
+		List<String> warnings = cfg.cleanScrolls();
+		assertEquals(4, warnings.size(), "invalid id and three bad weights: " + warnings);
+		assertEquals(Map.of("rappel", 5.0, "pas_un_parchemin", 2.0), cfg.scrolls, "normalized ids, bad entries removed");
+		List<String> unknown = cfg.unknownScrolls(defaultRarities());
+		assertEquals(1, unknown.size());
+		assertTrue(unknown.getFirst().contains("pas_un_parchemin"), "unknown id warned: " + unknown);
+		cfg.scrolls = null;
+		cfg.validate();
+		assertEquals(AlchemistConfig.defaultScrolls(), cfg.scrolls, "missing table: defaults");
+	}
+
+	@Test
+	void paperForTheScrollsOfTheTrip() {
+		assertEquals(4, AlchemyRules.paperWanted(2, 2, 4, 0), "two scrolls left today");
+		assertEquals(2, AlchemyRules.paperWanted(2, 2, 1, 0), "one work left on this trip");
+		assertEquals(3, AlchemyRules.paperWanted(2, 2, 4, 1), "minus the paper in the bag");
+		assertEquals(0, AlchemyRules.paperWanted(2, 0, 4, 0), "scroll cap reached");
+		assertEquals(0, AlchemyRules.paperWanted(0, 2, 4, 0), "no paper needed");
+		assertEquals(0, AlchemyRules.paperWanted(2, 2, 4, 9));
+	}
+
+	@Test
+	void dailyCountsOfBooksAndScrolls() {
+		CraftData data = new CraftData();
+		long day = 7;
+		data.countWork(day, false);
+		data.countWork(day, true);
+		data.countWork(day, true);
+		assertEquals(3, data.worksToday(day), "scrolls count in the daily cap");
+		assertEquals(2, data.scrollsToday(day));
+		assertTrue(AlchemyRules.capReached(data.worksToday(day), 3));
+		assertEquals(0, data.worksToday(day + 1), "new day: both counts start over");
+		assertEquals(0, data.scrollsToday(day + 1));
+		// A book of the next day must not carry yesterday's scrolls over.
+		data.countWork(day + 1, false);
+		assertEquals(1, data.worksToday(day + 1));
+		assertEquals(0, data.scrollsToday(day + 1));
+		data.countWork(day + 1, true);
+		assertEquals(2, data.worksToday(day + 1));
+		assertEquals(1, data.scrollsToday(day + 1));
+		assertEquals(0, data.scrollsToday(day), "clock set back: starts over");
+	}
+
+	@Test
+	void scrollSettingsSurviveTheJson5RoundTrip(@TempDir Path dir) throws Exception {
+		Path file = dir.resolve("villagers.json5");
+		VillagerConfig cfg = new VillagerConfig();
+		cfg.validate();
+		cfg.alchemist.scrolls = new LinkedHashMap<>(Map.of("rappel", 3.0));
+		cfg.alchemist.scrollChance = 0.5;
+		Json5.write(file, cfg);
+		String text = Files.readString(file);
+		assertTrue(text.contains("scrollChance") && text.contains("maxScrollsPerDay") && text.contains("epicScrollLevel"), "keys written");
+		VillagerConfig read = Json5.read(file, VillagerConfig.class);
+		read.validate();
+		assertEquals(Map.of("rappel", 3.0), read.alchemist.scrolls);
+		assertEquals(0.5, read.alchemist.scrollChance);
+		// A file written before the scrolls gets the defaults.
+		Files.writeString(file, "{ alchemist: { maxBooksPerDay: 5 } }");
+		VillagerConfig old = Json5.read(file, VillagerConfig.class);
+		old.validate();
+		assertEquals(AlchemistConfig.defaultScrolls(), old.alchemist.scrolls);
+		assertEquals(2, old.alchemist.maxScrollsPerDay);
+		assertEquals(5, old.alchemist.maxBooksPerDay);
 	}
 }

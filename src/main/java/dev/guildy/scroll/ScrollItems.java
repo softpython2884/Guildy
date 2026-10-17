@@ -4,6 +4,7 @@ import dev.guildy.Guildy;
 import dev.guildy.core.GuildyItems;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
+import dev.guildy.core.ScrollDrops;
 import dev.guildy.unique.UniqueRarity;
 import dev.guildy.unique.UniqueVisuals;
 import net.minecraft.core.Holder;
@@ -43,7 +44,7 @@ import java.util.Optional;
  * it is seen in a player's inventory: {@code sig} records what the stack was built from.
  */
 public final class ScrollItems {
-	public static final String KIND = "scroll";
+	public static final String KIND = ScrollDrops.KIND;
 	private static final String SIGNATURE = "sig";
 	private static final Holder<SoundEvent> SILENT = BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.EMPTY);
 	private static final Map<String, Integer> SIGNATURES = new HashMap<>();
