@@ -33,10 +33,13 @@ ou à héberger pour les joueurs.
 - **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
 - **Armes uniques** : 14 armes et outils à pouvoirs (foudre, givre, téléportation, double saut, minage 3×3…),
   10 enchantements inédits, textures animées facultatives.
+- **Armes uniques vraiment uniques** : numéro de série, une guilde ne reçoit jamais une arme qu'elle a déjà, collection
+  de guilde X / 14.
 - **Parchemins de sort** : 12 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel…)
-  avec de grandes animations de particules.
+  avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture.
 - **Ruines et boss** : 6 ruines (4 dans l'Overworld, 2 dans le Nether), chacune gardée par un boss avec sa barre de vie,
-  son escorte et ses attaques ; localisées par le cartographe de la guilde.
+  son escorte et ses attaques, éveillé par un **rituel de sang** (parchemin d'incantation) ; localisées par le
+  cartographe de la guilde.
 - **Tout est configurable** : fichiers JSON5 commentés en français, rechargeables à chaud ; permissions LuckPerms.
 
 ---
@@ -570,6 +573,19 @@ L'arme d'un boss tombe à sa mort, **brille** et ne disparaît jamais (insensibl
 Le premier joueur qui obtient une arme **Légendaire** ou **Mythique** est **annoncé à tout le serveur** (« ✦ Steve a obtenu
 [Foudrelame] (butin d'un boss de horde) ! », l'arme s'affiche au survol).
 
+**Vraiment uniques.** Chaque arme unique porte un **numéro de série** : le serveur tient le registre de tous les
+exemplaires. Par défaut, **une guilde ne reçoit jamais une arme qu'elle possède déjà** : si votre guilde détient
+Foudrelame, aucun boss, quête, expédition, gardien de ruine ni marchand ne vous la redonnera (une autre guilde, si). Une
+arme appartient à la guilde du joueur qui la porte (inventaire ou coffre de l'Ender) : donnée à un membre d'une autre
+guilde, elle change de camp. Si toutes les armes possibles d'un butin sont déjà chez vous, vous recevez un **parchemin de
+sort** à la place. Une arme **détruite** (lave, feu, cactus, vide, disparue au sol, cassée) peut de nouveau tomber. Les
+admins peuvent passer à « un seul exemplaire sur tout le serveur » (`uniqueness: "server"`) ou retirer la limite
+(`"none"`). Les armes déjà en circulation reçoivent leur numéro dès qu'un joueur les porte.
+
+**Collection.** Le bouton « Armes uniques » du menu de guilde (ou `/guild uniques`) montre les 14 armes : celles déjà
+obtenues avec leur détenteur actuel, les autres en « ??? » avec leur rareté et où les trouver. Le compteur indique X / 14,
+et tout le serveur est prévenu quand une guilde les a toutes réunies.
+
 | Arme | Rareté | Base | Pouvoir |
 |---|---|---|---|
 | **Foudrelame** | Légendaire | épée en netherite (Tranchant VI, Foudroiement III) | **Appel de la foudre** : clic droit, la foudre s'abat sur 4 monstres autour du point visé (5 ❤ chacun), recharge 12 s |
@@ -614,9 +630,12 @@ Foudroiement, Givre et Brasier sont exclusifs entre eux (enclume, `/enchant`).
 
 #### Apparence : pack de ressources optionnel (Polymer)
 Sans pack de ressources, chaque arme garde **l'apparence de son objet de base** (nom, description, brillance) : tout
-fonctionne. Guildy fournit aussi des **textures originales** (16×16, certaines **animées** : Foudrelame, Croc-de-Givre,
-Murmure du Néant, Marteau du Séisme, Trident du Léviathan, Faux des Âmes, Arc du Phénix avec ses états de tension), qui ne
-sont utilisées que lorsqu'un pack est garanti (réglage `customModels` d'`uniques.json5`) :
+fonctionne. Guildy fournit aussi des **textures originales** 16×16 dans la direction artistique vanilla, la plupart
+**animées** (éclairs, givre, néant, cœur en fusion, filon, lave, abysses, âmes, vent, flammes, lentille de l'arbalète et
+ses états de chargement), ainsi que celles des parchemins, du grimoire (un dessin par sort, livre endormi sinon) et du
+parchemin d'incantation. Aperçus : [`tools/previews/textures.png`](tools/previews/textures.png) et
+`textures_animated.png` (PNG animé, à ouvrir dans un navigateur). Elles ne sont utilisées que lorsqu'un pack est garanti
+(réglage `customModels` d'`uniques.json5`) :
 
 - **Avec Polymer** (`customModels: "auto"`, par défaut) : installez [Polymer](https://modrinth.com/mod/polymer)
   (`polymer-resource-pack`, et `polymer-autohost` pour l'envoyer automatiquement aux joueurs : `"enabled": true` dans
@@ -661,10 +680,32 @@ les boss des hordes (8 %, 30 % pendant une nuit de sang), en récompense de quê
 retour des expéditions (3 %), et chez le marchand du Carrefour commercial (palier II ; palier III pour les plus rares).
 Le pack de ressources facultatif leur donne des textures animées (comme aux armes uniques).
 
+#### Le grimoire
+Un livre ancien qui **relie jusqu'à 4 parchemins** et relance leurs sorts sans jamais les consommer.
+- **Relier** : dans l'inventaire, clic droit avec un parchemin sur le grimoire (ou avec le grimoire sur un parchemin) : un
+  parchemin est consommé et devient une page (pas deux fois le même sort).
+- **Clic droit** : lance le sort de la page choisie, avec la même visée et les mêmes animations que le parchemin, une
+  incantation éclair (0,4 s) et une petite recharge (3 s). **Accroupi + clic droit** : page suivante.
+- **Accroupi + F** (échange de main) ou `/guild grimoire` : le menu des pages (choisir, effacer une page — le parchemin
+  est perdu —, Maj-clic sur un parchemin de l'inventaire pour le relier ; c'est aussi la façon de relier en créatif).
+- Chaque sort **coûte de la nourriture** selon sa rareté : Rare 3, Épique 5, Légendaire 7, Mythique 10 points de faim (sur
+  20), la saturation part d'abord. Si votre barre de faim est trop basse, le sort ne part pas (gratuit en créatif ; un
+  sort raté ne coûte rien).
+- **Où le trouver** : boss des ruines (8 %, 12 % dans le Nether), contrats légendaires (4 %), parfois chez le marchand
+  du Carrefour commercial (palier III, 400 or).
+
 ### 13. Ruines et boss
-Des ruines oubliées parsèment l'**Overworld** et le **Nether**. Au cœur de chacune dort un **gardien** : approchez de sa
-salle et il s'éveille avec son escorte (barre de boss, ciel assombri) : ondes de choc, anneaux de feu ou de givre,
-téléportations, salves, vol de vie, puis une rage folle quand il faiblit. Vaincu, il laisse de l'or, des trésors, souvent
+Des ruines oubliées parsèment l'**Overworld** et le **Nether**. Au cœur de chacune dort un **gardien**. Entrer dans la
+ruine ne suffit pas : « Une présence dort ici… ». Pour l'éveiller, lisez un **parchemin d'incantation** (maintenez le clic
+droit à moins de 16 blocs de l'endroit où il dort). Un cercle runique s'embrase au sol, des filets de sang s'échappent de
+tous les joueurs présents vers le cercle au rythme d'un cœur qui s'emballe, une colonne d'énergie s'élève, le sol tremble
+et le ciel s'assombrit… puis le gardien et son escorte surgissent dans un éclair (barre de boss) : ondes de choc, anneaux
+de feu ou de givre, téléportations, salves, vol de vie, puis une rage folle quand il faiblit. **Prix du sang** : chaque
+joueur présent perd 2 ❤ pendant le rituel (jamais en dessous de 2 ❤). Si tout le monde quitte le cercle, meurt ou se
+déconnecte, le rituel se brise et le parchemin est rendu. Le parchemin ne fonctionne que dans une ruine dormante (ni dans
+une ruine vaincue, ni si le gardien est déjà éveillé). **Parchemins d'incantation** : un avec chaque carte ou boussole de
+l'Atelier du cartographe, dans les coffres des ruines (6 à 30 % selon le coffre), et parfois chez le marchand du
+Carrefour commercial (palier II, 24 or). Vaincu, il laisse de l'or, des trésors, souvent
 un **parchemin de sort**, parfois une **arme unique**, et rapporte de l'XP aux guildes des joueurs qui ont combattu ;
 tout le serveur l'apprend. Le gardien revient **7 jours de jeu** plus tard. Si tout le monde s'éloigne, le combat
 s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines ont leur propre butin.
@@ -728,6 +769,8 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild villagers [accept\|refuse\|zones]` · `villagers route new\|finish\|undo\|cancel` | Villageois, zones de travail / tracé d'un parcours de garde |
 | `/guild upgrades` | Arbre d'évolution (améliorations permanentes) |
 | `/guild trade` | Carrefour commercial : palier, marchands présents, échanges possibles, amélioration |
+| `/guild uniques` | Collection d'armes uniques de la guilde |
+| `/guild grimoire` | Menu des pages du grimoire tenu en main |
 
 ### Administration
 Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions : opérateurs niveau 2
@@ -748,11 +791,13 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin event list` | Événements : réglages, nuit de sang prévue, raids en attente, marchands présents par guilde |
 | `/guild admin event start\|stop <événement> [guilde]` | `blood_night` (tout le serveur : la nuit en cours ou la prochaine), `pillager_raid` (immédiat si un membre est au cœur, sinon dès qu'il y en a un), `caravan`, `book_merchant`, `merchant` (visite du Carrefour) ; `stop` annule / renvoie le marchand |
 | `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
-| `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme |
-| `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins |
+| `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme (un doublon est signalé) |
+| `/guild admin unique registry [id]` · `unique free <id> [guilde]` | Registre des exemplaires (numéros, détenteurs, doublons) ; marquer une arme comme perdue pour qu'elle puisse retomber |
+| `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` · `scroll grimoire <joueur> [ids]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins, donner un grimoire (avec des pages déjà écrites si des ids sont donnés) |
 | `/guild admin ruin list` · `info` · `awaken` · `reset` | Ruines : liste, ruine la plus proche, réveiller / rendormir son gardien |
 | `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
 | `/guild admin ruin ability <type> [style]` | Jouer un effet de capacité de boss (test visuel) |
+| `/guild admin ruin incantation <joueur> [nombre]` | Donner des parchemins d'incantation (`awaken` réveille toujours le gardien sans rituel) |
 
 ---
 
@@ -774,9 +819,9 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
-| `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
-| `ruins.json5` | Ruines : gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
-| `uniques.json5` | Armes uniques : définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
+| `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
+| `ruins.json5` | Ruines : réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
+| `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
 Une copie des fichiers par défaut (commentés) se trouve dans [`docs/default-config/`](docs/default-config/).
@@ -795,6 +840,8 @@ Formules par défaut (modifiables) :
   5 minutes si nécessaire et à l'arrêt. En cas de fichier illisible, la sauvegarde `.bak` est utilisée.
 - Les hordes ne sont pas sauvegardées : après un arrêt (même brutal), les monstres de horde restants sont
   supprimés au chargement et la horde est simplement annulée.
+- `<monde>/guildy/uniques.json` : registre des armes uniques (numéro, détenteur, état actif / perdu, collections),
+  écrit de façon atomique avec `.bak`.
 - `<monde>/guildy/ruins.json` : ruines connues (position, état, retour du gardien), écrit de façon atomique avec `.bak`.
   Un combat de boss n'est pas sauvegardé : après un redémarrage, le gardien et son escorte sont supprimés et la ruine
   redevient dormante.
@@ -848,6 +895,9 @@ Formules par défaut (modifiables) :
 - Les ruines ne se génèrent que dans de nouveaux chunks ; une ruine déjà indiquée par une carte n'est plus proposée par
   une autre recherche.
 - Les livres enchantés de l'alchimiste ne comptent pas pour les quêtes « Enchanter ».
+- Armes uniques : une arme rangée dans une boîte de Shulker garde son dernier détenteur connu ; `/clear`, la poubelle du
+  mode créatif ou un monstre qui disparaît avec l'arme ne sont pas détectés (`/guild admin unique free`).
+- Le trident unique reste une image plate en main ; lancé, il garde le modèle 3D vanilla.
 - Deux groupes d'une même catégorie (deux salles, ou une salle et des coffres hors salle) ne s'échangent rien ; les
   coffres posés dans une salle après sa création n'y entrent qu'avec Shift + clic dans le menu des salles.
 - Un panneau de construction arraché par une explosion/un piston peut tomber en objet (la construction est

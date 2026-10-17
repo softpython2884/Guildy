@@ -313,6 +313,31 @@ schématiques) : `tools/ruins/`.
     (`roomGrowFreeSlots`, `roomNewCategoryStacks`, `roomIdleMinutes`, décalage ≤ `roomMaxShift`) ; un rôle choisi par un
     joueur rend le coffre manuel. Une ancre de chunk STORAGE par chunk de coffres.
 
+45. **Unicité des armes uniques** (`UniqueLedger` pur, `UniqueRegistry`, `UniqueStore`) : numéro de série dans
+    `custom_data` (guildy.serial) ; registre `<monde>/guildy/uniques.json` (id, source, date, détenteur guilde/joueur,
+    dernière vue, ACTIVE/LOST, collections, doublons). `uniqueness` guild / server / none ; la chance d'abord, puis le
+    tirage parmi les ids non exclus ; tout exclu → `ScrollDrops.pick` (parchemin garanti de la même source).
+    `UniqueDrops.roll(source, [random,] Recipient)` (`killerOrNearest` pour les boss de horde, `topDamager` pour les
+    ruines via `UniqueDamage`), anciennes signatures conservées ; `UniqueDrops.offer` (offres numérotées quand un joueur
+    les porte). Scan 1 s : inventaire + coffre de l'Ender, menus de stockage vanilla une fois par ouverture ; doublon
+    journalisé, jamais supprimé. Perte : `ENTITY_UNLOAD` d'une `ItemEntity` / `AbstractArrow` avec une raison destructrice
+    et une pile non vide, confirmée après 60 ticks sans être revue ; cassure par mixin `ItemStack.applyDamage`.
+    `Hooks.openUniques` / `uniqueCollectionLore`, `/guild uniques`. `uniques.json5` format 3 : modèle de l'arbalète.
+46. **Parchemin d'incantation** : `summon.mode` (`scroll` par défaut, `proximity` = ancien réveil) ; objet `custom_data`
+    kind `ruin_summon` (+ `consumable`, complété depuis les tables de butin) ; lecture = `UseItemCallback` + mixin
+    `ItemStack.finishUsingItem` (ruin/mixin), vérifications pures `SummonRules.check` ; un parchemin consommé au début du
+    rituel, rendu à l'annulation (arène vide 1 s, arrêt du serveur, admin awaken/reset). `Ritual` avance chaque tick avec
+    `RitualFx` (particules longue distance, budget `summon.particleBudget`), draine via `setHealth` (jamais sous
+    `minHealth` ≥ 1), puis `Encounters.awaken`. Les rituels comptent dans `encounter.maxActive`.
+47. **Grimoire** (`scroll/Grimoire*`, section `grimoire` de `scrolls.json5`) : livre enchanté + composants (`custom_data`
+    kind `grimoire`, `spells` [4 ids, "" = vierge], `selected` ; `custom_model_data` strings[0] = id choisi ou `empty` ;
+    `item_model` `guildy:grimoire` si pack garanti ; `use_cooldown` groupe `guildy:grimoire`). Fusion côté serveur par
+    mixins `ItemStack.overrideOtherStackedOnMe` / `overrideStackedOnOther` (clic secondaire, comme un bundle ; la synchro
+    du menu corrige la prédiction du client). Lancement par `ScrollCasting.begin` (`SpellContext.power`), coût en faim
+    (`GrimoireRules.spend` : saturation puis faim, fraction en épuisement ; refus si faim < coût ; créatif gratuit). Quand
+    rien n'est consommé, l'inventaire est renvoyé et la recharge prédite effacée. Accroupi + échange de main par mixin
+    HEAD de `handlePlayerAction`. Butin : `grimoire.drops` tiré avant la table de parchemins de la source.
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).
@@ -343,6 +368,11 @@ Vérifier les API dans les sources décompilées (`./gradlew genSources`).
 - GameTests : `helper.makeMockServerPlayerInLevel()` force le mode créatif → voir `TestSupport.connected`.
 
 ## Pack de ressources des armes uniques
+
+Sprites dessinés à la main dans `gen_textures.py` (grilles de caractères + palettes, animations par images avec
+ordre `.mcmeta` et interpolation) ; le script supprime les sorties obsolètes et écrit les aperçus dans `tools/previews/` ;
+`ResourcePackTest` vérifie la cohérence du pack. Grimoire : `select` sur `custom_model_data` (chaîne 0 = id du
+parchemin), défaut = livre endormi.
 
 `tools/gen_textures.py` (Python 3, sans dépendance) génère les textures 16×16 originales (dont les animations), les
 définitions d'objets et les modèles au format 26.3 dans `src/main/resources/assets/guildy`. La tâche Gradle

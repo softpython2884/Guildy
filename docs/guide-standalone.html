@@ -772,6 +772,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					</tbody>
 				</table></div>
 				<p>L'arme d'un boss tombe au sol, brille et ne disparaît jamais : ni le feu, ni la lave, ni les explosions ne la détruisent. Le premier joueur qui obtient une arme Légendaire ou Mythique est annoncé à tout le serveur.</p>
+				<div class="note good"><p><strong>Vraiment uniques :</strong> chaque arme a un numéro de série. Une guilde ne reçoit jamais une arme qu'elle possède déjà (une autre guilde, si) ; si toutes les armes d'un butin sont déjà chez vous, c'est un parchemin de sort à la place. Une arme détruite (lave, vide, cassée…) peut retomber. Le bouton « Armes uniques » du menu de guilde, ou <button class="cmd" type="button">/guild uniques</button>, montre votre <strong>collection</strong> (X / 14) : armes obtenues et leur détenteur, les autres en « ??? » avec où les trouver.</p></div>
 				<h3>Les 14 armes</h3>
 				<div class="table-wrap"><table>
 					<thead><tr><th>Arme</th><th>Rareté</th><th>Base</th><th>Pouvoir</th></tr></thead>
@@ -837,13 +838,21 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					</tbody>
 				</table></div>
 				<p>Les sorts ne touchent que les monstres : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est modifié. On trouve les parchemins surtout sur les <a href="#ruines">boss des ruines</a>, plus rarement sur les boss des hordes (bien plus pendant une nuit de sang), en récompense de quête ou de contrat légendaire, au retour des expéditions et chez le marchand du Carrefour commercial.</p>
+							<h3 id="grimoire">Le grimoire</h3>
+				<p>Un livre ancien qui <strong>relie jusqu'à 4 parchemins</strong> et relance leurs sorts sans les consommer.</p>
+				<div class="cards">
+					<div class="card"><h3>Relier</h3><p>Dans l'inventaire, clic droit avec un parchemin sur le grimoire : le parchemin devient une page (pas deux fois le même sort).</p></div>
+					<div class="card"><h3>Lancer</h3><p>Clic droit : sort de la page choisie, incantation éclair (0,4 s), recharge de 3 s. Accroupi + clic droit : page suivante. Accroupi + F ou <button class="cmd" type="button">/guild grimoire</button> : le menu des pages.</p></div>
+					<div class="card"><h3>Le prix : la faim</h3><p>Rare 3, Épique 5, Légendaire 7, Mythique 10 points de faim (sur 20). Barre trop basse : le sort ne part pas.</p></div>
+				</div>
+				<p class="hint">On le trouve sur les boss des ruines (8 %, 12 % dans le Nether), dans les contrats légendaires (4 %) et parfois chez le marchand du Carrefour (palier III, 400 or).</p>
 			</section>
 
 			<!-- ================================================================ RUINS -->
 			<section id="ruines">
 				<div class="eyebrow">Aventure</div>
 				<h2>Ruines et boss</h2>
-				<p>Des ruines oubliées parsèment l'<strong>Overworld</strong> et le <strong>Nether</strong>, chacune gardée par un boss. Approchez de sa salle : il s'éveille avec son escorte et sa barre de vie (ondes de choc, anneaux de feu ou de givre, téléportations, salves, vol de vie, rage quand il faiblit). Vaincu, il laisse de l'or, des trésors, souvent un <a href="#parchemins">parchemin</a>, parfois une <a href="#uniques">arme unique</a>, et rapporte de l'XP aux guildes des joueurs qui ont combattu. Il revient 7 jours de jeu plus tard. Si tout le monde s'éloigne, il se rendort avec toute sa vie.</p>
+				<p>Des ruines oubliées parsèment l'<strong>Overworld</strong> et le <strong>Nether</strong>, chacune gardée par un boss. Entrer ne suffit pas : lisez un <strong>parchemin d'incantation</strong> à moins de 16 blocs de l'endroit où il dort. Cercle runique au sol, filets de sang qui s'échappent de tous les joueurs présents au rythme d'un cœur qui s'emballe, colonne d'énergie, sol qui tremble… puis le gardien et son escorte surgissent dans un éclair (ondes de choc, anneaux de feu ou de givre, téléportations, salves, vol de vie, rage quand il faiblit). <strong>Prix du sang</strong> : chaque joueur présent perd 2 ❤ (jamais en dessous de 2 ❤). Si tout le monde s'en va, le rituel se brise et le parchemin est rendu. Vaincu, il laisse de l'or, des trésors, souvent un <a href="#parchemins">parchemin</a>, parfois une <a href="#uniques">arme unique</a>, et rapporte de l'XP aux guildes des joueurs qui ont combattu. Il revient 7 jours de jeu plus tard. Si tout le monde s'éloigne, il se rendort avec toute sa vie.</p>
 				<div class="table-wrap"><table>
 					<thead><tr><th>Ruine</th><th>Où</th><th class="num">Palier</th><th>Gardien</th></tr></thead>
 					<tbody>
@@ -862,6 +871,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<li>Clic droit sur le panneau de l'atelier : « Chercher une ruine » à la surface (8 papiers + 1 boussole) ou dans le Nether (+ 4 quartz).</li>
 					<li>Le cartographe y travaille le jour, environ 8 minutes. Puis « Récupérer » : une <strong>carte</strong> marquée d'une croix (surface) ou une <strong>boussole</strong> qui pointe vers la ruine dans le Nether.</li>
 				</ol>
+				<p class="hint">Parchemins d'incantation : un avec chaque carte ou boussole du cartographe, dans les coffres des ruines (6 à 30 %), et chez le marchand du Carrefour (palier II, 24 or).</p>
 				<div class="note"><p>Les ruines n'apparaissent que dans les régions <strong>jamais explorées</strong> : partez loin. Chaque recherche mène à une ruine différente, et le menu de l'atelier liste celles que la guilde connaît, avec leur état.</p></div>
 			</section>
 
@@ -973,7 +983,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.5.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.6.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -997,7 +1007,9 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin event start|stop &lt;événement&gt; [guilde]</button></td><td>Déclencher ou arrêter <code>blood_night</code>, <code>pillager_raid</code>, <code>caravan</code>, <code>book_merchant</code>, <code>merchant</code></td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin trade tier &lt;guilde&gt; &lt;palier&gt;</button></td><td>Régler le palier du carrefour commercial</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin unique list</button> · <button class="cmd" type="button">/guild admin unique give &lt;joueur&gt; &lt;id&gt;</button></td><td>Lister les armes uniques, en donner une</td></tr>
-							<tr><td><button class="cmd" type="button">/guild admin scroll list</button> · <button class="cmd" type="button">/guild admin scroll give &lt;joueur&gt; &lt;id&gt; [nombre]</button></td><td>Lister les parchemins, en donner</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin scroll list</button> · <button class="cmd" type="button">/guild admin scroll give &lt;joueur&gt; &lt;id&gt; [nombre]</button> · <button class="cmd" type="button">/guild admin scroll grimoire &lt;joueur&gt; [ids]</button></td><td>Lister les parchemins, en donner, donner un grimoire</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin unique registry [id]</button> · <button class="cmd" type="button">/guild admin unique free &lt;id&gt; [guilde]</button></td><td>Registre des armes uniques, marquer une arme perdue</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin ruin incantation &lt;joueur&gt; [nombre]</button></td><td>Donner des parchemins d'incantation</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin ruin list|info|awaken|reset</button></td><td>Ruines : liste, la plus proche, réveiller ou rendormir son gardien</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin ruin locate &lt;id&gt;</button> · <button class="cmd" type="button">/guild admin ruin map &lt;joueur&gt; &lt;id&gt;</button> · <button class="cmd" type="button">/guild admin ruin research &lt;guilde&gt; finish</button></td><td>Localiser une ruine, donner une carte ou une boussole, terminer une recherche</td></tr>
 						</tbody>

@@ -1,7 +1,8 @@
 // Guildy - parchemins de sort : objets a usage unique qui lancent un sort tres puissant (clic droit maintenu).
 // Ils tombent des boss des ruines (surtout), des boss des hordes, des quetes, des expeditions des villageois et se
 // vendent parfois au Carrefour commercial. Les sorts ne blessent que les monstres et ne modifient aucun bloc.
-// Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre].
+// Le grimoire (section grimoire) relie jusqu'a 4 parchemins et relance leurs sorts contre de la nourriture.
+// Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre] | grimoire <joueur> [ids].
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
@@ -63,6 +64,62 @@
 			"LEGENDARY": 3,
 			"MYTHIC": 3
 		}
+	},
+
+	// Grimoire : un livre qui relie jusqu'a 4 parchemins (clic droit d'un parchemin sur le grimoire dans l'inventaire :
+	// le parchemin est consomme et devient une page). Clic droit = lancer le sort de la page choisie (meme visee, meme
+	// animation que le parchemin), accroupi + clic droit = page suivante, accroupi + touche d'echange de main (F) ou
+	// /guild grimoire = gerer les pages. Rien n'est consomme : chaque sort coute de la nourriture.
+	"grimoire": {
+
+		// Grimoire actif (false = il ne lance plus rien et n'est plus obtenu ; ses pages sont conservees)
+		"enabled": true,
+
+		// Objet vanilla de base (simple, sans utilisation propre ; livre enchante par defaut)
+		"item": "minecraft:enchanted_book",
+
+		// Brillance
+		"glint": true,
+
+		// Duree de l'incantation (secondes, 0.05 a 5 ; les parchemins : 0.75 a 4)
+		"channelSeconds": 0.4,
+
+		// Animation de l'incantation (toot_horn, spyglass, bow, trident, brush, block...)
+		"animation": "toot_horn",
+
+		// Recharge entre deux sorts (secondes, 0.05 a 600) : propre au grimoire (partagee par les grimoires d'un joueur),
+		// independante des recharges des parchemins
+		"cooldownSeconds": 3.0,
+
+		// Multiplicateur des degats, soins et durees des sorts lances avec le grimoire (0.1 a 5 ; 1 = comme le parchemin)
+		"powerMultiplier": 1.0,
+
+		// Cout d'un sort en points de faim (0 a 20 ; la barre en compte 20) selon la rarete du parchemin : la saturation
+		// part d'abord, puis la faim. Si la barre de faim est plus basse que le cout, le sort ne part pas. Creatif : gratuit
+		"foodCost": {
+			"RARE": 3,
+			"EPIC": 5,
+			"LEGENDARY": 7,
+			"MYTHIC": 10
+		},
+
+		// Chance (0 a 1) qu'une source donne un grimoire vierge a la place de son tirage de parchemins (memes sources
+		// que drops ; trade = un marchand du Carrefour le propose, a partir du palier tradeMinTier)
+		"drops": {
+			"ruin_boss": 0.08,
+			"nether_ruin_boss": 0.12,
+			"legendary_quest": 0.04,
+			"trade": 0.05
+		},
+
+		// Prix (or) du grimoire au Carrefour commercial
+		"tradePrice": 400,
+
+		// Palier minimum du Carrefour pour proposer le grimoire
+		"tradeMinTier": 3,
+
+		// Texture du pack de ressources (vide = apparence vanilla ; suit le reglage customModels d'uniques.json5)
+		"model": "grimoire"
 	},
 
 	// Tables de butin par source : chance (0 a 1) qu'un parchemin tombe, min/max (nombre de parchemins), puis tirage

@@ -1,17 +1,30 @@
 // Guildy - armes uniques : armes et outils legendaires (enchantements de fou, pouvoirs, modeles optionnels).
 // Ils tombent des boss des hordes (bien plus souvent pendant une nuit de sang), des quetes, des expeditions des
-// villageois et se vendent parfois au Carrefour commercial palier III (trade.json5).
-// Commandes admin : /guild admin unique list | give <joueur> <id>.
+// villageois, des gardiens des ruines et se vendent parfois au Carrefour commercial palier III (trade.json5).
+// Chaque exemplaire porte un numero de serie (registre : <monde>/guildy/uniques.json).
+// Commandes admin : /guild admin unique list | give <joueur> <id> | registry [id] | free <id> [guilde].
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 2,
+	"configVersion": 3,
 
 	// Butin : les armes uniques tombent des boss, des quetes, des expeditions et se vendent au Carrefour (false = plus aucune)
 	"dropsEnabled": true,
 
 	// Pouvoirs des armes uniques (foudre, double saut, abattage...). false = elles ne gardent que leurs enchantements
 	"powersEnabled": true,
+
+	// Unicite des armes uniques :
+	// "guild" = une guilde ne recoit jamais une arme qu'elle detient deja (une autre guilde peut l'obtenir) ;
+	// "server" = un seul exemplaire de chaque arme sur tout le serveur (elle redevient disponible si elle est detruite) ;
+	// "none" = aucune limite (ancien comportement). Les dons des admins ignorent cette regle (avertissement).
+	"uniqueness": "guild",
+
+	// Quand toutes les armes d'une table sont deja detenues : un parchemin de sort de la meme source a la place, garanti (false = rien)
+	"fallbackToScroll": true,
+
+	// Annonce a tout le serveur quand une guilde a reuni toutes les armes uniques (collection complete)
+	"announceCollection": true,
 
 	// Modeles et textures personnalises (pack de ressources) :
 	// "auto" = seulement si le mod Polymer (polymer-resource-pack) est installe : Guildy ajoute ses textures a son pack ;
@@ -598,7 +611,7 @@
 			"glint": true,
 			"unbreakable": false,
 			"power": "",
-			"model": "",
+			"model": "arbalete_du_traqueur",
 			"color": -1
 		},
 		{

@@ -1,7 +1,9 @@
 // Guildy - ruines : des ruines generees dans l'Overworld et le Nether, chacune gardee par un boss.
-// Un joueur en survie qui approche du boss le reveille (avec son escorte) ; vaincu, il revient apres 'respawnDays' jours.
+// Le boss dort jusqu'a la lecture d'un parchemin d'incantation pres de son point d'apparition (rituel qui draine le sang
+// des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.
 // Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou
-// boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>.
+// boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>
+// | incantation <joueur> [nombre].
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
@@ -41,6 +43,54 @@
 		"minXpPerGuild": 10
 	},
 
+	// Reveil des boss : parchemin d'incantation et rituel
+	"summon": {
+
+		// Reveil des boss : "scroll" (il faut lire un parchemin d'incantation pres du point d'apparition du boss ; entrer
+		// dans la ruine ne le reveille plus) ou "proximity" (ancien comportement : un joueur en survie qui approche le reveille)
+		"mode": "scroll",
+
+		// Objet vanilla de base du parchemin d'incantation (son apparence sans pack de ressources)
+		"item": "minecraft:skull_banner_pattern",
+
+		// Taille maximale d'une pile de parchemins d'incantation (1 a 64)
+		"maxStack": 16,
+
+		// Duree (secondes) du clic droit maintenu avant le debut du rituel (0.25 a 10)
+		"channelSeconds": 1.5,
+
+		// Distance maximale (blocs) au point d'apparition du boss pour lancer le rituel ; tous les joueurs a cette
+		// distance y participent (et sont draines)
+		"arenaRadius": 16,
+
+		// Duree (secondes) du rituel avant l'apparition du boss (2 a 30)
+		"ritualSeconds": 7.0,
+
+		// Points de vie draines a chaque participant pendant le rituel (2 = un coeur, 0 = aucun)
+		"drainHealth": 4.0,
+
+		// Le drain ne fait jamais descendre un participant sous ces points de vie (1 au minimum : le rituel ne tue jamais)
+		"minHealth": 4.0,
+
+		// Ralentir les participants pendant le drain
+		"slowParticipants": true,
+
+		// Particules envoyees au maximum par tick pour tous les rituels (au-dela, l'animation est allegee)
+		"particleBudget": 900,
+
+		// Distance (blocs) a laquelle les joueurs voient le rituel (particules longue distance)
+		"viewDistance": 128,
+
+		// Palier minimal du Carrefour commercial dont le marchand propose parfois un parchemin d'incantation (0 = jamais)
+		"tradeTier": 2,
+
+		// Chance (0 a 1) que le marchand du Carrefour propose un parchemin d'incantation
+		"tradeChance": 0.5,
+
+		// Prix (lingots d'or) d'un parchemin d'incantation chez le marchand du Carrefour
+		"tradePrice": 24
+	},
+
 	// Recherches de l'Atelier du cartographe
 	"cartography": {
 
@@ -73,7 +123,10 @@
 		"mapZoom": 2,
 
 		// Icone de la cible sur les cartes (type de decoration vanilla, ex. minecraft:red_x, minecraft:target_x)
-		"mapDecoration": "minecraft:red_x"
+		"mapDecoration": "minecraft:red_x",
+
+		// Parchemins d'incantation donnes avec chaque carte / boussole d'une recherche reussie (0 = aucun)
+		"incantationsPerResearch": 1
 	},
 
 	// Boss generique des ruines inconnues de ce fichier (ajoutees par un autre pack de donnees)
@@ -87,10 +140,11 @@
 	},
 
 	// Ruines par id (le chemin du gabarit apres 'ruin/', ex. guildy:ruin/crypte_oubliee -> crypte_oubliee) :
-	// name, tier (1 a 5), activationRadius (blocs autour du point d'apparition du boss pour le reveiller, 0 = toute la ruine),
-	// resetSeconds (sans joueur proche pendant ce temps, le boss disparait et reviendra a pleine vie), respawnDays (jours
-	// de jeu avant le retour d'un boss vaincu, 0 = jamais), leashRadius (au-dela, le boss est ramene a son arene), bossBarColor
-	// (PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE), mapDecoration (icone de la carte, vide = celle de 'cartography').
+	// name, tier (1 a 5), activationRadius (mode proximity : blocs autour du point d'apparition du boss pour le reveiller,
+	// 0 = toute la ruine), resetSeconds (sans joueur proche pendant ce temps, le boss disparait et reviendra a pleine vie),
+	// respawnDays (jours de jeu avant le retour d'un boss vaincu, 0 = jamais), leashRadius (au-dela, le boss est ramene a son
+	// arene), bossBarColor (PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE ; aussi la couleur du rituel d'incantation),
+	// mapDecoration (icone de la carte, vide = celle de 'cartography').
 	// boss : entity, name (codes couleur &), health, damage, armor, armorToughness, speed (0 = vitesse vanilla),
 	// knockbackResistance (0 a 1), scale (taille, 1 = normale), followRange, equipment {emplacement: objet} (mainhand,
 	// offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents).
