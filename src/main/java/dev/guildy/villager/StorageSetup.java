@@ -19,11 +19,14 @@ final class StorageSetup {
 
 	static void init() {
 		StorageLang.register();
+		TidyLang.register();
 		StorageLabels.init();
 		StorageVisualizer.register();
 		Lifecycle.STARTED.add(server -> {
 			ItemClassifier.invalidate();
 			StorageVisualizer.clear();
+			Tidier.clear();
+			ChestRooms.clear();
 			migrateChestCategories();
 		});
 		Lifecycle.RELOADED.add(() -> {
@@ -34,7 +37,11 @@ final class StorageSetup {
 		ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> Safe.run("villager.storage.reload", ItemClassifier::invalidate));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Safe.run("villager.storage.disconnect",
 				() -> StorageVisualizer.forget(handler.getPlayer().getUUID())));
-		GuildEvents.DISBANDED.add(guild -> Safe.run("villager.storage.disband", () -> StorageLabels.onDisband(guild)));
+		GuildEvents.DISBANDED.add(guild -> Safe.run("villager.storage.disband", () -> {
+			StorageLabels.onDisband(guild);
+			Tidier.forget(guild);
+			ChestRooms.forget(guild);
+		}));
 	}
 
 	/**
@@ -47,7 +54,7 @@ final class StorageSetup {
 		int renamed = 0;
 		for (Guild guild : GuildManager.all()) {
 			for (StorageChest chest : guild.villagers.chests) {
-				if (chest.role != StorageChest.Role.CATEGORY) {
+				if (chest.role != StorageChest.Role.CATEGORY || chest.isFree()) {
 					continue;
 				}
 				String replacement = StorageDefaults.legacyRename(chest.category, categories);

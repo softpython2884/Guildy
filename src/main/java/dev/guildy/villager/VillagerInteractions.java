@@ -23,6 +23,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -38,7 +39,10 @@ import java.util.UUID;
 final class VillagerInteractions {
 	static final int SELECTION_SECONDS = 30;
 
-	private record Selection(UUID guildId, long expiresAt) {
+	static final int ROOM_SELECTION_SECONDS = 60;
+
+	/** A container selection; {@code room}: chest room corners ({@code first} = first corner once clicked). */
+	private record Selection(UUID guildId, long expiresAt, boolean room, @Nullable BlockPos first) {
 	}
 
 	/** Player → pending container selection (not persisted). */
@@ -128,8 +132,15 @@ final class VillagerInteractions {
 
 	static void startSelection(ServerPlayer player, Guild guild) {
 		RouteSelection.forget(player.getUUID());
-		SELECTIONS.put(player.getUUID(), new Selection(guild.id, Scheduler.ticks() + SELECTION_SECONDS * 20L));
+		SELECTIONS.put(player.getUUID(), new Selection(guild.id, Scheduler.ticks() + SELECTION_SECONDS * 20L, false, null));
 		Msg.send(player, "villager.storage.select", SELECTION_SECONDS);
+	}
+
+	/** "Ajouter une salle des coffres": the next two containers clicked are the corners of the room. */
+	static void startRoomSelection(ServerPlayer player, Guild guild) {
+		RouteSelection.forget(player.getUUID());
+		SELECTIONS.put(player.getUUID(), new Selection(guild.id, Scheduler.ticks() + ROOM_SELECTION_SECONDS * 20L, true, null));
+		Msg.send(player, "villager.storage.room.select_first", ROOM_SELECTION_SECONDS);
 	}
 
 	/** A route drawing starts: a pending container selection is dropped. */
@@ -148,7 +159,7 @@ final class VillagerInteractions {
 				it.remove();
 				ServerPlayer player = GuildyServer.player(entry.getKey());
 				if (player != null) {
-					Msg.send(player, "villager.storage.select_expired");
+					Msg.send(player, entry.getValue().room() ? "villager.storage.room.selection_cancelled" : "villager.storage.select_expired");
 				}
 			}
 		}
@@ -206,11 +217,24 @@ final class VillagerInteractions {
 			Msg.send(player, "villager.storage.not_territory");
 			return InteractionResult.FAIL;
 		}
-		SELECTIONS.remove(player.getUUID());
 		if (!guild.can(player.getUUID(), GuildPermission.VILLAGERS)) {
+			SELECTIONS.remove(player.getUUID());
 			Msg.send(player, "error.no_permission");
 			return InteractionResult.FAIL;
 		}
+		if (selection.room()) {
+			if (selection.first() == null) {
+				SELECTIONS.put(player.getUUID(), new Selection(selection.guildId(), selection.expiresAt(), true, pos.immutable()));
+				Msg.send(player, "villager.storage.room.select_second", pos.getX(), pos.getY(), pos.getZ());
+				return InteractionResult.SUCCESS;
+			}
+			SELECTIONS.remove(player.getUUID());
+			if (ChestRooms.create(player, level, guild, selection.first(), pos.immutable()) != null) {
+				StorageGui.openRooms(player, guild, 0);
+			}
+			return InteractionResult.SUCCESS;
+		}
+		SELECTIONS.remove(player.getUUID());
 		StorageChest existing = Storage.registered(level, guild, pos);
 		BlockPos target = existing != null ? existing.pos : pos.immutable();
 		VillagerGui.openRolePicker(player, guild, target);

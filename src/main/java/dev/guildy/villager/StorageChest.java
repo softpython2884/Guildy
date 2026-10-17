@@ -22,6 +22,13 @@ public class StorageChest {
 	 * removed while the container still bears it (see {@link StorageLabels}).
 	 */
 	public String label = "";
+	/**
+	 * Automatic chest of a chest room ({@link ChestRoom}): its category is chosen by the room planning
+	 * ({@link ChestRooms}), "" = free (reserve, receives nothing). A role chosen by a player makes it manual.
+	 */
+	public boolean auto = false;
+	/** Chest room holding this container (0 = none). */
+	public int room = 0;
 
 	public StorageChest() {
 	}
@@ -36,6 +43,11 @@ public class StorageChest {
 		return role == Role.DEPOSIT;
 	}
 
+	/** Automatic chest without category yet (reserve of a chest room): no group, receives nothing. */
+	public boolean isFree() {
+		return auto && role == Role.CATEGORY && (category == null || category.isBlank());
+	}
+
 	void sanitize() {
 		if (role == null) {
 			role = Role.DEPOSIT;
@@ -45,6 +57,12 @@ public class StorageChest {
 		}
 		if (label == null) {
 			label = "";
+		}
+		if (room < 0) {
+			room = 0;
+		}
+		if (auto) {
+			role = Role.CATEGORY;
 		}
 	}
 }

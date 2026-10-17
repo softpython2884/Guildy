@@ -43,6 +43,11 @@ public final class ItemClassifier {
 	private static @Nullable StorageCategories cachedFor;
 	private static @Nullable Map<String, Integer> tagSizes;
 	private static @Nullable Map<Item, Set<String>> tabs;
+	/** Item → its entries in the creative tabs (stack shown, position in the whole creative inventory), in order. */
+	private static @Nullable Map<Item, List<CreativeEntry>> creative;
+
+	private record CreativeEntry(ItemStack stack, int index) {
+	}
 
 	private ItemClassifier() {
 	}
@@ -86,6 +91,7 @@ public final class ItemClassifier {
 		cachedFor = null;
 		tagSizes = null;
 		tabs = null;
+		creative = null;
 	}
 
 	// ------------------------------------------------------------------ facts
@@ -215,20 +221,31 @@ public final class ItemClassifier {
 	/** Item → "tab:minecraft:combat"... for every creative tab of type CATEGORY (empty when no server runs). */
 	static Map<Item, Set<String>> tabs() {
 		if (tabs == null) {
-			tabs = buildTabs();
+			buildTabs();
 		}
 		return tabs;
 	}
 
-	private static Map<Item, Set<String>> buildTabs() {
+	private static Map<Item, List<CreativeEntry>> creative() {
+		if (creative == null) {
+			buildTabs();
+		}
+		return creative;
+	}
+
+	private static void buildTabs() {
 		Map<Item, Set<String>> map = new HashMap<>();
+		Map<Item, List<CreativeEntry>> order = new HashMap<>();
+		tabs = map;
+		creative = order;
 		MinecraftServer server = GuildyServer.server();
 		if (server == null) {
-			return map;
+			return;
 		}
 		try {
 			// Dedicated server only (Guildy is server-side): no client shares these tab contents.
 			CreativeModeTabs.tryRebuildTabContents(server.getWorldData().enabledFeatures(), false, server.registryAccess());
+			int index = 0;
 			for (CreativeModeTab tab : BuiltInRegistries.CREATIVE_MODE_TAB) {
 				Identifier key = BuiltInRegistries.CREATIVE_MODE_TAB.getKey(tab);
 				if (key == null || tab.getType() != CreativeModeTab.Type.CATEGORY) {
@@ -237,11 +254,57 @@ public final class ItemClassifier {
 				String property = StorageCategories.TAB + key;
 				addTab(map, tab.getDisplayItems(), property);
 				addTab(map, tab.getSearchTabDisplayItems(), property);
+				for (ItemStack stack : tab.getDisplayItems()) {
+					List<CreativeEntry> entries = order.computeIfAbsent(stack.getItem(), item -> new ArrayList<>());
+					boolean known = false;
+					for (CreativeEntry entry : entries) {
+						known |= ItemStack.isSameItemSameComponents(entry.stack(), stack);
+					}
+					if (!known) {
+						entries.add(new CreativeEntry(stack.copyWithCount(1), index));
+					}
+					index++;
+				}
 			}
 		} catch (RuntimeException e) {
 			Guildy.LOGGER.warn("[villagers.json5] creative tabs unavailable, @tab: storage rules ignored", e);
 		}
-		return map;
+	}
+
+	/**
+	 * Position of a stack in the creative inventory (tabs in order, then their items): the entry with the very same
+	 * components (potions, enchanted books, paintings...), else the item's first entry; {@link Integer#MAX_VALUE} for
+	 * items in no tab.
+	 */
+	static int creativeIndex(ItemStack stack) {
+		List<CreativeEntry> entries = creative().get(stack.getItem());
+		if (entries == null || entries.isEmpty()) {
+			return Integer.MAX_VALUE;
+		}
+		if (!stack.getComponentsPatch().isEmpty()) {
+			for (CreativeEntry entry : entries) {
+				if (ItemStack.isSameItemSameComponents(entry.stack(), stack)) {
+					return entry.index();
+				}
+			}
+		}
+		return entries.getFirst().index();
+	}
+
+	/** True when the stack is shown as such in the creative inventory (a plain item, or a potion / book variant). */
+	static boolean isCreativeVariant(ItemStack stack) {
+		if (stack.getComponentsPatch().isEmpty()) {
+			return true;
+		}
+		List<CreativeEntry> entries = creative().get(stack.getItem());
+		if (entries != null) {
+			for (CreativeEntry entry : entries) {
+				if (ItemStack.isSameItemSameComponents(entry.stack(), stack)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private static void addTab(Map<Item, Set<String>> map, Collection<ItemStack> stacks, String property) {

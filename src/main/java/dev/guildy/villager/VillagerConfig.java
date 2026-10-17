@@ -34,7 +34,7 @@ public final class VillagerConfig implements Validatable {
 	@Comment("Reglages communs a toutes les taches")
 	public Work work = new Work();
 
-	@Comment("Tache 'Ranger la base' : vide les coffres de depot dans les coffres par categorie")
+	@Comment("Tache 'Ranger la base' : vide les coffres de depot dans les coffres par categorie, puis re-range les coffres")
 	public Sorter sorter = new Sorter();
 
 	@Comment({
@@ -223,6 +223,28 @@ public final class VillagerConfig implements Validatable {
 		public int stacksPerTrip = 6;
 		@Comment("Temps maximum (secondes) pour atteindre un coffre avant teleportation")
 		public int walkTimeoutSeconds = 30;
+		@Comment({
+				"Re-ranger les coffres quand les depots sont vides : les coffres d'une meme categorie forment un groupe (par salle",
+				"des coffres), range comme un mur qu'on lit (voir storage.defaultOrder) : objets d'une autre categorie sortis, piles",
+				"fusionnees, ordre de l'inventaire creatif, coffre 1 rempli avant le coffre 2..."
+		})
+		public boolean tidy = true;
+		@Comment("Pause (secondes) avant de reverifier les groupes quand tout est range")
+		public int tidyIntervalSeconds = 15;
+		@Comment("Nombre maximum de coffres verifies par seconde (un groupe plus grand est verifie seul)")
+		public int auditChestsPerStep = 16;
+		@Comment({
+				"Portee (blocs) d'une position de travail : les coffres consecutifs d'un groupe a moins de cette distance du centre",
+				"de leur ensemble (une colonne, un pan de mur) sont reorganises d'un coup sur place ; entre deux pans eloignes, le",
+				"trieur porte les piles d'un coffre a l'autre (2 a 8)"
+		})
+		public int reach = 5;
+		@Comment("Nombre maximum de coffres reorganises d'un coup sur place (1 a 64)")
+		public int maxChestsPerStep = 16;
+		@Comment("Duree (secondes) de la reservation d'un groupe par un trieur : deux trieurs ne rangent jamais le meme groupe a la fois")
+		public int leaseSeconds = 20;
+		@Comment("Animation du rangement : couvercles des coffres ouverts puis refermes, bras et sons")
+		public boolean animation = true;
 	}
 
 	@Json5.Section
@@ -602,12 +624,47 @@ public final class VillagerConfig implements Validatable {
 				"pas de coffre dedie (ou dont les coffres sont pleins). Sans coffre 'Divers', ces objets restent au depot."
 		})
 		public String fallbackCategory = "Divers";
-		@Comment("Nombre maximum de conteneurs enregistres par guilde")
+		@Comment("Nombre maximum de conteneurs enregistres par guilde hors des salles des coffres (voir maxRoomChests)")
 		public int maxChests = 48;
 		@Comment("Nommer les conteneurs enregistres (titre affiche a l'ouverture : 'Depot', 'Minerais et lingots'...)")
 		public boolean labelChests = true;
 		@Comment("Duree (secondes) du bouton 'Afficher les coffres' (particules visibles par le joueur seul)")
 		public int showSeconds = 20;
+		@Comment({
+				"Ordre de rangement par defaut des groupes de coffres (modifiable par guilde dans le menu Stockage) :",
+				"'columns' = chaque colonne de haut en bas, colonnes de gauche a droite vues de face ; 'rows' = chaque rangee de",
+				"gauche a droite, rangees de haut en bas. Dans une salle des coffres, les categories recoivent des colonnes (ou",
+				"des rangees) entieres."
+		})
+		public String defaultOrder = "columns";
+		@Comment({
+				"Salles des coffres (menu Stockage) : tous les coffres de la zone entre deux coffres-coins deviennent automatiques ;",
+				"les trieurs leur donnent une categorie par colonnes (ou rangees) entieres, dans l'ordre des categories ci-dessus,",
+				"'Divers' a la fin, le reste en reserve. Nombre maximum de salles par guilde (0 = desactive)"
+		})
+		public int maxRooms = 4;
+		@Comment("Salles des coffres : nombre maximum de coffres automatiques par guilde (en plus de maxChests)")
+		public int maxRoomChests = 192;
+		@Comment("Salles des coffres : cote maximum (blocs) de la zone entre les deux coins")
+		public int maxRoomSize = 32;
+		@Comment("Salles des coffres : marge (%) ajoutee a ce que contient une categorie pour choisir son nombre de colonnes")
+		public int roomHeadroomPercent = 25;
+		@Comment("Salles des coffres : une categorie recoit une colonne de plus quand il reste moins de N emplacements libres dans les siennes")
+		public int roomGrowFreeSlots = 4;
+		@Comment({
+				"Salles des coffres : une categorie sans colonne en recoit une quand elle contient au moins N piles (avant, ses",
+				"objets vont dans 'Divers' : un objet isole ne fait jamais tout deplacer)"
+		})
+		public int roomNewCategoryStacks = 9;
+		@Comment("Salles des coffres : une colonne vide depuis N minutes revient a la reserve si sa categorie n'en a pas besoin")
+		public int roomIdleMinutes = 30;
+		@Comment({
+				"Salles des coffres : pour qu'une categorie qui grandit reste d'un seul tenant, les blocs de colonnes voisins se",
+				"decalent d'une colonne s'ils sont au plus N ; au-dela elle prend la colonne libre la plus proche (0 a 20)"
+		})
+		public int roomMaxShift = 3;
+		@Comment("Salles des coffres : intervalle (secondes) entre deux verifications de la repartition des categories")
+		public int roomPlanSeconds = 30;
 	}
 
 	@Json5.Section
@@ -946,6 +1003,11 @@ public final class VillagerConfig implements Validatable {
 		sorter.intervalSeconds = clamp(sorter.intervalSeconds, 1, 600);
 		sorter.stacksPerTrip = clamp(sorter.stacksPerTrip, 1, 27);
 		sorter.walkTimeoutSeconds = clamp(sorter.walkTimeoutSeconds, 5, 600);
+		sorter.tidyIntervalSeconds = clamp(sorter.tidyIntervalSeconds, 1, 600);
+		sorter.auditChestsPerStep = clamp(sorter.auditChestsPerStep, 1, 256);
+		sorter.reach = clamp(sorter.reach, 2, 8);
+		sorter.maxChestsPerStep = clamp(sorter.maxChestsPerStep, 1, 64);
+		sorter.leaseSeconds = clamp(sorter.leaseSeconds, 5, 300);
 		miner.tripSeconds = clamp(miner.tripSeconds, 5, 3600);
 		miner.rollsPerTrip = clamp(miner.rollsPerTrip, 1, 64);
 		miner.oreRollsPerTrip = clamp(miner.oreRollsPerTrip, 1, 64);
@@ -994,6 +1056,17 @@ public final class VillagerConfig implements Validatable {
 		StorageDefaults.validate(storage, configVersion);
 		storage.maxChests = clamp(storage.maxChests, 1, 256);
 		storage.showSeconds = clamp(storage.showSeconds, 3, 120);
+		ChestOrder.Mode order = ChestOrder.Mode.parse(storage.defaultOrder);
+		storage.defaultOrder = (order == null ? ChestOrder.Mode.COLUMNS : order).id();
+		storage.maxRooms = clamp(storage.maxRooms, 0, 16);
+		storage.maxRoomChests = clamp(storage.maxRoomChests, 0, 1024);
+		storage.maxRoomSize = clamp(storage.maxRoomSize, 2, 64);
+		storage.roomHeadroomPercent = clamp(storage.roomHeadroomPercent, 0, 300);
+		storage.roomGrowFreeSlots = clamp(storage.roomGrowFreeSlots, 1, 54);
+		storage.roomNewCategoryStacks = clamp(storage.roomNewCategoryStacks, 1, 1000);
+		storage.roomIdleMinutes = clamp(storage.roomIdleMinutes, 1, 10080);
+		storage.roomMaxShift = clamp(storage.roomMaxShift, 0, 20);
+		storage.roomPlanSeconds = clamp(storage.roomPlanSeconds, 5, 600);
 		defeatLeaveChance = clamp(defeatLeaveChance, 0.0, 1.0);
 		names = names == null ? new ArrayList<>() : new ArrayList<>(names);
 		names.removeIf(name -> name == null || name.isBlank());

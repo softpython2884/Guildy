@@ -253,8 +253,10 @@ public final class WorkChunkLoader {
 			}
 			zoneAnchor(anchors, guild, record, pos, config);
 			if (task == Task.SORTER || task == Task.ALCHEMIST) {
+				// One anchor per chunk of storage (a chest room holds many chests in a few chunks).
+				Set<Long> chunks = new HashSet<>();
 				for (StorageChest chest : guild.villagers.chests) {
-					if (chest.pos != null) {
+					if (chest.pos != null && chunks.add(ChunkKey.ofBlock(chest.pos.getX(), chest.pos.getZ()))) {
 						add(anchors, heart, id, ChunkLoadPlanner.Kind.STORAGE, chest.pos, 0);
 					}
 				}

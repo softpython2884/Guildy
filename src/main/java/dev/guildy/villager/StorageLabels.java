@@ -59,6 +59,9 @@ final class StorageLabels {
 		if (!VillagerModule.config().storage.labelChests) {
 			return "";
 		}
+		if (chest.isFree()) {
+			return Lang.raw("villager.storage.label.reserve");
+		}
 		return chest.isDeposit() ? Lang.raw("villager.storage.label.deposit") : Lang.raw("villager.storage.label.category", Storage.roleName(chest));
 	}
 
