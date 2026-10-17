@@ -45,14 +45,15 @@ dans `config/guildy/lang.json` (codes couleur `&`, paramètres `{0}`), jamais en
 ```
 Guildy.java   entrypoint : config, langue, init des modules, lifecycle, sauvegarde automatique, commande racine
 core/         GuildyServer, Scheduler (tâches réparties) + Safe, Lang/CoreLang, Msg, Hooks (liens entre modules),
-              Lifecycle, GuildyItems (drapeaux, plans, cartes = custom_data), GoldUtil, ItemUtil, UniqueDrops
+              Lifecycle, GuildyItems (drapeaux, plans, cartes = custom_data), GoldUtil, ItemUtil, UniqueDrops, ScrollDrops
 config/       ConfigManager/ConfigHandle/Json5 (@Comment, @Json5.Section, Validatable), GuildyConfig (config.json5)
 data/         Guild, GuildManager (index id/nom/joueur/chunk, XP, trésor, invitations), GuildStorage (JSON atomique),
               GuildEvents (+ WaveOutcome), BannerDesign, ChunkKey, rôles et permissions
 claim/        FlagHandler (planter les drapeaux), ClaimService (API territoire), ClaimRules (pur, testé),
               ProtectionHandler + WorldProtection + ClaimGuard + HeartIndex, HeartBanners, TerritoryNotifier,
               BorderVisualizer, HomeTeleports, ClaimCommands
-mixin/        ServerExplosion, FireBlock, PistonStructureResolver, FlowingFluid, Projectile, BannerBlock (cœur)
+mixin/        ServerExplosion, FireBlock, PistonStructureResolver, FlowingFluid, Projectile, BannerBlock (cœur),
+              LivingEntityPortal (pas de portail pour les villageois de guilde), FarmlandBlock (terre piétinée)
 command/      GuildCommand (racine /guild + /gld, admin sous guildy.admin), GuildCommands, GuildActions (toutes les
               actions de guilde, partagées entre commandes et menus), GuildAdminCommands, GuildRules (pur)
 gui/          GuiUtil, GuildMenus + GuildGui (base) + menus NoGuild/Main/Members/Member/Invite/Territory/Treasury/Banner
@@ -68,7 +69,9 @@ shop/         ShopTransactions (achat/vente atomiques), ShopMenus, ShopValidator
 trade/        TradeHub (carrefour commercial), Merchants (marchands de passage), TradeOffers/TradeRolls, menus, TradeConfig
 event/        EventManager (nuit de sang, raid de pillards, caravane, érudit), EventRules (pur), EventState, EventConfig
 villager/     VillagerManager (arrivées, candidats, départs), TaskEngine + *Task (Sorter, Miner, Lumberjack, Farmer,
-              Guard, Expedition), Movement (cibles de marche + délais + repli), VillagerCalls (« Appeler ici »),
+              Guard, Expedition, Blacksmith, Alchemist, Cartographer), forge et alchimie (ForgeRules, AlchemyRules (purs),
+              CraftJobs, CraftWorld, CraftStock, TerritoryScan), travaux des champs (ZoneOption, ZonePermissions,
+              ZoneOptionsMenu, FieldPlanner (pur), FieldWorks, FieldMemory, FieldState), Movement (cibles de marche + délais + repli), VillagerCalls (« Appeler ici »),
               zones (WorkZone, ZoneFlags, WorkArea, WorkAnchor, PatrolRoute), mine réelle (MineLayout, MineRules,
               MineWorld, Mines, RealMiner), objectifs prioritaires (Wishlist, WishMatch, WorkWishes, WishlistMenu),
               gardes (Guards, GuardRules, GuardCombat, GuardArrow, GuardEquipment, GuardRetreat, FriendlyFire),
@@ -78,10 +81,18 @@ upgrade/      UpgradeTree/UpgradeRules/UpgradeMath/UpgradeEffects (purs, testés
               modules), UpgradeService (déblocage atomique), UpgradeMenu, UpgradeBuffs, UpgradeConfig
 unique/       UniqueItems (fabrique), UniqueRolls (tables de butin), UniquePowers + Combat/Lightning/MiningPowers,
               DoubleJump, UniqueTracker (annonces), UniqueVisuals + PolymerBridge (modèles), UniqueConfig
+scroll/       ScrollModule (implémente ScrollDrops), ScrollConfig, objets (custom_data kind `scroll`), sorts animés,
+              EffectRunner (effets par tick, budget de particules), TargetRules (pur), scroll/mixin (fin d'incantation)
+ruin/         RuinModule, RuinIndex + RuinStore (ruins.json), MarkerCapture + ruin/mixin (marqueurs DATA à la génération),
+              Encounters/Encounter (combats), BossFactory, BossAbilities + RuinFx (capacités animées), RuinLoot,
+              RuinRules (pur), Cartography + CartographerBehavior + AtelierMenu (recherches), RuinItems, RuinConfig
 ```
 
 Ressources : `data/guildy/enchantment` (10 enchantements data-driven), `data/guildy/damage_type`, tags
-`data/guildy/tags`, modèles et textures des armes uniques dans `assets/guildy` (générés par `tools/gen_textures.py`).
+`data/guildy/tags`, ruines (`data/guildy/structure/ruin`, `worldgen/structure|template_pool|structure_set`, tags de
+biomes et de structures, `loot_table/chests/ruin`), modèles et textures des armes uniques et des parchemins dans
+`assets/guildy` (générés par `tools/gen_textures.py`). Outils des ruines (gabarits, aperçus, convertisseur de
+schématiques) : `tools/ruins/`.
 
 ## Noyau partagé (API entre modules)
 
@@ -256,6 +267,38 @@ Ressources : `data/guildy/enchantment` (10 enchantements data-driven), `data/gui
     sous une partie entièrement creusée du gradin du dessus (deux gradins à la fois au plus). Colonnes de soutien sous
     tout bloc non naturel, jamais de creusage sous les pieds d'une entité. GameTests de mine en environnement
     `guildy-test:day` (heure figée : le refuge de nuit arrêterait les mineurs).
+
+39. **Forgeron et alchimiste** : tâches de territoire sans zone (`TerritoryScan` : chunks revendiqués chargés, du plus
+    proche au plus lointain). Le forgeron modifie la durabilité **sur place** dans l'équipement du porte-armure (rien ne
+    quitte le support, aucune duplication) ; chaque étape est une utilisation vanilla de l'enclume (`AnvilBlock.damage`).
+    L'alchimiste suit la table vanilla (bibliothèques `BOOKSHELF_OFFSETS`, coût de la 3e ligne, tirage limité à
+    `#minecraft:in_enchanting_table`, enchantements `guildy:` filtrés) ; plafond de livres par jour sauvegardé dans
+    `VillagerRecord.craft`. Niveau de guilde requis par tâche (`CraftJobs`), vérifié aussi dans « Assigner les inactifs ».
+40. **Autorisations du fanion** : `WorkZone.options` (par nom ; absent = défauts du type de zone, qui reproduisent
+    l'ancien comportement), préréglages « Entretenir un champ » / « Créer des champs ». `FieldPlanner` (pur) place les
+    points d'eau sur un quadrillage de 9 (rayon d'hydratation vanilla 4, même niveau ou un au-dessus) avec décalage si la
+    case n'est pas sûre ; `FarmlandBlockMixin` (`FarmlandBlock.turnToBaseBlock`) mémorise la terre piétinée et sa culture
+    dans les zones Champs (mémoire bornée) ; ordre : récolte, relabour, semis, puis travaux du sol bornés.
+41. **Ruines** : structures jigsaw data-driven (une pièce par ruine, `structure_set` Overworld et Nether, tags
+    `#guildy:ruins`, `ruins/overworld`, `ruins/nether`), donc seulement dans les nouveaux chunks. En 26.3,
+    `SinglePoolElement.place` retire les blocs de structure (`BlockIgnoreProcessor.STRUCTURE_BLOCK`) et le crochet
+    `handleDataMarker` n'est jamais appelé : `ruin/mixin` lit les marqueurs DATA (`guildy:boss|minion|entrance`) au RETURN
+    de `SinglePoolElement.place`, pour le chunk en cours seulement, met leur case à l'air et passe les données au thread
+    serveur par une file ; le start courant est connu par un ThreadLocal posé dans `StructureStart.placeInChunk`. Les
+    ruines sont aussi indexées au chargement des chunks (starts du tag). Combats : réveil près du marqueur boss, entités
+    taguées `guildy_ruin` refusées au chargement hors combat actif (redémarrage = ruine dormante), laisse, barre de boss,
+    réinitialisation sans joueur, retour après `respawnDays`. Sources `ruin_boss` / `nether_ruin_boss` pour les armes
+    uniques (`UniqueConfig` v2) et les parchemins.
+42. **Cartographe** : construction `cartographer` + tâche CARTOGRAPHER ; la recherche (coût en objets de l'inventaire)
+    avance pendant que des cartographes travaillent à l'atelier, puis `ChunkGenerator.findNearestMapStructure` avec
+    référence (comme les cartes d'explorateur vanilla : une ruine déjà indiquée n'est plus proposée) ; carte
+    d'explorateur (Overworld) ou boussole `LodestoneTracker` non suivie (Nether, recherche depuis les coordonnées / 8).
+    Le monde des GameTests a `generateStructures=false` : la localisation y est remplacée par `Cartography.locator`.
+43. **Parchemins de sort** : objets vanilla + composants (`custom_data` kind `scroll`, `consumable` pour l'animation
+    d'incantation vanilla, `use_cooldown` par groupe) ; une pile qui n'a que `custom_data` (tables de butin) est
+    reconstruite dans l'inventaire. Le sort part à la fin de l'utilisation (mixin `ItemStack.finishUsingItem`), un seul
+    parchemin consommé et seulement en cas de réussite. Effets PvE (`TargetRules`), aucun bloc modifié, `EffectRunner`
+    borné (effets par joueur et serveur, budget de particules par tick, paquets longue distance groupés).
 
 ## Notes API Minecraft 26.3
 

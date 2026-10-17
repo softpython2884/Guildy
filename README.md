@@ -10,7 +10,8 @@ ou à héberger pour les joueurs.
 
 > Fonder une base avec un drapeau → survivre aux hordes de la nuit → gagner de l'or et du butin →
 > agrandir le territoire avec des drapeaux → recruter des villageois et leur confier des tâches →
-> quêtes, boutique et marchands de passage → se renforcer → des nuits toujours plus dures (et parfois une nuit de sang).
+> quêtes, boutique et marchands de passage → se renforcer → des nuits toujours plus dures (et parfois une nuit de sang)
+> → explorer les ruines de l'Overworld et du Nether et vaincre leurs boss.
 
 ## Fonctionnalités
 
@@ -20,15 +21,21 @@ ou à héberger pour les joueurs.
 - **Hordes nocturnes** : 7 thèmes (morts-vivants, arachnides, illageois, Nether, End, boss, élites), difficulté
   progressive, élites et boss avec bossbar ; il faut défendre le cœur jusqu'à l'aube.
 - **Événements** : nuit de sang, raid de pillards en plein jour, caravane marchande, marchand de livres enchantés.
-- **Constructions multiblocs** : tableau de quêtes, comptoir de commerce, bureau d'accueil, carrefour commercial.
+- **Constructions multiblocs** : tableau de quêtes, comptoir de commerce, bureau d'accueil, carrefour commercial,
+  atelier du cartographe.
 - **Quêtes** : 17 types (chasse, minage, livraison, artisanat, pêche, élevage, exploration, boss…), contrats légendaires,
   cartes au trésor.
 - **Économie** : boutique de guilde, carrefour commercial à 3 paliers avec marchands de passage.
-- **Villageois** : rangement des coffres, **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier,
-  garde avec parcours de ronde, expéditions (exploration, Nether), zones de travail par fanions, missions.
+- **Villageois** : rangement des coffres, **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier
+  (qui peut transformer toute une zone en champs), garde avec parcours de ronde, **forgeron**, **alchimiste**,
+  **cartographe**, expéditions (exploration, Nether), zones de travail par fanions et leurs autorisations, missions.
 - **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
 - **Armes uniques** : 14 armes et outils à pouvoirs (foudre, givre, téléportation, double saut, minage 3×3…),
   10 enchantements inédits, textures animées facultatives.
+- **Parchemins de sort** : 12 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel…)
+  avec de grandes animations de particules.
+- **Ruines et boss** : 6 ruines (4 dans l'Overworld, 2 dans le Nether), chacune gardée par un boss avec sa barre de vie,
+  son escorte et ses attaques ; localisées par le cartographe de la guilde.
 - **Tout est configurable** : fichiers JSON5 commentés en français, rechargeables à chaud ; permissions LuckPerms.
 
 ---
@@ -116,6 +123,7 @@ les blocs et pose des **panneaux gérés** devant.
 | **Comptoir de commerce** | planches · bloc d'or · planches / tonneau · tonneau · tonneau | 20 or, niv. 1 | la boutique |
 | **Bureau d'accueil** | pierre taillée · botte de foin · pierre taillée / pierre taillée · établi · pierre taillée | 40 or, niv. 2 | arrivée des villageois |
 | **Carrefour commercial** | laine (toute couleur) · bloc d'émeraude · laine / tonneau · table de cartographie · tonneau | 60 or, niv. 2 | marchands de passage (voir § 9) |
+| **Atelier du cartographe** | bibliothèque · pupitre · bibliothèque / planches · table de cartographie · planches | 80 or, niv. 5 | recherches de ruines par le cartographe (voir § 13) |
 | **Panneau du village** | **un seul bloc plein, n'importe lequel** | gratuit, niv. 1 (4 max) | panneau au nom de la guilde (niveau, membres en ligne, horde en cours) ; clic droit = menu des constructions, accroupi + clic droit = menu de la guilde |
 
 Casser un bloc de la construction la désactive (les panneaux disparaissent) ; les plans se redemandent gratuitement.
@@ -178,10 +186,13 @@ villageois : s'il est loin, sa dernière position est chargée un instant, « Ap
 | **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (19 thèmes, voir « Rangement par thème ») |
 | **Mineur** | creuse vraiment sa **mine** (mode réel, voir plus bas) : escalier en colimaçon puis galeries, pierre et/ou minerais selon l'objectif ; ou minage simulé au fanion (mode simulé) |
 | **Bûcheron** | coupe les arbres naturels de sa **coupe de bois** (ou autour de lui), replante, et **plante de nouvelles pousses** dans sa zone (voir « Plantation ») |
-| **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui), replante, **sème les terres vides** et laboure près de l'eau (voir « Plantation ») |
+| **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui), replante, **sème les terres vides** et laboure près de l'eau ; selon les **autorisations du fanion**, relaboure la terre piétinée ou transforme toute la zone en champs (voir « Autorisations du fanion ») |
 | **Garde** | **épéiste** ou **archer** ; patrouille dans sa zone ou sur son **parcours de garde**, sinon défend le cœur ; toujours au cœur pendant les hordes ; s'équipe dans les coffres et se replie pour se soigner (voir « Gardes ») |
 | **Exploration** | part vers la **destination** choisie (biome ou construction, voir « Destinations d'expédition ») : il quitte vraiment la base et revient quelques minutes plus tard avec le butin du lieu — risque de ne pas revenir |
 | **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** vers la destination choisie (forteresse, bastion, forêts…) — risque plus élevé |
+| **Forgeron** (guilde niv. 3) | répare peu à peu l'équipement abîmé posé sur les **porte-armures** du territoire, à l'**enclume** la plus proche, qu'il use (voir « Forgeron et alchimiste ») |
+| **Alchimiste** (guilde niv. 5) | transforme les **livres** du stockage en **livres enchantés** à la **table d'enchantement** du territoire (voir « Forgeron et alchimiste ») |
+| **Cartographe** | travaille à l'**Atelier du cartographe** sur les recherches de ruines de la guilde (voir § 13) |
 
 #### Zones de travail (fanions)
 Menu Villageois → **Zones et parcours** → « Créer une zone » : choisissez le type (**Mine**, **Coupe de bois**,
@@ -333,9 +344,47 @@ retire, « Vider » efface la liste. Les objectifs d'une zone s'ajoutent à ceux
   ramasse celles qui tombent du feuillage), sinon des coffres « Graines et pousses », de dépôt ou « Divers ».
 - **Fermier** : quand rien n'est mûr, il sème les terres labourées vides (blé, carottes, pommes de terre, betteraves),
   avec les graines de son sac ou du stockage ; dans une zone Champs, il **laboure** aussi l'herbe et la terre à moins de
-  4 blocs d'une eau (jamais un chemin ni à côté de vos constructions).
+  4 blocs d'une eau (jamais un chemin ni à côté de vos constructions). Pour aller plus loin (relabourer, creuser des
+  points d'eau, transformer toute la zone en champs), voir « Autorisations du fanion ».
 - Le statut dit ce qu'il fait (« Plante des pousses de chêne (3/12) », « Sème du blé », « Va chercher des graines au
   stockage ») et pourquoi il s'arrête quand il n'a plus rien à planter.
+
+#### Autorisations du fanion (champs et coupes de bois)
+Dans le menu d'une zone **Champs** ou **Coupe de bois**, le bouton **« Autorisations du fanion »** choisit ce que ses
+villageois ont le droit d'y faire (droit de gérer les villageois requis) :
+
+| Autorisation | Zone | Par défaut | Effet |
+|---|---|---|---|
+| Récolter · Replanter · Semer | Champs | oui | récolte les cultures mûres, replante, sème les terres vides avec les graines du sac ou des coffres |
+| Relabourer | Champs | oui | relaboure la terre labourée devenue terre (piétinée ou desséchée) et ressème la même culture |
+| Labourer | Champs | oui (sol déjà hydraté) | laboure l'herbe, la terre, la terre stérile et la terre racinée ; partout dans la zone avec « Points d'eau » |
+| Créer des points d'eau | Champs | non | creuse un trou d'eau d'un bloc tous les 9 blocs, sur un sol sûr, pour que tout le champ soit hydraté ; rebouche ceux qui ont disparu |
+| Dégager le sol | Champs | non | arrache herbes, fougères, fleurs et buissons sur le sol à labourer |
+| Aplanir | Champs | non | comble les trous et arase les bosses d'un bloc |
+| Poudre d'os | Champs | non | utilise la poudre d'os du stockage sur les cultures |
+| Couper · Replanter · Planter | Coupe de bois | oui | coupe les arbres naturels, replante, plante de nouvelles pousses |
+
+Deux préréglages : **« Entretenir un champ »** (un champ que vous avez déjà : récolte, semis, relabour, rien de nouveau
+n'est labouré) et **« Créer des champs »** (toute la zone devient un champ : dégager, points d'eau, labour, semis).
+Le fermier fait d'abord les récoltes, puis le sol entre deux récoltes, toujours dans la zone, jamais chez une autre
+guilde ni contre vos constructions (barrières, torches, lanternes, chemins et composteurs sont acceptés). L'eau est
+gratuite (`farmer.irrigation.waterBucketCost` pour la faire payer en seaux). Son statut dit ce qu'il fait
+(« Laboure (12/80) », « Creuse un point d'eau », « Champ terminé ») et son menu compte les terres labourées et les points
+d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas semés.
+
+#### Forgeron et alchimiste
+- **Forgeron** (guilde niveau 3) : posez vos armures, armes ou outils abîmés sur des **porte-armures** du territoire, avec
+  une **enclume** à moins de 12 blocs. Le forgeron va à l'enclume et rend peu à peu leur durabilité aux objets (10 % toutes
+  les 8 s, le plus abîmé d'abord) **sans jamais les retirer du porte-armure**. Chaque réparation use l'enclume comme en
+  vanilla (12 % de chance) : ébréchée, endommagée, puis brisée ; il passe alors à l'enclume suivante. Les objets
+  incassables (armes uniques) ne sont pas concernés. Plusieurs forgerons se répartissent les porte-armures.
+- **Alchimiste** (guilde niveau 5) : avec une **table d'enchantement** dans le territoire et des **livres** dans le
+  stockage, il fabrique des **livres enchantés** qu'il range dans le coffre « Livres et enchantements ». Il choisit la
+  table qui a le plus de bibliothèques (règle vanilla, 15 au plus) : avec 15 bibliothèques, chaque livre est enchanté au
+  niveau 30 ; une table seule donne des enchantements faibles. Comptez 6 s par niveau, 8 livres par jour et par
+  alchimiste au plus ; pas de lapis par défaut (`alchemist.lapisPerBook`). Comme à la table vanilla, Raccommodage et les
+  autres enchantements « trésor » ne sortent jamais.
+- Leur menu affiche leurs statistiques (objets réparés, enclumes usées ; livres faits, meilleur enchantement).
 
 #### Travail à distance (chunks chargés)
 Un villageois au travail garde chargés ses alentours, l'endroit où il se rend (coffre de dépôt, lit le soir, retour
@@ -554,6 +603,62 @@ sont utilisées que lorsqu'un pack est garanti (réglage `customModels` d'`uniqu
 Les textures sont générées par `tools/gen_textures.py` (Python 3, sans dépendance) : modifiez-le puis relancez-le pour
 retoucher l'art.
 
+### 12. Parchemins de sort
+De vieux rouleaux couverts de runes, **à usage unique**, qui libèrent des sorts bien plus puissants que les pouvoirs des
+armes uniques. **Maintenez le clic droit** pour lire le parchemin : un cercle runique se dessine à vos pieds, puis le sort
+part dans un grand spectacle de particules visible de loin. Le parchemin n'est consommé que si le sort réussit (aucun
+monstre à portée, incantation interrompue ou recharge en cours : il reste intact ; jamais consommé en créatif).
+Chaque parchemin a une **recharge partagée** avec son groupe (Attaque, Soutien, Rappel, Invocation).
+Les sorts ne touchent que les **monstres** : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est
+modifié. Les bienfaits vont au lanceur, aux membres de sa guilde et à ses villageois.
+
+| Parchemin | Rareté | Effet (réglages par défaut, `scrolls.json5`) |
+|---|---|---|
+| **Pluie de météores** | Légendaire | 10 météores autour du point visé, 6 ❤ par impact, monstres embrasés |
+| **Tempête de foudre** | Épique | foudre en chaîne sur 8 monstres, 7 ❤ chacun, étourdis 2 s |
+| **Blizzard** | Épique | tempête de 8 s sur 7 blocs : Lenteur IV, gel, 2 ❤ de froid par seconde |
+| **Nova solaire** | Légendaire | sphère de feu jusqu'à 10 blocs : 10 ❤ (×1,5 sur les morts-vivants), monstres repoussés |
+| **Singularité** | Mythique | trou noir de 3 s qui aspire tout à 10 blocs, puis implose (13 ❤) |
+| **Égide** | Épique | dôme de 6 blocs pendant 12 s : Absorption III et Résistance II aux alliés, monstres et projectiles repoussés |
+| **Rappel** | Rare | 4 s d'incantation, puis retour au foyer de la guilde (ou au cœur) avec les membres à 6 blocs |
+| **Gardiens** | Légendaire | 2 golems de fer vous escortent 60 s |
+| **Bénédiction** | Rare | soin de 8 ❤, Régénération II, effets néfastes retirés (vous, vos membres, vos villageois) |
+| **Révélation** | Rare | les monstres à 64 blocs brillent 30 s (visibles à travers les murs) |
+| **Séisme** | Épique | 3 ondes de choc jusqu'à 10 blocs, 5 ❤ chacune, monstres projetés en l'air |
+| **Rayon arcanique** | Légendaire | rayon de 32 blocs pendant 3 s qui suit votre visée |
+
+**Où les trouver** : surtout sur les **boss des ruines** (60 %, 75 % dans le Nether, 1 ou 2 parchemins), plus rarement sur
+les boss des hordes (8 %, 30 % pendant une nuit de sang), en récompense de quête (5 %) ou de contrat légendaire (50 %), au
+retour des expéditions (3 %), et chez le marchand du Carrefour commercial (palier II ; palier III pour les plus rares).
+Le pack de ressources facultatif leur donne des textures animées (comme aux armes uniques).
+
+### 13. Ruines et boss
+Des ruines oubliées parsèment l'**Overworld** et le **Nether**. Au cœur de chacune dort un **gardien** : approchez de sa
+salle et il s'éveille avec son escorte (barre de boss, ciel assombri) : ondes de choc, anneaux de feu ou de givre,
+téléportations, salves, vol de vie, puis une rage folle quand il faiblit. Vaincu, il laisse de l'or, des trésors, souvent
+un **parchemin de sort**, parfois une **arme unique**, et rapporte de l'XP aux guildes des joueurs qui ont combattu ;
+tout le serveur l'apprend. Le gardien revient **7 jours de jeu** plus tard. Si tout le monde s'éloigne, le combat
+s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines ont leur propre butin.
+
+| Ruine | Où | Palier | Gardien |
+|---|---|---|---|
+| **Crypte oubliée** | plaines, forêts, prairies, taïga | 1 | Seigneur des Cryptes (squelette wither, 220 PV) + squelettes et zombies |
+| **Tour du Mage déchu** | forêts, jungles, forêts anciennes | 2 | Archimage déchu (évocateur, 260 PV) + vindicateurs et vex |
+| **Ziggourat des sables** | désert, badlands | 2 | Pharaon des sables (zombie momifié en or, 300 PV) + momies |
+| **Bastion de givre** | plaines et taïgas enneigées, pics de glace, bosquets | 3 | Roi de givre (vagabond, 380 PV) + vagabonds |
+| **Autel infernal** | Nether : désolations, forêt carmin | 4 | Seigneur de guerre (piglin barbare, 480 PV) + piglins barbares et cubes de magma |
+| **Citadelle des âmes** | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 | Champion des âmes (squelette wither, 650 PV) + squelettes wither et blazes |
+
+Les ruines n'apparaissent que dans les chunks **pas encore générés** : il faut explorer de nouvelles zones.
+
+**Les trouver : l'Atelier du cartographe** (construction, guilde niveau 5, 80 or). Donnez la tâche **Cartographe** à un
+villageois, puis clic droit sur le panneau de l'atelier : **« Chercher une ruine »** à la surface (8 papiers + 1 boussole)
+ou dans le Nether (+ 4 quartz), pris dans votre inventaire. Le cartographe y travaille le jour (environ 8 minutes de
+travail, plus vite à plusieurs, 3 au plus). Ensuite, **« Récupérer »** donne une **carte d'explorateur** marquée d'une
+croix (surface) ou une **boussole** qui pointe vers la ruine dans le Nether (coordonnées dans sa description). Chaque
+recherche mène à une ruine différente. Le menu de l'atelier liste les ruines connues de la guilde et leur état
+(dormante, réveillée, vaincue — de retour dans N jours).
+
 ### Rôles
 **Chef**, **Officier**, **Membre**. Par défaut les membres construisent et interagissent ; les officiers
 invitent, excluent, gèrent le territoire, le trésor, les villageois, les constructions, la bannière et les
@@ -608,6 +713,10 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin event start\|stop <événement> [guilde]` | `blood_night` (tout le serveur : la nuit en cours ou la prochaine), `pillager_raid` (immédiat si un membre est au cœur, sinon dès qu'il y en a un), `caravan`, `book_merchant`, `merchant` (visite du Carrefour) ; `stop` annule / renvoie le marchand |
 | `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
 | `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme |
+| `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins |
+| `/guild admin ruin list` · `info` · `awaken` · `reset` | Ruines : liste, ruine la plus proche, réveiller / rendormir son gardien |
+| `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
+| `/guild admin ruin ability <type> [style]` | Jouer un effet de capacité de boss (test visuel) |
 
 ---
 
@@ -623,10 +732,13 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
-| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite |
+| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite, forgeron (`blacksmith`) et alchimiste (`alchemist`), travaux des champs
+(`farmer.fieldWork`, `farmer.irrigation`) |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
+| `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
+| `ruins.json5` | Ruines : gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
 | `uniques.json5` | Armes uniques : définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
@@ -646,6 +758,9 @@ Formules par défaut (modifiables) :
   5 minutes si nécessaire et à l'arrêt. En cas de fichier illisible, la sauvegarde `.bak` est utilisée.
 - Les hordes ne sont pas sauvegardées : après un arrêt (même brutal), les monstres de horde restants sont
   supprimés au chargement et la horde est simplement annulée.
+- `<monde>/guildy/ruins.json` : ruines connues (position, état, retour du gardien), écrit de façon atomique avec `.bak`.
+  Un combat de boss n'est pas sauvegardé : après un redémarrage, le gardien et son escorte sont supprimés et la ruine
+  redevient dormante.
 - `<monde>/guildy/events.json` : état global des événements (nuit de sang prévue, dernier tirage). Les marchands de
   passage restent dans le monde avec leurs échanges et repartent à l'heure prévue ; un marchand tagué `guildy_merchant`
   sans fiche dans la guilde est supprimé à son chargement.
@@ -693,6 +808,9 @@ Formules par défaut (modifiables) :
 - Les villageois de guilde ne franchissent pas les portails ; un villageois déjà parti dans une autre dimension est
   ramené au village dès que son chunk se charge (« Appeler ici » le cherche aussi côté Nether).
 - Le cooldown de `/guild home` est remis à zéro au redémarrage.
+- Les ruines ne se génèrent que dans de nouveaux chunks ; une ruine déjà indiquée par une carte n'est plus proposée par
+  une autre recherche.
+- Les livres enchantés de l'alchimiste ne comptent pas pour les quêtes « Enchanter ».
 - Un panneau de construction arraché par une explosion/un piston peut tomber en objet (la construction est
   retirée à la vérification suivante, 30 s).
 - Un `structures.json5` existant reçoit automatiquement une seule fois les nouvelles constructions par défaut (liste

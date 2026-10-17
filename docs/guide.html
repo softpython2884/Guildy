@@ -39,6 +39,7 @@
 	--b-heart: linear-gradient(180deg, #b0261d 0 70%, #7a1712 70%);
 	--b-wool: repeating-linear-gradient(45deg, #e9ecec 0 4px, #d4d8d8 4px 7px);
 	--b-emerald: linear-gradient(135deg, #8ff0b0 0 20%, #2fb35a 20% 70%, #17803a 70%);
+	--b-lectern: linear-gradient(180deg, #c9a46a 0 22%, #6e4a24 22% 30%, transparent 30% 70%, #8a5e30 70%), linear-gradient(90deg, transparent 0 30%, #7d5530 30% 70%, transparent 70%);
 	--b-carto: linear-gradient(180deg, #d9c9a0 0 30%, #6e4a24 30% 38%, #8a5e30 38%), repeating-linear-gradient(90deg, transparent 0 6px, #5b3e22 6px 8px);
 }
 @media (prefers-color-scheme: dark) {
@@ -186,6 +187,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .b-wool { background: var(--b-wool); }
 .b-emerald { background: var(--b-emerald); }
 .b-carto { background: var(--b-carto); }
+.b-lectern { background: var(--b-lectern); }
 .b-any { background: linear-gradient(135deg, #8a8a8a 0 33%, #9a6b3f 33% 66%, #6f9b4a 66%); }
 .grid3.grid1 { grid-template-columns: 64px; }
 
@@ -252,6 +254,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<li><a href="#carrefour">Carrefour commercial</a></li>
 				<li><a href="#villageois">Villageois</a></li>
 				<li><a href="#uniques">Armes uniques</a></li>
+				<li><a href="#parchemins">Parchemins de sort</a></li>
+				<li><a href="#ruines">Ruines et boss</a></li>
 				<li><a href="#evolution">Arbre d'évolution</a></li>
 				<li><a href="#niveaux">Niveaux de guilde</a></li>
 				<li><a href="#commandes">Commandes</a></li>
@@ -450,6 +454,21 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<p class="hint">Fait venir des marchands. <a href="#carrefour">Voir plus bas</a>.</p>
 					</article>
 					<article class="build">
+						<h3>Atelier du cartographe</h3>
+						<div class="meta"><span class="pill gold">80 or</span><span class="pill gold">Niveau 5</span></div>
+						<div class="grid3" role="img" aria-label="Haut : bibliothèque, pupitre, bibliothèque. Bas : planches, table de cartographie, planches. Un panneau sur la bibliothèque de gauche.">
+							<div class="slot"><b class="b-books"></b><i class="sign"></i></div><div class="slot"><b class="b-lectern"></b></div><div class="slot"><b class="b-books"></b></div>
+							<div class="slot"><b class="b-planks"></b></div><div class="slot"><b class="b-carto"></b></div><div class="slot"><b class="b-planks"></b></div>
+						</div>
+						<ul class="legend">
+							<li><b class="b-books"></b> Bibliothèque</li>
+							<li><b class="b-lectern"></b> Pupitre</li>
+							<li><b class="b-planks"></b> Planches (tout bois)</li>
+							<li><b class="b-carto"></b> Table de cartographie</li>
+						</ul>
+						<p class="hint">Le cartographe de la guilde y localise des ruines gardées par des boss. <a href="#ruines">Voir plus bas</a>.</p>
+					</article>
+					<article class="build">
 						<h3>Panneau du village</h3>
 						<div class="meta"><span class="pill green">Gratuit</span><span class="pill gold">Niveau 1</span><span class="pill green">4 max</span></div>
 						<div class="grid3 grid1" role="img" aria-label="Un seul bloc plein, n'importe lequel, avec un panneau.">
@@ -545,10 +564,13 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de son thème (19 catégories). <a href="#rangement">Détails</a></td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
 						<tr><td>Mineur</td><td>Creuse vraiment sa mine : un escalier en colimaçon jusqu'à la profondeur choisie, puis des galeries qui suivent les filons (ou des salles de carrière pour la pierre). Il remonte vider son sac et ne casse jamais vos constructions. <a href="#mine">Détails</a></td><td>Un coffre de dépôt ; une zone de mine (sinon : la pierre à nu la plus proche, en minage simulé)</td></tr>
 						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois), seulement l'essence choisie si vous en choisissez une, replante et plante de nouvelles pousses. <a href="#plantation">Plantation</a></td><td>Un coffre de dépôt ; une zone de coupe (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
-						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes »), replante, sème les terres vides et laboure près de l'eau. <a href="#plantation">Plantation</a></td><td>Un coffre de dépôt ; une zone de champs (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
+						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes »), replante, sème les terres vides et laboure près de l'eau. Avec les <a href="#autorisations">autorisations du fanion</a>, il relaboure la terre piétinée ou transforme toute la zone en champs.</td><td>Un coffre de dépôt ; une zone de champs (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
 						<tr><td>Garde</td><td>Épéiste ou archer : patrouille dans sa zone ou suit son parcours, tue les monstres, défend le cœur pendant les hordes. S'équipe dans vos coffres et se replie pour se soigner. <a href="#gardes">Détails</a></td><td>Facultatif : une zone de patrouille ou un parcours ; des armures dans les coffres ; des lits</td></tr>
 						<tr><td>Exploration</td><td>Part vers la destination choisie (forêt, désert, village, temples…) et revient quelques minutes plus tard avec son butin. <a href="#destinations">Destinations</a> <span class="pill red">5 à 25 % de risque de perte</span></td><td>Le bureau d'accueil (sinon il part du cœur)</td></tr>
 						<tr><td>Expédition au Nether</td><td>Passe par votre portail vers la destination choisie (forteresse, bastion, forêts…) et revient avec son butin. <span class="pill red">10 à 22 % de risque de perte</span></td><td>Un portail du Nether dans le territoire</td></tr>
+						<tr><td>Forgeron <span class="pill gold">Niveau 3</span></td><td>Répare peu à peu l'équipement abîmé posé sur vos porte-armures, en usant l'enclume la plus proche. <a href="#artisans">Détails</a></td><td>Des porte-armures et une enclume à moins de 12 blocs, dans le territoire</td></tr>
+						<tr><td>Alchimiste <span class="pill gold">Niveau 5</span></td><td>Transforme les livres du stockage en livres enchantés à votre table d'enchantement. <a href="#artisans">Détails</a></td><td>Une table d'enchantement (avec des bibliothèques) et des livres dans un coffre enregistré</td></tr>
+						<tr><td>Cartographe</td><td>Travaille aux recherches de ruines de la guilde. <a href="#ruines">Ruines</a></td><td>L'Atelier du cartographe</td></tr>
 					</tbody>
 				</table></div>
 				<p class="hint">Chaque expédition, exploration ou Nether, a aussi 2 % de chance de rapporter une <a href="#uniques">arme unique</a>.</p>
@@ -624,6 +646,31 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<h3 id="plantation">Plantation</h3>
 				<p><strong>Bûcheron :</strong> quand il n'a plus d'arbre à couper dans sa coupe de bois, il plante de nouvelles pousses sur le sol naturel libre, espacées de 5 blocs, 8 arbres au plus par chunk, jamais sur un chemin ni à côté de vos constructions. Essence de la zone d'abord, puis celles de vos objectifs prioritaires. Il prend les pousses dans son sac (il ramasse celles qui tombent) ou dans les coffres « Graines et pousses », de dépôt ou « Divers ».</p>
 				<p><strong>Fermier :</strong> quand rien n'est mûr, il sème les terres labourées vides (blé, carottes, pommes de terre, betteraves) avec les graines de son sac ou du stockage. Dans une zone Champs, il laboure aussi l'herbe et la terre à moins de 4 blocs d'une eau.</p>
+				<h3 id="autorisations">Autorisations du fanion</h3>
+				<p>Dans le menu d'une zone <strong>Champs</strong> ou <strong>Coupe de bois</strong>, le bouton « Autorisations du fanion » choisit ce que ses villageois ont le droit d'y faire.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Autorisation</th><th>Par défaut</th><th>Effet</th></tr></thead>
+					<tbody>
+						<tr><td>Récolter, replanter, semer</td><td>oui</td><td>Récolte les cultures mûres, replante et sème les terres vides avec les graines du sac ou des coffres</td></tr>
+						<tr><td>Relabourer</td><td>oui</td><td>Relaboure la terre labourée redevenue terre (piétinée ou desséchée) et ressème la même culture</td></tr>
+						<tr><td>Labourer</td><td>oui (près de l'eau)</td><td>Laboure l'herbe, la terre, la terre stérile et la terre racinée ; partout dans la zone avec les points d'eau</td></tr>
+						<tr><td>Créer des points d'eau</td><td>non</td><td>Creuse un trou d'eau tous les 9 blocs, sur un sol sûr, pour que tout le champ soit hydraté</td></tr>
+						<tr><td>Dégager le sol</td><td>non</td><td>Arrache herbes, fougères, fleurs et buissons sur le sol à labourer</td></tr>
+						<tr><td>Aplanir</td><td>non</td><td>Comble les trous et arase les bosses d'un bloc</td></tr>
+						<tr><td>Poudre d'os</td><td>non</td><td>Utilise la poudre d'os du stockage sur les cultures</td></tr>
+						<tr><td>Couper, replanter, planter (coupe de bois)</td><td>oui</td><td>Coupe les arbres naturels, replante, plante de nouvelles pousses</td></tr>
+					</tbody>
+				</table></div>
+				<div class="cards">
+					<div class="card"><h3>Entretenir un champ</h3><p>Pour un champ que vous avez déjà : le fermier récolte, sème les terres vides et relaboure la terre piétinée, sans labourer de terrain nouveau.</p></div>
+					<div class="card"><h3>Créer des champs</h3><p>Toute la zone devient un champ : il arrache les herbes, creuse les points d'eau, laboure tout puis sème avec les graines des coffres.</p></div>
+				</div>
+				<p class="hint">Les récoltes passent toujours en premier. Le fermier travaille seulement dans la zone, jamais chez une autre guilde ni contre vos constructions (barrières, torches, lanternes, chemins et composteurs sont acceptés). L'eau est gratuite. Melons, citrouilles et canne à sucre sont récoltés mais pas semés.</p>
+				<h3 id="artisans">Forgeron et alchimiste</h3>
+				<div class="cards">
+					<div class="card"><h3>Forgeron (niveau 3)</h3><p>Posez vos armures, armes ou outils abîmés sur des <strong>porte-armures</strong> du territoire, avec une <strong>enclume</strong> à moins de 12 blocs. Il rend 10 % de durabilité toutes les 8 secondes au plus abîmé, sans rien retirer du porte-armure. Chaque réparation peut user l'enclume, comme en vanilla : ébréchée, endommagée, puis brisée.</p></div>
+					<div class="card"><h3>Alchimiste (niveau 5)</h3><p>Avec une <strong>table d'enchantement</strong> et des <strong>livres</strong> dans un coffre enregistré, il fabrique des livres enchantés rangés dans « Livres et enchantements ». Avec 15 bibliothèques autour de la table, chaque livre est au niveau 30. 6 secondes par niveau, 8 livres par jour au plus.</p></div>
+				</div>
 				<h3 id="distance">Travail à distance</h3>
 				<p>Un villageois au travail garde chargés ses alentours, sa destination et sa zone : il <strong>continue de travailler quand vous êtes loin</strong>, dès qu'un membre de la guilde est connecté. Rien n'est chargé pour un villageois sans tâche, en expédition ou couché. Les cultures y poussent, aucun monstre n'y apparaît. Le menu Villageois (« Chunks des villageois ») indique combien de chunks sont gardés chargés.</p>
 				<h3 id="destinations">Destinations d'expédition</h3>
@@ -751,6 +798,57 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<div class="note"><p><strong>Apparence :</strong> si le serveur active le pack de ressources de Guildy, les armes ont leurs propres textures, dont 7 animées. Sinon, elles gardent l'apparence de leur objet de base, avec leur nom coloré et leur brillance.</p></div>
 			</section>
 
+			<!-- ================================================================ SCROLLS -->
+			<section id="parchemins">
+				<div class="eyebrow">Butin</div>
+				<h2>Parchemins de sort</h2>
+				<p>Des rouleaux à <strong>usage unique</strong> qui lancent des sorts bien plus puissants que les pouvoirs des armes uniques. <strong>Maintenez le clic droit</strong> : un cercle runique se dessine à vos pieds, puis le sort part dans un grand spectacle de particules. Le parchemin n'est consommé que si le sort réussit. Chaque parchemin a une recharge partagée avec son groupe (Attaque, Soutien, Rappel, Invocation).</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Parchemin</th><th>Rareté</th><th>Effet</th></tr></thead>
+					<tbody>
+						<tr><td>Pluie de météores</td><td><span class="pill gold">Légendaire</span></td><td>10 météores autour du point visé, 6 ❤ par impact, monstres embrasés</td></tr>
+						<tr><td>Tempête de foudre</td><td><span class="pill void">Épique</span></td><td>Foudre en chaîne sur 8 monstres, 7 ❤ chacun, étourdis 2 s</td></tr>
+						<tr><td>Blizzard</td><td><span class="pill void">Épique</span></td><td>Tempête de 8 s : Lenteur IV, gel, 2 ❤ de froid par seconde</td></tr>
+						<tr><td>Nova solaire</td><td><span class="pill gold">Légendaire</span></td><td>Sphère de feu jusqu'à 10 blocs : 10 ❤ (plus sur les morts-vivants)</td></tr>
+						<tr><td>Singularité</td><td><span class="pill red">Mythique</span></td><td>Trou noir qui aspire tout à 10 blocs pendant 3 s, puis implose (13 ❤)</td></tr>
+						<tr><td>Égide</td><td><span class="pill void">Épique</span></td><td>Dôme de 12 s : absorption et résistance aux alliés, monstres et projectiles repoussés</td></tr>
+						<tr><td>Rappel</td><td><span class="pill sky">Rare</span></td><td>4 s d'incantation, puis retour au foyer de la guilde avec les membres proches</td></tr>
+						<tr><td>Gardiens</td><td><span class="pill gold">Légendaire</span></td><td>2 golems de fer vous escortent 60 s</td></tr>
+						<tr><td>Bénédiction</td><td><span class="pill sky">Rare</span></td><td>Soin de 8 ❤ et régénération pour vous, vos membres et vos villageois</td></tr>
+						<tr><td>Révélation</td><td><span class="pill sky">Rare</span></td><td>Les monstres à 64 blocs brillent 30 s, même à travers les murs</td></tr>
+						<tr><td>Séisme</td><td><span class="pill void">Épique</span></td><td>3 ondes de choc, monstres projetés en l'air</td></tr>
+						<tr><td>Rayon arcanique</td><td><span class="pill gold">Légendaire</span></td><td>Rayon de 32 blocs pendant 3 s qui suit votre visée</td></tr>
+					</tbody>
+				</table></div>
+				<p>Les sorts ne touchent que les monstres : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est modifié. On trouve les parchemins surtout sur les <a href="#ruines">boss des ruines</a>, plus rarement sur les boss des hordes (bien plus pendant une nuit de sang), en récompense de quête ou de contrat légendaire, au retour des expéditions et chez le marchand du Carrefour commercial.</p>
+			</section>
+
+			<!-- ================================================================ RUINS -->
+			<section id="ruines">
+				<div class="eyebrow">Aventure</div>
+				<h2>Ruines et boss</h2>
+				<p>Des ruines oubliées parsèment l'<strong>Overworld</strong> et le <strong>Nether</strong>, chacune gardée par un boss. Approchez de sa salle : il s'éveille avec son escorte et sa barre de vie (ondes de choc, anneaux de feu ou de givre, téléportations, salves, vol de vie, rage quand il faiblit). Vaincu, il laisse de l'or, des trésors, souvent un <a href="#parchemins">parchemin</a>, parfois une <a href="#uniques">arme unique</a>, et rapporte de l'XP aux guildes des joueurs qui ont combattu. Il revient 7 jours de jeu plus tard. Si tout le monde s'éloigne, il se rendort avec toute sa vie.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Ruine</th><th>Où</th><th class="num">Palier</th><th>Gardien</th></tr></thead>
+					<tbody>
+						<tr><td>Crypte oubliée</td><td>Plaines, forêts, prairies, taïga</td><td class="num">1</td><td>Seigneur des Cryptes, squelettes et zombies</td></tr>
+						<tr><td>Tour du Mage déchu</td><td>Forêts, jungles</td><td class="num">2</td><td>Archimage déchu (évocateur), vindicateurs et vex</td></tr>
+						<tr><td>Ziggourat des sables</td><td>Désert, badlands</td><td class="num">2</td><td>Pharaon des sables et ses momies</td></tr>
+						<tr><td>Bastion de givre</td><td>Biomes enneigés</td><td class="num">3</td><td>Roi de givre et ses vagabonds</td></tr>
+						<tr><td>Autel infernal</td><td>Nether : désolations, forêt carmin</td><td class="num">4</td><td>Seigneur de guerre (piglin barbare), piglins barbares et cubes de magma</td></tr>
+						<tr><td>Citadelle des âmes</td><td>Nether : vallée des âmes, deltas de basalte, forêt biscornue</td><td class="num">5</td><td>Champion des âmes, squelettes wither et blazes</td></tr>
+					</tbody>
+				</table></div>
+				<h3>Les trouver avec le cartographe</h3>
+				<ol>
+					<li>Au niveau 5, débloquez et construisez l'<a href="#constructions">Atelier du cartographe</a>.</li>
+					<li>Donnez la tâche <strong>Cartographe</strong> à un villageois (jusqu'à 3 travaillent ensemble, plus vite).</li>
+					<li>Clic droit sur le panneau de l'atelier : « Chercher une ruine » à la surface (8 papiers + 1 boussole) ou dans le Nether (+ 4 quartz).</li>
+					<li>Le cartographe y travaille le jour, environ 8 minutes. Puis « Récupérer » : une <strong>carte</strong> marquée d'une croix (surface) ou une <strong>boussole</strong> qui pointe vers la ruine dans le Nether.</li>
+				</ol>
+				<div class="note"><p>Les ruines n'apparaissent que dans les régions <strong>jamais explorées</strong> : partez loin. Chaque recherche mène à une ruine différente, et le menu de l'atelier liste celles que la guilde connaît, avec leur état.</p></div>
+			</section>
+
 			<!-- ================================================================ UPGRADES -->
 			<section id="evolution">
 				<div class="eyebrow">Progression</div>
@@ -841,6 +939,10 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Ils gagnent de la vie et un meilleur équipement de base à chaque niveau de guilde. Mettez aussi des armures (et des épées, des arcs) dans un coffre du Stockage : les gardes s'équipent seuls. Posez des lits près du cœur : sous 40 % de vie, ils vont s'y soigner. Mélangez archers et épéistes (mode Auto), et entourez le cœur de murs.</p></details>
 				<details><summary>Mon villageois est « introuvable »</summary>
 					<p>Les villageois de guilde ne passent plus par les portails. Un villageois parti dans le Nether avant cette version revient tout seul au village dès que son chunk se charge, et « Appeler ici » va aussi le chercher côté Nether (autour des coordonnées de sa dernière position divisées par 8).</p></details>
+				<details><summary>Mon fermier ne laboure pas toute sa zone</summary>
+					<p>Par défaut il ne laboure que le sol déjà proche de l'eau. Dans le menu de la zone, « Autorisations du fanion » → « Créer des champs » : il creusera des points d'eau et labourera toute la zone. Il lui faut aussi des graines dans son sac ou dans un coffre enregistré pour semer.</p></details>
+				<details><summary>Le cartographe ne trouve aucune ruine</summary>
+					<p>Les ruines n'existent que dans les chunks générés après l'installation de cette version : il n'y en a pas dans les zones déjà explorées. Si rien n'est trouvé, la recherche est remboursée ; explorez plus loin et recommencez.</p></details>
 				<details><summary>Je n'arrive pas à frapper un villageois de ma guilde</summary>
 					<p>C'est voulu : les coups, flèches et tridents des membres ne blessent jamais les villageois de la guilde, pour éviter les accidents pendant les hordes. Pour vous en séparer, utilisez « Renvoyer » dans son menu.</p></details>
 				<details><summary>La boutique refuse de m'acheter un objet</summary>
@@ -855,7 +957,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.3.1.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.4.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -879,6 +981,9 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin event start|stop &lt;événement&gt; [guilde]</button></td><td>Déclencher ou arrêter <code>blood_night</code>, <code>pillager_raid</code>, <code>caravan</code>, <code>book_merchant</code>, <code>merchant</code></td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin trade tier &lt;guilde&gt; &lt;palier&gt;</button></td><td>Régler le palier du carrefour commercial</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin unique list</button> · <button class="cmd" type="button">/guild admin unique give &lt;joueur&gt; &lt;id&gt;</button></td><td>Lister les armes uniques, en donner une</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin scroll list</button> · <button class="cmd" type="button">/guild admin scroll give &lt;joueur&gt; &lt;id&gt; [nombre]</button></td><td>Lister les parchemins, en donner</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin ruin list|info|awaken|reset</button></td><td>Ruines : liste, la plus proche, réveiller ou rendormir son gardien</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin ruin locate &lt;id&gt;</button> · <button class="cmd" type="button">/guild admin ruin map &lt;joueur&gt; &lt;id&gt;</button> · <button class="cmd" type="button">/guild admin ruin research &lt;guilde&gt; finish</button></td><td>Localiser une ruine, donner une carte ou une boussole, terminer une recherche</td></tr>
 						</tbody>
 					</table></div>
 					<p class="hint">Les noms de guilde avec des espaces se mettent entre guillemets quand un autre argument suit.</p>
@@ -892,10 +997,12 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><code>structures.json5</code></td><td>Plans, coûts et niveaux des constructions</td></tr>
 							<tr><td><code>quests.json5</code></td><td>Modèles de quêtes et récompenses</td></tr>
 							<tr><td><code>shop.json5</code></td><td>Catalogue de la boutique</td></tr>
-							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches, expéditions, mine réelle (<code>realMining</code>), catégories de rangement</td></tr>
+							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches (dont <code>blacksmith</code>, <code>alchemist</code>, travaux des champs), expéditions, mine réelle (<code>realMining</code>), catégories de rangement</td></tr>
 							<tr><td><code>upgrades.json5</code></td><td>Arbre d'évolution</td></tr>
 							<tr><td><code>events.json5</code></td><td>Événements : chances, délais, effets (dont <code>randomEvents</code> pour tout couper)</td></tr>
 							<tr><td><code>trade.json5</code></td><td>Carrefour commercial : paliers, visites, tables d'offres</td></tr>
+							<tr><td><code>scrolls.json5</code></td><td>Parchemins de sort : sorts, recharges, chances de butin, limites d'effets</td></tr>
+							<tr><td><code>ruins.json5</code></td><td>Ruines : gardiens, escortes, capacités, retour, récompenses ; recherches du cartographe</td></tr>
 							<tr><td><code>uniques.json5</code></td><td>Armes uniques : objets, pouvoirs, chances de butin par source, apparence (<code>customModels</code>)</td></tr>
 							<tr><td><code>lang.json</code></td><td>Tous les textes affichés aux joueurs</td></tr>
 						</tbody>
