@@ -230,6 +230,7 @@ public final class VillagerGui {
 			lore.add(Lang.get("villager.gui.lore.stat.crops", stats.crops));
 		}
 		Planting.statLore(lore, stats);
+		CraftJobs.statLore(lore, record, level == null ? 0 : AlchemyRules.day(level.getOverworldClockTime()));
 		if (stats.kills > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.kills", stats.kills));
 		}
@@ -273,18 +274,23 @@ public final class VillagerGui {
 		GuardGui.addButtons(gui, player, guild, record);
 
 		Task[] tasks = Task.values();
-		for (int i = 0; i < tasks.length && i < 9; i++) {
+		for (int i = 0; i < tasks.length && i < 16; i++) {
 			Task task = tasks[i];
 			boolean currentTask = record.task == task;
 			List<Component> lore = new ArrayList<>(GuiUtil.lines(task.descKey()));
+			CraftJobs.addRequirementLore(lore, guild, task);
 			lore.add(Component.empty());
 			lore.add(Lang.get(currentTask ? "villager.gui.task.current" : "villager.gui.task.choose"));
 			GuiElementBuilder button = GuiUtil.item(task.icon(), Lang.get("villager.gui.task.button", Lang.raw(task.langKey())), lore);
 			if (currentTask) {
 				button.glow();
 			}
-			gui.setSlot(9 + i, button.setCallback((slot, type, action, g) -> {
+			// Row 2 holds 9 tasks; the next ones go to the bottom row, between "back" and "close".
+			gui.setSlot(i < 9 ? 9 + i : 37 + (i - 9), button.setCallback((slot, type, action, g) -> {
 				if (!checkPermission(player, guild) || !stillMember(player, guild, record)) {
+					return;
+				}
+				if (record.task != task && CraftJobs.refuse(player, guild, task)) {
 					return;
 				}
 				if (record.task != task) {
@@ -462,18 +468,20 @@ public final class VillagerGui {
 	// ================================================================ assign idle
 
 	static void openAssignIdle(ServerPlayer player, Guild guild) {
-		SimpleGui gui = chest(player, 3, Lang.get("villager.gui.assign.title"));
-		int slot = 11;
-		for (Task task : Task.values()) {
-			if (task == Task.IDLE) {
-				continue;
-			}
+		List<Task> choices = new ArrayList<>(List.of(Task.values()));
+		choices.remove(Task.IDLE);
+		// 7 tasks centred on one row; more: rows of 9 from the second row.
+		int rows = choices.size() <= 9 ? 3 : 2 + (choices.size() + 8) / 9;
+		SimpleGui gui = chest(player, rows, Lang.get("villager.gui.assign.title"));
+		int slot = choices.size() <= 7 ? 11 : 9;
+		for (Task task : choices) {
 			List<Component> lore = new ArrayList<>(GuiUtil.lines(task.descKey()));
+			CraftJobs.addRequirementLore(lore, guild, task);
 			lore.add(Component.empty());
 			lore.add(Lang.get("villager.gui.task.choose"));
 			gui.setSlot(slot++, GuiUtil.item(task.icon(), Lang.get("villager.gui.task.button", Lang.raw(task.langKey())), lore)
 					.setCallback((s, type, action, g) -> {
-						if (!checkPermission(player, guild)) {
+						if (!checkPermission(player, guild) || CraftJobs.refuse(player, guild, task)) {
 							return;
 						}
 						int count = 0;
@@ -495,8 +503,8 @@ public final class VillagerGui {
 						openList(player, guild, 0);
 					}));
 		}
-		gui.setSlot(18, GuiUtil.back(() -> openList(player, guild, 0)));
-		gui.setSlot(26, GuiUtil.close());
+		gui.setSlot((rows - 1) * 9, GuiUtil.back(() -> openList(player, guild, 0)));
+		gui.setSlot(rows * 9 - 1, GuiUtil.close());
 		GuiUtil.fill(gui);
 		gui.open();
 	}

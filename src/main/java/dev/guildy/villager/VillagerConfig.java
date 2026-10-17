@@ -104,6 +104,18 @@ public final class VillagerConfig implements Validatable {
 	public Expeditions expeditions = new Expeditions();
 
 	@Comment({
+			"Tache 'Forgeron' : repare peu a peu l'equipement abime (armures et objets en main) pose sur les porte-armures du",
+			"territoire, a l'enclume la plus proche du porte-armure ; chaque etape use l'enclume comme en vanilla"
+	})
+	public BlacksmithConfig blacksmith = new BlacksmithConfig();
+
+	@Comment({
+			"Tache 'Alchimiste' : avec une table d'enchantement du territoire (celle qui a le plus de bibliotheques), du temps",
+			"et des livres (sac puis coffres du stockage), il fabrique des livres enchantes ranges dans le stockage"
+	})
+	public AlchemistConfig alchemist = new AlchemistConfig();
+
+	@Comment({
 			"Chargement des chunks : les villageois au travail gardent leurs chunks actifs pour continuer sans joueur a",
 			"proximite (tickets vanilla non sauvegardes, renouveles toutes les quelques secondes, qui expirent seuls) : autour",
 			"d'eux, de leur destination (coffre de depot ou de stockage, lit a la tombee de la nuit, retour d'expedition) et de",
@@ -952,6 +964,14 @@ public final class VillagerConfig implements Validatable {
 			night = new NightConfig();
 		}
 		night.validate();
+		if (blacksmith == null) {
+			blacksmith = new BlacksmithConfig();
+		}
+		blacksmith.validate();
+		if (alchemist == null) {
+			alchemist = new AlchemistConfig();
+		}
+		alchemist.validate();
 		// Step 3: the untouched older default categories are replaced by the new set.
 		StorageDefaults.validate(storage, configVersion);
 		storage.maxChests = clamp(storage.maxChests, 1, 256);
