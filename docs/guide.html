@@ -561,7 +561,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<div class="table-wrap"><table>
 					<thead><tr><th>Tâche</th><th>Ce qu'il fait</th><th>Il faut</th></tr></thead>
 					<tbody>
-						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de son thème (19 catégories). <a href="#rangement">Détails</a></td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
+						<tr><td>Ranger la base</td><td>Vide les coffres de dépôt et range chaque objet dans le coffre de son thème (19 catégories), puis re-range sans cesse : piles fusionnées et triées dans l'ordre de lecture du mur. <a href="#rangement">Détails</a></td><td>Un coffre de dépôt et des coffres par catégorie</td></tr>
 						<tr><td>Mineur</td><td>Creuse vraiment sa mine : un escalier en colimaçon jusqu'à la profondeur choisie, puis des galeries qui suivent les filons (ou des salles de carrière pour la pierre). Il remonte vider son sac et ne casse jamais vos constructions. <a href="#mine">Détails</a></td><td>Un coffre de dépôt ; une zone de mine (sinon : la pierre à nu la plus proche, en minage simulé)</td></tr>
 						<tr><td>Bûcheron</td><td>Coupe les arbres naturels de sa zone (jamais vos constructions en bois), seulement l'essence choisie si vous en choisissez une, replante et plante de nouvelles pousses. <a href="#plantation">Plantation</a></td><td>Un coffre de dépôt ; une zone de coupe (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
 						<tr><td>Fermier</td><td>Récolte les cultures mûres de sa zone (blé, carottes, pommes de terre, betteraves ; melons, citrouilles et canne à sucre en « toutes »), replante, sème les terres vides et laboure près de l'eau. Avec les <a href="#autorisations">autorisations du fanion</a>, il relaboure la terre piétinée ou transforme toute la zone en champs.</td><td>Un coffre de dépôt ; une zone de champs (sinon : dans le territoire et jusqu'à 48 blocs autour)</td></tr>
@@ -735,6 +735,16 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					</tbody>
 				</table></div>
 				<p class="hint">Dans le menu Stockage : clic gauche sur un coffre pour changer son rôle, clic droit pour le retirer. « Afficher les coffres » les signale en particules colorées pendant 20 s ; « Où ranger l'objet en main ? » indique sa catégorie.</p>
+				<h3 id="bien-range">Coffres bien rangés</h3>
+				<p>Les coffres d'une même catégorie forment un <strong>groupe</strong>, lu comme un mur vu de face : <strong>par colonnes</strong> (de haut en bas, colonnes de gauche à droite) ou <strong>par rangées</strong> (réglage « Ordre de rangement » du menu Stockage). Un coffre double compte pour un seul coffre.</p>
+				<div class="cards">
+					<div class="card"><h3>Trié et fusionné</h3><p>Les piles sont fusionnées et rangées dans l'ordre de l'inventaire créatif : tous les bois ensemble, casque, plastron, jambières puis bottes de chaque matériau. Le coffre 1 se remplit avant le coffre 2.</p></div>
+					<div class="card"><h3>Re-rangé sans cesse</h3><p>Quand les dépôts sont vides, le trieur sort les objets égarés, refait l'ordre et comble les trous, couvercles ouverts. Il ne touche jamais à un coffre ouvert par un joueur et ne perd aucun objet.</p></div>
+					<div class="card"><h3>Groupes de coffres</h3><p>Menu Stockage → Groupes de coffres : « Rangé » ou « À ranger », remplissage, « Afficher » et « Réorganiser maintenant ».</p></div>
+				</div>
+				<h3 id="salle-des-coffres">Salle des coffres</h3>
+				<p>Menu Stockage → Salles des coffres → « Ajouter une salle des coffres », puis clic droit sur le coffre d'un coin et sur celui du coin opposé (32 blocs de côté au plus). Tous les coffres entre les deux deviennent <strong>automatiques</strong> : les trieurs donnent à chaque catégorie des <strong>colonnes entières</strong> à sa taille, avec de la marge, « Divers » à la fin et le reste en réserve. Une catégorie qui se remplit gagne une colonne voisine ; une colonne vide depuis 30 minutes retourne à la réserve. Un coffre dont vous choisissez le rôle devient manuel et n'est plus réattribué.</p>
+				<p class="hint">Shift + clic sur une salle dans le menu ajoute les coffres posés depuis sa création ; clic droit la supprime (les objets restent dans les coffres).</p>
 				<div class="note"><p>La nuit et pendant les hordes, les travailleurs vont se coucher (statut « Repos »), et les gardes restent dehors. Un villageois peut <strong>mourir</strong> dans une horde : équipez vos gardes et posez des lits près du cœur.</p></div>
 			</section>
 
@@ -957,7 +967,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.4.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.5.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>

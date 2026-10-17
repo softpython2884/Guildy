@@ -53,7 +53,7 @@
 		"walkSpeed": 0.6
 	},
 
-	// Tache 'Ranger la base' : vide les coffres de depot dans les coffres par categorie
+	// Tache 'Ranger la base' : vide les coffres de depot dans les coffres par categorie, puis re-range les coffres
 	"sorter": {
 
 		// Intervalle (secondes) entre deux verifications des coffres de depot
@@ -63,7 +63,32 @@
 		"stacksPerTrip": 6,
 
 		// Temps maximum (secondes) pour atteindre un coffre avant teleportation
-		"walkTimeoutSeconds": 30
+		"walkTimeoutSeconds": 30,
+
+		// Re-ranger les coffres quand les depots sont vides : les coffres d'une meme categorie forment un groupe (par salle
+		// des coffres), range comme un mur qu'on lit (voir storage.defaultOrder) : objets d'une autre categorie sortis, piles
+		// fusionnees, ordre de l'inventaire creatif, coffre 1 rempli avant le coffre 2...
+		"tidy": true,
+
+		// Pause (secondes) avant de reverifier les groupes quand tout est range
+		"tidyIntervalSeconds": 15,
+
+		// Nombre maximum de coffres verifies par seconde (un groupe plus grand est verifie seul)
+		"auditChestsPerStep": 16,
+
+		// Portee (blocs) d'une position de travail : les coffres consecutifs d'un groupe a moins de cette distance du centre
+		// de leur ensemble (une colonne, un pan de mur) sont reorganises d'un coup sur place ; entre deux pans eloignes, le
+		// trieur porte les piles d'un coffre a l'autre (2 a 8)
+		"reach": 5,
+
+		// Nombre maximum de coffres reorganises d'un coup sur place (1 a 64)
+		"maxChestsPerStep": 16,
+
+		// Duree (secondes) de la reservation d'un groupe par un trieur : deux trieurs ne rangent jamais le meme groupe a la fois
+		"leaseSeconds": 20,
+
+		// Animation du rangement : couvercles des coffres ouverts puis refermes, bras et sons
+		"animation": true
 	},
 
 	// Zones de travail : chaque zone est marquee par un fanion (menu Villageois -> Zones et parcours).
@@ -1924,14 +1949,51 @@
 		// pas de coffre dedie (ou dont les coffres sont pleins). Sans coffre 'Divers', ces objets restent au depot.
 		"fallbackCategory": "Divers",
 
-		// Nombre maximum de conteneurs enregistres par guilde
+		// Nombre maximum de conteneurs enregistres par guilde hors des salles des coffres (voir maxRoomChests)
 		"maxChests": 48,
 
 		// Nommer les conteneurs enregistres (titre affiche a l'ouverture : 'Depot', 'Minerais et lingots'...)
 		"labelChests": true,
 
 		// Duree (secondes) du bouton 'Afficher les coffres' (particules visibles par le joueur seul)
-		"showSeconds": 20
+		"showSeconds": 20,
+
+		// Ordre de rangement par defaut des groupes de coffres (modifiable par guilde dans le menu Stockage) :
+		// 'columns' = chaque colonne de haut en bas, colonnes de gauche a droite vues de face ; 'rows' = chaque rangee de
+		// gauche a droite, rangees de haut en bas. Dans une salle des coffres, les categories recoivent des colonnes (ou
+		// des rangees) entieres.
+		"defaultOrder": "columns",
+
+		// Salles des coffres (menu Stockage) : tous les coffres de la zone entre deux coffres-coins deviennent automatiques ;
+		// les trieurs leur donnent une categorie par colonnes (ou rangees) entieres, dans l'ordre des categories ci-dessus,
+		// 'Divers' a la fin, le reste en reserve. Nombre maximum de salles par guilde (0 = desactive)
+		"maxRooms": 4,
+
+		// Salles des coffres : nombre maximum de coffres automatiques par guilde (en plus de maxChests)
+		"maxRoomChests": 192,
+
+		// Salles des coffres : cote maximum (blocs) de la zone entre les deux coins
+		"maxRoomSize": 32,
+
+		// Salles des coffres : marge (%) ajoutee a ce que contient une categorie pour choisir son nombre de colonnes
+		"roomHeadroomPercent": 25,
+
+		// Salles des coffres : une categorie recoit une colonne de plus quand il reste moins de N emplacements libres dans les siennes
+		"roomGrowFreeSlots": 4,
+
+		// Salles des coffres : une categorie sans colonne en recoit une quand elle contient au moins N piles (avant, ses
+		// objets vont dans 'Divers' : un objet isole ne fait jamais tout deplacer)
+		"roomNewCategoryStacks": 9,
+
+		// Salles des coffres : une colonne vide depuis N minutes revient a la reserve si sa categorie n'en a pas besoin
+		"roomIdleMinutes": 30,
+
+		// Salles des coffres : pour qu'une categorie qui grandit reste d'un seul tenant, les blocs de colonnes voisins se
+		// decalent d'une colonne s'ils sont au plus N ; au-dela elle prend la colonne libre la plus proche (0 a 20)
+		"roomMaxShift": 3,
+
+		// Salles des coffres : intervalle (secondes) entre deux verifications de la repartition des categories
+		"roomPlanSeconds": 30
 	},
 
 	// Expeditions : le villageois quitte la base (il disparait), puis revient apres la duree indiquee avec du butin.

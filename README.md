@@ -26,7 +26,8 @@ ou à héberger pour les joueurs.
 - **Quêtes** : 17 types (chasse, minage, livraison, artisanat, pêche, élevage, exploration, boss…), contrats légendaires,
   cartes au trésor.
 - **Économie** : boutique de guilde, carrefour commercial à 3 paliers avec marchands de passage.
-- **Villageois** : rangement des coffres, **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier
+- **Villageois** : rangement des coffres (piles fusionnées et triées en ordre de lecture, **salle des coffres**
+  automatique), **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier
   (qui peut transformer toute une zone en champs), garde avec parcours de ronde, **forgeron**, **alchimiste**,
   **cartographe**, expéditions (exploration, Nether), zones de travail par fanions et leurs autorisations, missions.
 - **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
@@ -183,7 +184,7 @@ villageois : s'il est loin, sa dernière position est chargée un instant, « Ap
 
 | Tâche | Ce qu'il fait |
 |---|---|
-| **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (19 thèmes, voir « Rangement par thème ») |
+| **Ranger la base** | vide les coffres de **dépôt** et range chaque objet dans le coffre de sa **catégorie** (19 thèmes, voir « Rangement par thème »), puis **re-range** sans cesse : piles fusionnées, triées et rangées dans l'ordre de lecture du mur de coffres (voir « Coffres bien rangés ») |
 | **Mineur** | creuse vraiment sa **mine** (mode réel, voir plus bas) : escalier en colimaçon puis galeries, pierre et/ou minerais selon l'objectif ; ou minage simulé au fanion (mode simulé) |
 | **Bûcheron** | coupe les arbres naturels de sa **coupe de bois** (ou autour de lui), replante, et **plante de nouvelles pousses** dans sa zone (voir « Plantation ») |
 | **Fermier** | récolte les cultures mûres de ses **champs** (ou autour de lui), replante, **sème les terres vides** et laboure près de l'eau ; selon les **autorisations du fanion**, relaboure la terre piétinée ou transforme toute la zone en champs (voir « Autorisations du fanion ») |
@@ -467,6 +468,34 @@ l'ouvre. Dans le menu Stockage : clic gauche sur un coffre pour changer son rôl
 indique où ira l'objet que vous tenez. Les catégories (règles : objets, tags, propriétés) se règlent dans
 `villagers.json5`.
 
+#### Coffres bien rangés
+Les coffres d'une même catégorie forment un **groupe** (un par salle des coffres, un pour les coffres hors salle). Le
+trieur les range **comme un mur qu'on lit**, vu de face : **par colonnes** (chaque colonne de haut en bas, colonnes de
+gauche à droite) ou **par rangées** (chaque rangée de gauche à droite, rangées de haut en bas) : réglage « Ordre de
+rangement » du menu Stockage, par colonnes par défaut. Un coffre double compte pour un seul coffre.
+- Dans un groupe, les piles sont toujours **fusionnées** et triées dans l'**ordre de l'inventaire créatif** (tous les bois
+  ensemble ; casque, plastron, jambières puis bottes de chaque matériau…), les objets simples avant les enchantés,
+  renommés ou abîmés, et rangées dans l'ordre de lecture : le coffre 1 est rempli avant le coffre 2. Un objet garde
+  toujours ses enchantements, son nom et son usure.
+- Quand les dépôts sont vides, le trieur **re-range** : il sort les objets d'une autre catégorie, fusionne les piles, remet
+  l'ordre et comble les trous. Les coffres à sa portée (une colonne, un pan de mur) sont réorganisés d'un coup, couvercles
+  ouverts ; entre deux endroits éloignés, il porte les piles. Rien n'est jamais perdu ni dupliqué, et un coffre **ouvert
+  par un joueur n'est jamais touché**. Plusieurs trieurs se partagent le travail sans se gêner.
+- Menu Stockage → **Groupes de coffres** : l'état de chaque groupe (« Rangé » / « À ranger »), son remplissage, ses coffres
+  dans l'ordre de lecture, « Afficher » et « Réorganiser maintenant » (aussi par un clic droit sur le groupe).
+
+#### Salle des coffres
+Menu Stockage → **Salles des coffres** → « Ajouter une salle des coffres », puis clic droit sur le coffre d'un coin et sur
+celui du coin opposé (dans les 60 s, 32 blocs de côté au plus, 192 coffres, 4 salles) : tous les conteneurs du territoire
+entre les deux deviennent **automatiques**. Les trieurs donnent à chaque catégorie un bloc de **colonnes entières** (ou de
+rangées) à sa taille, plus une marge, dans l'ordre des catégories, « Divers » à la fin ; le reste reste en **Réserve**.
+Ensuite la salle bouge peu : une catégorie qui se remplit gagne une colonne voisine, une catégorie qui n'a que quelques
+piles reste dans « Divers » plutôt que de tout déplacer, et une colonne vide depuis 30 minutes retourne à la réserve.
+Quand un coffre change de catégorie, il change de nom et le trieur déplace ses objets. Un coffre dont vous choisissez le
+rôle devient manuel et n'est plus jamais réattribué ; le rôle « Automatique » le rend à la salle. Dans le menu des salles :
+clic gauche pour afficher les coffres, Shift + clic pour ajouter les coffres posés depuis, clic droit pour supprimer la
+salle (les objets restent dans les coffres).
+
 La nuit, les travailleurs dorment ; les gardes restent dehors. Les villageois peuvent encore **mourir** (gardes au
 combat, flèches perdues) : posez des lits près du cœur et équipez vos gardes. Seuls les membres peuvent commercer avec eux.
 
@@ -740,7 +769,8 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite, forgeron (`blacksmith`) et alchimiste (`alchemist`), travaux des champs
-(`farmer.fieldWork`, `farmer.irrigation`) |
+(`farmer.fieldWork`, `farmer.irrigation`), re-rangement (`sorter.tidy`, portée, réservations) et salles des coffres
+(`storage.maxRooms`, marge, seuils de réattribution) |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
@@ -818,6 +848,8 @@ Formules par défaut (modifiables) :
 - Les ruines ne se génèrent que dans de nouveaux chunks ; une ruine déjà indiquée par une carte n'est plus proposée par
   une autre recherche.
 - Les livres enchantés de l'alchimiste ne comptent pas pour les quêtes « Enchanter ».
+- Deux groupes d'une même catégorie (deux salles, ou une salle et des coffres hors salle) ne s'échangent rien ; les
+  coffres posés dans une salle après sa création n'y entrent qu'avec Shift + clic dans le menu des salles.
 - Un panneau de construction arraché par une explosion/un piston peut tomber en objet (la construction est
   retirée à la vérification suivante, 30 s).
 - Un `structures.json5` existant reçoit automatiquement une seule fois les nouvelles constructions par défaut (liste

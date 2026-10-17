@@ -300,6 +300,19 @@ schématiques) : `tools/ruins/`.
     parchemin consommé et seulement en cas de réussite. Effets PvE (`TargetRules`), aucun bloc modifié, `EffectRunner`
     borné (effets par joueur et serveur, budget de particules par tick, paquets longue distance groupés).
 
+44. **Coffres rangés et salles des coffres** : `StorageGroups` = coffres d'une catégorie dans une même salle
+    (`StorageChest.room`, 0 = hors salle), en ordre de lecture (`ChestOrder`, pur : mur = même FACING et même plan, droite
+    du lecteur = (dz, −dx) de la face, colonnes ou rangées selon `GuildVillagerData.storageOrder`, coffre double = une
+    unité ; `sections` = coffres à portée d'un même point). `Tidier` : piles triées par `StorageSort` (index créatif
+    `ItemClassifier.creativeIndex`, id, puis simple < composants < enchanté < renommé < abîmé), `StorageLayout` (pur :
+    disposition parfaite, `arrange` idempotent par section, `transfers` entre sections) ; travaux TAKE_OUT > ARRANGE >
+    CARRY, baux par groupe, budget `auditChestsPerStep`. Chaque écriture compare le multiensemble d'objets avant/après
+    (sinon restauration) ; un conteneur ouvert (`Storage.inUse` : menus ouverts + `getEntitiesWithContainerOpen`) n'est
+    jamais touché. Salles : `ChestRoom` (boîte), coffres `auto` (catégorie "" = réserve, vidée comme un dépôt),
+    `RoomPlanner.planRoom` (pur) : blocs de lignes entières dans l'ordre des catégories avec marge, hystérésis
+    (`roomGrowFreeSlots`, `roomNewCategoryStacks`, `roomIdleMinutes`, décalage ≤ `roomMaxShift`) ; un rôle choisi par un
+    joueur rend le coffre manuel. Une ancre de chunk STORAGE par chunk de coffres.
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).
