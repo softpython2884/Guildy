@@ -31,7 +31,7 @@ final class RuinLang {
 
 		// Fights
 		m.put("ruin.awaken.subtitle", "&c{0} &7s'éveille…");
-		m.put("ruin.awaken.chat", "&c{0} &7s'éveille dans la &f{1}&7 ! Tenez bon.");
+		m.put("ruin.awaken.chat", "&c{0} &7s'éveille (&f{1}&7) ! Tenez bon.");
 		m.put("ruin.bar", "{0} &7— &c{1}&7/&c{2} ❤");
 		m.put("ruin.enrage", "&4&l{0} entre dans une rage folle !");
 		m.put("ruin.reset", "&7{0} &7retourne dans l'ombre : la ruine se rendort.");
@@ -40,7 +40,7 @@ final class RuinLang {
 		m.put("ruin.victory.title", "&6&lVictoire !");
 		m.put("ruin.victory.subtitle", "&e{0} &7est vaincu");
 		m.put("ruin.victory.someone", "Des aventuriers");
-		m.put("ruin.victory.announce", "&e{0} &7ont vaincu &c{1}&7 dans la &f{2}&7 !");
+		m.put("ruin.victory.announce", "&c{1}&7 est tombé (&f{2}&7) ! Vainqueurs : &e{0}");
 		m.put("ruin.victory.xp", "&a+{0} XP de guilde &7pour la victoire dans la &f{1}&7.");
 
 		// Threat ("Menace") and resurrection
