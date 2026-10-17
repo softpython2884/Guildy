@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 })
 public final class TradeConfig implements Validatable {
 	/** Current file format; older files get the new default offers in {@link #rebuild}. */
-	public static final int CURRENT_VERSION = 2;
+	public static final int CURRENT_VERSION = 3;
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int configVersion = 0;
@@ -146,8 +146,8 @@ public final class TradeConfig implements Validatable {
 		if (tiers.isEmpty()) {
 			tiers = defaultTiers();
 		}
-		if (configVersion < 2) {
-			addUniqueOffer();
+		if (configVersion < 3) {
+			removeUniqueOffers();
 		}
 		configVersion = CURRENT_VERSION;
 		int minLevel = 1;
@@ -178,26 +178,16 @@ public final class TradeConfig implements Validatable {
 		return warnings;
 	}
 
-	/** Version 2 (unique weapons): files written before get the unique weapon offer in their third tier (once). */
-	private void addUniqueOffer() {
-		if (tiers.size() < 3) {
-			return;
-		}
+	/**
+	 * Version 3: unique weapons are no longer sold (they are won in fights: hordes, ruins, quests, expeditions). The
+	 * unique offers of older files (added by version 2) are removed once; an admin may add one back afterwards.
+	 */
+	private void removeUniqueOffers() {
 		for (Tier tier : tiers) {
-			if (tier.trades != null && tier.trades.stream().anyMatch(e -> e != null && e.isUnique())) {
-				return;
+			if (tier.trades != null) {
+				tier.trades.removeIf(e -> e != null && e.isUnique());
 			}
 		}
-		Tier third = tiers.get(2);
-		if (third.trades == null) {
-			third.trades = new ArrayList<>();
-		}
-		third.trades.add(uniqueOffer());
-	}
-
-	/** Tier 3: one unique weapon of the "trade" table of uniques.json5, at a high price (40 gold blocks). */
-	static TradeEntry uniqueOffer() {
-		return TradeEntry.unique(TradeEntry.RANDOM_UNIQUE, 360, 3);
 	}
 
 	private static double clamp(double value, double min, double max) {
@@ -317,7 +307,7 @@ public final class TradeConfig implements Validatable {
 		return list;
 	}
 
-	/** Tier 3 ("trades de fou"): enchanted books, totem, enchanted golden apple, rare treasures, a unique weapon. */
+	/** Tier 3 ("trades de fou"): enchanted books, totem, enchanted golden apple, rare treasures (no unique weapon). */
 	static List<TradeEntry> tier3() {
 		List<TradeEntry> list = new ArrayList<>();
 		list.add(TradeEntry.book("minecraft:mending", 1, 48, 5));
@@ -338,7 +328,6 @@ public final class TradeConfig implements Validatable {
 		list.add(e("sniffer_egg", 1, 32, 1, 2));
 		list.add(e("wither_skeleton_skull", 1, 48, 1, 2));
 		list.add(e("elytra", 1, 270, 1, 1));
-		list.add(uniqueOffer());
 		return list;
 	}
 

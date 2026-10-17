@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The unique weapon offer of the trade hub: one in the default tier III table (high gold price, sold once), added once
- * to the third tier of the files written before it, never compared with the shop prices.
+ * Unique weapons at the trade hub: never sold by default (removed once from older files), an admin's own unique offer is
+ * kept and never compared with the shop prices.
  */
 class TradeUniqueOfferTest {
 
@@ -21,44 +21,26 @@ class TradeUniqueOfferTest {
 	}
 
 	@Test
-	void tierThreeSellsOneUniqueWeapon() {
+	void uniqueWeaponsAreNeverSoldByDefault() {
 		TradeConfig cfg = new TradeConfig();
 		assertTrue(cfg.rebuild(id -> true, Map.of(), Map.of()).isEmpty());
-		assertEquals(1, uniques(cfg));
-		TradeEntry offer = cfg.tier(3).usable().stream().filter(TradeEntry::isUnique).findFirst().orElseThrow();
-		assertEquals(TradeEntry.RANDOM_UNIQUE, offer.unique);
-		assertEquals(1, offer.count);
-		assertEquals(1, offer.maxUses);
-		assertTrue(offer.price >= 9 * 32, "a high gold price (blocks of gold): " + offer.price);
-		assertTrue(offer.price <= TradeRolls.MAX_PRICE);
-		assertEquals(2, cfg.configVersion);
-		assertTrue(cfg.tier(1).usable().stream().noneMatch(TradeEntry::isUnique), "lower tiers never sell uniques");
+		assertEquals(0, uniques(cfg), "unique weapons are won in fights, never bought");
+		assertEquals(TradeConfig.CURRENT_VERSION, cfg.configVersion);
 	}
 
 	@Test
-	void oldFilesGetTheOfferOnce() {
+	void oldFilesLoseTheirUniqueOffersOnce() {
 		TradeConfig old = new TradeConfig();
-		for (TradeConfig.Tier tier : old.tiers) {
-			tier.trades.removeIf(TradeEntry::isUnique);
-		}
-		old.configVersion = 0;
+		old.tier(3).trades.add(TradeEntry.unique(TradeEntry.RANDOM_UNIQUE, 360, 3));
+		old.configVersion = 2;
 		old.rebuild(id -> true, Map.of(), Map.of());
-		assertEquals(1, uniques(old), "added to the third tier");
-		assertTrue(old.tier(3).trades.stream().anyMatch(TradeEntry::isUnique));
-		old.configVersion = 0;
-		old.rebuild(id -> true, Map.of(), Map.of());
-		assertEquals(1, uniques(old), "never twice");
+		assertEquals(0, uniques(old), "the version 2 offer is removed");
 
-		TradeConfig removed = new TradeConfig();
-		removed.rebuild(id -> true, Map.of(), Map.of());
-		removed.tier(3).trades.removeIf(TradeEntry::isUnique);
-		removed.rebuild(id -> true, Map.of(), Map.of());
-		assertEquals(0, uniques(removed), "an admin who removed it keeps it removed");
-
-		TradeConfig twoTiers = new TradeConfig();
-		twoTiers.tiers = new ArrayList<>(twoTiers.tiers.subList(0, 2));
-		twoTiers.rebuild(id -> true, Map.of(), Map.of());
-		assertEquals(0, uniques(twoTiers), "no third tier: nothing added");
+		TradeConfig readded = new TradeConfig();
+		readded.rebuild(id -> true, Map.of(), Map.of());
+		readded.tier(3).trades.add(TradeEntry.unique("foudrelame", 999, 1));
+		readded.rebuild(id -> true, Map.of(), Map.of());
+		assertEquals(1, uniques(readded), "an admin may add one back after the migration");
 	}
 
 	@Test
