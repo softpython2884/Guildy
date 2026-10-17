@@ -261,6 +261,29 @@ public final class StructureConfig implements Validatable {
 		sign.keyLabels = map("X", "Bloc plein (n'importe lequel)");
 		sign.signCells = cells(0, 0);
 		list.add(sign);
+
+		StructureDefinition atelier = new StructureDefinition();
+		atelier.id = "cartographer";
+		atelier.name = "Atelier du cartographe";
+		atelier.icon = "minecraft:cartography_table";
+		atelier.description = new ArrayList<>(List.of(
+				"&7Un atelier où les cartographes de la guilde",
+				"&7localisent les ruines gardées par des boss,",
+				"&7à la surface comme dans le Nether."));
+		atelier.tutorial = new ArrayList<>(List.of(
+				"&6&lAtelier du cartographe construit !",
+				"&7Donnez la tâche &eCartographe&7 à un villageois (menu des villageois).",
+				"&7Clic droit sur le panneau : lancer une recherche (papier + boussole).",
+				"&7Le cartographe y travaille le jour ; ensuite, récupérez une &ecarte",
+				"&7(surface) ou une &eboussole&7 (Nether) qui mène à une ruine.",
+				"&7Un boss y dort : vainquez-le pour son trésor !"));
+		atelier.minLevel = 5;
+		atelier.unlockCost = 80;
+		atelier.rows = new ArrayList<>(List.of("BLB", "PCP"));
+		atelier.key = map("B", "minecraft:bookshelf", "L", "minecraft:lectern", "P", "#minecraft:planks", "C", "minecraft:cartography_table");
+		atelier.keyLabels = map("P", "Planches (tout bois)");
+		atelier.signCells = cells(0, 0);
+		list.add(atelier);
 		return list;
 	}
 

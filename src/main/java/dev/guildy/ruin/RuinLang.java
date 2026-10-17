@@ -1,0 +1,159 @@
+package dev.guildy.ruin;
+
+import dev.guildy.core.Lang;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * French texts of the ruins (lang.json, '&' colour codes).
+ */
+final class RuinLang {
+	private RuinLang() {
+	}
+
+	static void register() {
+		Map<String, String> m = new LinkedHashMap<>();
+		// Villager task (cartographer)
+		m.put("villager.task.cartographer", "Cartographe");
+		m.put("villager.task.cartographer.desc", "&7Travaille à l'&eAtelier du cartographe&7 pour\n&7localiser les &6ruines&7 gardées par des boss\n&7(recherches lancées depuis le panneau de\n&7l'atelier). Plusieurs cartographes vont plus vite.");
+		m.put("villager.status.cartographer.no_atelier", "Attend un Atelier du cartographe");
+		m.put("villager.status.cartographer.waiting", "Attend une recherche à l'atelier");
+		m.put("villager.status.cartographer.walking", "Se rend à l'atelier");
+		m.put("villager.status.cartographer.working", "Étudie les cartes ({0} %)");
+
+		// States
+		m.put("ruin.state.dormant", "dormante");
+		m.put("ruin.state.awake", "réveillée");
+		m.put("ruin.state.cleared", "vaincue");
+		m.put("ruin.dimension.overworld", "Surface");
+		m.put("ruin.dimension.nether", "Nether");
+
+		// Fights
+		m.put("ruin.awaken.subtitle", "&c{0} &7s'éveille…");
+		m.put("ruin.awaken.chat", "&c{0} &7s'éveille dans la &f{1}&7 ! Tenez bon.");
+		m.put("ruin.bar", "{0} &7— &c{1}&7/&c{2} ❤");
+		m.put("ruin.enrage", "&4&l{0} entre dans une rage folle !");
+		m.put("ruin.reset", "&7{0} &7retourne dans l'ombre : la ruine se rendort.");
+		m.put("ruin.cleared.hint", "&7{0} : gardien vaincu, de retour dans &e{1}&7 jour(s).");
+		m.put("ruin.cleared.never", "&7{0} : gardien vaincu, la ruine est apaisée.");
+		m.put("ruin.victory.title", "&6&lVictoire !");
+		m.put("ruin.victory.subtitle", "&e{0} &7est vaincu");
+		m.put("ruin.victory.someone", "Des aventuriers");
+		m.put("ruin.victory.announce", "&e{0} &7ont vaincu &c{1}&7 dans la &f{2}&7 !");
+		m.put("ruin.victory.xp", "&a+{0} XP de guilde &7pour la victoire dans la &f{1}&7.");
+
+		// Cartography
+		m.put("ruin.research.no_atelier", "&cLa guilde n'a pas d'Atelier du cartographe.");
+		m.put("ruin.research.busy", "&cUne recherche est déjà en cours (ou attend d'être récupérée).");
+		m.put("ruin.research.creative", "&cImpossible de payer une recherche en mode créatif.");
+		m.put("ruin.research.missing", "&cIl vous manque des objets : &e{0} × {1}&c.");
+		m.put("ruin.research.started", "&a{0} a lancé la recherche d'une ruine &f(surface)&a à l'Atelier du cartographe.");
+		m.put("ruin.research.started.nether", "&a{0} a lancé la recherche d'une ruine &c(Nether)&a à l'Atelier du cartographe.");
+		m.put("ruin.research.no_cartographer", "&eAucun villageois n'a la tâche Cartographe : la recherche n'avancera pas sans lui.");
+		m.put("ruin.research.none", "&cAucune recherche en cours.");
+		m.put("ruin.research.cancelled", "&7{0} a annulé la recherche : le coût lui est rendu.");
+		m.put("ruin.research.not_ready", "&cLa recherche n'est pas terminée.");
+		m.put("ruin.research.refunded", "&7Aucune ruine trouvée : le coût de la recherche vous est rendu.");
+		m.put("ruin.research.lost", "&cLa ruine trouvée n'est plus connue : récupérez le remboursement.");
+		m.put("ruin.research.claimed", "&a{0} a récupéré la carte de la &f{1}&a (&e{2}, {3}&a).");
+		m.put("ruin.research.claimed.nether", "&a{0} a récupéré la boussole de la &f{1}&a (Nether : &e{2}, {3}&a).");
+		m.put("ruin.research.failed", "&eLes cartographes n'ont trouvé aucune ruine : récupérez le remboursement à l'atelier.");
+		m.put("ruin.research.ready", "&6&lCarte prête ! &eUne ruine a été localisée : récupérez la carte à l'Atelier du cartographe.");
+		m.put("ruin.research.ready.nether", "&6&lBoussole prête ! &eUne ruine du Nether a été localisée : récupérez-la à l'Atelier du cartographe.");
+
+		// Items
+		m.put("ruin.item.map.name", "&6Carte : {0}");
+		m.put("ruin.item.compass.name", "&cBoussole : {0}");
+		m.put("ruin.item.lore.overworld", "&7Ruine de la &fsurface");
+		m.put("ruin.item.lore.nether", "&7Ruine du &cNether");
+		m.put("ruin.item.lore.coords", "&7Coordonnées : &e{0}, {1}, {2}");
+		m.put("ruin.item.lore.tier", "&7Palier : &e{0}&7/5");
+		m.put("ruin.item.lore.boss", "&7Gardien : {0}");
+		m.put("ruin.item.lore.hint", "&8La croix marque l'entrée de la ruine.");
+		m.put("ruin.item.lore.hint.nether", "&8L'aiguille indique la ruine (dans le Nether).");
+
+		// Atelier sign
+		m.put("ruin.sign.title", "&lCartographe");
+		m.put("ruin.sign.cartographers", "{0} cartographe(s)");
+		m.put("ruin.sign.idle", "Au repos");
+		m.put("ruin.sign.progress", "Recherche {0} %");
+		m.put("ruin.sign.ready", "Carte prête !");
+		m.put("ruin.sign.ready.nether", "Boussole prête !");
+		m.put("ruin.sign.failed", "Rien trouvé");
+		m.put("ruin.sign.click", "Clic : ouvrir");
+		m.put("ruin.atelier.built.hint", "&7Donnez la tâche &eCartographe&7 à un villageois (menu des villageois) pour lancer des recherches.");
+
+		// Atelier menu
+		m.put("ruin.menu.title", "Atelier du cartographe");
+		m.put("ruin.menu.info", "&6Atelier du cartographe");
+		m.put("ruin.menu.info.lore", "&7Les cartographes de la guilde y localisent\n&7des &6ruines&7 gardées par de puissants boss :\n&7une carte pour la surface, une boussole\n&7pour le Nether.");
+		m.put("ruin.menu.info.cartographers", "&7Cartographes : &e{0} &7(au travail : &a{1}&7)");
+		m.put("ruin.menu.info.no_cartographer", "&cAucun cartographe : donnez la tâche\n&cCartographe à un villageois.");
+		m.put("ruin.menu.research", "&6Chercher une ruine &7(surface)");
+		m.put("ruin.menu.research.nether", "&cChercher une ruine &7(Nether)");
+		m.put("ruin.menu.research.lore", "&7Localise la ruine de la surface la plus\n&7proche qu'aucune carte ne montre encore.\n&7Résultat : une &ecarte d'explorateur&7.");
+		m.put("ruin.menu.research.nether.lore", "&7Localise une ruine du Nether (autel\n&7infernal, citadelle des âmes...).\n&7Résultat : une &eboussole&7 qui pointe\n&7vers elle dans le Nether.");
+		m.put("ruin.menu.research.cost", "&7Coût (votre inventaire) :");
+		m.put("ruin.menu.research.cost.ok", "&a ✔ {0} × {1}");
+		m.put("ruin.menu.research.cost.missing", "&c ✘ {0} × {1}");
+		m.put("ruin.menu.research.cost.gold", "&e • {0} or du trésor");
+		m.put("ruin.menu.research.duration", "&7Durée : &e{0}&7 de travail d'un cartographe");
+		m.put("ruin.menu.research.click", "&eClic : lancer la recherche");
+		m.put("ruin.menu.progress", "&eRecherche en cours");
+		m.put("ruin.menu.progress.bar", "{0} &f{1} %");
+		m.put("ruin.menu.progress.overworld", "&7Cible : ruine de la &fsurface");
+		m.put("ruin.menu.progress.nether", "&7Cible : ruine du &cNether");
+		m.put("ruin.menu.progress.left", "&7Temps restant : &e{0}");
+		m.put("ruin.menu.progress.paused", "&7En pause : aucun cartographe au travail (nuit ?)");
+		m.put("ruin.menu.progress.workers", "&7Cartographes au travail : &a{0}");
+		m.put("ruin.menu.progress.by", "&8Lancée par {0}");
+		m.put("ruin.menu.cancel", "&cAnnuler la recherche");
+		m.put("ruin.menu.cancel.lore", "&7Le coût vous est rendu.");
+		m.put("ruin.menu.claim", "&6&lRécupérer");
+		m.put("ruin.menu.claim.lore", "&7La ruine est localisée !\n&eClic : recevoir la carte / la boussole.");
+		m.put("ruin.menu.refund", "&eRécupérer le remboursement");
+		m.put("ruin.menu.refund.lore", "&7Aucune ruine trouvée dans les environs.\n&eClic : récupérer le coût de la recherche.");
+		m.put("ruin.menu.known", "&bRuines connues &7({0})");
+		m.put("ruin.menu.known.lore", "&7Ruines localisées par vos cartographes\n&7ou vaincues par vos membres.");
+		m.put("ruin.known.title", "Ruines connues ({0})");
+		m.put("ruin.known.state.dormant", "&7État : &adormante");
+		m.put("ruin.known.state.awake", "&7État : &créveillée");
+		m.put("ruin.known.state.cleared", "&7État : &8vaincue &7— de retour dans &e{0}&7 jour(s)");
+		m.put("ruin.known.state.cleared_forever", "&7État : &8vaincue &7(ne revient pas)");
+		m.put("ruin.known.victories", "&7Victoires : &e{0} &8(dernière : {1})");
+		m.put("ruin.known.click", "&eClic : coordonnées dans le chat");
+		m.put("ruin.known.coords", "&f{0}&7 : &e{1}, {2}, {3} &7({4})");
+
+		// Admin
+		m.put("ruin.admin.none", "&cAucune ruine connue dans cette dimension.");
+		m.put("ruin.admin.already_awake", "&cLe gardien de cette ruine est déjà réveillé.");
+		m.put("ruin.admin.wrong_dimension", "&cPlacez-vous dans la dimension de la ruine.");
+		m.put("ruin.admin.no_spawn", "&cAucun emplacement pour le gardien (zone non chargée ?).");
+		m.put("ruin.admin.not_loaded", "&cLa ruine n'est pas chargée : approchez-vous.");
+		m.put("ruin.admin.spawn_failed", "&cLe gardien n'a pas pu apparaître (voir le journal du serveur).");
+		m.put("ruin.admin.awakened", "&a{0} &as'éveille dans la &f{1}&a.");
+		m.put("ruin.admin.reset", "&a{0} &a: combat arrêté, gardien réarmé.");
+		m.put("ruin.admin.list.header", "&6Ruines connues : &e{0} &7(combats en cours : {1})");
+		m.put("ruin.admin.list.line", "&7- &f{0} &8({1}) &7{2} &e{3} {4} {5} &7{6}");
+		m.put("ruin.admin.list.more", "&7... et {0} autre(s).");
+		m.put("ruin.admin.list.hover", "&7Clic : commande de téléportation");
+		m.put("ruin.admin.info.header", "&6{0} &8({1}, {2})");
+		m.put("ruin.admin.info.configured", "définie dans ruins.json5");
+		m.put("ruin.admin.info.generic", "boss générique");
+		m.put("ruin.admin.info.structure", "&7Structure : &f{0} &7({1})");
+		m.put("ruin.admin.info.box", "&7Boîte : &f{0} {1} {2} &7→ &f{3} {4} {5}");
+		m.put("ruin.admin.info.markers", "&7Boss : &f{0} &7| sbires : &f{1} &7| entrée : &f{2}");
+		m.put("ruin.admin.info.state", "{0} &7| victoires : &e{1}");
+		m.put("ruin.admin.info.fight", "&cCombat : {0} &c{1}/{2} ❤ &7| sbires : {3} | spectateurs : {4}");
+		m.put("ruin.admin.locate.none", "&cAucune ruine '{0}' trouvée.");
+		m.put("ruin.admin.map", "&a{0} &adonné à {1}.");
+		m.put("ruin.admin.ability.unknown", "&cCapacité ou style inconnu '{0}' ({1}).");
+		m.put("ruin.admin.ability.failed", "&cCapacité '{0}' impossible : aucun combat en cours, aucun joueur en survie à portée ou condition non remplie.");
+		m.put("ruin.admin.ability.used", "&aCapacité '{0}' utilisée.");
+		m.put("ruin.admin.research.finished", "&aRecherche de {0} terminée : {1}");
+		m.put("ruin.admin.research.found", "ruine trouvée");
+		m.put("ruin.admin.research.nothing", "rien trouvé (remboursement)");
+		Lang.addDefaults(m);
+	}
+}

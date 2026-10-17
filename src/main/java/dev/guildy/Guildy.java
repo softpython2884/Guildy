@@ -17,6 +17,7 @@ import dev.guildy.event.EventModule;
 import dev.guildy.gui.GuildMenus;
 import dev.guildy.quest.QuestModule;
 import dev.guildy.scroll.ScrollModule;
+import dev.guildy.ruin.RuinModule;
 import dev.guildy.shop.ShopModule;
 import dev.guildy.structure.StructureModule;
 import dev.guildy.trade.TradeModule;
@@ -60,6 +61,7 @@ public final class Guildy implements ModInitializer {
 		EventModule.init(); // after the wave and trade modules (hooks into both)
 		UniqueModule.init(); // unique weapons: implements the core UniqueDrops hook
 		ScrollModule.init(); // spell scrolls: implements the core ScrollDrops hook
+		RuinModule.init(); // ruins guarded by bosses + cartographer (uses the structure and villager modules)
 
 		List<String> errors = ConfigManager.loadAll();
 		String langError = Lang.load();

@@ -21,7 +21,9 @@ public enum Task {
 	/** Repairs the equipment of the territory's armor stands at the nearest anvil (see {@link BlacksmithTask}). */
 	BLACKSMITH,
 	/** Turns books into enchanted books at an enchanting table of the territory (see {@link AlchemistTask}). */
-	ALCHEMIST;
+	ALCHEMIST,
+	/** Works at the "Atelier du cartographe" on the guild's ruin research (dev.guildy.ruin). */
+	CARTOGRAPHER;
 
 	public String id() {
 		return name().toLowerCase(java.util.Locale.ROOT);
@@ -49,6 +51,7 @@ public enum Task {
 			case NETHER -> Items.FLINT_AND_STEEL;
 			case BLACKSMITH -> Items.ANVIL;
 			case ALCHEMIST -> Items.ENCHANTING_TABLE;
+			case CARTOGRAPHER -> Items.MAP;
 		};
 	}
 
