@@ -41,6 +41,11 @@ import java.util.List;
 public class FieldGameTests {
 	private static final int PLATFORM = 72;
 
+	private static boolean tilledOrHole(ServerLevel level, FieldState state, BlockPos pos) {
+		BlockState block = level.getBlockState(pos);
+		return block.is(Blocks.FARMLAND) || (block.is(Blocks.WATER) && state.holes.contains(pos));
+	}
+
 	@GameTest(environment = "guildy-test:day", maxTicks = 8000)
 	public void createFieldsOnGrassPlateau(GameTestHelper helper) throws Exception {
 		ServerLevel level = helper.getLevel();
@@ -111,9 +116,11 @@ public class FieldGameTests {
 			}
 			helper.assertTrue(water >= 3 && state.holes.size() == water, "waiting for the water holes (" + water + ", remembered " + state.holes.size() + ")");
 			helper.assertTrue(farmland >= 100, "waiting for the plateau to be tilled (" + farmland + " farmland)");
-			helper.assertTrue(level.getBlockState(flower.above()).isAir() && level.getBlockState(flower).is(Blocks.FARMLAND),
-					"waiting for the flower to be cleared and its soil tilled");
-			helper.assertTrue(level.getBlockState(coarse).is(Blocks.FARMLAND), "waiting for the coarse dirt to be tilled");
+			// The hole grid is planned from the surveyed soil, so the flower or the coarse dirt may become a water hole.
+			helper.assertTrue(level.getBlockState(flower.above()).isAir() && tilledOrHole(level, state, flower),
+					"waiting for the flower to be cleared and its soil tilled (soil " + level.getBlockState(flower) + ", above "
+							+ level.getBlockState(flower.above()) + ")");
+			helper.assertTrue(tilledOrHole(level, state, coarse), "waiting for the coarse dirt to be tilled (" + level.getBlockState(coarse) + ")");
 			int inChest = count(level, seedChest, Items.WHEAT_SEEDS);
 			int inBag = carried(record, Items.WHEAT_SEEDS);
 			helper.assertTrue(record.stats.sown == 16 && sown == 16, "waiting for the 16 seeds to be sown (" + record.stats.sown + ")");

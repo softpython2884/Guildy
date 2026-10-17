@@ -290,6 +290,12 @@ public class GuardGameTests {
 		Husk husk = spawnHusk(helper, level, ground.getX() + 4.0, ground.getY() + 1, ground.getZ() + 0.5);
 		ZoneGameTests.setTask(recruit, Task.GUARD);
 		guard.setHealth(4.0f);
+		// The husk has no AI: it follows the retreating guard like a chasing monster would, staying within arm's reach.
+		helper.onEachTick(() -> {
+			if (!husk.isRemoved() && husk.distanceToSqr(guard) > 2.25) {
+				husk.teleportTo(guard.getX() + 1.2, guard.getY(), guard.getZ());
+			}
+		});
 		helper.succeedWhen(() -> {
 			helper.assertTrue(husk.getHealth() < husk.getMaxHealth(), "waiting for the wounded guard to strike back");
 			helper.assertTrue(guard.getHealth() < 18.0f, "the guard is still recovering (" + guard.getHealth() + ")");
