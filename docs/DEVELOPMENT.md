@@ -338,6 +338,19 @@ schématiques) : `tools/ruins/`.
     rien n'est consommé, l'inventaire est renvoyé et la recharge prédite effacée. Accroupi + échange de main par mixin
     HEAD de `handlePlayerAction`. Butin : `grimoire.drops` tiré avant la table de parchemins de la source.
 
+48. **Menace et résurrection** (`ThreatRules` pur, `Resurrection`) : `RuinRecord.threat` (0 dans les anciennes sauvegardes
+    = 1 + `timesCleared`), +1 à chaque victoire, plafond `escalation.maxLevel` ; bonus par modificateurs
+    `guildy:ruin_threat_*` (ré-appliqués à la conversion), dégâts des capacités via `AbilityDef.scaled`, récompenses
+    (`Rewards`). Fenêtre (`fastKillSeconds` par ruine ou formule) : `ALLOW_DEATH` met la vie à 1, refuse la mort (sauf
+    `BYPASSES_INVULNERABILITY`) et lance la résurrection : NoAI + `setPermanentlyInvulnerable` + `ALLOW_DAMAGE`, corps
+    déplacé par `setPos`, `RitualFx` avec un budget partagé, éclairs visuels ; puis modificateurs `guildy:ruin_risen_*`
+    (échelle limitée par la hauteur libre), nom « Enragé », escorte, aura. Styles `jade` / `wind`. 7e ruine `temple_maya`
+    (brise à l'échelle 2 ; ≥ 5 blocs libres au-dessus du marqueur boss), poids 2 dans `ruins_overworld` (jungles).
+49. **Parchemins de l'alchimiste** : uniquement par `ScrollDrops` (`create`, `info` : rareté, nom, disponibilité ;
+    `isScroll`) ; `AlchemyRules.outcome` / `pickScroll` purs (chance, niveau de table pour les épiques, papier, plafonds
+    `booksToday` commun + `scrollsToday`). Les objets magiques Guildy (`custom_data` kind scroll / grimoire / ruin_summon)
+    sont rangés dans la catégorie du livre enchanté (`ItemClassifier`).
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).

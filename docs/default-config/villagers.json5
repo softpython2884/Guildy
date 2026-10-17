@@ -3691,7 +3691,7 @@
 		// bibliotheques (15 bibliotheques : niveau 30 ; table seule : niveau 1 a 8)
 		"secondsPerLevel": 6,
 
-		// Livres enchantes au plus par alchimiste et par jour de jeu (1 a 1000)
+		// Livres enchantes (et parchemins) au plus par alchimiste et par jour de jeu (1 a 1000)
 		"maxBooksPerDay": 8,
 
 		// Lapis-lazuli consomme par livre (0 a 3) ; 0 = seulement du temps et des livres. Pris dans son sac puis dans les
@@ -3702,7 +3702,34 @@
 		"booksPerTrip": 4,
 
 		// Intervalle minimum (secondes) entre deux recherches des tables d'enchantement du territoire (10 a 3600)
-		"scanIntervalSeconds": 120
+		"scanIntervalSeconds": 120,
+
+		// Chance (0 a 1) qu'un travail termine donne un parchemin de sort au lieu d'un livre enchante (0 = jamais). Le
+		// parchemin utilise le meme livre (et le lapis) plus scrollPaper feuilles de papier ; sans papier : un livre enchante.
+		// Il est range dans le coffre de sa categorie de stockage (sinon un coffre Divers, sinon un coffre de depot)
+		"scrollChance": 0.15,
+
+		// Feuilles de papier par parchemin (0 a 64), prises dans son sac puis dans les coffres du stockage comme les livres
+		"scrollPaper": 2,
+
+		// Parchemins au plus par alchimiste et par jour de jeu, compris dans maxBooksPerDay (0 a maxBooksPerDay ; 0 = jamais)
+		"maxScrollsPerDay": 2,
+
+		// Niveau d'enchantement minimum (1 a 30) pour ecrire un parchemin plus rare que RARE (EPIC, LEGENDARY, MYTHIC) ; en
+		// dessous, seuls les parchemins RARE sont possibles. Niveau 30 = table entouree de 15 bibliotheques
+		"epicScrollLevel": 30,
+
+		// Parchemins que l'alchimiste peut ecrire : {id: poids} (ids de scrolls.json5, tirage pondere parmi ceux permis au
+		// niveau du travail ; un id inconnu est ignore avec un avertissement dans les journaux du serveur)
+		"scrolls": {
+			"rappel": 12.0,
+			"benediction": 7.0,
+			"revelation": 6.0,
+			"blizzard": 1.0,
+			"seisme": 1.0,
+			"egide": 1.0,
+			"tempete_de_foudre": 1.0
+		}
 	},
 
 	// Chargement des chunks : les villageois au travail gardent leurs chunks actifs pour continuer sans joueur a

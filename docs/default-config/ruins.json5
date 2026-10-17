@@ -3,7 +3,7 @@
 // des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.
 // Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou
 // boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>
-// | incantation <joueur> [nombre].
+// | incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche).
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
@@ -91,6 +91,113 @@
 		"tradePrice": 24
 	},
 
+	// Menace (niveaux I, II, III... propres a chaque ruine) : chaque victoire sur un gardien eleve la menace de sa ruine ;
+	// a son retour (respawnDays), le gardien est plus fort (vie, degats, armure, escorte, recharges, rage) et rapporte plus
+	"escalation": {
+
+		// Menace active (false = tous les gardiens restent au niveau I ; les niveaux deja atteints sont conserves)
+		"enabled": true,
+
+		// Niveau de menace maximal d'une ruine (1 a 50)
+		"maxLevel": 10,
+
+		// Vie du gardien en plus par niveau au-dela de I (0.2 = +20 %)
+		"healthPerLevel": 0.2,
+
+		// Degats du gardien (attaque et capacites) en plus par niveau au-dela de I (0.1 = +10 %)
+		"damagePerLevel": 0.1,
+
+		// Points d'armure du gardien en plus par niveau au-dela de I (armure vanilla plafonnee a 30)
+		"armorPerLevel": 1.0,
+
+		// Un sbire de plus (escorte et plafond des invocations) tous les N niveaux (0 = jamais)
+		"minionsEveryLevels": 2,
+
+		// Recharges des capacites reduites par niveau au-dela de I (0.05 = -5 %)
+		"cooldownPerLevel": 0.05,
+
+		// Facteur minimal des recharges dues a la menace (0.6 = jamais plus de -40 %)
+		"minCooldownFactor": 0.6,
+
+		// Seuil de rage (ratio de vie) releve par niveau au-dela de I : la rage arrive plus tot
+		"enragePerLevel": 0.02,
+
+		// Seuil de rage maximal atteint par la menace (0 a 1)
+		"maxEnrageThreshold": 0.5,
+
+		// Or du butin en plus par niveau au-dela de I (0.15 = +15 %)
+		"goldPerLevel": 0.15,
+
+		// XP de guilde en plus par niveau au-dela de I (0.15 = +15 %)
+		"xpPerLevel": 0.15,
+
+		// Chance d'un tirage d'arme unique supplementaire par niveau au-dela de I (0.05 = 5 % par niveau, 100 % au plus)
+		"uniqueChancePerLevel": 0.05,
+
+		// Chance d'un tirage de parchemin de sort supplementaire par niveau au-dela de I
+		"scrollChancePerLevel": 0.08
+	},
+
+	// Resurrection : un gardien abattu trop vite (moins de fastKillSeconds apres son apparition) refuse de mourir. Il
+	// revient d'entre les morts une seule fois par combat, enrage ; le vaincre sous cette forme donne un butin bonus
+	"resurrection": {
+
+		// Resurrection des gardiens abattus trop vite
+		"enabled": true,
+
+		// Fenetre (secondes apres l'apparition du gardien) pendant laquelle sa mort declenche la resurrection :
+		// fastKillSeconds + fastKillPerTier par palier au-dela de 1 + fastKillPerThreat par niveau de menace au-dela de I
+		// (une ruine peut fixer la sienne : 'fastKillSeconds' de sa definition)
+		"fastKillSeconds": 45.0,
+		"fastKillPerTier": 15.0,
+		"fastKillPerThreat": 5.0,
+
+		// Duree (secondes) de l'animation de resurrection, pendant laquelle le gardien est invulnerable et immobile (2 a 15)
+		"durationSeconds": 5.0,
+
+		// Part de la vie maximale rendue au gardien ressuscite (0.1 a 1)
+		"healthRatio": 1.0,
+
+		// Taille du gardien ressuscite (multiplicateur, 1 a 2 ; limitee par la hauteur libre au-dessus de lui)
+		"scale": 1.25,
+
+		// Vitesse de deplacement en plus du gardien ressuscite (0.25 = +25 %)
+		"speedBonus": 0.25,
+
+		// Degats en plus du gardien ressuscite (attaque et capacites, 0.4 = +40 %)
+		"damageBonus": 0.4,
+
+		// Facteur des recharges de ses capacites une fois ressuscite (0.7 = -30 %, en plus de la rage)
+		"cooldownFactor": 0.7,
+
+		// Sbires invoques a son retour (dans la limite de l'escorte vivante)
+		"minions": 4,
+
+		// Rayon (blocs) de l'onde de choc de son retour : repousse les joueurs, sans degats (0 = aucune)
+		"shockwaveRadius": 8.0,
+
+		// Force de la poussee de l'onde de choc (0 a 4)
+		"shockwaveStrength": 1.2,
+
+		// Particules envoyees au maximum par tick pour l'animation d'une resurrection (100 a 5000)
+		"particleBudget": 700,
+
+		// Tirages en plus dans la table de butin quand le gardien est vaincu sous sa forme ressuscitee
+		"bonusLootRolls": 2,
+
+		// Or du butin en plus sous la forme ressuscitee (0.5 = +50 %)
+		"bonusGold": 0.5,
+
+		// XP de guilde en plus sous la forme ressuscitee (0.5 = +50 %)
+		"bonusXp": 0.5,
+
+		// Tirages d'arme unique en plus sous la forme ressuscitee
+		"bonusUniqueRolls": 1,
+
+		// Tirages de parchemin de sort en plus sous la forme ressuscitee
+		"bonusScrollRolls": 1
+	},
+
 	// Recherches de l'Atelier du cartographe
 	"cartography": {
 
@@ -144,7 +251,8 @@
 	// 0 = toute la ruine), resetSeconds (sans joueur proche pendant ce temps, le boss disparait et reviendra a pleine vie),
 	// respawnDays (jours de jeu avant le retour d'un boss vaincu, 0 = jamais), leashRadius (au-dela, le boss est ramene a son
 	// arene), bossBarColor (PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE ; aussi la couleur du rituel d'incantation),
-	// mapDecoration (icone de la carte, vide = celle de 'cartography').
+	// mapDecoration (icone de la carte, vide = celle de 'cartography'), fastKillSeconds (resurrection : -1 = formule de
+	// 'resurrection', 0 = ce gardien ne ressuscite jamais, sinon la fenetre en secondes).
 	// boss : entity, name (codes couleur &), health, damage, armor, armorToughness, speed (0 = vitesse vanilla),
 	// knockbackResistance (0 a 1), scale (taille, 1 = normale), followRange, equipment {emplacement: objet} (mainhand,
 	// offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents).
@@ -152,9 +260,9 @@
 	// maxAlive (plafond avec les invocations), healthMultiplier, damageMultiplier, equipment, effects.
 	// abilities [{type, cooldownSeconds, damage, radius, count, style, healthBelow (0 a 1 : seulement sous ce ratio de vie),
 	// amplifier}] : summon (invoque count sbires), ground_slam (onde de choc, style sand pour du sable), fire_ring (anneau :
-	// style fire, soul ou frost), blink (se teleporte derriere un joueur et frappe), volley (salve : style arrow, spectral
-	// ou fireball), life_drain (draine la vie des joueurs proches), enrage (une fois sous healthBelow : Force + Vitesse
-	// de niveau amplifier, recharges reduites de moitie).
+	// style fire, soul, frost ou jade = poison et souffle), blink (se teleporte derriere un joueur et frappe ; style wind =
+	// bourrasque), volley (salve : style arrow, spectral, fireball ou wind = lames de vent), life_drain (draine la vie des
+	// joueurs proches), enrage (une fois sous healthBelow : Force + Vitesse de niveau amplifier, recharges reduites de moitie).
 	// rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +
 	// lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource
 	// (vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).
@@ -168,6 +276,7 @@
 			"leashRadius": 18,
 			"bossBarColor": "PURPLE",
 			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
 			"boss": {
 				"entity": "minecraft:wither_skeleton",
 				"name": "&5&lSeigneur des Cryptes",
@@ -276,6 +385,7 @@
 			"leashRadius": 18,
 			"bossBarColor": "BLUE",
 			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
 			"boss": {
 				"entity": "minecraft:evoker",
 				"name": "&9&lArchimage déchu",
@@ -394,6 +504,7 @@
 			"leashRadius": 18,
 			"bossBarColor": "YELLOW",
 			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
 			"boss": {
 				"entity": "minecraft:husk",
 				"name": "&6&lPharaon des sables",
@@ -502,6 +613,7 @@
 			"leashRadius": 18,
 			"bossBarColor": "WHITE",
 			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
 			"boss": {
 				"entity": "minecraft:stray",
 				"name": "&b&lRoi de givre",
@@ -620,6 +732,7 @@
 			"leashRadius": 18,
 			"bossBarColor": "RED",
 			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
 			"boss": {
 				"entity": "minecraft:piglin_brute",
 				"name": "&c&lSeigneur de guerre",
@@ -741,6 +854,7 @@
 			"leashRadius": 18,
 			"bossBarColor": "BLUE",
 			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
 			"boss": {
 				"entity": "minecraft:wither_skeleton",
 				"name": "&3&lChampion des âmes",
@@ -868,6 +982,126 @@
 				"uniqueSource": "",
 				"scrollSource": ""
 			}
+		},
+		"temple_maya": {
+			"name": "Temple du Serpent à plumes",
+			"tier": 3,
+			"activationRadius": 20,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 18,
+			"bossBarColor": "GREEN",
+			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
+			"boss": {
+				"entity": "minecraft:breeze",
+				"name": "&2&lLe Serpent à plumes",
+				"health": 360.0,
+				"damage": 10.0,
+				"armor": 8.0,
+				"armorToughness": 3.0,
+				"speed": 0.0,
+				"knockbackResistance": 0.8,
+				"scale": 2.0,
+				"followRange": 32.0,
+				"equipment": {},
+				"effects": []
+			},
+			"minions": {
+				"types": {
+					"minecraft:bogged": 3,
+					"minecraft:cave_spider": 2
+				},
+				"base": 4,
+				"perExtraPlayer": 2,
+				"max": 10,
+				"maxAlive": 14,
+				"healthMultiplier": 1.4,
+				"damageMultiplier": 1.1,
+				"equipment": {},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "volley",
+					"cooldownSeconds": 9.0,
+					"damage": 6.0,
+					"radius": 4.0,
+					"count": 5,
+					"style": "wind",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 13.0,
+					"damage": 7.0,
+					"radius": 7.0,
+					"count": 1,
+					"style": "jade",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "blink",
+					"cooldownSeconds": 12.0,
+					"damage": 8.0,
+					"radius": 4.0,
+					"count": 1,
+					"style": "wind",
+					"healthBelow": 0.8,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 22.0,
+					"damage": 0.0,
+					"radius": 4.0,
+					"count": 3,
+					"style": "",
+					"healthBelow": 0.65,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"rewards": {
+				"goldMin": 8,
+				"goldMax": 14,
+				"xp": 160,
+				"lootTable": "guildy:chests/ruin/treasure",
+				"lootRolls": 1,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 8,
+						"max": 16,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:diamond",
+						"min": 1,
+						"max": 3,
+						"chance": 0.5
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 3,
+						"max": 8,
+						"chance": 0.6
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			}
 		}
 	},
 
@@ -879,6 +1113,7 @@
 		"ziggourat_des_sables",
 		"bastion_de_givre",
 		"autel_infernal",
-		"citadelle_des_ames"
+		"citadelle_des_ames",
+		"temple_maya"
 	]
 }

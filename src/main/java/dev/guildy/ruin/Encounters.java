@@ -354,7 +354,7 @@ public final class Encounters {
 		if (spawn == null) {
 			return "ruin.admin.no_spawn";
 		}
-		if (!level.isPositionEntityTicking(spawn)) {
+		if (!loaded(level, spawn)) {
 			return "ruin.admin.not_loaded";
 		}
 		ServerBossEvent bar = new ServerBossEvent(UUID.randomUUID(), Component.literal(Lang.colorize(def.boss.name)), barColor(def.bossBarColor),
@@ -1079,5 +1079,13 @@ public final class Encounters {
 		} catch (IllegalArgumentException e) {
 			return BossEvent.BossBarColor.RED;
 		}
+	}
+
+	/**
+	 * The guardian may appear at {@code pos}: its chunk is loaded (a chunk forced or reached by a player this very tick
+	 * is not "entity ticking" before the next ticket update, the guardian simply starts to act one tick later).
+	 */
+	static boolean loaded(ServerLevel level, BlockPos pos) {
+		return level.isPositionEntityTicking(pos) || level.isLoaded(pos);
 	}
 }

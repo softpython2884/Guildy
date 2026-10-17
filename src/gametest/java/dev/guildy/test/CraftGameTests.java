@@ -245,10 +245,16 @@ public class CraftGameTests {
 		ItemStack sample = ScrollDrops.create("rappel", 1);
 		helper.assertTrue(!sample.isEmpty() && "rappel".equals(ScrollItems.idOf(sample)), "the scroll module creates a Rappel");
 		String scrollCategory = ItemClassifier.categoryOf(sample);
-		BlockPos scrollChestPos = ground.offset(4, 1, -4);
-		level.setBlockAndUpdate(scrollChestPos, Blocks.CHEST.defaultBlockState());
-		guild.villagers.chests.add(new StorageChest(scrollChestPos, StorageChest.Role.CATEGORY, scrollCategory));
-		Container scrollChest = (Container) level.getBlockEntity(scrollChestPos);
+		// Scrolls are sorted with the enchanted books by default: then the books' chest receives them too.
+		boolean shared = scrollCategory.equalsIgnoreCase(books);
+		Container scrollChest = chest;
+		if (!shared) {
+			BlockPos scrollChestPos = ground.offset(4, 1, -4);
+			level.setBlockAndUpdate(scrollChestPos, Blocks.CHEST.defaultBlockState());
+			guild.villagers.chests.add(new StorageChest(scrollChestPos, StorageChest.Role.CATEGORY, scrollCategory));
+			scrollChest = (Container) level.getBlockEntity(scrollChestPos);
+		}
+		Container scrollsAt = scrollChest;
 
 		VillagerRecord record = recruit.record();
 		ZoneGameTests.setTask(recruit, Task.ALCHEMIST);
@@ -267,7 +273,7 @@ public class CraftGameTests {
 			if (plain + made + written != total || count(chest, Items.ENCHANTED_BOOK) + carried(record, Items.ENCHANTED_BOOK) != made) {
 				helper.fail("books lost or duplicated: plain " + plain + ", enchanted " + made + ", scrolls " + written);
 			}
-			int scrollItems = scrolls(scrollChest) + scrolls(chest) + scrollsCarried(record);
+			int scrollItems = scrolls(scrollsAt) + (shared ? 0 : scrolls(chest)) + scrollsCarried(record);
 			if (scrollItems != written) {
 				helper.fail("scrolls lost or duplicated: " + scrollItems + " items for " + written + " written");
 			}
@@ -284,10 +290,10 @@ public class CraftGameTests {
 			if (paper + 2 * written != 5) {
 				helper.fail("paper lost or duplicated: " + paper + " left, " + written + " scroll(s)");
 			}
-			int stored = scrolls(scrollChest) + (scrollCategory.equalsIgnoreCase(books) ? scrolls(chest) : 0);
+			int stored = scrolls(scrollsAt);
 			helper.assertTrue(stored == 1 && seen[1], "waiting for a Rappel in the chest of its category (" + scrollCategory + ")");
-			for (int i = 0; i < scrollChest.getContainerSize(); i++) {
-				ItemStack stack = scrollChest.getItem(i);
+			for (int i = 0; i < scrollsAt.getContainerSize(); i++) {
+				ItemStack stack = scrollsAt.getItem(i);
 				if (ScrollDrops.isScroll(stack)) {
 					helper.assertTrue("rappel".equals(ScrollItems.idOf(stack)), "a bare table writes the rare Rappel, not " + ScrollItems.idOf(stack));
 				}

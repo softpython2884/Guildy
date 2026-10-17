@@ -37,9 +37,9 @@ ou à héberger pour les joueurs.
   de guilde X / 14.
 - **Parchemins de sort** : 12 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel…)
   avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture.
-- **Ruines et boss** : 6 ruines (4 dans l'Overworld, 2 dans le Nether), chacune gardée par un boss avec sa barre de vie,
-  son escorte et ses attaques, éveillé par un **rituel de sang** (parchemin d'incantation) ; localisées par le
-  cartographe de la guilde.
+- **Ruines et boss** : 7 ruines (5 dans l'Overworld, 2 dans le Nether), chacune gardée par un boss avec sa barre de vie,
+  son escorte et ses attaques, éveillé par un **rituel de sang** (parchemin d'incantation), plus dur à chaque retour
+  (**menace**) et qui **ressuscite enragé** si on l'abat trop vite ; localisées par le cartographe de la guilde.
 - **Tout est configurable** : fichiers JSON5 commentés en français, rechargeables à chaud ; permissions LuckPerms.
 
 ---
@@ -388,7 +388,14 @@ d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas s
   niveau 30 ; une table seule donne des enchantements faibles. Comptez 6 s par niveau, 8 livres par jour et par
   alchimiste au plus ; pas de lapis par défaut (`alchemist.lapisPerBook`). Comme à la table vanilla, Raccommodage et les
   autres enchantements « trésor » ne sortent jamais.
-- Leur menu affiche leurs statistiques (objets réparés, enclumes usées ; livres faits, meilleur enchantement).
+- **Parchemins de l'alchimiste** : de temps en temps (15 % des travaux), l'alchimiste écrit un **parchemin de sort** au
+  lieu d'un livre enchanté. Il lui faut le même livre et **2 feuilles de papier**, prises au stockage ; sans papier, il
+  fait un livre enchanté. Ce sont surtout des parchemins simples : **Rappel** le plus souvent, puis Bénédiction et
+  Révélation ; avec une table entourée de **15 bibliothèques**, rarement un épique (Blizzard, Séisme, Égide, Tempête de
+  foudre) ; jamais de légendaire ni de mythique. 2 parchemins par jour au plus, compris dans ses 8 travaux du jour
+  (`alchemist.scrollChance`, `scrollPaper`, `maxScrollsPerDay`, `epicScrollLevel`, `scrolls`).
+- Leur menu affiche leurs statistiques (objets réparés, enclumes usées ; livres faits, meilleur enchantement, parchemins
+  écrits).
 
 #### Travail à distance (chunks chargés)
 Un villageois au travail garde chargés ses alentours, l'endroit où il se rend (coffre de dépôt, lit le soir, retour
@@ -677,7 +684,8 @@ modifié. Les bienfaits vont au lanceur, aux membres de sa guilde et à ses vill
 
 **Où les trouver** : surtout sur les **boss des ruines** (60 %, 75 % dans le Nether, 1 ou 2 parchemins), plus rarement sur
 les boss des hordes (8 %, 30 % pendant une nuit de sang), en récompense de quête (5 %) ou de contrat légendaire (50 %), au
-retour des expéditions (3 %), et chez le marchand du Carrefour commercial (palier II ; palier III pour les plus rares).
+retour des expéditions (3 %), chez le marchand du Carrefour commercial (palier II ; palier III pour les plus rares), et
+l'**alchimiste** de votre guilde en écrit parfois (surtout des Rappels). Ils se rangent avec les livres enchantés.
 Le pack de ressources facultatif leur donne des textures animées (comme aux armes uniques).
 
 #### Le grimoire
@@ -716,11 +724,27 @@ s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines o
 | **Tour du Mage déchu** | forêts, jungles, forêts anciennes | 2 | Archimage déchu (évocateur, 260 PV) + vindicateurs et vex |
 | **Ziggourat des sables** | désert, badlands | 2 | Pharaon des sables (zombie momifié en or, 300 PV) + momies |
 | **Bastion de givre** | plaines et taïgas enneigées, pics de glace, bosquets | 3 | Roi de givre (vagabond, 380 PV) + vagabonds |
+| **Temple du Serpent à plumes** | jungles | 3 | Le Serpent à plumes (brise géante, 360 PV, dévie les projectiles : combat au corps à corps) + Embourbés (flèches empoisonnées) et araignées venimeuses |
 | **Autel infernal** | Nether : désolations, forêt carmin | 4 | Seigneur de guerre (piglin barbare, 480 PV) + piglins barbares et cubes de magma |
 | **Citadelle des âmes** | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 | Champion des âmes (squelette wither, 650 PV) + squelettes wither et blazes |
 
+
+**Menace** : chaque ruine a un niveau de menace (I, II, III… jusqu'à X). Chaque victoire sur son gardien l'élève : à son
+retour, il a plus de vie (+20 % par niveau), frappe plus fort, porte plus d'armure, arrive avec plus de sbires, enchaîne
+ses capacités plus vite et entre en rage plus tôt — mais il rapporte aussi plus d'or et d'XP, avec plus de chances de
+laisser une arme unique ou un parchemin. La menace s'affiche sur la barre de boss, à l'entrée de la ruine, dans l'Atelier
+du cartographe et sur les cartes.
+
+**Ne l'achevez pas trop vite !** Tant que la barre de boss affiche « Résurrection possible : 0:32 » (45 s au palier 1,
++15 s par palier, +5 s par niveau de menace), un gardien abattu refuse de mourir : son corps s'enfonce dans le sol puis
+s'élève dans une spirale de flammes d'âme et d'étincelles de totem, sous une colonne de lumière, entouré d'anneaux de sang
+et d'or et des âmes de son escorte, au milieu des éclairs ; pendant 5 secondes il est invulnérable. Puis il revient dans
+un éclair et une onde de choc : **Enragé**, à pleine vie, plus grand, plus rapide, plus fort, avec de nouveaux sbires. Le
+vaincre sous cette forme rapporte un butin exceptionnel (+50 % d'or et d'XP, tirages de butin, d'arme unique et de
+parchemin en plus) et tout le serveur l'apprend. Il ne ressuscite qu'une fois par combat.
+
 Les ruines n'apparaissent que dans les chunks **pas encore générés** : il faut explorer de nouvelles zones.
-Aperçus des six ruines : [`tools/ruins/previews/`](tools/ruins/previews/). Pour tester : `/place structure guildy:ruin/<id>`
+Aperçus des sept ruines : [`tools/ruins/previews/`](tools/ruins/previews/). Pour tester : `/place structure guildy:ruin/<id>`
 (dans le Nether pour les deux dernières), `/locate structure #guildy:ruins`.
 
 **Ajouter vos propres ruines** : construisez-la en créatif, marquez la case du boss, celles des sbires et l'entrée par des
@@ -797,6 +821,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin ruin list` · `info` · `awaken` · `reset` | Ruines : liste, ruine la plus proche, réveiller / rendormir son gardien |
 | `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
 | `/guild admin ruin ability <type> [style]` | Jouer un effet de capacité de boss (test visuel) |
+| `/guild admin ruin threat <niveau>` | Niveau de menace de la ruine la plus proche (appliqué au prochain réveil) |
 | `/guild admin ruin incantation <joueur> [nombre]` | Donner des parchemins d'incantation (`awaken` réveille toujours le gardien sans rituel) |
 
 ---
@@ -820,7 +845,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
-| `ruins.json5` | Ruines : réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
+| `ruins.json5` | Ruines : menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
 | `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
@@ -842,7 +867,7 @@ Formules par défaut (modifiables) :
   supprimés au chargement et la horde est simplement annulée.
 - `<monde>/guildy/uniques.json` : registre des armes uniques (numéro, détenteur, état actif / perdu, collections),
   écrit de façon atomique avec `.bak`.
-- `<monde>/guildy/ruins.json` : ruines connues (position, état, retour du gardien), écrit de façon atomique avec `.bak`.
+- `<monde>/guildy/ruins.json` : ruines connues (position, état, retour du gardien, niveau de menace), écrit de façon atomique avec `.bak`.
   Un combat de boss n'est pas sauvegardé : après un redémarrage, le gardien et son escorte sont supprimés et la ruine
   redevient dormante.
 - `<monde>/guildy/events.json` : état global des événements (nuit de sang prévue, dernier tirage). Les marchands de

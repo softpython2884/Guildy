@@ -167,7 +167,7 @@ public final class Incantations {
 		SummonRules.Situation situation = new SummonRules.Situation(cfg.bossesEnabled, level.getDifficulty() == Difficulty.PEACEFUL, true,
 				level.dimension().identifier().toString().equals(ruin.dimension), ruin.state, daysLeft, Encounters.isActive(ruin),
 				RITUALS.containsKey(ruin.key), player.position().distanceToSqr(Vec3.atBottomCenterOf(marker)), cfg.summon.arenaRadius,
-				Encounters.count() + RITUALS.size(), cfg.encounter.maxActive, level.isPositionEntityTicking(marker));
+				Encounters.count() + RITUALS.size(), cfg.encounter.maxActive, Encounters.loaded(level, marker));
 		return new Target(ruin, def, SummonRules.check(situation), daysLeft);
 	}
 
