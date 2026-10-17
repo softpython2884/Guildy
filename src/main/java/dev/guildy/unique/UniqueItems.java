@@ -46,6 +46,10 @@ public final class UniqueItems {
 	public static final String KIND = "unique";
 	/** custom_data key of the pending server announcement (value = drop source). */
 	private static final String ANNOUNCE = "announce";
+	/** custom_data key of the registry serial of the copy. */
+	private static final String SERIAL = "serial";
+	/** custom_data key of the source of an offered (not yet registered) stack. */
+	private static final String PENDING = "pending";
 	private static final Set<String> WARNED = new HashSet<>();
 
 	private UniqueItems() {
@@ -259,6 +263,51 @@ public final class UniqueItems {
 			tag.put(GuildyItems.ROOT, inner);
 		});
 		return source;
+	}
+
+	// ================================================================== registry markers
+
+	/** Serial of the copy (custom_data guildy.serial), 0 for an unregistered stack. */
+	public static long serialOf(ItemStack stack) {
+		return stack.isEmpty() ? 0 : GuildyItems.data(stack).getLongOr(SERIAL, 0L);
+	}
+
+	/** Writes the serial of the registered copy into the stack (removes a pending merchant source). */
+	public static void setSerial(ItemStack stack, long serial) {
+		CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+			CompoundTag inner = tag.getCompoundOrEmpty(GuildyItems.ROOT);
+			inner.putLong(SERIAL, serial);
+			inner.remove(PENDING);
+			tag.put(GuildyItems.ROOT, inner);
+		});
+	}
+
+	/** Marks an unregistered stack (merchant offer): registered with this source once someone carries it. */
+	public static void markPending(ItemStack stack, String source) {
+		CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+			CompoundTag inner = tag.getCompoundOrEmpty(GuildyItems.ROOT);
+			inner.putString(PENDING, source);
+			tag.put(GuildyItems.ROOT, inner);
+		});
+	}
+
+	/** Source waiting on an unregistered stack, or "" (legacy item). */
+	public static String pendingSource(ItemStack stack) {
+		return GuildyItems.data(stack).getStringOr(PENDING, "");
+	}
+
+	/**
+	 * Display copy for menus: the weapon's look (item, name, enchantment glint, model) without its Guildy data, so that it
+	 * never counts as a copy, and without its lore (the menu writes its own).
+	 */
+	public static ItemStack display(UniqueConfig.UniqueDef def, HolderLookup.Provider registries) {
+		ItemStack stack = create(def, registries);
+		if (!stack.isEmpty()) {
+			stack.remove(DataComponents.CUSTOM_DATA);
+			stack.remove(DataComponents.LORE);
+			stack.remove(DataComponents.USE_COOLDOWN);
+		}
+		return stack;
 	}
 
 	// ================================================================== visuals

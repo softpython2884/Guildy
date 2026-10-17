@@ -76,6 +76,8 @@ final class MainMenu extends GuildGui {
 			upgrades.glow();
 		}
 		button(40, upgrades, null, () -> Hooks.openUpgrades.accept(player, guild));
+		button(42, icon(Items.NETHERITE_SWORD, "unique.menu.name", Hooks.uniqueCollectionLore.apply(guild)),
+				null, () -> Hooks.openUniques.accept(player, guild));
 
 		if (guild.role(player.getUUID()) == GuildRole.LEADER) {
 			button(45, icon(Items.TNT, "menu.main.disband.name", GuiUtil.lines("menu.main.disband.lore")),

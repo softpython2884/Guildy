@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 
@@ -29,6 +30,42 @@ public final class UniqueRolls {
 			return null;
 		}
 		return pick(table, usable, random);
+	}
+
+	/** Result of a roll with uniqueness: nothing (failed chance, empty table), an item, or every item already taken. */
+	public enum Kind {
+		NOTHING,
+		ITEM,
+		EXHAUSTED
+	}
+
+	public record Outcome(Kind kind, @Nullable String id) {
+		static final Outcome NOTHING = new Outcome(Kind.NOTHING, null);
+		static final Outcome EXHAUSTED = new Outcome(Kind.EXHAUSTED, null);
+	}
+
+	/**
+	 * One roll that skips the {@code excluded} ids (held by the recipient's guild, or anywhere in "server" mode): the table
+	 * chance first (unchanged drop rate), then the weighted pick among the usable, non-excluded items. EXHAUSTED when the
+	 * chance passed but every usable item is excluded.
+	 */
+	public static Outcome roll(UniqueConfig.@Nullable DropTable table, Predicate<String> usable, Set<String> excluded, RandomGenerator random) {
+		if (table == null || table.items == null || table.chance <= 0) {
+			return Outcome.NOTHING;
+		}
+		if (table.chance < 1 && random.nextDouble() >= table.chance) {
+			return Outcome.NOTHING;
+		}
+		String id = pick(table, key -> usable.test(key) && !excluded.contains(key), random);
+		if (id != null) {
+			return new Outcome(Kind.ITEM, id);
+		}
+		for (Map.Entry<String, Double> entry : table.items.entrySet()) {
+			if (entry.getValue() != null && entry.getValue() > 0 && usable.test(entry.getKey())) {
+				return Outcome.EXHAUSTED;
+			}
+		}
+		return Outcome.NOTHING;
 	}
 
 	/** Weighted pick ignoring the chance (null when nothing is pickable). */

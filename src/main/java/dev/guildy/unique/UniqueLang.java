@@ -63,7 +63,52 @@ final class UniqueLang {
 		m.put("unique.source.expedition", "&7rapportée d'une expédition");
 		m.put("unique.source.trade", "&7achetée au Carrefour commercial");
 		m.put("unique.source.admin", "&7offerte par un administrateur");
+		m.put("unique.source.ruin_boss", "&7butin d'un gardien de ruine");
+		m.put("unique.source.nether_ruin_boss", "&cbutin d'un gardien de ruine du Nether");
+		m.put("unique.source.legacy", "&7obtenue avant le registre");
 		m.put("unique.source.unknown", "&7origine mystérieuse");
+		// uniqueness (registry of the copies)
+		m.put("unique.mode.guild", "une par guilde");
+		m.put("unique.mode.server", "une seule sur le serveur");
+		m.put("unique.mode.none", "sans limite");
+		m.put("unique.fallback.scroll", "&7Votre guilde détient déjà toutes les armes uniques de ce butin : &dun parchemin de sort&7 à la place.");
+		m.put("unique.where.inventory", "inventaire");
+		m.put("unique.where.ender_chest", "coffre de l'Ender");
+		m.put("unique.where.container", "coffre ouvert");
+		m.put("unique.lost.killed", "&cdétruite (/kill)");
+		m.put("unique.lost.destroyed", "&cdétruite (lave, feu, cactus, vide ou disparition)");
+		m.put("unique.lost.broken", "&ccassée");
+		m.put("unique.lost.admin", "&clibérée par un admin");
+		m.put("unique.lost.unknown", "&cperdue");
+		m.put("unique.time.never", "jamais");
+		m.put("unique.time.now", "à l'instant");
+		m.put("unique.time.minutes", "il y a {0} min");
+		m.put("unique.time.hours", "il y a {0} h");
+		m.put("unique.time.days", "il y a {0} j");
+		// collection (guild menu)
+		m.put("unique.menu.name", "&d&lArmes uniques");
+		m.put("unique.menu.lore", "&7La collection d'armes uniques\n&7de la guilde : qui les détient,\n&7où trouver les autres.");
+		m.put("unique.menu.count", "&7Collection : &e{0}&7 / {1}");
+		m.put("unique.collection.title", "Armes uniques · {0} / {1}");
+		m.put("unique.collection.title_paged", "Armes uniques · {0} / {1} ({2}/{3})");
+		m.put("unique.collection.empty", "&7Aucune arme unique n'est configurée.");
+		m.put("unique.collection.header.name", "&d&lCollection d'armes uniques");
+		m.put("unique.collection.header.count", "&7Obtenues : &e{0}&7 / {1}");
+		m.put("unique.collection.header.held", "&7Détenues aujourd'hui : &a{0}");
+		m.put("unique.collection.mode.guild", "&8Chaque arme n'existe qu'une fois par guilde :\n&8le butin ne vous donne jamais une arme\n&8que la guilde détient déjà.");
+		m.put("unique.collection.mode.server", "&8Chaque arme n'existe qu'une fois sur le serveur :\n&8détruite, elle peut tomber à nouveau.");
+		m.put("unique.collection.mode.none", "&8Une même arme peut tomber plusieurs fois.");
+		m.put("unique.collection.held", "&a✔ &f{0} &8(vue {1})");
+		m.put("unique.collection.held_more", "&8… et {0} autre(s) exemplaire(s)");
+		m.put("unique.collection.holder.guild", "au village");
+		m.put("unique.collection.gone", "&8Obtenue autrefois : elle n'est plus\n&8entre les mains de la guilde.");
+		m.put("unique.collection.unknown", "{0}???");
+		m.put("unique.collection.where", "&7Où la trouver :");
+		m.put("unique.collection.where_line", "&8• {0} &8({1} %)");
+		m.put("unique.collection.where_none", "&8• nulle part pour l'instant");
+		m.put("unique.collection.complete", "&6✦ La guilde &e{0}&6 a réuni les {1} armes uniques !");
+		m.put("unique.collection.complete.title", "&6&l✦ Collection complète ✦");
+		m.put("unique.collection.complete.subtitle", "&eLes {0} armes uniques ont rejoint la guilde");
 		// trade hub preview
 		m.put("unique.trade.random.name", "&d&lArme unique &7(tirée au hasard)");
 		m.put("unique.trade.random.lore", "&7Une arme unique de la table « trade »\n&7d'uniques.json5, tirée à l'arrivée du marchand.");
@@ -80,6 +125,25 @@ final class UniqueLang {
 		m.put("unique.admin.models.off", "&7désactivés (apparence vanilla)");
 		m.put("unique.admin.give", "&aArme unique {0}&a donnée à &e{1}&a.");
 		m.put("unique.admin.unknown", "&cArme unique inconnue : &e{0}&c (voir /guild admin unique list).");
+		m.put("unique.admin.list.mode", "&7Unicité : &e{0}&7 (registre : /guild admin unique registry)");
+		m.put("unique.admin.give.duplicate_guild", "&eAttention : la guilde &6{1}&e détenait déjà {0}&e : doublon créé (les dons ignorent l'unicité).");
+		m.put("unique.admin.give.duplicate_server", "&eAttention : {0}&e existait déjà sur le serveur : doublon créé (les dons ignorent l'unicité).");
+		m.put("unique.admin.registry.header", "&6&lRegistre des armes uniques &7(unicité : {0} · {1} exemplaire(s), {2} actif(s))");
+		m.put("unique.admin.registry.hover", "&eCliquez pour voir les exemplaires");
+		m.put("unique.admin.registry.entry", "&8- {0} &8[&7{1}&8] &a{2} actif(s)&8, &7{3} perdu(s)");
+		m.put("unique.admin.registry.duplicates", "&c&lDoublons détectés ({0}) &7- même numéro vu à deux endroits à la fois :");
+		m.put("unique.admin.registry.duplicate", "&8- &f#{0} {1} &8: &7{2} &8/ &7{3} &8(vu {4} fois, dernière fois {5})");
+		m.put("unique.admin.registry.copies", "&6&l{0} &7: {1} exemplaire(s)");
+		m.put("unique.admin.registry.copy.active", "&8- &f#{0} &aACTIVE &8· &e{1} &8· &7vue {2} &8· {3}");
+		m.put("unique.admin.registry.copy.lost", "&8- &f#{0} &cPERDUE &8· {1} &7{2} &8· &7dernier détenteur : {3}");
+		m.put("unique.admin.registry.copy.hover", "&7Source : {0}\n&7Obtenue : {1}\n&7Joueur : {2}");
+		m.put("unique.admin.registry.copy.free_hint", "&eCliquez pour préparer /guild admin unique free");
+		m.put("unique.admin.registry.more", "&8… {0} exemplaire(s) plus ancien(s) non affiché(s)");
+		m.put("unique.admin.free.no_guild", "&cGuilde inconnue : &e{0}");
+		m.put("unique.admin.free.of_guild", " de la guilde {0}");
+		m.put("unique.admin.free.none", "&cAucun exemplaire actif de {0}&c{1}.");
+		m.put("unique.admin.free.done", "&a{0} exemplaire(s) de {1}&a marqué(s) perdu(s) ({2}) : l'arme peut de nouveau tomber."
+				+ " &7(Un exemplaire revu dans un inventaire redevient actif.)");
 		Lang.addDefaults(m);
 	}
 }

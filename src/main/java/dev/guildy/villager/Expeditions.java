@@ -202,7 +202,7 @@ final class Expeditions {
 		int carryStacks = config.work.carryStacks;
 		int total = 0;
 		// Rare unique weapon, rolled first so a full bag cannot swallow it (dropped at its feet otherwise).
-		ItemStack unique = rollUnique(destination.uniqueChanceMultiplier());
+		ItemStack unique = rollUnique(guild, destination.uniqueChanceMultiplier());
 		if (!unique.isEmpty()) {
 			if (addToBag(record, unique, carryStacks) == 0) {
 				villager.spawnAtLocation(level, unique);
@@ -243,10 +243,10 @@ final class Expeditions {
 	}
 
 	/** A unique weapon of the "expedition" table, its chance scaled by the destination (one at most), or empty. */
-	private static ItemStack rollUnique(double multiplier) {
+	private static ItemStack rollUnique(Guild guild, double multiplier) {
 		int attempts = ExpeditionDestinations.uniqueAttempts(multiplier, ThreadLocalRandom.current());
 		for (int i = 0; i < attempts; i++) {
-			ItemStack unique = UniqueDrops.roll(UNIQUE_SOURCE);
+			ItemStack unique = UniqueDrops.roll(UNIQUE_SOURCE, UniqueDrops.Recipient.guild(guild));
 			if (!unique.isEmpty()) {
 				return unique;
 			}

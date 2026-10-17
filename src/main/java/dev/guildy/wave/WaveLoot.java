@@ -78,7 +78,7 @@ final class WaveLoot {
 	 * despawns and resists fire, lava and explosions, and glows so that it is found after the fight.
 	 */
 	private static void dropUnique(ServerLevel level, Mob mob, Guild guild, RandomGenerator random) {
-		ItemStack unique = UniqueDrops.roll(isBloodNight(guild) ? "blood_boss" : "boss", random);
+		ItemStack unique = UniqueDrops.roll(isBloodNight(guild) ? "blood_boss" : "boss", random, UniqueDrops.Recipient.killerOrNearest(mob, guild));
 		if (unique.isEmpty()) {
 			return;
 		}
