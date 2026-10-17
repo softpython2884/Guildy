@@ -288,6 +288,12 @@ public final class RuinIndex {
 					dirty = true;
 				}
 			}
+			case GUARD -> {
+				if (!record.guards.contains(pos) && record.guards.size() < 32) {
+					record.guards.add(pos);
+					dirty = true;
+				}
+			}
 		}
 	}
 }

@@ -115,6 +115,7 @@ class RuinRulesTest {
 		assertEquals(RuinRules.Marker.BOSS, RuinRules.marker("guildy:boss"));
 		assertEquals(RuinRules.Marker.MINION, RuinRules.marker(" guildy:minion "));
 		assertEquals(RuinRules.Marker.ENTRANCE, RuinRules.marker("guildy:entrance"));
+		assertEquals(RuinRules.Marker.GUARD, RuinRules.marker("guildy:guard"), "room guard posts");
 		assertNull(RuinRules.marker("chest"));
 		assertNull(RuinRules.marker(""));
 		assertNull(RuinRules.marker(null));

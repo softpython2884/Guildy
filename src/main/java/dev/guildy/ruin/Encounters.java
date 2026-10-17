@@ -267,6 +267,12 @@ public final class Encounters {
 		boolean enabled = cfg.bossesEnabled && level.getDifficulty() != Difficulty.PEACEFUL
 				&& ACTIVE.size() + Incantations.ritualCount() < cfg.encounter.maxActive;
 		if (RuinRules.decide(RuinState.DORMANT, enabled, inActivation, 0, def.resetSeconds, false, false) == RuinRules.Action.AWAKEN) {
+			int guards = RoomGuards.blocking(level, ruin);
+			if (guards > 0) {
+				// The room guards first: the guardian sleeps while they hold the arena.
+				RoomGuards.remind(player, guards);
+				return;
+			}
 			awaken(level, ruin, def, false);
 		}
 	}
@@ -295,6 +301,10 @@ public final class Encounters {
 		Msg.actionBar(player, "ruin.summon.hint.actionbar");
 		Msg.send(player, "ruin.summon.hint.chat", name, Lang.colorize(def.boss.name));
 		Msg.send(player, "ruin.summon.hint.threat", threatLabel(threatLevel(ruin)));
+		int guards = RoomGuards.alive(ruin);
+		if (guards > 0) {
+			Msg.send(player, "ruin.guards.hint", guards);
+		}
 	}
 
 	/** A defeated guardian due back is re-armed now. @return true when the ruin is dormant again */
@@ -365,9 +375,17 @@ public final class Encounters {
 		long window = ThreatRules.windowTicks(fastKillSeconds(def, threat));
 		Encounter encounter = new Encounter(ruin, def, level.dimension(), spawn, bar, Scheduler.ticks(), cfg.encounter.firstAbilitySeconds, scaling,
 				cfg.escalation.enabled ? cfg.escalation.enragePerLevel : 0, cfg.escalation.maxEnrageThreshold, window);
+		// The players there when it appears make it stronger (on top of the threat level: multiplied).
+		int fighters = Math.max(1, fighters(level, ruin, spawn, cfg));
+		GroupScaling.Party party = GroupScaling.party(cfg.scaling, fighters);
+		encounter.party = party;
 		Mob boss = BossFactory.spawnBoss(level, def.boss, spawn, scaling, mob -> {
 			encounter.boss = mob.getUUID();
 			BY_MOB.put(mob.getUUID(), encounter);
+			if (party.group()) {
+				BossFactory.applyGroup(mob, party);
+				mob.setHealth(mob.getMaxHealth());
+			}
 			return true;
 		});
 		if (boss == null) {
@@ -380,14 +398,8 @@ public final class Encounters {
 		ACTIVE.put(ruin.key, encounter);
 		ruin.state = RuinState.AWAKE;
 		List<ServerPlayer> present = present(level, ruin, cfg.encounter.presenceMargin);
-		int fighters = 0;
-		for (ServerPlayer player : present) {
-			if (!player.isCreative()) {
-				fighters++;
-			}
-		}
-		spawnMinions(level, encounter, RuinRules.minionCount(def.minions.base, def.minions.perExtraPlayer, def.minions.max, Math.max(1, fighters))
-				+ scaling.extraMinions());
+		spawnMinions(level, encounter, RuinRules.minionCount(def.minions.base, def.minions.perExtraPlayer, def.minions.max, fighters)
+				+ scaling.extraMinions() + party.extraMinions());
 		awakenEffects(level, boss);
 		Component title = Component.literal(Lang.colorize(def.name));
 		Component subtitle = Lang.get("ruin.awaken.subtitle", Lang.colorize(def.boss.name));
@@ -400,9 +412,36 @@ public final class Encounters {
 			} else {
 				Msg.send(player, "ruin.awaken.threat", label);
 			}
+			if (party.group()) {
+				Msg.send(player, "ruin.awaken.group", party.players(), GroupScaling.percent(party.health()), GroupScaling.percent(party.damage()));
+			}
 		}
 		syncBar(level, encounter, boss, present);
 		return null;
+	}
+
+	/**
+	 * Survival / adventure players taking part when a guardian appears: inside the ruin (activation margin) or in the
+	 * arena (incantation radius around its spawn cell).
+	 */
+	static int fighters(ServerLevel level, RuinRecord ruin, BlockPos spawn, RuinConfig cfg) {
+		double radius = cfg.summon.arenaRadius;
+		Vec3 center = Vec3.atBottomCenterOf(spawn);
+		int count = 0;
+		for (ServerPlayer player : level.players()) {
+			if (player.isAlive() && !player.isSpectator() && !player.isCreative()
+					&& (ruin.contains(player.getX(), player.getY(), player.getZ(), cfg.encounter.activationMargin)
+					|| player.distanceToSqr(center) <= radius * radius)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	/** Players counted by the group scaling of the running fight (1 when alone or disabled), 0 without a fight. */
+	public static int partySize(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter == null ? 0 : encounter.party.players();
 	}
 
 	private static @Nullable BlockPos spawnPoint(ServerLevel level, RuinRecord ruin, RuinDef def) {
@@ -642,8 +681,9 @@ public final class Encounters {
 	}
 
 	/**
-	 * "Seigneur des Cryptes — Menace III — 220/220 ❤", then "| Résurrection possible : 0:32" while the fast-kill window is
-	 * open; "Enragé" once risen; "revient d'entre les morts…" while it rises.
+	 * "Seigneur des Cryptes — Menace III — 4 joueurs — 220/220 ❤" (the group only from two players), then
+	 * "| Résurrection possible : 0:32" while the fast-kill window is open; "Enragé" once risen; "revient d'entre les morts…"
+	 * while it rises.
 	 */
 	private static Component barName(Encounter encounter, float health, float max) {
 		String name = Lang.colorize(encounter.def.boss.name);
@@ -652,6 +692,9 @@ public final class Encounters {
 			return Lang.get("ruin.bar.rising", name, threat);
 		}
 		String title = Lang.raw(encounter.risen ? "ruin.bar.name.risen" : "ruin.bar.name", name, threat);
+		if (encounter.party.group()) {
+			title = Lang.raw("ruin.bar.group", title, encounter.party.players());
+		}
 		Component bar = Lang.get("ruin.bar", title, (int) Math.ceil(health), (int) Math.ceil(max));
 		if (!encounter.risen) {
 			long left = ThreatRules.secondsLeft(Scheduler.ticks() - encounter.startedTick, encounter.fastKillTicks);
@@ -854,6 +897,7 @@ public final class Encounters {
 			float ratio = previous.getHealth() / Math.max(1.0F, previous.getMaxHealth());
 			BossFactory.applyBoss(converted, encounter.def.boss);
 			BossFactory.applyThreat(converted, encounter.scaling);
+			BossFactory.applyGroup(converted, encounter.party);
 			if (encounter.risen) {
 				BossFactory.applyRisen(converted, encounter.risenScale, encounter.risenSpeed, encounter.risenDamage);
 			}

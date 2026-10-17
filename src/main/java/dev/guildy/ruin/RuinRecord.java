@@ -33,6 +33,8 @@ public class RuinRecord {
 	public List<BlockPos> minions = new ArrayList<>();
 	/** Entrance shown by maps and compasses (data marker guildy:entrance). */
 	public @Nullable BlockPos entrance;
+	/** Room guard posts (data markers guildy:guard; empty in older templates and saves: fallback posts are used). */
+	public List<BlockPos> guards = new ArrayList<>();
 	public RuinState state = RuinState.DORMANT;
 	/** In-game day (overworld clock / 24000) of the last victory, -1 if never defeated. */
 	public long clearedDay = -1;
@@ -119,6 +121,10 @@ public class RuinRecord {
 			minions = new ArrayList<>();
 		}
 		minions.removeIf(p -> p == null);
+		if (guards == null) {
+			guards = new ArrayList<>();
+		}
+		guards.removeIf(p -> p == null);
 		if (state == null || state == RuinState.AWAKE) {
 			// A fight never survives a restart: the guardian sleeps again.
 			state = RuinState.DORMANT;
