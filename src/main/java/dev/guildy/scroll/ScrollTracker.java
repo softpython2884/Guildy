@@ -17,8 +17,8 @@ import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
 /**
- * Light inventory scan (every second, players only, items with custom data only): scrolls carrying only their custom data
- * (data pack loot tables) or built from an older definition are rebuilt in place. Also the lifecycle of the running
+ * Light inventory scan (every second, players only, items with custom data only): scrolls and grimoires carrying only their
+ * custom data (data pack loot tables) or built from an older definition are rebuilt in place. Also the lifecycle of the running
  * spells: logout and dimension change end the caster's effects, server stop ends everything, summoned guardians never
  * survive a reload of their chunk, and spell damage ignores invulnerability frames.
  */
@@ -68,6 +68,10 @@ final class ScrollTracker {
 			if (stack.isEmpty() || stack == using || !stack.has(DataComponents.CUSTOM_DATA)) {
 				continue;
 			}
+			if (GrimoireItems.isGrimoire(stack)) {
+				changed |= refreshGrimoire(player, inventory, slot, stack);
+				continue;
+			}
 			ItemStack fresh = ScrollItems.refreshed(stack);
 			if (fresh == null) {
 				continue;
@@ -89,5 +93,20 @@ final class ScrollTracker {
 		if (changed) {
 			inventory.setChanged();
 		}
+	}
+
+	/** Completes a grimoire in place (or rebuilds it on its base item); extra copies of an oversized stack go to the player. */
+	private static boolean refreshGrimoire(ServerPlayer player, Inventory inventory, int slot, ItemStack stack) {
+		ItemStack fresh = GrimoireItems.refreshed(stack);
+		if (fresh == null) {
+			return false;
+		}
+		int extra = stack.getCount() - 1;
+		ItemStack kept = fresh.copyWithCount(1);
+		inventory.setItem(slot, fresh == stack && extra <= 0 ? stack : kept);
+		for (int i = 0; i < Math.min(extra, 64); i++) {
+			ItemUtil.giveOrDrop(player, kept.copy());
+		}
+		return true;
 	}
 }

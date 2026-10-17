@@ -2,7 +2,6 @@ package dev.guildy.trade;
 
 import dev.guildy.Guildy;
 import dev.guildy.core.ItemUtil;
-import dev.guildy.core.ScrollDrops;
 import dev.guildy.core.UniqueDrops;
 import dev.guildy.scroll.ScrollModule;
 import net.minecraft.core.Holder;
@@ -67,11 +66,11 @@ public final class TradeOffers {
 	}
 
 	/**
-	 * Sometimes a spell scroll (scrolls.json5: chance and scrolls of the "trade" table, price by rarity, minimum hub tier),
-	 * added to the offers of a trade hub merchant of this tier.
+	 * Sometimes a spell scroll (scrolls.json5: chance and scrolls of the "trade" table, price by rarity, minimum hub tier) or
+	 * a grimoire, added to the offers of a trade hub merchant of this tier.
 	 */
 	public static void addScrollOffer(MerchantOffers offers, int tier) {
-		ItemStack scroll = ScrollDrops.roll("trade");
+		ItemStack scroll = ScrollModule.tradeRoll(tier);
 		int price = scroll.isEmpty() ? 0 : ScrollModule.tradePrice(scroll, tier);
 		if (price <= 0) {
 			return;

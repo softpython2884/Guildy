@@ -3,8 +3,10 @@
 	"package": "dev.guildy.scroll.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"ItemStackGrimoireMixin",
 		"ItemStackScrollMixin",
-		"LivingEntityAccessor"
+		"LivingEntityAccessor",
+		"ServerGamePacketListenerGrimoireMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

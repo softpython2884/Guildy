@@ -102,6 +102,16 @@ public enum Spell {
 			return unit == Unit.COUNT || unit == Unit.LEVEL || unit == Unit.FLAG;
 		}
 
+		/** Damage, heals and durations: multiplied by the power of a grimoire cast (never ranges, counts or levels). */
+		public boolean scalesWithPower() {
+			return unit == Unit.HEARTS || unit == Unit.SECONDS;
+		}
+
+		/** The value of this parameter for a cast of this power (1 = the scroll's own value). */
+		public double powered(double value, double power) {
+			return scalesWithPower() && power != 1.0 && Double.isFinite(power) ? value * Math.max(0, power) : value;
+		}
+
 		/** Clamped (and rounded for integers); NaN / infinite = default. */
 		public double clamp(double value) {
 			if (!Double.isFinite(value)) {

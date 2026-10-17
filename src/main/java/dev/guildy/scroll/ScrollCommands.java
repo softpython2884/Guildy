@@ -28,8 +28,8 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * {@code /guild admin scroll list | give <player> <id> [count]} (the admin node is already permission-gated, like the unique
- * weapon commands).
+ * {@code /guild admin scroll list | give <player> <id> [count] | grimoire <player> [ids]} (the admin node is already
+ * permission-gated, like the unique weapon commands) and {@code /guild grimoire} (pages menu of the grimoire in hand).
  */
 final class ScrollCommands {
 	private static final SuggestionProvider<CommandSourceStack> IDS = (ctx, builder) ->
@@ -46,7 +46,50 @@ final class ScrollCommands {
 								.then(Commands.argument("id", StringArgumentType.word()).suggests(IDS)
 										.executes(ctx -> give(ctx, 1))
 										.then(Commands.argument("count", IntegerArgumentType.integer(1, 64))
-												.executes(ctx -> give(ctx, IntegerArgumentType.getInteger(ctx, "count")))))))));
+												.executes(ctx -> give(ctx, IntegerArgumentType.getInteger(ctx, "count")))))))
+				.then(Commands.literal("grimoire")
+						.then(Commands.argument("player", EntityArgument.player())
+								.executes(ctx -> giveGrimoire(ctx, ""))
+								.then(Commands.argument("spells", StringArgumentType.greedyString()).suggests(IDS)
+										.executes(ctx -> giveGrimoire(ctx, StringArgumentType.getString(ctx, "spells"))))))));
+		GuildCommand.addSubcommands((root, context) -> root.then(Commands.literal("grimoire").executes(ctx -> {
+			ServerPlayer player = GuildCommand.player(ctx);
+			Safe.run("scroll.grimoire.command", () -> {
+				ItemStack held = Grimoires.held(player);
+				if (held == null) {
+					Msg.send(player, "grimoire.menu.gone");
+				} else {
+					GrimoireMenu.open(player, held);
+				}
+			});
+			return 1;
+		})));
+	}
+
+	/** {@code grimoire <player> [ids]}: a grimoire, with up to four pages already written (ids separated by spaces or commas). */
+	private static int giveGrimoire(CommandContext<CommandSourceStack> ctx, String spells) throws CommandSyntaxException {
+		ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+		GrimoireRules.Pages pages = GrimoireRules.Pages.EMPTY;
+		for (String raw : spells.split("[\\s,]+")) {
+			String id = raw.trim().toLowerCase(Locale.ROOT);
+			if (id.isEmpty()) {
+				continue;
+			}
+			if (ScrollModule.config().scroll(id) == null) {
+				ctx.getSource().sendFailure(Msg.prefixed(Lang.get("grimoire.admin.unknown", id)));
+				return 0;
+			}
+			pages = GrimoireRules.fuse(pages, id).pages();
+		}
+		GrimoireRules.Pages written = pages;
+		ItemStack stack = Safe.get("scroll.admin.grimoire", () -> GrimoireItems.create(written), ItemStack.EMPTY);
+		if (stack.isEmpty()) {
+			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("grimoire.admin.unknown", ScrollModule.config().grimoire.item)));
+			return 0;
+		}
+		ItemUtil.giveOrDrop(target, stack);
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("grimoire.admin.give", target.getName().getString())), true);
+		return 1;
 	}
 
 	private static List<String> ids() {
@@ -107,6 +150,25 @@ final class ScrollCommands {
 			Component line = TextUtil.lang("scroll.admin.list.entry", name, def.id, ScrollItems.rarityName(def.rarity()), spell);
 			source.sendSuccess(() -> line, false);
 		}
+		ScrollConfig.Grimoire g = cfg.grimoire;
+		List<String> grimoireDrops = new ArrayList<>();
+		for (Map.Entry<String, Double> entry : g.drops.entrySet()) {
+			if (entry.getValue() > 0) {
+				grimoireDrops.add(entry.getKey() + " " + percent(entry.getValue()) + " %");
+			}
+		}
+		List<String> costs = new ArrayList<>();
+		for (Map.Entry<String, Integer> entry : g.foodCost.entrySet()) {
+			costs.add(entry.getKey().toLowerCase(Locale.ROOT) + " " + entry.getValue());
+		}
+		Component grimoireHover = Lang.get("grimoire.admin.list.hover", String.join(", ", costs), Spell.number(g.powerMultiplier),
+				grimoireDrops.isEmpty() ? Lang.raw("scroll.admin.list.no_drop") : String.join(", ", grimoireDrops), g.tradeMinTier, g.tradePrice);
+		MutableComponent grimoireName = GrimoireItems.name(GrimoireRules.Pages.EMPTY).copy().withStyle(style -> style
+				.withClickEvent(new ClickEvent.SuggestCommand("/guild admin scroll grimoire " + playerName(source)))
+				.withHoverEvent(new HoverEvent.ShowText(grimoireHover)));
+		Component grimoireLine = TextUtil.lang("grimoire.admin.list", grimoireName, GrimoireRules.PAGES, Spell.number(g.channelSeconds),
+				Spell.number(g.cooldownSeconds));
+		source.sendSuccess(() -> grimoireLine, false);
 		List<String> tables = new ArrayList<>();
 		for (Map.Entry<String, ScrollConfig.DropTable> entry : cfg.drops.entrySet()) {
 			tables.add(entry.getKey() + " " + percent(entry.getValue().chance) + " %");

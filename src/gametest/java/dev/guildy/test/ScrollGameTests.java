@@ -194,8 +194,9 @@ public class ScrollGameTests {
 			}
 			helper.assertFalse(lore.indexOf("{") >= 0, def.id + ": every placeholder replaced: " + lore);
 		}
-		ItemStack lucky = ScrollDrops.roll("ruin_boss", LUCKY);
-		helper.assertTrue(ScrollItems.isScroll(lucky), "a lucky ruin boss roll gives scrolls");
+		// (The luckiest ruin boss roll gives the grimoire: see GrimoireGameTests.)
+		ItemStack lucky = ScrollDrops.roll("boss", LUCKY);
+		helper.assertTrue(ScrollItems.isScroll(lucky), "a lucky horde boss roll gives scrolls");
 		helper.assertTrue(ScrollDrops.roll("no_such_source", LUCKY).isEmpty(), "unknown source: nothing");
 		helper.assertTrue(ScrollDrops.create("no_such_scroll", 1).isEmpty(), "unknown id: nothing");
 		ItemStack rare = ScrollDrops.create("rappel", 1);
