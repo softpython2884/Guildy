@@ -1,0 +1,26 @@
+{
+  "structures": [
+    {
+      "structure": "guildy:ruin/crypte_oubliee",
+      "weight": 1
+    },
+    {
+      "structure": "guildy:ruin/tour_du_mage",
+      "weight": 1
+    },
+    {
+      "structure": "guildy:ruin/ziggourat_des_sables",
+      "weight": 1
+    },
+    {
+      "structure": "guildy:ruin/bastion_de_givre",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 34,
+    "separation": 12,
+    "salt": 1847203559
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:jigsaw",
+  "biomes": "#guildy:has_structure/ruin/citadelle_des_ames",
+  "step": "surface_structures",
+  "terrain_adaptation": "beard_box",
+  "spawn_overrides": {},
+  "start_pool": "guildy:ruin/citadelle_des_ames",
+  "size": 1,
+  "start_height": {
+    "absolute": 33
+  },
+  "max_distance_from_center": 80,
+  "use_expansion_hack": false
+}

@@ -1,0 +1,18 @@
+{
+  "structures": [
+    {
+      "structure": "guildy:ruin/autel_infernal",
+      "weight": 1
+    },
+    {
+      "structure": "guildy:ruin/citadelle_des_ames",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 20,
+    "separation": 7,
+    "salt": 739018562
+  }
+}
