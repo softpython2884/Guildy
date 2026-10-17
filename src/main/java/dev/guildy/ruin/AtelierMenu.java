@@ -191,6 +191,7 @@ final class AtelierMenu {
 			lore.add(Lang.get(ruin.isNether() ? "ruin.item.lore.nether" : "ruin.item.lore.overworld"));
 			lore.add(Lang.get("ruin.item.lore.coords", target.getX(), target.getY(), target.getZ()));
 			lore.add(Lang.get("ruin.item.lore.tier", def.tier));
+			lore.add(Lang.get("ruin.item.lore.threat", Encounters.threatLabel(Encounters.threat(ruin))));
 			lore.add(Lang.get("ruin.item.lore.boss", Lang.colorize(def.boss.name)));
 			lore.add(stateLine(ruin, def, today));
 			if (ruin.timesCleared > 0) {

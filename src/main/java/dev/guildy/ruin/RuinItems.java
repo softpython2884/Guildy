@@ -87,6 +87,7 @@ public final class RuinItems {
 		lore.add(Lang.get(ruin.isNether() ? "ruin.item.lore.nether" : "ruin.item.lore.overworld"));
 		lore.add(Lang.get("ruin.item.lore.coords", target.getX(), target.getY(), target.getZ()));
 		lore.add(Lang.get("ruin.item.lore.tier", def.tier));
+		lore.add(Lang.get("ruin.item.lore.threat", Encounters.threatLabel(Encounters.threatLevel(ruin))));
 		lore.add(Lang.get("ruin.item.lore.boss", Lang.colorize(def.boss.name)));
 		lore.add(Lang.get(ruin.isNether() ? "ruin.item.lore.hint.nether" : "ruin.item.lore.hint"));
 		return lore;

@@ -43,6 +43,27 @@ final class RuinLang {
 		m.put("ruin.victory.announce", "&e{0} &7ont vaincu &c{1}&7 dans la &f{2}&7 !");
 		m.put("ruin.victory.xp", "&a+{0} XP de guilde &7pour la victoire dans la &f{1}&7.");
 
+		// Threat ("Menace") and resurrection
+		m.put("ruin.threat", "{1}Menace {0}");
+		m.put("ruin.bar.name", "{0} &8— {1}");
+		m.put("ruin.bar.name.risen", "{0} &4&lEnragé &8— {1}");
+		m.put("ruin.bar.chrono", "{0} &8| &eRésurrection possible : &f{1}");
+		m.put("ruin.bar.rising", "&4&l☠ &c{0} &crevient d'entre les morts… &8— {1} &4&l☠");
+		m.put("ruin.awaken.threat", "&8» {0}&7 : plus fort à chaque victoire.");
+		m.put("ruin.awaken.threat.chrono", "&8» {0}&7 : abattu en moins de &e{1}&7, il se relèvera, fou de rage…");
+		m.put("ruin.victory.threat", "&f{0}&7 : la menace grandit, {1}&7. Son gardien reviendra plus fort.");
+		m.put("ruin.victory.threat.max", "&f{0}&7 : menace maximale atteinte, {1}&7.");
+		m.put("ruin.risen.name", "{0} &4&lEnragé");
+		m.put("ruin.risen.title", "&4&l☠ Il se relève ! ☠");
+		m.put("ruin.risen.subtitle", "&c{0} &crefuse de mourir…");
+		m.put("ruin.risen.chat", "&4☠ &cVous l'avez abattu trop vite… &4&lil revient ! &7({0}&7 est tombé en &e{1}&7, il fallait tenir &e{2}&7)");
+		m.put("ruin.risen.back.title", "&4&lENRAGÉ !");
+		m.put("ruin.risen.back.subtitle", "{0} &cest de retour, fou de rage");
+		m.put("ruin.risen.back.chat", "&4&l☠ {0} &cest revenu d'entre les morts : plus grand, plus rapide, plus fort. &6Achevez-le pour un butin exceptionnel !");
+		m.put("ruin.risen.victory.title", "&6&lVictoire légendaire !");
+		m.put("ruin.risen.victory.subtitle", "&e{0} &7ne se relèvera plus");
+		m.put("ruin.risen.victory.announce", "&6&l☠ &e{0} &7ont terrassé {1} &4&lressuscité &8(&f{2}&8) &7: &6butin exceptionnel !");
+
 		// Incantation scroll and ritual
 		m.put("ruin.summon.item.name", "&4&lParchemin d'incantation");
 		m.put("ruin.summon.item.header", "&5Objet rituel &8— usage unique");
@@ -78,6 +99,8 @@ final class RuinLang {
 		m.put("ruin.summon.hint.subtitle", "&7Une présence dort ici…");
 		m.put("ruin.summon.hint.actionbar", "&5Un parchemin d'incantation &7pourrait l'éveiller.");
 		m.put("ruin.summon.hint.chat", "&7Une présence dort dans la &f{0}&7 : {1}&7. Un &5parchemin d'incantation&7, lu au cœur de la ruine, pourrait l'éveiller.");
+		m.put("ruin.summon.hint.threat", "&7Niveau de menace : {0} &8(le gardien revient plus fort après chaque victoire)");
+		m.put("ruin.summon.start.threat", "&8» &7Menace de la ruine : {0}");
 
 		// Cartography
 		m.put("ruin.research.no_atelier", "&cLa guilde n'a pas d'Atelier du cartographe.");
@@ -106,6 +129,7 @@ final class RuinLang {
 		m.put("ruin.item.lore.nether", "&7Ruine du &cNether");
 		m.put("ruin.item.lore.coords", "&7Coordonnées : &e{0}, {1}, {2}");
 		m.put("ruin.item.lore.tier", "&7Palier : &e{0}&7/5");
+		m.put("ruin.item.lore.threat", "&7Niveau de menace : {0}");
 		m.put("ruin.item.lore.boss", "&7Gardien : {0}");
 		m.put("ruin.item.lore.hint", "&8La croix marque l'entrée de la ruine.");
 		m.put("ruin.item.lore.hint.nether", "&8L'aiguille indique la ruine (dans le Nether).");
@@ -189,6 +213,14 @@ final class RuinLang {
 		m.put("ruin.admin.map", "&a{0} &adonné à {1}.");
 		m.put("ruin.admin.incantation", "&a{0} parchemin(s) d'incantation donné(s) à {1}.");
 		m.put("ruin.admin.info.ritual", "&5Rituel d'incantation : {0} % &7| participants : {1}");
+		m.put("ruin.admin.info.threat", "&7Menace : {0} &7(enregistrée : {1}, max {2}) &7| résurrection si abattu en moins de &e{3}");
+		m.put("ruin.admin.info.resurrection", "&7Résurrection : {0}");
+		m.put("ruin.admin.resurrection.window", "&epossible encore {0}");
+		m.put("ruin.admin.resurrection.closed", "&7fenêtre fermée");
+		m.put("ruin.admin.resurrection.rising", "&4en cours");
+		m.put("ruin.admin.resurrection.risen", "&4ressuscité (enragé)");
+		m.put("ruin.admin.resurrection.never", "&7jamais");
+		m.put("ruin.admin.threat", "&a{0}&a : menace réglée sur {1}&a (appliquée au prochain réveil du gardien).");
 		m.put("ruin.admin.ability.unknown", "&cCapacité ou style inconnu '{0}' ({1}).");
 		m.put("ruin.admin.ability.failed", "&cCapacité '{0}' impossible : aucun combat en cours, aucun joueur en survie à portée ou condition non remplie.");
 		m.put("ruin.admin.ability.used", "&aCapacité '{0}' utilisée.");

@@ -46,8 +46,8 @@ import java.util.Set;
 
 /**
  * {@code /guild admin ruin list | info | awaken | reset | locate <id> | map <player> <id> | incantation <player> [count] |
- * ability <type> [style] | research <guild> finish} (the admin node is already permission-gated). "Nearest" = nearest
- * known ruin in the dimension of the command source. {@code awaken} is instant (no scroll, no ritual).
+ * ability <type> [style] | threat <level> | research <guild> finish} (the admin node is already permission-gated).
+ * "Nearest" = nearest known ruin in the dimension of the command source. {@code awaken} is instant (no scroll, no ritual).
  */
 final class RuinCommands {
 	private static final int LIST_MAX = 40;
@@ -81,6 +81,9 @@ final class RuinCommands {
 								.then(Commands.argument("style", StringArgumentType.word())
 										.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(RuinConfig.STYLES, builder))
 										.executes(ctx -> Safe.get("ruin.admin.ability", () -> ability(ctx, StringArgumentType.getString(ctx, "style")), 0)))))
+				.then(Commands.literal("threat")
+						.then(Commands.argument("level", IntegerArgumentType.integer(1, ThreatRules.MAX_LEVEL))
+								.executes(ctx -> Safe.get("ruin.admin.threat", () -> threat(ctx, IntegerArgumentType.getInteger(ctx, "level")), 0))))
 				.then(Commands.literal("research")
 						.then(GuildArgument.guild("guild")
 								.then(Commands.literal("finish").executes(ctx -> Safe.get("ruin.admin.research", () -> finish(ctx), 0)))))));
@@ -117,6 +120,7 @@ final class RuinCommands {
 		BlockPos at = ruin.target();
 		MutableComponent text = Lang.get("ruin.admin.list.line", Lang.colorize(def.name), ruin.ruinId, dimensionName(ruin),
 				at.getX(), at.getY(), at.getZ(), AtelierMenu.stateLine(ruin, def, today).getString());
+		text.append(Component.literal(" " + Encounters.threatLabel(Encounters.threat(ruin))));
 		return text.withStyle(style -> style
 				.withClickEvent(new ClickEvent.SuggestCommand("/execute in " + ruin.dimension + " run tp @s " + at.getX() + " " + (at.getY() + 1) + " " + at.getZ()))
 				.withHoverEvent(new HoverEvent.ShowText(Lang.get("ruin.admin.list.hover"))));
@@ -147,6 +151,10 @@ final class RuinCommands {
 		lines.add(Lang.get("ruin.admin.info.box", ruin.minX, ruin.minY, ruin.minZ, ruin.maxX, ruin.maxY, ruin.maxZ));
 		lines.add(Lang.get("ruin.admin.info.markers", pos(ruin.boss), ruin.minions.size(), pos(ruin.entrance)));
 		lines.add(Lang.get("ruin.admin.info.state", AtelierMenu.stateLine(ruin, def, today).getString(), ruin.timesCleared));
+		int threat = Encounters.threat(ruin);
+		double window = Encounters.fastKillSeconds(def, threat);
+		lines.add(Lang.get("ruin.admin.info.threat", Encounters.threatLabel(threat), ThreatRules.stored(ruin.threat, ruin.timesCleared),
+				RuinModule.config().escalation.maxLevel, window > 0 ? ThreatRules.clock(Math.round(window)) : Lang.raw("ruin.admin.resurrection.never")));
 		double ritual = Incantations.ritualProgress(ruin);
 		if (ritual >= 0) {
 			lines.add(Lang.get("ruin.admin.info.ritual", (int) Math.round(ritual * 100), Incantations.ritualParticipants(ruin).size()));
@@ -155,6 +163,11 @@ final class RuinCommands {
 		if (boss != null) {
 			lines.add(Lang.get("ruin.admin.info.fight", Lang.colorize(def.boss.name), (int) Math.ceil(boss.getHealth()), (int) Math.ceil(boss.getMaxHealth()),
 					Encounters.minions(ruin).size(), Encounters.barViewers(ruin).size()));
+			long left = Encounters.resurrectionSecondsLeft(ruin);
+			String state = Encounters.rising(ruin) ? Lang.raw("ruin.admin.resurrection.rising")
+					: Encounters.risen(ruin) ? Lang.raw("ruin.admin.resurrection.risen")
+					: left > 0 ? Lang.raw("ruin.admin.resurrection.window", ThreatRules.clock(left)) : Lang.raw("ruin.admin.resurrection.closed");
+			lines.add(Lang.get("ruin.admin.info.resurrection", state));
 		}
 		for (Component line : lines) {
 			source.sendSuccess(() -> line, false);
@@ -303,6 +316,18 @@ final class RuinCommands {
 		}
 		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.ability.used", ability.type)), false);
 		return 1;
+	}
+
+	/** Sets the threat level of the nearest ruin (its next guardian). */
+	private static int threat(CommandContext<CommandSourceStack> ctx, int level) {
+		RuinRecord ruin = nearest(ctx);
+		if (ruin == null) {
+			return 0;
+		}
+		int set = Encounters.setThreat(ruin, level);
+		RuinDef def = Encounters.def(ruin);
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.threat", Lang.colorize(def.name), Encounters.threatLabel(set))), true);
+		return set;
 	}
 
 	private static int finish(CommandContext<CommandSourceStack> ctx) {

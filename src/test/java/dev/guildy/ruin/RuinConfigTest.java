@@ -18,10 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** ruins.json5: defaults, validation, generic guardian, new default ruins, round trip. */
+/** ruins.json5: defaults, validation, generic guardian, new default ruins, threat and resurrection settings, round trip. */
 class RuinConfigTest {
-	private static final List<String> SIX = List.of("crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre",
-			"autel_infernal", "citadelle_des_ames");
+	private static final List<String> SEVEN = List.of("crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre",
+			"autel_infernal", "citadelle_des_ames", "temple_maya");
 
 	private static List<String> rebuild(RuinConfig cfg) {
 		return cfg.rebuild(id -> true, id -> true, id -> true);
@@ -33,7 +33,7 @@ class RuinConfigTest {
 		List<String> warnings = rebuild(cfg);
 		assertTrue(warnings.isEmpty(), "ruins.json5 defaults: " + warnings);
 		assertEquals(RuinConfig.CURRENT_VERSION, cfg.configVersion);
-		assertEquals(SIX, new ArrayList<>(cfg.ruins.keySet()));
+		assertEquals(SEVEN, new ArrayList<>(cfg.ruins.keySet()));
 		Set<Integer> tiers = new HashSet<>();
 		for (Map.Entry<String, RuinConfig.RuinDef> entry : cfg.ruins.entrySet()) {
 			RuinConfig.RuinDef def = entry.getValue();
@@ -190,11 +190,116 @@ class RuinConfigTest {
 		ruins.put("crypte_oubliee", RuinDefaults.ruins().get("crypte_oubliee"));
 		List<String> known = new ArrayList<>(List.of("crypte_oubliee"));
 		List<String> added = RuinConfig.mergeNewDefaults(ruins, known);
-		assertEquals(SIX.subList(1, 6), added);
-		assertEquals(SIX, new ArrayList<>(ruins.keySet()));
+		assertEquals(SEVEN.subList(1, 7), added);
+		assertEquals(SEVEN, new ArrayList<>(ruins.keySet()));
 		ruins.remove("tour_du_mage");
 		assertTrue(RuinConfig.mergeNewDefaults(ruins, known).isEmpty(), "removed by the admin: never added back");
 		assertFalse(ruins.containsKey("tour_du_mage"));
+	}
+
+	@Test
+	void theFeatheredSerpentTemple() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		RuinConfig.RuinDef temple = cfg.ruins.get("temple_maya");
+		assertNotNull(temple, "7th ruin");
+		assertEquals("Temple du Serpent à plumes", temple.name);
+		assertEquals(3, temple.tier);
+		assertEquals("GREEN", temple.bossBarColor);
+		assertEquals("minecraft:breeze", temple.boss.entity, "a giant breeze");
+		assertTrue(temple.boss.name.contains("Serpent à plumes"));
+		assertTrue(temple.boss.scale >= 1.8, "scaled up");
+		assertTrue(temple.boss.equipment.isEmpty(), "a breeze wears nothing");
+		assertEquals(Set.of("minecraft:bogged", "minecraft:cave_spider"), temple.minions.types.keySet(), "jungle escort");
+		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("fire_ring") && a.style.equals("jade")), "jade ring");
+		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("volley") && a.style.equals("wind")), "wind volley");
+		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("blink")), "blink");
+		RuinConfig.RuinDef bastion = cfg.ruins.get("bastion_de_givre");
+		assertEquals(bastion.tier, temple.tier, "the other tier-3 ruin");
+		assertEquals(bastion.rewards.goldMin, temple.rewards.goldMin, "same gold as the tier-3 ruin");
+		assertEquals(bastion.rewards.goldMax, temple.rewards.goldMax);
+		assertEquals(bastion.rewards.xp, temple.rewards.xp);
+		assertEquals(bastion.rewards.lootTable, temple.rewards.lootTable);
+		assertEquals(-1, temple.fastKillSeconds, "the resurrection formula");
+
+		// A ruins.json5 written before the temple: it is added once, never again once removed.
+		RuinConfig old = Json5.fromString("{ \"knownDefaults\": [\"crypte_oubliee\", \"tour_du_mage\", \"ziggourat_des_sables\", \"bastion_de_givre\","
+				+ " \"autel_infernal\", \"citadelle_des_ames\"], \"ruins\": { \"crypte_oubliee\": { \"name\": \"Ma crypte\", \"tier\": 1 } } }", RuinConfig.class);
+		assertTrue(rebuild(old).isEmpty());
+		assertEquals(List.of("crypte_oubliee", "temple_maya"), new ArrayList<>(old.ruins.keySet()), "only the new default ruin is added");
+		assertEquals("Ma crypte", old.ruins.get("crypte_oubliee").name, "the admin's ruins are untouched");
+		old.ruins.remove("temple_maya");
+		assertTrue(rebuild(old).isEmpty());
+		assertFalse(old.ruins.containsKey("temple_maya"), "removed by the admin: never added back");
+	}
+
+	@Test
+	void threatAndResurrectionSettings() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		assertTrue(cfg.escalation.enabled);
+		assertEquals(10, cfg.escalation.maxLevel);
+		assertEquals(0.2, cfg.escalation.healthPerLevel);
+		assertEquals(0.1, cfg.escalation.damagePerLevel);
+		assertEquals(2, cfg.escalation.minionsEveryLevels);
+		assertEquals(0.05, cfg.escalation.cooldownPerLevel);
+		assertTrue(cfg.resurrection.enabled);
+		assertEquals(45, cfg.resurrection.fastKillSeconds);
+		assertEquals(15, cfg.resurrection.fastKillPerTier);
+		assertEquals(5, cfg.resurrection.fastKillPerThreat);
+		assertTrue(cfg.resurrection.durationSeconds >= 4 && cfg.resurrection.durationSeconds <= 6, "about five seconds");
+		assertEquals(1.0, cfg.resurrection.healthRatio, "back at full health");
+
+		RuinConfig broken = new RuinConfig();
+		broken.escalation.maxLevel = 0;
+		broken.escalation.healthPerLevel = -2;
+		broken.escalation.minCooldownFactor = 0;
+		broken.escalation.uniqueChancePerLevel = 3;
+		broken.resurrection.fastKillSeconds = -10;
+		broken.resurrection.durationSeconds = 600;
+		broken.resurrection.healthRatio = 0;
+		broken.resurrection.scale = 9;
+		broken.resurrection.particleBudget = 1;
+		broken.resurrection.bonusLootRolls = 99;
+		broken.ruins.get("crypte_oubliee").fastKillSeconds = -7;
+		broken.ruins.get("tour_du_mage").fastKillSeconds = 99_999;
+		assertTrue(rebuild(broken).isEmpty());
+		assertEquals(1, broken.escalation.maxLevel);
+		assertEquals(0, broken.escalation.healthPerLevel);
+		assertEquals(0.1, broken.escalation.minCooldownFactor);
+		assertEquals(1, broken.escalation.uniqueChancePerLevel);
+		assertEquals(0, broken.resurrection.fastKillSeconds);
+		assertEquals(15, broken.resurrection.durationSeconds);
+		assertEquals(0.1, broken.resurrection.healthRatio);
+		assertEquals(2, broken.resurrection.scale);
+		assertEquals(100, broken.resurrection.particleBudget);
+		assertEquals(10, broken.resurrection.bonusLootRolls);
+		assertEquals(-1, broken.ruins.get("crypte_oubliee").fastKillSeconds, "negative = the formula");
+		assertEquals(3600, broken.ruins.get("tour_du_mage").fastKillSeconds);
+
+		RuinConfig missing = new RuinConfig();
+		missing.escalation = null;
+		missing.resurrection = null;
+		assertTrue(rebuild(missing).isEmpty(), "missing sections: defaults");
+		assertEquals(10, missing.escalation.maxLevel);
+		assertTrue(missing.resurrection.enabled);
+	}
+
+	@Test
+	void forcedDefinitionsAreDeepCopies() {
+		RuinConfig cfg = new RuinConfig();
+		rebuild(cfg);
+		RuinConfig.RuinDef original = cfg.ruins.get("temple_maya");
+		RuinConfig.RuinDef copy = original.copy();
+		assertEquals(original.boss.entity, copy.boss.entity);
+		assertEquals(original.minions.types, copy.minions.types);
+		assertEquals(original.abilities.size(), copy.abilities.size());
+		copy.boss.health = 1;
+		copy.minions.types.clear();
+		copy.abilities.getFirst().damage = 99;
+		assertEquals(360, original.boss.health, "the configured guardian is untouched");
+		assertFalse(original.minions.types.isEmpty());
+		assertFalse(original.abilities.getFirst().damage == 99);
 	}
 
 	@Test
