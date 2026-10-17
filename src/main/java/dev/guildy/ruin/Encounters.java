@@ -136,6 +136,29 @@ public final class Encounters {
 		return ACTIVE.size();
 	}
 
+	/** Running cursed fights ({@link CursedFights} ticks them). */
+	static List<Encounter> cursedFights() {
+		List<Encounter> list = new ArrayList<>();
+		for (Encounter encounter : ACTIVE.values()) {
+			if (encounter.cursed != null) {
+				list.add(encounter);
+			}
+		}
+		return list;
+	}
+
+	/** Tracks a mob of a fight spawned outside the escort spawns (shadow clones) as part of its escort. */
+	static void track(Encounter encounter, Mob mob) {
+		encounter.minions.add(mob.getUUID());
+		BY_MOB.put(mob.getUUID(), encounter);
+	}
+
+	/** Forgets an escort mob that is gone (expired shadow clone). */
+	static void untrack(Encounter encounter, UUID uuid) {
+		encounter.minions.remove(uuid);
+		BY_MOB.remove(uuid, encounter);
+	}
+
 	/** The guardian of this ruin is rising from the dead right now. */
 	public static boolean rising(RuinRecord ruin) {
 		Encounter encounter = ACTIVE.get(ruin.key);
@@ -333,6 +356,14 @@ public final class Encounters {
 	 *               incantation ritual (its scroll is refunded)
 	 */
 	public static @Nullable String awaken(ServerLevel level, RuinRecord ruin, @Nullable RuinDef forcedDef, boolean forced) {
+		return awaken(level, ruin, forcedDef, forced, false);
+	}
+
+	/**
+	 * Spawns the guardian and its escort, cursed when {@code cursed} (cursed incantation scroll, admin): multiplied
+	 * statistics, purple boss bar, three phases instead of the resurrection ({@link CursedEncounter}).
+	 */
+	public static @Nullable String awaken(ServerLevel level, RuinRecord ruin, @Nullable RuinDef forcedDef, boolean forced, boolean cursed) {
 		if (ACTIVE.containsKey(ruin.key)) {
 			return "ruin.admin.already_awake";
 		}
@@ -357,17 +388,24 @@ public final class Encounters {
 		if (!loaded(level, spawn)) {
 			return "ruin.admin.not_loaded";
 		}
-		ServerBossEvent bar = new ServerBossEvent(UUID.randomUUID(), Component.literal(Lang.colorize(def.boss.name)), barColor(def.bossBarColor),
-				BossEvent.BossBarOverlay.NOTCHED_10);
+		ServerBossEvent bar = new ServerBossEvent(UUID.randomUUID(), Component.literal(Lang.colorize(def.boss.name)),
+				cursed ? BossEvent.BossBarColor.PURPLE : barColor(def.bossBarColor), cursed ? BossEvent.BossBarOverlay.NOTCHED_6 : BossEvent.BossBarOverlay.NOTCHED_10);
 		bar.setDarkenScreen(cfg.encounter.darkenSky);
 		int threat = threatLevel(ruin);
 		ThreatRules.Scaling scaling = ThreatRules.scaling(cfg.escalation, threat);
-		long window = ThreatRules.windowTicks(fastKillSeconds(def, threat));
+		// A cursed guardian never rises again: its phases replace the resurrection.
+		long window = cursed ? 0 : ThreatRules.windowTicks(fastKillSeconds(def, threat));
 		Encounter encounter = new Encounter(ruin, def, level.dimension(), spawn, bar, Scheduler.ticks(), cfg.encounter.firstAbilitySeconds, scaling,
 				cfg.escalation.enabled ? cfg.escalation.enragePerLevel : 0, cfg.escalation.maxEnrageThreshold, window);
+		if (cursed) {
+			encounter.cursed = new CursedEncounter(cfg.cursed);
+		}
 		Mob boss = BossFactory.spawnBoss(level, def.boss, spawn, scaling, mob -> {
 			encounter.boss = mob.getUUID();
 			BY_MOB.put(mob.getUUID(), encounter);
+			if (encounter.cursed != null) {
+				encounter.cursed.apply(level, mob, Lang.colorize(def.boss.name));
+			}
 			return true;
 		});
 		if (boss == null) {
@@ -386,13 +424,19 @@ public final class Encounters {
 				fighters++;
 			}
 		}
-		spawnMinions(level, encounter, RuinRules.minionCount(def.minions.base, def.minions.perExtraPlayer, def.minions.max, Math.max(1, fighters))
-				+ scaling.extraMinions());
+		int escort = RuinRules.minionCount(def.minions.base, def.minions.perExtraPlayer, def.minions.max, Math.max(1, fighters)) + scaling.extraMinions();
+		if (encounter.cursed != null) {
+			escort = CursedRules.escort(escort, cfg.cursed.guardian.escortMultiplier, cfg.cursed.guardian.escortBonus, encounter.maxAlive());
+		}
+		spawnMinions(level, encounter, escort);
 		awakenEffects(level, boss);
 		Component title = Component.literal(Lang.colorize(def.name));
 		Component subtitle = Lang.get("ruin.awaken.subtitle", Lang.colorize(def.boss.name));
 		String label = threatLabel(threat);
-		for (ServerPlayer player : present) {
+		if (encounter.cursed != null) {
+			encounter.cursed.announce(level, encounter, boss, present, label);
+		}
+		for (ServerPlayer player : encounter.cursed != null ? List.<ServerPlayer>of() : present) {
 			Msg.title(player, title, subtitle, 10, 60, 20);
 			Msg.send(player, "ruin.awaken.chat", Lang.colorize(def.boss.name), Lang.colorize(def.name));
 			if (window > 0) {
@@ -444,7 +488,7 @@ public final class Encounters {
 	}
 
 	/** One escort mob near {@code pos} (cap: the living escort cap, raised by the threat level). */
-	private static @Nullable Mob summon(ServerLevel level, Encounter encounter, BlockPos pos) {
+	static @Nullable Mob summon(ServerLevel level, Encounter encounter, BlockPos pos) {
 		if (encounter.def.minions.types.isEmpty() || encounter.minionEntities(level).size() >= encounter.maxAlive()) {
 			return null;
 		}
@@ -456,6 +500,9 @@ public final class Encounters {
 		Mob mob = BossFactory.spawnMinion(level, encounter.def.minions, spot, RANDOM, m -> {
 			encounter.minions.add(m.getUUID());
 			BY_MOB.put(m.getUUID(), encounter);
+			if (encounter.cursed != null) {
+				encounter.cursed.curseMinion(m);
+			}
 			return true;
 		});
 		if (mob == null) {
@@ -521,8 +568,8 @@ public final class Encounters {
 			end(encounter, level, true);
 			return;
 		}
-		if (encounter.rising != null) {
-			// Frozen while it rises (moved every tick by the resurrection): only the viewers of the bar change.
+		if (encounter.rising != null || encounter.cursed != null && encounter.cursed.invulnerable()) {
+			// Frozen while it rises or changes phase (moved every tick): only the viewers of the bar change.
 			syncBar(level, encounter, boss, present);
 			return;
 		}
@@ -580,7 +627,7 @@ public final class Encounters {
 		MinecraftServer server = GuildyServer.server();
 		ServerLevel level = encounter == null || server == null ? null : server.getLevel(encounter.dimension);
 		Mob boss = level == null ? null : encounter.bossEntity(level);
-		if (boss == null || encounter.rising != null) {
+		if (boss == null || encounter.rising != null || encounter.cursed != null && encounter.cursed.invulnerable()) {
 			return false;
 		}
 		if ("enrage".equals(ability.type)) {
@@ -646,6 +693,9 @@ public final class Encounters {
 	 * open; "Enragé" once risen; "revient d'entre les morts…" while it rises.
 	 */
 	private static Component barName(Encounter encounter, float health, float max) {
+		if (encounter.cursed != null) {
+			return encounter.cursed.barName(encounter, health, max);
+		}
 		String name = Lang.colorize(encounter.def.boss.name);
 		String threat = threatLabel(encounter.threat);
 		if (encounter.rising != null) {
@@ -688,6 +738,9 @@ public final class Encounters {
 		}
 		if (level != null) {
 			Mob boss = encounter.bossEntity(level);
+			if (encounter.cursed != null) {
+				Safe.run("ruin.cursed.vanish", () -> encounter.cursed.vanish(level, encounter, boss, announce));
+			}
 			if (boss != null) {
 				RuinFx.burst(level, ParticleTypes.LARGE_SMOKE, boss.position().add(0, 1, 0), 30, 0.5, 0.05);
 				RuinFx.burst(level, ParticleTypes.SOUL, boss.position().add(0, 1, 0), 15, 0.5, 0.05);
@@ -697,7 +750,7 @@ public final class Encounters {
 				RuinFx.burst(level, ParticleTypes.POOF, minion.position().add(0, 0.5, 0), 6, 0.3, 0.02);
 				minion.discard();
 			}
-			if (announce) {
+			if (announce && encounter.cursed == null) {
 				for (ServerPlayer player : present(level, encounter.ruin, RuinModule.config().encounter.presenceMargin * 2)) {
 					Msg.send(player, "ruin.reset", Lang.colorize(encounter.def.boss.name));
 				}
@@ -767,6 +820,11 @@ public final class Encounters {
 		if (encounter != null && entity.getUUID().equals(encounter.boss) && source.getEntity() instanceof ServerPlayer player) {
 			encounter.addParticipant(player);
 		}
+		if (encounter != null && encounter.cursed != null && entity.getUUID().equals(encounter.boss) && entity instanceof Mob boss
+				&& entity.level() instanceof ServerLevel level) {
+			// A cursed guardian under its next threshold changes phase (the hit never skips one).
+			encounter.cursed.afterDamage(level, encounter, boss);
+		}
 	}
 
 	private static void victory(ServerLevel level, Encounter encounter, Mob boss, DamageSource source) {
@@ -788,7 +846,9 @@ public final class Encounters {
 		// (Escalation disabled: the level already reached is kept as it is.)
 		int previous = ThreatRules.stored(ruin.threat, ruin.timesCleared);
 		int stored = Math.min(previous, Math.max(1, cfg.escalation.maxLevel));
-		int threat = cfg.escalation.enabled ? ThreatRules.next(stored, cfg.escalation.maxLevel) : previous;
+		int threat = !cfg.escalation.enabled ? previous : encounter.cursed != null
+				? CursedRules.nextThreat(stored, cfg.cursed.rewards.threatGain, cfg.escalation.maxLevel)
+				: ThreatRules.next(stored, cfg.escalation.maxLevel);
 		ruin.threat = threat;
 		ruin.timesCleared++;
 		ruin.lastVictors = String.join(", ", encounter.names.values());
@@ -801,6 +861,12 @@ public final class Encounters {
 			minion.discard();
 		}
 		victoryEffects(level, boss);
+		if (encounter.cursed != null) {
+			// The curse is broken: its own titles, threat message and announcement.
+			Safe.run("ruin.cursed.victory", () -> encounter.cursed.victory(level, encounter, boss, present, threat, threat > stored));
+			forget(encounter);
+			return;
+		}
 		String bossName = Lang.colorize(encounter.def.boss.name);
 		String ruinName = Lang.colorize(encounter.def.name);
 		boolean raised = threat > stored;
@@ -857,9 +923,15 @@ public final class Encounters {
 			if (encounter.risen) {
 				BossFactory.applyRisen(converted, encounter.risenScale, encounter.risenSpeed, encounter.risenDamage);
 			}
+			if (encounter.cursed != null) {
+				encounter.cursed.reapply(converted, Lang.colorize(encounter.def.boss.name));
+			}
 			converted.setHealth(Math.max(1.0F, ratio * converted.getMaxHealth()));
 		} else if (encounter.minions.remove(previous.getUUID())) {
 			encounter.minions.add(converted.getUUID());
+			if (encounter.cursed != null) {
+				encounter.cursed.curseMinion(converted);
+			}
 		}
 	}
 
@@ -882,6 +954,10 @@ public final class Encounters {
 		if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			return true;
 		}
+		if (encounter.cursed != null) {
+			// Cursed: no resurrection, a death outside the last phase starts the next one instead.
+			return encounter.cursed.allowDeath(level, encounter, boss);
+		}
 		RuinConfig cfg = RuinModule.config();
 		long alive = Scheduler.ticks() - encounter.startedTick;
 		if (!ThreatRules.resurrects(cfg.resurrection.enabled && cfg.bossesEnabled, encounter.risen, alive, encounter.fastKillTicks)) {
@@ -892,11 +968,11 @@ public final class Encounters {
 		return false;
 	}
 
-	/** ALLOW_DAMAGE: a rising guardian takes no damage at all (/kill excepted). */
+	/** ALLOW_DAMAGE: a rising guardian (or a cursed one changing phase) takes no damage at all (/kill excepted). */
 	private static boolean allowDamage(LivingEntity entity, DamageSource source) {
 		Encounter encounter = BY_MOB.get(entity.getUUID());
-		return encounter == null || encounter.rising == null || !entity.getUUID().equals(encounter.boss)
-				|| source.is(DamageTypeTags.BYPASSES_INVULNERABILITY);
+		return encounter == null || encounter.rising == null && (encounter.cursed == null || !encounter.cursed.invulnerable())
+				|| !entity.getUUID().equals(encounter.boss) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY);
 	}
 
 	private static void startRising(ServerLevel level, Encounter encounter, Mob boss, DamageSource source, long alive, RuinConfig cfg) {

@@ -11,6 +11,7 @@ import dev.guildy.data.ChunkKey;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildEvents;
 import dev.guildy.data.GuildManager;
+import dev.guildy.ruin.CursedItems;
 import dev.guildy.ruin.IncantationItems;
 import dev.guildy.structure.StructureManager;
 import dev.guildy.wave.WaveApi;
@@ -183,6 +184,7 @@ public final class Merchants {
 		if (TradeHub.KIND.equals(kind.id())) {
 			TradeOffers.addScrollOffer(offers, TradeHub.tier(guild));
 			Safe.run("trade.incantation", () -> IncantationItems.addTradeOffer(offers, TradeHub.tier(guild)));
+			Safe.run("trade.cursed_incantation", () -> CursedItems.addTradeOffer(offers, TradeHub.tier(guild)));
 		}
 		if (offers.isEmpty()) {
 			return Result.NO_OFFERS;

@@ -37,7 +37,9 @@ public final class SummonRules {
 		RITUAL,
 		TOO_FAR,
 		BUSY,
-		NOT_LOADED;
+		NOT_LOADED,
+		/** A cursed incantation scroll while the cursed guardians are disabled. */
+		CURSED_DISABLED;
 
 		public String langKey() {
 			return "ruin.summon.fail." + name().toLowerCase(Locale.ROOT);

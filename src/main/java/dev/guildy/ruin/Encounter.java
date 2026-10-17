@@ -59,6 +59,8 @@ final class Encounter {
 	@Nullable Resurrection rising;
 	/** The guardian came back from the dead (once per fight): enraged, bonus rewards. */
 	boolean risen;
+	/** The curse of a cursed fight (cursed incantation scroll): phases, attacks, rewards; null for a normal fight. */
+	@Nullable CursedEncounter cursed;
 	/** Cooldown factor, extra damage, scale and speed of the risen guardian (re-applied after a conversion). */
 	double risenCooldown = 1.0;
 	double risenDamage;
@@ -105,19 +107,19 @@ final class Encounter {
 		nextAbilityTick = now + firstAbilitySeconds * 20L;
 	}
 
-	/** Factor of the ability cooldowns: threat level, then halved by the enrage, then the risen guardian's factor. */
+	/** Factor of the ability cooldowns: threat level, halved by the enrage, the risen guardian's factor, the curse. */
 	double cooldownFactor() {
-		return scaling.cooldownFactor() * (enraged ? 0.5 : 1.0) * (risen ? risenCooldown : 1.0);
+		return scaling.cooldownFactor() * (enraged ? 0.5 : 1.0) * (risen ? risenCooldown : 1.0) * (cursed != null ? cursed.cooldownFactor() : 1.0);
 	}
 
-	/** Factor of the ability damage: threat level, then the risen guardian's bonus. */
+	/** Factor of the ability damage: threat level, the risen guardian's bonus, the curse (and its phase). */
 	double damageFactor() {
-		return scaling.damage() * (risen ? 1.0 + risenDamage : 1.0);
+		return scaling.damage() * (risen ? 1.0 + risenDamage : 1.0) * (cursed != null ? cursed.damageFactor() : 1.0);
 	}
 
 	/** Cap of the living escort (the threat level adds mobs). */
 	int maxAlive() {
-		return Math.min(48, def.minions.maxAlive + scaling.extraMinions());
+		return Math.min(48, def.minions.maxAlive + scaling.extraMinions() + (cursed != null ? cursed.extraAlive() : 0));
 	}
 
 	/** Remembers where an escort mob died (bounded). */

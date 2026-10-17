@@ -15,6 +15,7 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildEvents;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildPermission;
+import dev.guildy.ruin.CursedItems;
 import dev.guildy.shop.PlainItems;
 import dev.guildy.structure.StructureManager;
 import dev.guildy.structure.TextUtil;
@@ -728,6 +729,13 @@ public final class QuestManager {
 			Component scrollName = scroll.getDisplayName();
 			ItemUtil.giveOrDrop(player, scroll);
 			Msg.guildRaw(guild, TextUtil.lang("scroll.reward.quest", player.getName().getString(), scrollName));
+		}
+		// Legendary contracts: sometimes a cursed incantation scroll (ruins.json5, cursed.sources.legendaryQuestChance).
+		ItemStack cursed = quest.legendary ? CursedItems.rollLegendaryContract() : ItemStack.EMPTY;
+		if (!cursed.isEmpty()) {
+			Component cursedName = cursed.getDisplayName();
+			ItemUtil.giveOrDrop(player, cursed);
+			Msg.guildRaw(guild, TextUtil.lang("ruin.cursed.reward.quest", player.getName().getString(), cursedName));
 		}
 	}
 

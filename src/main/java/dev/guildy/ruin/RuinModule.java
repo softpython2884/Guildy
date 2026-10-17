@@ -31,9 +31,12 @@ public final class RuinModule {
 	public static void init() {
 		config = ConfigManager.register("ruins.json5", RuinConfig.class, RuinConfig::new);
 		RuinLang.register();
+		CursedLang.register();
 		Encounters.init();
 		Incantations.init();
+		CursedFights.init();
 		RuinCommands.register();
+		CursedCommands.register();
 		StructureBehavior.register(Cartography.STRUCTURE_ID, new CartographerBehavior());
 
 		ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) -> Safe.run("ruin.chunk", () -> RuinIndex.onChunkLoad(level, chunk)));
