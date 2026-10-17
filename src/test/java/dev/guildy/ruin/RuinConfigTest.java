@@ -137,6 +137,54 @@ class RuinConfigTest {
 	}
 
 	@Test
+	void summonSettings() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		RuinConfig.SummonSettings s = cfg.summon;
+		assertEquals("scroll", s.mode, "the guardians wait for an incantation scroll");
+		assertEquals(RuinConfig.DEFAULT_INCANTATION_ITEM, s.item);
+		assertEquals(16, s.maxStack);
+		assertEquals(4.0, s.drainHealth);
+		assertEquals(4.0, s.minHealth);
+		assertTrue(s.ritualSeconds >= 6 && s.ritualSeconds <= 8, "a 6 to 8 second ritual");
+		assertEquals(1, cfg.cartography.incantationsPerResearch);
+
+		RuinConfig broken = new RuinConfig();
+		broken.summon.mode = "telepathy";
+		broken.summon.item = "minecraft:unicorn_scroll";
+		broken.summon.maxStack = 500;
+		broken.summon.channelSeconds = -1;
+		broken.summon.arenaRadius = 1;
+		broken.summon.ritualSeconds = 999;
+		broken.summon.drainHealth = -4;
+		broken.summon.minHealth = 0;
+		broken.summon.particleBudget = 1;
+		broken.summon.tradeChance = 7;
+		broken.cartography.incantationsPerResearch = -2;
+		List<String> warnings = broken.rebuild(id -> true, id -> !id.contains("unicorn"), id -> true);
+		assertEquals(2, warnings.size(), "mode and item reported: " + warnings);
+		assertEquals("scroll", broken.summon.mode);
+		assertEquals(RuinConfig.DEFAULT_INCANTATION_ITEM, broken.summon.item);
+		assertEquals(64, broken.summon.maxStack);
+		assertEquals(0.25, broken.summon.channelSeconds);
+		assertEquals(4, broken.summon.arenaRadius);
+		assertEquals(30, broken.summon.ritualSeconds);
+		assertEquals(0, broken.summon.drainHealth, "no blood price");
+		assertEquals(1, broken.summon.minHealth, "the ritual never kills");
+		assertEquals(100, broken.summon.particleBudget);
+		assertEquals(1, broken.summon.tradeChance);
+		assertEquals(0, broken.cartography.incantationsPerResearch);
+
+		RuinConfig proximity = new RuinConfig();
+		proximity.summon.mode = " Proximity ";
+		assertTrue(rebuild(proximity).isEmpty());
+		assertEquals("proximity", proximity.summon.mode);
+		proximity.summon = null;
+		assertTrue(rebuild(proximity).isEmpty(), "missing section: defaults");
+		assertEquals("scroll", proximity.summon.mode);
+	}
+
+	@Test
 	void newDefaultRuinsAreAddedOnce() {
 		Map<String, RuinConfig.RuinDef> ruins = new LinkedHashMap<>();
 		ruins.put("crypte_oubliee", RuinDefaults.ruins().get("crypte_oubliee"));
@@ -155,6 +203,8 @@ class RuinConfigTest {
 		RuinConfig written = new RuinConfig();
 		rebuild(written);
 		written.ruins.get("crypte_oubliee").respawnDays = 3;
+		written.summon.mode = "proximity";
+		written.summon.drainHealth = 6;
 		Json5.write(file, written);
 		RuinConfig read = Json5.read(file, RuinConfig.class);
 		assertTrue(rebuild(read).isEmpty());
@@ -168,5 +218,8 @@ class RuinConfigTest {
 		assertEquals(a.minions.types, b.minions.types);
 		assertEquals(written.cartography.overworldCost, read.cartography.overworldCost);
 		assertEquals(written.knownDefaults, read.knownDefaults);
+		assertEquals("proximity", read.summon.mode);
+		assertEquals(6, read.summon.drainHealth);
+		assertEquals(written.cartography.incantationsPerResearch, read.cartography.incantationsPerResearch);
 	}
 }

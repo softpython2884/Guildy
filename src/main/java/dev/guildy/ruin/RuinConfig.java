@@ -21,9 +21,11 @@ import java.util.function.Predicate;
  */
 @Comment({
 		"Guildy - ruines : des ruines generees dans l'Overworld et le Nether, chacune gardee par un boss.",
-		"Un joueur en survie qui approche du boss le reveille (avec son escorte) ; vaincu, il revient apres 'respawnDays' jours.",
+		"Le boss dort jusqu'a la lecture d'un parchemin d'incantation pres de son point d'apparition (rituel qui draine le sang",
+		"des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.",
 		"Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou",
-		"boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>."
+		"boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>",
+		"| incantation <joueur> [nombre]."
 })
 public final class RuinConfig implements Validatable {
 	public static final int CURRENT_VERSION = 1;
@@ -31,6 +33,8 @@ public final class RuinConfig implements Validatable {
 	public static final Set<String> STYLES = Set.of("", "fire", "soul", "frost", "sand", "arrow", "spectral", "fireball");
 	public static final Set<String> BAR_COLORS = Set.of("PINK", "BLUE", "RED", "GREEN", "YELLOW", "PURPLE", "WHITE");
 	public static final Set<String> SLOTS = Set.of("mainhand", "offhand", "head", "chest", "legs", "feet");
+	/** Base item of the incantation scroll (a banner pattern: no crafting recipe, never bought by villagers). */
+	public static final String DEFAULT_INCANTATION_ITEM = "minecraft:skull_banner_pattern";
 	private static final String FALLBACK_ENTITY = "minecraft:zombie";
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
@@ -42,6 +46,9 @@ public final class RuinConfig implements Validatable {
 	@Comment("Reglages communs des combats")
 	public EncounterSettings encounter = new EncounterSettings();
 
+	@Comment("Reveil des boss : parchemin d'incantation et rituel")
+	public SummonSettings summon = new SummonSettings();
+
 	@Comment("Recherches de l'Atelier du cartographe")
 	public CartographySettings cartography = new CartographySettings();
 
@@ -50,10 +57,11 @@ public final class RuinConfig implements Validatable {
 
 	@Comment({
 			"Ruines par id (le chemin du gabarit apres 'ruin/', ex. guildy:ruin/crypte_oubliee -> crypte_oubliee) :",
-			"name, tier (1 a 5), activationRadius (blocs autour du point d'apparition du boss pour le reveiller, 0 = toute la ruine),",
-			"resetSeconds (sans joueur proche pendant ce temps, le boss disparait et reviendra a pleine vie), respawnDays (jours",
-			"de jeu avant le retour d'un boss vaincu, 0 = jamais), leashRadius (au-dela, le boss est ramene a son arene), bossBarColor",
-			"(PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE), mapDecoration (icone de la carte, vide = celle de 'cartography').",
+			"name, tier (1 a 5), activationRadius (mode proximity : blocs autour du point d'apparition du boss pour le reveiller,",
+			"0 = toute la ruine), resetSeconds (sans joueur proche pendant ce temps, le boss disparait et reviendra a pleine vie),",
+			"respawnDays (jours de jeu avant le retour d'un boss vaincu, 0 = jamais), leashRadius (au-dela, le boss est ramene a son",
+			"arene), bossBarColor (PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE ; aussi la couleur du rituel d'incantation),",
+			"mapDecoration (icone de la carte, vide = celle de 'cartography').",
 			"boss : entity, name (codes couleur &), health, damage, armor, armorToughness, speed (0 = vitesse vanilla),",
 			"knockbackResistance (0 a 1), scale (taille, 1 = normale), followRange, equipment {emplacement: objet} (mainhand,",
 			"offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents).",
@@ -104,6 +112,44 @@ public final class RuinConfig implements Validatable {
 	}
 
 	@Json5.Section
+	public static final class SummonSettings {
+		@Comment({
+				"Reveil des boss : \"scroll\" (il faut lire un parchemin d'incantation pres du point d'apparition du boss ; entrer",
+				"dans la ruine ne le reveille plus) ou \"proximity\" (ancien comportement : un joueur en survie qui approche le reveille)"
+		})
+		public String mode = SummonRules.MODE_SCROLL;
+		@Comment("Objet vanilla de base du parchemin d'incantation (son apparence sans pack de ressources)")
+		public String item = DEFAULT_INCANTATION_ITEM;
+		@Comment("Taille maximale d'une pile de parchemins d'incantation (1 a 64)")
+		public int maxStack = 16;
+		@Comment("Duree (secondes) du clic droit maintenu avant le debut du rituel (0.25 a 10)")
+		public double channelSeconds = 1.5;
+		@Comment({
+				"Distance maximale (blocs) au point d'apparition du boss pour lancer le rituel ; tous les joueurs a cette",
+				"distance y participent (et sont draines)"
+		})
+		public int arenaRadius = 16;
+		@Comment("Duree (secondes) du rituel avant l'apparition du boss (2 a 30)")
+		public double ritualSeconds = 7.0;
+		@Comment("Points de vie draines a chaque participant pendant le rituel (2 = un coeur, 0 = aucun)")
+		public double drainHealth = 4.0;
+		@Comment("Le drain ne fait jamais descendre un participant sous ces points de vie (1 au minimum : le rituel ne tue jamais)")
+		public double minHealth = 4.0;
+		@Comment("Ralentir les participants pendant le drain")
+		public boolean slowParticipants = true;
+		@Comment("Particules envoyees au maximum par tick pour tous les rituels (au-dela, l'animation est allegee)")
+		public int particleBudget = 900;
+		@Comment("Distance (blocs) a laquelle les joueurs voient le rituel (particules longue distance)")
+		public int viewDistance = 128;
+		@Comment("Palier minimal du Carrefour commercial dont le marchand propose parfois un parchemin d'incantation (0 = jamais)")
+		public int tradeTier = 2;
+		@Comment("Chance (0 a 1) que le marchand du Carrefour propose un parchemin d'incantation")
+		public double tradeChance = 0.5;
+		@Comment("Prix (lingots d'or) d'un parchemin d'incantation chez le marchand du Carrefour")
+		public int tradePrice = 24;
+	}
+
+	@Json5.Section
 	public static final class CartographySettings {
 		@Comment("Minutes de travail d'un cartographe pour une recherche (plusieurs cartographes vont plus vite, pause la nuit)")
 		public double researchMinutes = 8.0;
@@ -121,6 +167,8 @@ public final class RuinConfig implements Validatable {
 		public int mapZoom = 2;
 		@Comment("Icone de la cible sur les cartes (type de decoration vanilla, ex. minecraft:red_x, minecraft:target_x)")
 		public String mapDecoration = "minecraft:red_x";
+		@Comment("Parchemins d'incantation donnes avec chaque carte / boussole d'une recherche reussie (0 = aucun)")
+		public int incantationsPerResearch = 1;
 	}
 
 	@Json5.Section
@@ -291,6 +339,33 @@ public final class RuinConfig implements Validatable {
 		e.abilityGlobalCooldownSeconds = clamp(e.abilityGlobalCooldownSeconds, 1, 120);
 		e.abilityRange = clamp(e.abilityRange, 4, 64);
 		e.minXpPerGuild = clamp(e.minXpPerGuild, 0, 100_000);
+		if (summon == null) {
+			summon = new SummonSettings();
+		}
+		SummonSettings s = summon;
+		String mode = SummonRules.mode(s.mode);
+		if (mode == null) {
+			warnings.add("summon.mode: unknown mode '" + s.mode + "' (" + SummonRules.MODE_SCROLL + ", " + SummonRules.MODE_PROXIMITY + "), "
+					+ SummonRules.MODE_SCROLL + " used");
+			mode = SummonRules.MODE_SCROLL;
+		}
+		s.mode = mode;
+		s.item = normalize(s.item);
+		if (!itemExists.test(s.item)) {
+			warnings.add("summon.item: unknown item '" + s.item + "', " + DEFAULT_INCANTATION_ITEM + " used");
+			s.item = DEFAULT_INCANTATION_ITEM;
+		}
+		s.maxStack = clamp(s.maxStack, 1, 64);
+		s.channelSeconds = clamp(s.channelSeconds, 0.25, 10);
+		s.arenaRadius = clamp(s.arenaRadius, 4, 64);
+		s.ritualSeconds = clamp(s.ritualSeconds, 2, 30);
+		s.drainHealth = clamp(s.drainHealth, 0, 40);
+		s.minHealth = clamp(s.minHealth, 1, 40);
+		s.particleBudget = clamp(s.particleBudget, 100, 10_000);
+		s.viewDistance = clamp(s.viewDistance, 16, 256);
+		s.tradeTier = clamp(s.tradeTier, 0, 3);
+		s.tradeChance = clamp(s.tradeChance, 0, 1);
+		s.tradePrice = clamp(s.tradePrice, 1, 2304);
 		if (cartography == null) {
 			cartography = new CartographySettings();
 		}
@@ -303,6 +378,7 @@ public final class RuinConfig implements Validatable {
 		c.searchRadius = clamp(c.searchRadius, 4, 200);
 		c.mapZoom = clamp(c.mapZoom, 0, 4);
 		c.mapDecoration = c.mapDecoration == null || c.mapDecoration.isBlank() ? "minecraft:red_x" : c.mapDecoration.trim().toLowerCase(Locale.ROOT);
+		c.incantationsPerResearch = clamp(c.incantationsPerResearch, 0, 16);
 		if (generic == null) {
 			generic = new GenericSettings();
 		}

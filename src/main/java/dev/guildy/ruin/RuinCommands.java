@@ -1,5 +1,6 @@
 package dev.guildy.ruin;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -44,9 +45,9 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * {@code /guild admin ruin list | info | awaken | reset | locate <id> | map <player> <id> | ability <type> [style] |
- * research <guild> finish} (the admin node is already permission-gated). "Nearest" = nearest known ruin in the dimension
- * of the command source.
+ * {@code /guild admin ruin list | info | awaken | reset | locate <id> | map <player> <id> | incantation <player> [count] |
+ * ability <type> [style] | research <guild> finish} (the admin node is already permission-gated). "Nearest" = nearest
+ * known ruin in the dimension of the command source. {@code awaken} is instant (no scroll, no ritual).
  */
 final class RuinCommands {
 	private static final int LIST_MAX = 40;
@@ -68,6 +69,11 @@ final class RuinCommands {
 				.then(Commands.literal("map")
 						.then(Commands.argument("player", EntityArgument.player())
 								.then(Commands.argument("id", StringArgumentType.word()).suggests(IDS).executes(RuinCommands::map))))
+				.then(Commands.literal("incantation")
+						.then(Commands.argument("player", EntityArgument.player())
+								.executes(ctx -> incantation(ctx, 1))
+								.then(Commands.argument("count", IntegerArgumentType.integer(1, 256))
+										.executes(ctx -> incantation(ctx, IntegerArgumentType.getInteger(ctx, "count"))))))
 				.then(Commands.literal("ability")
 						.then(Commands.argument("type", StringArgumentType.word())
 								.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(RuinConfig.ABILITIES, builder))
@@ -141,6 +147,10 @@ final class RuinCommands {
 		lines.add(Lang.get("ruin.admin.info.box", ruin.minX, ruin.minY, ruin.minZ, ruin.maxX, ruin.maxY, ruin.maxZ));
 		lines.add(Lang.get("ruin.admin.info.markers", pos(ruin.boss), ruin.minions.size(), pos(ruin.entrance)));
 		lines.add(Lang.get("ruin.admin.info.state", AtelierMenu.stateLine(ruin, def, today).getString(), ruin.timesCleared));
+		double ritual = Incantations.ritualProgress(ruin);
+		if (ritual >= 0) {
+			lines.add(Lang.get("ruin.admin.info.ritual", (int) Math.round(ritual * 100), Incantations.ritualParticipants(ruin).size()));
+		}
 		Mob boss = Encounters.boss(ruin);
 		if (boss != null) {
 			lines.add(Lang.get("ruin.admin.info.fight", Lang.colorize(def.boss.name), (int) Math.ceil(boss.getHealth()), (int) Math.ceil(boss.getMaxHealth()),
@@ -210,6 +220,16 @@ final class RuinCommands {
 			ItemUtil.giveOrDrop(target, item);
 			source.sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.map", name.getString(), target.getName().getString())), true);
 			return 1;
+		}, 0);
+	}
+
+	/** Gives incantation scrolls to a player. */
+	private static int incantation(CommandContext<CommandSourceStack> ctx, int count) throws CommandSyntaxException {
+		ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+		return Safe.get("ruin.admin.incantation", () -> {
+			IncantationItems.give(target, count);
+			ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.incantation", count, target.getName().getString())), true);
+			return count;
 		}, 0);
 	}
 

@@ -7,6 +7,7 @@ import dev.guildy.data.GuildManager;
 import dev.guildy.ruin.Cartography;
 import dev.guildy.ruin.Encounters;
 import dev.guildy.ruin.GuildRuinData;
+import dev.guildy.ruin.IncantationItems;
 import dev.guildy.ruin.RuinConfig;
 import dev.guildy.ruin.RuinIndex;
 import dev.guildy.ruin.RuinItems;
@@ -67,8 +68,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Ruins: the test ruin (guildy-test:ruin/test_ruin, a 13 x 7 x 13 arena with data markers) is placed like
- * {@code /place structure}; its markers are captured and turned into air, the ruin is indexed; a survival player
- * awakens the guardian (unknown ruin id: generic guardian), kills it (loot, XP, CLEARED) or leaves (reset). The
+ * {@code /place structure}; its markers are captured and turned into air, the ruin is indexed; the guardian is awakened
+ * (unknown ruin id: generic guardian; the incantation ritual is tested in {@link RuinSummonGameTests}) next to a survival
+ * player who kills it (loot, XP, CLEARED) or leaves (reset). The
  * cartographer researches with a stubbed locate (the GameTest world generates no structures).
  */
 @SuppressWarnings("removal")
@@ -118,6 +120,7 @@ public class RuinGameTests {
 		long xpBefore = guild.xp;
 		Mob[] boss = new Mob[1];
 		helper.startSequence()
+				.thenExecute(() -> awaken(helper, ruin))
 				.thenWaitUntil(() -> {
 					helper.assertTrue(Encounters.isActive(ruin), "waiting for the guardian to awaken");
 					boss[0] = Encounters.boss(ruin);
@@ -166,6 +169,7 @@ public class RuinGameTests {
 		ServerPlayer player = TestSupport.survivor(helper, ruin.boss.offset(-2, -1, 0));
 		Mob[] boss = new Mob[1];
 		helper.startSequence()
+				.thenExecute(() -> awaken(helper, ruin))
 				.thenWaitUntil(() -> {
 					boss[0] = Encounters.boss(ruin);
 					helper.assertTrue(boss[0] != null, "waiting for the guardian to awaken");
@@ -182,6 +186,7 @@ public class RuinGameTests {
 					helper.assertTrue(Encounters.minions(ruin).isEmpty(), "escort removed");
 					// Back again: a fresh guardian at full health.
 					player.teleportTo(level, ruin.boss.getX() + 2.5, ruin.boss.getY(), ruin.boss.getZ() + 0.5, Set.of(), 0, 0, true);
+					awaken(helper, ruin);
 				})
 				.thenWaitUntil(() -> {
 					Mob fresh = Encounters.boss(ruin);
@@ -216,6 +221,7 @@ public class RuinGameTests {
 		Mob[] boss = new Mob[1];
 		int[] minions = new int[1];
 		GameTestSequence sequence = helper.startSequence()
+				.thenExecute(() -> awaken(helper, ruin))
 				.thenWaitUntil(() -> {
 					boss[0] = Encounters.boss(ruin);
 					helper.assertTrue(boss[0] != null, "waiting for the guardian to awaken");
@@ -356,6 +362,9 @@ public class RuinGameTests {
 					helper.assertTrue(map.get(DataComponents.MAP_DECORATIONS) != null && !map.get(DataComponents.MAP_DECORATIONS).decorations().isEmpty(),
 							"target marked on the map");
 					helper.assertTrue(surface.key.equals(GuildyItems.data(map).getStringOr("ruin", "")), "map bound to the ruin");
+					int incantations = RuinModule.config().cartography.incantationsPerResearch;
+					helper.assertTrue(find(member, IncantationItems.KIND).getCount() == incantations,
+							"incantation scroll(s) given with the map: expected " + incantations);
 					helper.assertTrue(RuinIndex.guild(guild.id).known.contains(surface.key), "ruin known by the guild");
 					helper.assertTrue(Cartography.research(guild) == null, "research cleared");
 
@@ -387,6 +396,15 @@ public class RuinGameTests {
 	}
 
 	// ================================================================== helpers
+
+	/**
+	 * Awakens the guardian directly (the admin path): in the default "scroll" mode walking in no longer does it, and the
+	 * incantation ritual has its own tests ({@link RuinSummonGameTests}).
+	 */
+	private static void awaken(GameTestHelper helper, RuinRecord ruin) {
+		String error = Encounters.awaken(helper.getLevel(), ruin, null, false);
+		helper.assertTrue(error == null, "guardian awakened, got " + error);
+	}
 
 	/** The generic guardian of unknown ruins, made quick to test (both fight tests set the same values). */
 	private static void testGuardian() {

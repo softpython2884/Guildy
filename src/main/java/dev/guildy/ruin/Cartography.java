@@ -48,7 +48,8 @@ import java.util.UUID;
  * Cartographer research: started from the atelier menu (cost paid by the player), advanced by the guild's cartographer
  * villagers working at the atelier (one second of work per cartographer and per second, capped, paused at night), then
  * a locate of the nearest ruin not yet referenced by a map (like vanilla explorer maps); "Récupérer" hands out a map
- * (Overworld) or a lodestone compass (Nether). Nothing found: the cost is refunded.
+ * (Overworld) or a lodestone compass (Nether), with incantation scrolls to awaken its guardian. Nothing found: the cost
+ * is refunded.
  */
 public final class Cartography {
 	/** Structure id of the "Atelier du cartographe". */
@@ -225,6 +226,12 @@ public final class Cartography {
 		RuinIndex.markDirty();
 		StructureManager.requestSignRefresh(guild);
 		ItemUtil.giveOrDrop(player, item);
+		int incantations = settings().incantationsPerResearch;
+		if (incantations > 0) {
+			// The way to awaken the guardian the map leads to.
+			IncantationItems.give(player, incantations);
+			Msg.send(player, "ruin.research.incantation", incantations);
+		}
 		Msg.sound(player, SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, 1.0F, 1.0F);
 		BlockPos target = ruin.target();
 		Msg.guild(guild, ruin.isNether() ? "ruin.research.claimed.nether" : "ruin.research.claimed", player.getName().getString(),

@@ -36,6 +36,7 @@
 			"dev.guildy.test.CraftGameTests",
 			"dev.guildy.test.FieldGameTests",
 			"dev.guildy.test.RuinGameTests",
+			"dev.guildy.test.RuinSummonGameTests",
 			"dev.guildy.test.RuinTemplateGameTests"
 		]
 	},
