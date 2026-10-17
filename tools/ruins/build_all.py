@@ -2,7 +2,8 @@
 """
 Builds the ruins and writes everything the mod needs under src/main/resources/data/guildy:
   structure/ruin/<id>.nbt (or ruin/<id>/<piece>.nbt), worldgen/structure|template_pool|processor_list/ruin/...,
-  worldgen/structure_set/ruins_overworld.json + ruins_nether.json, biome tags, structure tags.
+  worldgen/structure_set/ruins_overworld.json + ruins_nether.json (+ ruins_landmark.json for the grand temple), biome
+  tags, structure tags.
 Then validates every template (check.py rules) and renders the previews (tools/ruins/previews/<id>.png).
 
   python tools/ruins/build_all.py [ids...] [--no-render]
@@ -22,10 +23,13 @@ from ruinlib.ruin import RESOURCES  # noqa: E402
 
 # Structure sets: one per dimension (random spread, unique salts). A set tries its structures by weight until one
 # accepts the biome of the chunk, so the biome tags decide which ruin appears where; the weights (Ruin.set_weight)
-# only matter in the biomes several ruins share.
+# only matter in the biomes several ruins share. The grand temple (Ruin.structure_set) has its own, much sparser
+# set, kept away from the other ruins by an exclusion zone (no start within 10 chunks of a ruins_overworld start).
 SETS = {
 	"ruins_overworld": {"spacing": 34, "separation": 12, "salt": 1847203559},
 	"ruins_nether": {"spacing": 20, "separation": 7, "salt": 739018562},
+	"ruins_landmark": {"spacing": 56, "separation": 20, "salt": 1490335872,
+		"exclusion_zone": {"other_set": "guildy:ruins_overworld", "chunk_count": 10}},
 }
 
 
@@ -40,20 +44,24 @@ def write_json(rel, data):
 
 def write_sets(built):
 	by_dim = {"overworld": [], "nether": []}
+	by_set = {}
 	for ruin in built:
 		by_dim[ruin.dimension].append(ruin)
-	for dim, items in by_dim.items():
-		name = "ruins_" + dim
+		by_set.setdefault(ruin.structure_set or "ruins_" + ruin.dimension, []).append(ruin)
+	for name, items in by_set.items():
 		s = SETS[name]
-		if not items:
-			continue
+		placement = {"type": "minecraft:random_spread", "spacing": s["spacing"], "separation": s["separation"],
+			"salt": s["salt"]}
+		if "exclusion_zone" in s:
+			placement["exclusion_zone"] = s["exclusion_zone"]
 		write_json(f"worldgen/structure_set/{name}.json", {
 			"structures": [{"structure": f"guildy:ruin/{r.id}", "weight": r.set_weight} for r in items],
-			"placement": {"type": "minecraft:random_spread", "spacing": s["spacing"], "separation": s["separation"],
-				"salt": s["salt"]},
+			"placement": placement,
 		})
-		write_json(f"tags/worldgen/structure/ruins/{dim}.json",
-			{"replace": False, "values": [f"guildy:ruin/{r.id}" for r in items]})
+	for dim, items in by_dim.items():
+		if items:
+			write_json(f"tags/worldgen/structure/ruins/{dim}.json",
+				{"replace": False, "values": [f"guildy:ruin/{r.id}" for r in items]})
 	write_json("tags/worldgen/structure/ruins.json",
 		{"replace": False, "values": ["#guildy:ruins/overworld", "#guildy:ruins/nether"]})
 

@@ -4,7 +4,7 @@ Gameplay blocks (DATA markers, loot containers, spawners, jigsaw connectors) and
 from . import nbt as N
 from .build import DIRS, OPP
 
-BOSS, MINION, ENTRANCE = "guildy:boss", "guildy:minion", "guildy:entrance"
+BOSS, MINION, ENTRANCE, GUARD = "guildy:boss", "guildy:minion", "guildy:entrance", "guildy:guard"
 LOOT = {
 	"common": "guildy:chests/ruin/common",
 	"rare": "guildy:chests/ruin/rare",
@@ -27,6 +27,15 @@ def marker_nbt(metadata):
 def marker(b, x, y, z, metadata):
 	b.t.set(x, y, z, "minecraft:structure_block[mode=data]", marker_nbt(metadata))
 	b.protected.add((x, y, z))
+
+
+def guard(b, x, y, z):
+	"""
+	Post of a room guard (guildy:guard): the feet cell of a mob standing on a solid floor. The two cells above are
+	kept clear (no rubble, plants or cobwebs) so the post stays free whatever the decay does.
+	"""
+	marker(b, x, y, z, GUARD)
+	b.clear_zone(x, y + 1, z, x, y + 2, z)
 
 
 def loot_nbt(block_entity_id, tier):

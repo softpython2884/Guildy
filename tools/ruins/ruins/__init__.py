@@ -1,5 +1,5 @@
 """
-The seven Guildy ruins. Each module exposes build() -> ruinlib.ruin.Ruin (the procedural variant). Variants
+The eight Guildy ruins. Each module exposes build() -> ruinlib.ruin.Ruin (the procedural variant). Variants
 converted from schematics by import_schematic.py live in tools/ruins/imported/<id>/<variant>/ (template.nbt +
 variant.json) and are added to the ruin's template pool here.
 """
@@ -8,7 +8,7 @@ import json
 import os
 
 IDS = ["crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre", "temple_maya", "autel_infernal",
-	"citadelle_des_ames"]
+	"citadelle_des_ames", "grand_temple_maya"]
 IMPORTED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "imported")
 
 

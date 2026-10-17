@@ -30,6 +30,8 @@ TOWER_TOP = G + 16
 KEEP = (15, 9, 40, 20)  # x0, z0, x1, z1 (outer)
 KEEP_TOP = G + 15
 ARENA_C = (27.5, 33.0)
+# room guards (guildy:guard): the gate passage, the throne hall, the east breach, the courtyard
+GUARDS = [(26, G + 1, 48), (29, G + 1, 48), (20, G + 1, 15), (35, G + 1, 15), (43, G + 1, 13), (38, G + 1, 25)]
 
 
 def build():
@@ -41,6 +43,8 @@ def build():
 	gatehouse(b, m)
 	keep(b, m)
 	courtyard(b, m)
+	for p in GUARDS:
+		deco.guard(b, *p)
 	ruin_it(b, m)
 	life(b, m)
 	b.open_clear_zones()

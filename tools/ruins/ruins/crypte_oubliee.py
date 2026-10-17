@@ -22,6 +22,9 @@ SX, SY, SZ = 41, 50, 41
 G = 16  # ground floor layer
 FEET = G - 9  # crypt walking level
 FLOOR = FEET - 1
+# room guards (guildy:guard): the stairwell landing, the ossuary antechamber, the gallery of niches, the hall
+# entrance and the sinkhole breach
+GUARDS = [(30, FEET, 13), (33, FEET, 23), (23, FEET, 22), (17, FEET, 21), (13, FEET, 28)]
 
 
 def build():
@@ -33,6 +36,8 @@ def build():
 	crypt(b, m)
 	graveyard(b, m)
 	sinkhole(b, m)
+	for p in GUARDS:
+		deco.guard(b, *p)
 	ruin_it(b, m)
 	life(b, m)
 	b.open_clear_zones()

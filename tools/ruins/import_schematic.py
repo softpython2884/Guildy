@@ -11,8 +11,9 @@ What it does:
   1. reads the file (all regions of a litematic merged), maps a few renamed ids, validates every block state against
      Minecraft 26.3 (unknown properties dropped, unknown blocks reported);
   2. turns the marker signs into gameplay blocks (first line of the front text, case / accents ignored):
-       [boss]  [sbire]  [entree]                      -> DATA structure block guildy:boss / guildy:minion /
-                                                        guildy:entrance at the sign's cell (the sign disappears)
+       [boss]  [sbire]  [garde]  [entree]             -> DATA structure block guildy:boss / guildy:minion /
+                                                        guildy:guard / guildy:entrance at the sign's cell (the
+                                                        sign disappears)
        [coffre commun]  [coffre rare]  [coffre tresor] -> loot table on the chest / barrel the sign is attached to
                                                         (wall sign: the block behind it; standing sign: the block
                                                         under it), or a new chest in the sign's cell
@@ -51,6 +52,9 @@ TAGS = {
 	"sbire": ("marker", deco.MINION),
 	"sbires": ("marker", deco.MINION),
 	"minion": ("marker", deco.MINION),
+	"garde": ("marker", deco.GUARD),
+	"gardes": ("marker", deco.GUARD),
+	"guard": ("marker", deco.GUARD),
 	"entree": ("marker", deco.ENTRANCE),
 	"entrance": ("marker", deco.ENTRANCE),
 	"coffre commun": ("loot", "common"),
@@ -280,7 +284,7 @@ def main():
 		print("  " + m)
 	print(f"après conversion : {t.size[0]} x {t.size[1]} x {t.size[2]}, {len(t.cells)} blocs")
 	report = check.Report(f"{args.ruin}/{args.variant}")
-	check.check_template(t, report, nether, args.ground, args.ruin in ("bastion_de_givre", "temple_maya", "citadelle_des_ames"))
+	check.check_template(t, report, nether, args.ground, check.size_class(args.ruin))
 	print(report.text())
 	ruin = ruins.load(args.ruin, with_imports=False)
 	from ruinlib.ruin import Variant, Piece, split_pieces

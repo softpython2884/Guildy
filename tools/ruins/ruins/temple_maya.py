@@ -47,6 +47,8 @@ LANDING = F1 + (TOPY - G)  # first z of the landing at its foot (walking G + 1),
 NICHE_Z = PZ + 5  # offering niches on both sides of the inner stair
 SANCT = (PX - 6, PZ - 7, PX + 6, PZ + 5)  # sanctuary outline x0, z0, x1, z1
 CEIBA = (53, 3)  # north-west corner of the 2 x 2 trunk of the giant tree (north of the cenote)
+# room guards (guildy:guard): the landing under the stairway, the twin doors and the cenote door of the hall
+GUARDS = [(27, G + 1, 43), (31, G + 1, 44), (25, FEET, 32), (33, FEET, 32), (44, FEET, 22)]
 
 
 def build():
@@ -61,6 +63,8 @@ def build():
 	inner_stair(b, m)
 	cenote(b, m)
 	plaza(b, m)
+	for p in GUARDS:
+		deco.guard(b, *p)
 	ruin_it(b, m)
 	life(b, m)
 	b.carve_dome(PX + 3, PZ + 9, 34.0, G + 1, SY - G - 2, rough=2.5)

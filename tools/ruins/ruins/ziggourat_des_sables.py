@@ -26,6 +26,8 @@ TOP = G + 16
 FEET = G - 3  # hall walking level
 HALL = (16, 16, 32, 32)  # interior x0, z0, x1, z1
 HALL_CEIL = G + 6
+# room guards (guildy:guard): the descending corridor, both sides of the hall door, the robbers' tunnel, the hall
+GUARDS = [(10, FEET + 3, 23), (14, FEET, 23), (14, FEET, 25), (36, FEET, 30), (24, FEET, 27)]
 
 
 def build():
@@ -38,6 +40,8 @@ def build():
 	hall(b, m)
 	robbers_tunnel(b, m)
 	dunes(b, m)
+	for p in GUARDS:
+		deco.guard(b, *p)
 	ruin_it(b, m)
 	life(b, m)
 	b.open_clear_zones()
