@@ -57,11 +57,16 @@ final class Planting {
 				|| state.is(Blocks.MOSS_CARPET) || state.is(Blocks.MANGROVE_ROOTS) || state.is(Blocks.BAMBOO) || state.is(Blocks.WATER);
 	}
 
-	/** Around a block to till: natural blocks, or the usual parts of a field (farmland, water, crops, fences, torches). */
+	/**
+	 * Around a block to till or a water hole: natural blocks, or the usual parts of a field (farmland, water, crops,
+	 * fences, gates, torches, lanterns, paths, composters, hay bales, cauldrons).
+	 */
 	static boolean fieldNeighbour(BlockState state) {
 		return natural(state) || state.is(Blocks.FARMLAND) || state.is(BlockTags.CROPS) || state.is(BlockTags.MAINTAINS_FARMLAND)
 				|| state.is(BlockTags.FENCES) || state.is(BlockTags.FENCE_GATES) || state.is(Blocks.TORCH) || state.is(Blocks.WALL_TORCH)
-				|| state.is(Blocks.SOUL_TORCH) || state.is(Blocks.SOUL_WALL_TORCH);
+				|| state.is(Blocks.SOUL_TORCH) || state.is(Blocks.SOUL_WALL_TORCH) || state.is(Blocks.COPPER_TORCH)
+				|| state.is(Blocks.COPPER_WALL_TORCH) || state.is(BlockTags.LANTERNS) || state.is(Blocks.DIRT_PATH) || state.is(Blocks.COMPOSTER)
+				|| state.is(Blocks.HAY_BLOCK) || state.is(BlockTags.CAULDRONS);
 	}
 
 	/** A small plant, a thin snow layer or air a sapling may replace; never a fluid, leaves or the half of a two-block plant. */
@@ -178,6 +183,12 @@ final class Planting {
 		}
 		if (stats.sown > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.sown", stats.sown));
+		}
+		if (stats.tilled > 0) {
+			lore.add(Lang.get("villager.gui.lore.stat.tilled", stats.tilled));
+		}
+		if (stats.waterHoles > 0) {
+			lore.add(Lang.get("villager.gui.lore.stat.water_holes", stats.waterHoles));
 		}
 	}
 

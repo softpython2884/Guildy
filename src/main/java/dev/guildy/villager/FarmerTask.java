@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Harvests the mature crops of the villager's field zone or, without zone, around the territory (disc centred on the
@@ -32,16 +33,20 @@ import java.util.List;
  * give melons and pumpkins (stem kept) and sugar cane (base kept). Incremental nearest-first scan of the surface (+ a
  * band around the fanion height for covered fields), resumed where it stopped, loaded chunks only, never in another
  * guild's territory. Crops giving a wanted item ("objectifs prioritaires") come first, even up to
- * {@code zones.wishlistMargin} blocks outside the area. When nothing is ripe it sows empty farmland (and tills
- * hydrated soil in field zones), see {@link CropSower}.
+ * {@code zones.wishlistMargin} blocks outside the area. When nothing is ripe: in field zones it tills again the
+ * trampled farmland ({@link FieldWorks}), then sows empty farmland ({@link CropSower}), then works the soil of the zone
+ * (water holes, levelling, clearing, tilling, bone meal: {@link FieldWorks}), as the zone's "Autorisations du fanion"
+ * allow ({@link ZonePermissions}: harvesting and replanting too). The automatic mode harvests, replants and sows only.
  */
 final class FarmerTask extends TaskHandler {
 	private enum Phase {
 		SEARCH,
 		GO_CROP,
 		HARVEST,
-		/** Nothing ripe: a sowing round (empty farmland, tilling in field zones, see {@link CropSower}). */
+		/** Nothing ripe: a sowing round (empty farmland, see {@link CropSower}). */
 		PLANT,
+		/** Nothing ripe: a round of field works (retilling, then terrain works, see {@link FieldWorks}). */
+		FIELD,
 		DEPOSIT,
 		BLOCKED
 	}
@@ -89,6 +94,7 @@ final class FarmerTask extends TaskHandler {
 	private @Nullable BlockPos home;
 	private final DepositFlow deposit = new DepositFlow();
 	private final CropSower sower = new CropSower();
+	private final FieldWorks fields = new FieldWorks();
 	/** No deposit chest usable: sowing goes on meanwhile, the deposit is tried again at this tick. */
 	private long depositRetryAt;
 
@@ -111,7 +117,8 @@ final class FarmerTask extends TaskHandler {
 			lastRead = -1;
 			nextScan = 0;
 			sower.reset();
-			if (phase == Phase.GO_CROP || phase == Phase.HARVEST || phase == Phase.PLANT) {
+			fields.reset();
+			if (phase == Phase.GO_CROP || phase == Phase.HARVEST || phase == Phase.PLANT || phase == Phase.FIELD) {
 				phase = Phase.SEARCH;
 			}
 		}
@@ -120,6 +127,7 @@ final class FarmerTask extends TaskHandler {
 			case GO_CROP -> goCrop(ctx);
 			case HARVEST -> harvest(ctx);
 			case PLANT -> plantStep(ctx);
+			case FIELD -> fieldStep(ctx);
 			case DEPOSIT -> depositStep(ctx);
 			case BLOCKED -> {
 				if (ctx.now >= retryAt) {
@@ -138,6 +146,12 @@ final class FarmerTask extends TaskHandler {
 		if (ctx.mustReturn()) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
+			return;
+		}
+		WorkZone harvestZone = zone;
+		if (harvestZone != null && !ZonePermissions.allows(harvestZone, ZoneOption.HARVEST)) {
+			// "Récolter" off: field works and sowing only.
+			idle(ctx, "villager.field.status.harvest_off", harvestZone.name);
 			return;
 		}
 		target = pollValid(ctx);
@@ -209,20 +223,46 @@ final class FarmerTask extends TaskHandler {
 		nextScan = ctx.now + ctx.workTicks(ctx.config.work.scanIntervalSeconds);
 	}
 
-	/** Nothing to harvest: bring the crops home, else sow, else wait. */
+	/**
+	 * Nothing to harvest: bring the crops home, else till the trampled farmland again, else sow, else work the soil of
+	 * the zone, else wait.
+	 */
 	private void idle(WorkContext ctx, String status, Object... args) {
-		boolean carrying = Planting.hasDepositable(ctx, sower.keep(ctx, zone));
+		boolean carrying = Planting.hasDepositable(ctx, keep(ctx));
 		if (carrying && ctx.now >= depositRetryAt) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
+		} else if (home != null && fields.start(ctx, zone, FieldWorks.Mode.RETILL)) {
+			phase = Phase.FIELD;
+			fieldStep(ctx);
 		} else if (home != null && sower.ready(ctx, zone)) {
 			phase = Phase.PLANT;
 			plantStep(ctx);
+		} else if (home != null && fields.start(ctx, zone, FieldWorks.Mode.TERRAIN)) {
+			phase = Phase.FIELD;
+			fieldStep(ctx);
 		} else if (carrying) {
 			phase = Phase.DEPOSIT;
 			depositStep(ctx);
 		} else {
-			Planting.idleStatus(ctx, sower, status, args);
+			FieldWorks.idleStatus(ctx, sower, fields, status, args);
+		}
+	}
+
+	/** Stacks staying in the bag at the deposit chest: seeds to sow, dirt / bone meal / water buckets of the field works. */
+	private Predicate<ItemStack> keep(WorkContext ctx) {
+		return sower.keep(ctx, zone).or(fields.keep(ctx, zone));
+	}
+
+	/** One step of the field works; a full bag goes home first (the round goes on after), its end goes back to the search. */
+	private void fieldStep(WorkContext ctx) {
+		if (ctx.mustReturn()) {
+			phase = Phase.DEPOSIT;
+			depositStep(ctx);
+			return;
+		}
+		if (fields.tick(ctx, zone, sower) == Planter.Result.DONE) {
+			phase = Phase.SEARCH;
 		}
 	}
 
@@ -321,7 +361,9 @@ final class FarmerTask extends TaskHandler {
 				drops.addAll(Block.getDrops(state, level, pos, null, ctx.villager, HOE));
 				Item seed = crop.asItem();
 				boolean replant = false;
-				for (ItemStack drop : drops) {
+				// "Replanter" off: the farmland stays empty (sown later if "Semer" is on).
+				boolean replanting = zone == null || ZonePermissions.allows(zone, ZoneOption.REPLANT);
+				for (ItemStack drop : replanting ? drops : List.<ItemStack>of()) {
 					if (!drop.isEmpty() && drop.is(seed)) {
 						drop.shrink(1);
 						replant = true;
@@ -369,8 +411,8 @@ final class FarmerTask extends TaskHandler {
 	}
 
 	private void depositStep(WorkContext ctx) {
-		// One stack of seeds to sow stays in the bag.
-		DepositFlow.State state = deposit.tick(ctx, sower.keep(ctx, zone));
+		// One stack of seeds to sow (and the supplies of the field works) stays in the bag.
+		DepositFlow.State state = deposit.tick(ctx, keep(ctx));
 		switch (state) {
 			case WORKING -> {
 			}

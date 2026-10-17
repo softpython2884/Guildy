@@ -21,6 +21,7 @@ public final class VillagerModule {
 		WorkLang.register();
 		PlantingLang.register();
 		CraftLang.register();
+		FieldLang.register();
 		Guards.init();
 		VillagerVitality.init();
 		NightShelter.init();

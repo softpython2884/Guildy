@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * French defaults of the planting done by lumberjacks (saplings) and farmers (sowing, tilling): statuses, idle notes,
+ * French defaults of the planting done by lumberjacks (saplings) and farmers (sowing): statuses, idle notes,
  * item names used in the statuses and stats lines.
  */
 final class PlantingLang {
@@ -24,9 +24,7 @@ final class PlantingLang {
 		// farmer
 		m.put("villager.plant.searching_field", "&7Cherche des terres à semer &8({0}/{1})");
 		m.put("villager.plant.going_sow", "&eVa semer {0} &8({1}/{2})");
-		m.put("villager.plant.going_till", "&eVa labourer pour semer {0} &8({1}/{2})");
 		m.put("villager.plant.sowing", "&aSème {0} ({1}/{2})");
-		m.put("villager.plant.tilling", "&aLaboure et sème {0} ({1}/{2})");
 		m.put("villager.plant.fetch_seeds", "&eVa chercher des graines au stockage");
 		// idle notes (after the task's own idle status)
 		m.put("villager.plant.idle", "{0} &8· {1}");

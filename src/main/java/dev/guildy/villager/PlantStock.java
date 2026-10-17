@@ -195,7 +195,7 @@ final class PlantStock {
 	}
 
 	/** Adds items taken from storage to the bag (not a collection: missions do not count them). */
-	private static void addToBag(WorkContext ctx, Item item, int amount) {
+	static void addToBag(WorkContext ctx, Item item, int amount) {
 		int left = amount;
 		for (ItemStack stack : ctx.record.carried) {
 			if (left <= 0) {

@@ -261,6 +261,9 @@ public final class ZoneGui {
 		if (WishlistMenu.supports(zone.type)) {
 			gui.setSlot(15, WishlistMenu.zoneButton(player, guild, zone));
 		}
+		if (ZonePermissions.supports(zone.type)) {
+			gui.setSlot(13, ZoneOptionsMenu.button(player, guild, zone));
+		}
 		gui.setSlot(16, GuiUtil.item(Items.NAME_TAG, Lang.get("villager.gui.zone.rename"), GuiUtil.lines("villager.gui.zone.rename.lore"))
 				.setCallback((s, type, action, g) -> {
 					if (!VillagerGui.checkPermission(player, guild) || !stillZone(player, guild, zone)) {

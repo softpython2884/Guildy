@@ -181,6 +181,12 @@ final class LumberjackTask extends TaskHandler {
 			depositStep(ctx);
 			return;
 		}
+		WorkZone cutZone = zone;
+		if (cutZone != null && !ZonePermissions.allows(cutZone, ZoneOption.CUT)) {
+			// "Couper les arbres" off: planting only.
+			idle(ctx, "villager.field.status.cut_off", cutZone.name);
+			return;
+		}
 		if (scan == null && wanted.isEmpty() && normal.isEmpty()) {
 			if (ctx.now < nextScan) {
 				idleAfterScan(ctx);
@@ -448,7 +454,7 @@ final class LumberjackTask extends TaskHandler {
 	}
 
 	private void finishTree(WorkContext ctx, Tree current) {
-		if (ctx.config.lumberjack.replant && current.sapling != null) {
+		if (ctx.config.lumberjack.replant && current.sapling != null && (zone == null || ZonePermissions.allows(zone, ZoneOption.TREE_REPLANT))) {
 			BlockState sapling = current.sapling.defaultBlockState();
 			for (BlockPos spot : current.plantSpots) {
 				if (ctx.loaded(spot) && !ctx.foreign(spot) && ctx.level.getBlockState(spot).isAir() && sapling.canSurvive(ctx.level, spot)) {
