@@ -47,9 +47,10 @@ import java.util.UUID;
  *     trembles (block crack particles of the floor, no block is changed);</li>
  *     <li>climax: flash and sonic boom, then the guardian and its escort materialise ({@link Incantations} starts the fight).</li>
  * </ol>
- * Runtime only: a ritual never survives a restart (the scroll is refunded at shutdown).
+ * Runtime only: a ritual never survives a restart (the scroll is refunded at shutdown). The cursed ritual
+ * ({@link CursedRitual}) draws its own choreography and has its own blood price.
  */
-final class Ritual {
+class Ritual {
 	static final int BLOOD = 0x8E0012;
 	static final int BLOOD_BRIGHT = 0xFF1A2B;
 	private static final double CIRCLE_RADIUS = 4.5;
@@ -70,8 +71,8 @@ final class Ritual {
 	final int color;
 	final int accent;
 	final ServerBossEvent bar;
-	private final ParticleOptions floor;
-	private final ParticleOptions pillar;
+	final ParticleOptions floor;
+	final ParticleOptions pillar;
 	private final SplittableRandom random = new SplittableRandom();
 	/** Health already drained per participant (players joining late start at the current target: they pay the rest). */
 	private final Map<UUID, Double> drained = new HashMap<>();
@@ -85,6 +86,11 @@ final class Ritual {
 	private boolean fog;
 
 	Ritual(ServerLevel level, RuinRecord ruin, RuinDef def, BlockPos marker, ServerPlayer caster, ItemStack refund, RuinConfig cfg) {
+		this(level, ruin, def, marker, caster, refund, cfg, cfg.summon.ritualSeconds);
+	}
+
+	/** A ritual lasting {@code seconds}. */
+	Ritual(ServerLevel level, RuinRecord ruin, RuinDef def, BlockPos marker, ServerPlayer caster, ItemStack refund, RuinConfig cfg, double seconds) {
 		this.ruin = ruin;
 		this.def = def;
 		this.dimension = level.dimension();
@@ -92,7 +98,7 @@ final class Ritual {
 		this.caster = caster.getUUID();
 		this.casterName = caster.getName().getString();
 		this.refund = refund;
-		this.duration = SummonRules.ticks(cfg.summon.ritualSeconds);
+		this.duration = SummonRules.ticks(seconds);
 		this.color = SummonRules.themeColor(def.bossBarColor);
 		this.accent = RitualFx.mix(color, 0xFFFFFF, 0.45);
 		this.seed = random.nextLong();
@@ -127,6 +133,21 @@ final class Ritual {
 		return Math.min(1.0, (double) age / Math.max(1, duration));
 	}
 
+	/** Health drained from each participant over the whole ritual. */
+	double drainTotal(RuinConfig cfg) {
+		return cfg.summon.drainHealth;
+	}
+
+	/** The blood price never takes a participant below this health. */
+	double minHealth(RuinConfig cfg) {
+		return cfg.summon.minHealth;
+	}
+
+	/** A cursed ritual: the guardian awakens cursed. */
+	boolean cursed() {
+		return false;
+	}
+
 	// ================================================================== participants
 
 	/** Players taking part right now (alive, not spectators, inside the arena). */
@@ -137,7 +158,7 @@ final class Ritual {
 			if (SummonRules.participant(player.isAlive(), player.isSpectator(), true, player.position().distanceToSqr(center), arenaRadius)) {
 				list.add(player);
 				// A late participant pays only the rest of the price.
-				drained.putIfAbsent(player.getUUID(), SummonRules.drainTarget(progress(), RuinModule.config().summon.drainHealth));
+				drained.putIfAbsent(player.getUUID(), SummonRules.drainTarget(progress(), drainTotal(RuinModule.config())));
 			}
 		}
 		participants = list;
@@ -225,7 +246,7 @@ final class Ritual {
 	/** A heartbeat: sound, a share of the blood price, slowness, blood bursting from the chests, the circle pulses. */
 	private void beat(ServerLevel level, RitualFx fx, RuinConfig cfg, double p) {
 		beats++;
-		double target = SummonRules.drainTarget(p, cfg.summon.drainHealth);
+		double target = SummonRules.drainTarget(p, drainTotal(cfg));
 		float pitch = 0.85F + 0.4F * (float) p;
 		for (ServerPlayer player : participants) {
 			level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 1.6F, pitch);
@@ -239,7 +260,7 @@ final class Ritual {
 				fx.burst(ParticleTypes.DAMAGE_INDICATOR, chest.x, chest.y + 0.3, chest.z, 2, 0.2, 0.1, 0.2, 0.05);
 			}
 			if (warned.add(player.getUUID()) || beats % 3 == 0) {
-				Msg.actionBar(player, cfg.summon.drainHealth > 0 ? "ruin.summon.drain" : "ruin.summon.drain.none");
+				Msg.actionBar(player, drainTotal(cfg) > 0 ? "ruin.summon.drain" : "ruin.summon.drain.none");
 			}
 		}
 		level.playSound(null, ground.x, ground.y, ground.z, SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 2.5F, pitch - 0.15F);
@@ -250,7 +271,7 @@ final class Ritual {
 	 * Drains the participant down to {@code target} health lost in total (never below the minimum health, nothing in
 	 * creative). @return true when health was taken
 	 */
-	private boolean drainTo(ServerPlayer player, double target, RuinConfig cfg) {
+	boolean drainTo(ServerPlayer player, double target, RuinConfig cfg) {
 		UUID uuid = player.getUUID();
 		double already = drained.getOrDefault(uuid, target);
 		drained.put(uuid, Math.max(already, target));
@@ -259,7 +280,7 @@ final class Ritual {
 			return false;
 		}
 		float health = player.getHealth();
-		float after = SummonRules.drain(health, cfg.summon.minHealth, amount);
+		float after = SummonRules.drain(health, minHealth(cfg), amount);
 		if (after >= health) {
 			return false;
 		}
@@ -273,11 +294,11 @@ final class Ritual {
 	/** Climax: whoever is still there pays the whole price. */
 	void settle(ServerLevel level, RuinConfig cfg) {
 		for (ServerPlayer player : participants) {
-			drainTo(player, Math.max(0, cfg.summon.drainHealth), cfg);
+			drainTo(player, Math.max(0, drainTotal(cfg)), cfg);
 		}
 	}
 
-	private void syncBar(ServerLevel level, RuinConfig cfg) {
+	void syncBar(ServerLevel level, RuinConfig cfg) {
 		Set<ServerPlayer> viewers = new HashSet<>(Encounters.present(level, ruin, cfg.encounter.presenceMargin));
 		viewers.addAll(participants);
 		for (ServerPlayer player : new ArrayList<>(bar.getPlayers())) {
@@ -506,7 +527,7 @@ final class Ritual {
 		return value - Math.floor(value);
 	}
 
-	private static void sound(ServerLevel level, Vec3 at, SoundEvent sound, float volume, float pitch) {
+	static void sound(ServerLevel level, Vec3 at, SoundEvent sound, float volume, float pitch) {
 		level.playSound(null, at.x, at.y, at.z, sound, SoundSource.HOSTILE, volume, pitch);
 	}
 

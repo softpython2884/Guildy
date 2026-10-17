@@ -228,6 +228,13 @@ class ResourcePackTest {
 	void incantationScrollAndCrossbowStatesShipped() throws Exception {
 		assertTrue(Files.isRegularFile(assets().resolve("items/parchemin_incantation.json")));
 		assertTrue(Files.isRegularFile(assets().resolve("textures/item/parchemin_incantation.png")));
+		// The cursed incantation scroll: its own animated sprite, model and item definition.
+		assertTrue(Files.isRegularFile(assets().resolve("textures/item/parchemin_incantation_maudit.png")));
+		assertTrue(Files.isRegularFile(assets().resolve("textures/item/parchemin_incantation_maudit.png.mcmeta")), "animated");
+		assertEquals("guildy:item/parchemin_incantation_maudit",
+				json(assets().resolve("items/parchemin_incantation_maudit.json")).getAsJsonObject("model").get("model").getAsString());
+		assertEquals("guildy:item/parchemin_incantation_maudit", json(assets().resolve("models/item/parchemin_incantation_maudit.json"))
+				.getAsJsonObject("textures").get("layer0").getAsString());
 		JsonObject crossbow = json(assets().resolve("items/arbalete_du_traqueur.json")).getAsJsonObject("model");
 		assertEquals("minecraft:charge_type", crossbow.get("property").getAsString(), "vanilla crossbow states");
 		List<String> refs = new ArrayList<>();

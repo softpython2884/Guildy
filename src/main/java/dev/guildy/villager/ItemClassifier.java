@@ -49,7 +49,7 @@ public final class ItemClassifier {
 	private static @Nullable Map<Item, List<CreativeEntry>> creative;
 
 	/** Guildy magic items (custom_data kind) sorted like the enchanted books. */
-	private static final Set<String> MAGIC_KINDS = Set.of("scroll", "grimoire", "ruin_summon");
+	private static final Set<String> MAGIC_KINDS = Set.of("scroll", "grimoire", "ruin_summon", "ruin_summon_cursed");
 
 	private record CreativeEntry(ItemStack stack, int index) {
 	}

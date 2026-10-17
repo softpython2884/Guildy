@@ -959,6 +959,76 @@ def parchemin_incantation():
 	return Sprite(frames, anim(4))
 
 
+def parchemin_incantation_maudit():
+	"""
+	Cursed incantation parchment, same rolled shape as the incantation scroll: purple-black paper, obsidian rolls with
+	violet crystal knobs and glowing glyphs, an inverted pentagram of violet runes that pulses (its lines glow then fade)
+	over a dark halo, blood running from the star's lower point and dripping under the bottom roll, a black-violet wax seal
+	on blood-red ribbons.
+	"""
+	c = Canvas()
+	c.ascii([
+		"................",
+		"................",
+		".BRRRRRRRRRRRRB.",
+		".BRRRRRRRRRRRRB.",
+		"....PPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPP....",
+		".BRRRRRRRRRRRRB.",
+		".BRRRRRRRRRRRRB.",
+		"......KSSK......",
+		"......K.SK......",
+	], {"R": "roll", "B": "knob", "P": "paper", "S": "seal", "K": "ribbon"})
+	# Inverted pentagram over the whole sheet: two horns on top, the arms on the bar, the lone point at the bottom.
+	star = [
+		"..#...#..",
+		"..##.##..",
+		"...###...",
+		"..##.##..",
+		".#.#.#.#.",
+		"#########",
+		"....#....",
+		"....#....",
+	]
+	for y, line in enumerate(star):
+		for x, ch in enumerate(line):
+			if ch == "#":
+				c.put(3 + x, 4 + y, "rune")
+	for y in range(SIZE):
+		for x in range(SIZE):
+			if c.get(x, y) == "paper" and any(c.get(x + dx, y + dy) == "rune" for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+				c.put(x, y, "halo")
+	# Blood running from the bar's ends and the lower point.
+	for x, y in ((3, 10), (11, 10), (7, 12)):
+		c.put(x, y, "blood")
+	for x, y in ((12, 6), (4, 5)):
+		c.put(x, y, "stain")
+	for x, y in ((4, 2), (8, 3), (11, 2)):
+		c.put(x, y, "glyph")
+	glow = ["#f4d4ff", "#dc94ff", "#b05cf0", "#7a2cc4", "#b05cf0", "#dc94ff"]
+	frames = []
+	for f in range(len(glow)):
+		styles = {"roll": ("#3a2c44", "#1e1626", "#0c0810"), "knob": ("#e6c0ff", "#a868e8", "#5a2a8c"),
+				  "paper": ("#4a3058", "#36203f", "#22122a"), "halo": flat("#1a0a22"), "stain": flat("#5a0c1c"),
+				  "blood": flat(["#c0102a", "#d81a30", "#a00c20", "#8a0a1a", "#a00c20", "#c0102a"][f]),
+				  "seal": ("#b060f0", "#6a20b0", "#2c0a50"), "ribbon": flat("#4a0a14"),
+				  "rune": flat(glow[f]), "glyph": flat(glow[(f + 3) % len(glow)])}
+		frame = render(c, styles, "#0a0410")[0]
+		# Blood dripping under the bottom roll, one drop after the other.
+		if f in (1, 2):
+			put(frame, [(3, 13 + f)], "#c0102a")
+		if f in (4, 5):
+			put(frame, [(11, 10 + f)], "#c0102a")
+		frames.append(frame)
+	return Sprite(frames, anim(4))
+
+
 WEAPONS = {
 	# name: (draw, parent model)
 	"foudrelame": (foudrelame, "minecraft:item/handheld"),
@@ -1202,6 +1272,7 @@ def all_sprites():
 	for name, (rune, palette, seal) in SCROLL_RUNES.items():
 		sprites["parchemin_" + name] = scroll(rune, palette, seal)
 	sprites["parchemin_incantation"] = parchemin_incantation()
+	sprites["parchemin_incantation_maudit"] = parchemin_incantation_maudit()
 	sprites["grimoire"] = grimoire()
 	for spell in GRIMOIRE_SIGILS:
 		sprites["grimoire_" + spell] = grimoire(spell)
@@ -1433,6 +1504,7 @@ def main():
 	for name in SCROLL_RUNES:
 		simple_model("parchemin_" + name, "minecraft:item/generated")
 	simple_model("parchemin_incantation", "minecraft:item/generated")
+	simple_model("parchemin_incantation_maudit", "minecraft:item/generated")
 	grimoire_model()
 	remove_stale()
 	pack_icon(sprites)

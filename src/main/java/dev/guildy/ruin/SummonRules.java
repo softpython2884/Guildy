@@ -39,7 +39,9 @@ public final class SummonRules {
 		BUSY,
 		NOT_LOADED,
 		/** Room guards are still alive in the arena (see {@link RoomGuardRules#blocksRitual}). */
-		GUARDED;
+		GUARDED,
+		/** A cursed incantation scroll while the cursed guardians are disabled. */
+		CURSED_DISABLED;
 
 		public String langKey() {
 			return "ruin.summon.fail." + name().toLowerCase(Locale.ROOT);

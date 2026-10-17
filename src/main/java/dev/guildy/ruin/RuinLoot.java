@@ -86,14 +86,23 @@ final class RuinLoot {
 		}
 		String source = source(encounter.ruin, rewards.uniqueSource);
 		int uniqueRolls = rolls(bonus.extraUniqueChance(), bonus.bonusUniqueRolls(), random);
-		for (int i = 0; i < uniqueRolls; i++) {
-			dropped += protectedDrop(level, boss, UniqueDrops.roll(source, random, UniqueDrops.Recipient.topDamager(boss)));
+		// A cursed guardian gets many attempts, but never more than maxUniques weapons.
+		int uniqueCap = encounter.cursed != null ? RuinModule.config().cursed.rewards.maxUniques : Integer.MAX_VALUE;
+		int uniques = 0;
+		for (int i = 0; i < uniqueRolls && uniques < uniqueCap; i++) {
+			int n = protectedDrop(level, boss, UniqueDrops.roll(source, random, UniqueDrops.Recipient.topDamager(boss)));
+			uniques += n;
+			dropped += n;
 		}
 		String scrollSource = source(encounter.ruin, rewards.scrollSource);
 		int scrollRolls = rolls(bonus.extraScrollChance(), bonus.bonusScrollRolls(), random);
+		int scrolls = 0;
 		for (int i = 0; i < scrollRolls; i++) {
-			dropped += protectedDrop(level, boss, ScrollDrops.roll(scrollSource, random));
+			int n = protectedDrop(level, boss, ScrollDrops.roll(scrollSource, random));
+			scrolls += n;
+			dropped += n;
 		}
+		dropped += CursedEncounter.bonusDrops(level, encounter, boss, random, scrollSource, scrolls > 0);
 		return dropped;
 	}
 
@@ -130,10 +139,11 @@ final class RuinLoot {
 		return dropped;
 	}
 
-	/** Reward multipliers of the fight: threat level of the ruin, risen guardian. */
+	/** Reward multipliers of the fight: threat level of the ruin, risen guardian, cursed guardian (the group is apart). */
 	static ThreatRules.Rewards bonus(Encounter encounter) {
 		RuinConfig cfg = RuinModule.config();
-		return ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, encounter.risen);
+		ThreatRules.Rewards rewards = ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, encounter.risen);
+		return encounter.cursed != null ? CursedRules.rewards(rewards, cfg.cursed.rewards) : rewards;
 	}
 
 	/** One roll, one more with {@code extraChance}, plus the guaranteed bonus rolls. */
@@ -150,7 +160,7 @@ final class RuinLoot {
 	}
 
 	/** Rare drop: never despawns, resists fire / lava / explosions and glows so that it is found after the fight. */
-	private static int protectedDrop(ServerLevel level, Mob boss, ItemStack stack) {
+	static int protectedDrop(ServerLevel level, Mob boss, ItemStack stack) {
 		if (stack.isEmpty()) {
 			return 0;
 		}

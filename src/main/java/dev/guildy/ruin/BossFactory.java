@@ -104,7 +104,7 @@ final class BossFactory {
 		return add(level, mob, track);
 	}
 
-	private static @Nullable Mob create(ServerLevel level, String entityId, BlockPos pos) {
+	static @Nullable Mob create(ServerLevel level, String entityId, BlockPos pos) {
 		EntityType<?> type = RuinRegistries.entity(entityId);
 		if (type == null) {
 			return null;
@@ -160,7 +160,7 @@ final class BossFactory {
 		return mob;
 	}
 
-	private static @Nullable Mob add(ServerLevel level, Mob mob, Predicate<Mob> track) {
+	static @Nullable Mob add(ServerLevel level, Mob mob, Predicate<Mob> track) {
 		sunProof(mob);
 		if (!track.test(mob)) {
 			mob.discard();

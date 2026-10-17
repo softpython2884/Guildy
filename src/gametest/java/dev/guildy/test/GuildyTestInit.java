@@ -32,6 +32,8 @@ public class GuildyTestInit implements ModInitializer {
 			// The test ruin (unknown id: generic guardian) has no room guards, so that the fights of the other ruin tests
 			// stay as they were; RuinGuardGameTests give their ruins a configured definition with guards.
 			RuinModule.config().generic.guards = false;
+			// Many ruin scenarios run at once (fights and rituals): the server-wide cap must never refuse one of them.
+			RuinModule.config().encounter.maxActive = 64;
 		});
 	}
 }

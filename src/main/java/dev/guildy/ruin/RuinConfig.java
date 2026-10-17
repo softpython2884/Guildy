@@ -75,6 +75,13 @@ public final class RuinConfig implements Validatable {
 	})
 	public ScalingSettings scaling = new ScalingSettings();
 
+	@Comment({
+			"Gardiens maudits : le parchemin d'incantation maudit eveille le gardien d'une ruine dormante sous une forme maudite",
+			"(bien plus forte, trois phases, attaques folles, recompenses enormes). Admin : /guild admin ruin incantation <joueur>",
+			"[nombre] cursed | awaken cursed | cursed phase | cursed attack <attaque>"
+	})
+	public CursedSettings cursed = new CursedSettings();
+
 	@Comment("Recherches de l'Atelier du cartographe")
 	public CartographySettings cartography = new CartographySettings();
 
@@ -603,6 +610,10 @@ public final class RuinConfig implements Validatable {
 		r.bonusScrollRolls = clamp(r.bonusScrollRolls, 0, 5);
 		fixGuardSettings();
 		fixScaling();
+		if (cursed == null) {
+			cursed = new CursedSettings();
+		}
+		cursed.fix(itemExists, warnings);
 		if (cartography == null) {
 			cartography = new CartographySettings();
 		}
