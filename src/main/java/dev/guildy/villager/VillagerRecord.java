@@ -62,6 +62,8 @@ public class VillagerRecord {
 
 	/** Guard role setting (created the first time the villager becomes a guard, see {@link Guards}). */
 	public @Nullable GuardData guard;
+	/** Blacksmith / alchemist statistics and daily count (created when one of these tasks first works, see {@link CraftJobs}). */
+	public @Nullable CraftData craft;
 
 	public boolean isAway() {
 		return awayEntity != null;
@@ -141,6 +143,9 @@ public class VillagerRecord {
 		routeId = Math.max(-1, routeId);
 		if (guard != null) {
 			guard.sanitize();
+		}
+		if (craft != null) {
+			craft.sanitize();
 		}
 	}
 }

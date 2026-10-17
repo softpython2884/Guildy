@@ -22,6 +22,8 @@ abstract class TaskHandler {
 			case FARMER -> new FarmerTask();
 			case GUARD -> new GuardTask();
 			case EXPLORER, NETHER -> new ExpeditionTask();
+			case BLACKSMITH -> new BlacksmithTask();
+			case ALCHEMIST -> new AlchemistTask();
 			case IDLE -> new TaskHandler() {
 				@Override
 				void tick(WorkContext ctx) {

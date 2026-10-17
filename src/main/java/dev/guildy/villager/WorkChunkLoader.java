@@ -252,7 +252,7 @@ public final class WorkChunkLoader {
 				}
 			}
 			zoneAnchor(anchors, guild, record, pos, config);
-			if (task == Task.SORTER) {
+			if (task == Task.SORTER || task == Task.ALCHEMIST) {
 				for (StorageChest chest : guild.villagers.chests) {
 					if (chest.pos != null) {
 						add(anchors, heart, id, ChunkLoadPlanner.Kind.STORAGE, chest.pos, 0);

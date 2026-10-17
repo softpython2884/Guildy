@@ -17,7 +17,11 @@ public enum Task {
 	/** Expedition in the wilds (simulated, the villager is away for a while). */
 	EXPLORER,
 	/** Expedition in the Nether through a portal of the territory (simulated, riskier, better loot). */
-	NETHER;
+	NETHER,
+	/** Repairs the equipment of the territory's armor stands at the nearest anvil (see {@link BlacksmithTask}). */
+	BLACKSMITH,
+	/** Turns books into enchanted books at an enchanting table of the territory (see {@link AlchemistTask}). */
+	ALCHEMIST;
 
 	public String id() {
 		return name().toLowerCase(java.util.Locale.ROOT);
@@ -43,12 +47,18 @@ public enum Task {
 			case GUARD -> Items.IRON_SWORD;
 			case EXPLORER -> Items.COMPASS;
 			case NETHER -> Items.FLINT_AND_STEEL;
+			case BLACKSMITH -> Items.ANVIL;
+			case ALCHEMIST -> Items.ENCHANTING_TABLE;
 		};
 	}
 
 	/** Item held while working (visual only), null for IDLE. */
 	public @Nullable Item handItem() {
-		return this == IDLE ? null : icon();
+		return switch (this) {
+			case IDLE -> null;
+			case BLACKSMITH, ALCHEMIST -> CraftJobs.handItem(this);
+			default -> icon();
+		};
 	}
 
 	/** Kind of work zone this task works in (null: no zone, e.g. the sorter or expeditions). */
