@@ -53,6 +53,8 @@ final class Encounter {
 	/** Threat level of this fight ("Menace", fixed at the awakening) and the statistics it gives. */
 	final int threat;
 	final ThreatRules.Scaling scaling;
+	/** Group scaling: the players counted when the guardian appeared (fixed for the fight, see {@link GroupScaling}). */
+	GroupScaling.Party party = GroupScaling.Party.NONE;
 	/** Fast-kill window: a guardian killed less than this many ticks after it appeared rises again (0 = never). */
 	final long fastKillTicks;
 	/** The resurrection running (the guardian is invulnerable and frozen), null otherwise. */
@@ -112,14 +114,15 @@ final class Encounter {
 		return scaling.cooldownFactor() * (enraged ? 0.5 : 1.0) * (risen ? risenCooldown : 1.0) * (cursed != null ? cursed.cooldownFactor() : 1.0);
 	}
 
-	/** Factor of the ability damage: threat level, the risen guardian's bonus, the curse (and its phase). */
+	/** Factor of the ability damage: threat level, group, the risen guardian's bonus, the curse (and its phase). */
 	double damageFactor() {
-		return scaling.damage() * (risen ? 1.0 + risenDamage : 1.0) * (cursed != null ? cursed.damageFactor() : 1.0);
+		return GroupScaling.combined(scaling.damage(), party.damage()) * (risen ? 1.0 + risenDamage : 1.0)
+				* (cursed != null ? cursed.damageFactor() : 1.0);
 	}
 
-	/** Cap of the living escort (the threat level adds mobs). */
+	/** Cap of the living escort (the threat level, the group and the curse add mobs). */
 	int maxAlive() {
-		return Math.min(48, def.minions.maxAlive + scaling.extraMinions() + (cursed != null ? cursed.extraAlive() : 0));
+		return Math.min(48, def.minions.maxAlive + scaling.extraMinions() + party.extraMinions() + (cursed != null ? cursed.extraAlive() : 0));
 	}
 
 	/** Remembers where an escort mob died (bounded). */

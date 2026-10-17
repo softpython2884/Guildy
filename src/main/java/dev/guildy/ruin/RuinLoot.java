@@ -1,5 +1,6 @@
 package dev.guildy.ruin;
 
+import dev.guildy.core.GuildyServer;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
@@ -13,6 +14,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
@@ -33,7 +35,9 @@ import java.util.random.RandomGenerator;
 /**
  * Rewards of a defeated guardian: gold ingots, rolls in a vanilla loot table, extra items, a unique weapon and a spell
  * scroll (rare, protected drops), guild XP split between the guilds of the participants. The ruin's threat level adds gold,
- * XP and a chance of extra unique / scroll rolls; a guardian defeated in its risen form gives bonus rolls on top.
+ * XP and a chance of extra unique / scroll rolls; a guardian defeated in its risen form gives bonus rolls on top. A group
+ * fight (see {@link GroupScaling}) gives more gold and XP, the gold being shared: one pile per participant, that only they
+ * can pick up.
  */
 final class RuinLoot {
 	static final String SOURCE_OVERWORLD = "ruin_boss";
@@ -48,10 +52,8 @@ final class RuinLoot {
 		ThreatRules.Rewards bonus = bonus(encounter);
 		List<ItemStack> drops = new ArrayList<>();
 		int rolled = rewards.goldMin + (rewards.goldMax > rewards.goldMin ? random.nextInt(rewards.goldMax - rewards.goldMin + 1) : 0);
-		int gold = ThreatRules.scaled(rolled, bonus.gold());
-		if (gold > 0) {
-			drops.add(new ItemStack(Items.GOLD_INGOT, gold));
-		}
+		int gold = ThreatRules.scaled(rolled, GroupScaling.combined(bonus.gold(), encounter.party.gold()));
+		int dropped = gold > 0 ? dropGold(level, encounter, boss, gold) : 0;
 		int lootRolls = rewards.lootRolls + bonus.extraLootRolls();
 		if (!rewards.lootTable.isBlank() && lootRolls > 0) {
 			Identifier id = Identifier.tryParse(rewards.lootTable);
@@ -73,7 +75,6 @@ final class RuinLoot {
 				drops.add(new ItemStack(item, count));
 			}
 		}
-		int dropped = 0;
 		for (ItemStack stack : drops) {
 			for (ItemStack part : split(stack)) {
 				ItemEntity entity = boss.spawnAtLocation(level, part);
@@ -105,7 +106,40 @@ final class RuinLoot {
 		return dropped;
 	}
 
-	/** Reward multipliers of the fight: threat level of the ruin, risen guardian, cursed guardian. */
+	/**
+	 * The gold, one share per participant still online in the level (only they can pick it up), else a single pile.
+	 *
+	 * @return the number of stacks dropped
+	 */
+	private static int dropGold(ServerLevel level, Encounter encounter, Mob boss, int gold) {
+		List<UUID> recipients = new ArrayList<>();
+		if (RuinModule.config().scaling.shareGold) {
+			for (UUID uuid : encounter.participants) {
+				ServerPlayer player = GuildyServer.player(uuid);
+				if (player != null && player.level() == level) {
+					recipients.add(uuid);
+				}
+			}
+		}
+		int[] shares = GroupScaling.shares(gold, recipients.size());
+		int dropped = 0;
+		for (int i = 0; i < shares.length; i++) {
+			UUID owner = recipients.size() > 1 ? recipients.get(i) : null;
+			for (ItemStack part : split(new ItemStack(Items.GOLD_INGOT, shares[i]))) {
+				ItemEntity entity = boss.spawnAtLocation(level, part);
+				if (entity != null) {
+					entity.setUnlimitedLifetime();
+					if (owner != null) {
+						entity.setTarget(owner);
+					}
+					dropped++;
+				}
+			}
+		}
+		return dropped;
+	}
+
+	/** Reward multipliers of the fight: threat level of the ruin, risen guardian, cursed guardian (the group is apart). */
 	static ThreatRules.Rewards bonus(Encounter encounter) {
 		RuinConfig cfg = RuinModule.config();
 		ThreatRules.Rewards rewards = ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, encounter.risen);
@@ -149,7 +183,7 @@ final class RuinLoot {
 				perGuild.merge(guild.id, 1, Integer::sum);
 			}
 		}
-		long total = ThreatRules.scaled(encounter.def.rewards.xp, bonus(encounter).xp());
+		long total = ThreatRules.scaled(encounter.def.rewards.xp, GroupScaling.combined(bonus(encounter).xp(), encounter.party.xp()));
 		Map<UUID, Long> split = RuinRules.splitXp(perGuild, total, minPerGuild);
 		String ruinName = Lang.colorize(encounter.def.name);
 		for (Map.Entry<UUID, Long> entry : split.entrySet()) {

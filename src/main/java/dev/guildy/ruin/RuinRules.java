@@ -20,13 +20,16 @@ public final class RuinRules {
 	public static final String MARKER_MINION = "guildy:minion";
 	/** Data marker metadata of the entrance (shown by maps and compasses). */
 	public static final String MARKER_ENTRANCE = "guildy:entrance";
+	/** Data marker metadata of a room guard post (2 to 8 per ruin; older templates have none). */
+	public static final String MARKER_GUARD = "guildy:guard";
 	/** Template paths of ruins start with this prefix ({@code guildy:ruin/<id>} or {@code guildy:ruin/<id>/<piece>}). */
 	public static final String TEMPLATE_PREFIX = "ruin/";
 
 	public enum Marker {
 		BOSS,
 		MINION,
-		ENTRANCE
+		ENTRANCE,
+		GUARD
 	}
 
 	/** What the encounter loop must do for a ruin this second. */
@@ -192,6 +195,7 @@ public final class RuinRules {
 			case MARKER_BOSS -> Marker.BOSS;
 			case MARKER_MINION -> Marker.MINION;
 			case MARKER_ENTRANCE -> Marker.ENTRANCE;
+			case MARKER_GUARD -> Marker.GUARD;
 			default -> null;
 		};
 	}

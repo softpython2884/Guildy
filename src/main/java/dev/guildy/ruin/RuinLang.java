@@ -101,6 +101,20 @@ final class RuinLang {
 		m.put("ruin.summon.hint.chat", "&7Une présence dort dans la &f{0}&7 : {1}&7. Un &5parchemin d'incantation&7, lu au cœur de la ruine, pourrait l'éveiller.");
 		m.put("ruin.summon.hint.threat", "&7Niveau de menace : {0} &8(le gardien revient plus fort après chaque victoire)");
 		m.put("ruin.summon.start.threat", "&8» &7Menace de la ruine : {0}");
+		m.put("ruin.summon.fail.guarded", "&cDes gardiens protègent encore la salle (&e{4}&c) : éliminez-les avant l'incantation.");
+
+		// Room guards
+		m.put("ruin.guards.posted", "&6⚔ &eDes gardiens veillent sur la &f{0}&e (&c{1}&e).");
+		m.put("ruin.guards.hint", "&7Des &cgardiens de salle&7 veillent encore (&c{0}&7) : éliminez ceux de la salle du gardien avant l'incantation.");
+		m.put("ruin.guards.blocking", "&cDes gardiens protègent encore la salle (&e{0}&c) : le gardien ne s'éveillera pas avant leur chute.");
+		m.put("ruin.known.state.guarded", "&7État : &adormante &8— &c{0} gardien(s) de salle");
+
+		// Group scaling
+		m.put("ruin.bar.group", "{0} &8— &e{1} joueurs");
+		m.put("ruin.awaken.group", "&8» &7Groupe de &e{0}&7 joueurs : gardien renforcé (&c+{1} %&7 de vie, &c+{2} %&7 de dégâts), butin plus riche et or partagé.");
+
+		// Beacon sanctuaries
+		m.put("ruin.sanctuary.protected", "&6✦ &eUne force ancienne protège ce sanctuaire.");
 
 		// Cartography
 		m.put("ruin.research.no_atelier", "&cLa guilde n'a pas d'Atelier du cartographe.");
@@ -221,6 +235,14 @@ final class RuinLang {
 		m.put("ruin.admin.resurrection.risen", "&4ressuscité (enragé)");
 		m.put("ruin.admin.resurrection.never", "&7jamais");
 		m.put("ruin.admin.threat", "&a{0}&a : menace réglée sur {1}&a (appliquée au prochain réveil du gardien).");
+		m.put("ruin.admin.info.guards", "&7Gardiens de salle : &f{0}&7 en poste, &f{1}&7 tué(s) &8| &7postes : &f{2} &8({3})");
+		m.put("ruin.admin.info.guards.markers", "marqueurs");
+		m.put("ruin.admin.info.guards.fallback", "postes de secours");
+		m.put("ruin.admin.info.group", "&7Groupe : &e{0}&7 joueur(s) &8(&7vie x{1}, dégâts x{2}&8)");
+		m.put("ruin.admin.guards.posted", "&a{0} gardien(s) posté(s) dans la &f{1}&a.");
+		m.put("ruin.admin.guards.none", "&cAucun gardien posté (désactivés pour cette ruine, aucun poste libre ou zone non chargée).");
+		m.put("ruin.admin.guards.cleared", "&aGardiens de la &f{0}&a retirés : de nouveaux viendront à la prochaine approche.");
+		m.put("ruin.admin.guards.nothing", "&7Aucun gardien en poste dans la &f{0}&7.");
 		m.put("ruin.admin.ability.unknown", "&cCapacité ou style inconnu '{0}' ({1}).");
 		m.put("ruin.admin.ability.failed", "&cCapacité '{0}' impossible : aucun combat en cours, aucun joueur en survie à portée ou condition non remplie.");
 		m.put("ruin.admin.ability.used", "&aCapacité '{0}' utilisée.");

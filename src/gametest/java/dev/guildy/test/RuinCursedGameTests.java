@@ -12,6 +12,7 @@ import dev.guildy.ruin.RuinConfig;
 import dev.guildy.ruin.RuinIndex;
 import dev.guildy.ruin.RuinModule;
 import dev.guildy.ruin.RuinRecord;
+import dev.guildy.ruin.RoomGuards;
 import dev.guildy.ruin.RuinState;
 import dev.guildy.ruin.SummonRules;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -40,8 +41,10 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Cursed guardians, on the test ruin of {@link RuinGameTests}: the cursed incantation scroll (item, loot table stacks
@@ -49,12 +52,14 @@ import java.util.Set;
  * awakens the guardian cursed (3x health, purple boss bar, "Maudit"); a killing blow in phase 1 starts the phase 2
  * transition (invulnerable) instead of a death or a resurrection; pentagrams appear on the floor, a player standing in one
  * is drained while the guardian heals; killed in phase 3 it gives the cursed rewards and the threat rises by 2; when
- * everyone leaves, the cursed guardian vanishes and the ruin sleeps again.
+ * everyone leaves, the cursed guardian vanishes and the ruin sleeps again; like the normal one, the cursed scroll is
+ * refused while room guards hold the arena (and given back when its ritual breaks).
  */
 @SuppressWarnings("removal")
 public class RuinCursedGameTests {
 	private static final Identifier CURSED_HEALTH = Identifier.fromNamespaceAndPath("guildy", "ruin_cursed_health");
 	private static final Identifier BOOST = Identifier.fromNamespaceAndPath("guildy-test", "cursed_test_health");
+	private static final AtomicInteger IDS = new AtomicInteger();
 
 	/** A placed, indexed test ruin with its boss marker, at threat level I. */
 	private static RuinRecord ruin(GameTestHelper helper) {
@@ -308,6 +313,56 @@ public class RuinCursedGameTests {
 					helper.assertTrue(magic, "a spell scroll (or a grimoire) guaranteed");
 				})
 				.thenExecute(() -> away(level, player, ruin))
+				.thenSucceed();
+	}
+
+	// ================================================================== room guards
+
+	@GameTest(maxTicks = 900)
+	public void cursedRitualRefusedWhileGuardsHoldTheArena(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		RuinRecord ruin = ruin(helper);
+		RuinConfig.RuinDef def = RuinModule.config().def("test_ruin", false).copy();
+		def.resetSeconds = 3;
+		def.fastKillSeconds = 0;
+		def.guards.count = 2;
+		def.guards.types.clear();
+		def.guards.types.put("minecraft:zombie", 1);
+		String id = "cursed_guard_test_" + IDS.incrementAndGet();
+		RuinModule.config().ruins.put(id, def);
+		ruin.ruinId = id;
+		ServerPlayer player = TestSupport.survivor(helper, ruin.boss.offset(2, -1, 0));
+		player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, MobEffectInstance.INFINITE_DURATION, 4, false, false));
+		List<Mob> guards = new ArrayList<>();
+		helper.startSequence()
+				.thenWaitUntil(() -> helper.assertTrue(RoomGuards.guards(ruin).size() == 2, "waiting for the room guards"))
+				.thenExecute(() -> {
+					guards.addAll(RoomGuards.guards(ruin));
+					guards.forEach(guard -> guard.setNoAi(true));
+					helper.assertTrue(RoomGuards.blocking(level, ruin) == 2, "the guards hold the arena");
+					player.setItemInHand(InteractionHand.MAIN_HAND, CursedItems.create(2));
+					InteractionResult refused = UseItemCallback.EVENT.invoker().interact(player, level, InteractionHand.MAIN_HAND);
+					helper.assertTrue(refused == InteractionResult.FAIL && !player.isUsingItem(), "cursed incantation refused, got " + refused);
+					helper.assertTrue(cursedScrolls(player) == 2 && !Incantations.ritualRunning(ruin), "scroll kept, no ritual");
+					guards.forEach(guard -> guard.hurtServer(level, level.damageSources().playerAttack(player), 1000F));
+				})
+				.thenIdle(5)
+				.thenExecute(() -> {
+					helper.assertTrue(RoomGuards.blocking(level, ruin) == 0, "the arena is free");
+					InteractionResult started = UseItemCallback.EVENT.invoker().interact(player, level, InteractionHand.MAIN_HAND);
+					helper.assertTrue(started instanceof InteractionResult.Success && player.isUsingItem(), "accepted once they are dead, got " + started);
+					for (int i = 0; i < 400 && player.isUsingItem(); i++) {
+						player.doTick();
+					}
+					helper.assertTrue(Incantations.ritualRunning(ruin) && Incantations.ritualCursed(ruin) && cursedScrolls(player) == 1,
+							"the cursed ritual starts, one scroll consumed");
+					away(level, player, ruin);
+				})
+				.thenWaitUntil(() -> helper.assertFalse(Incantations.ritualRunning(ruin), "waiting for the ritual to break"))
+				.thenExecute(() -> {
+					helper.assertFalse(Encounters.isActive(ruin), "no guardian");
+					helper.assertTrue(cursedScrolls(player) == 2, "the cursed scroll is given back by the broken ritual: " + cursedScrolls(player));
+				})
 				.thenSucceed();
 	}
 

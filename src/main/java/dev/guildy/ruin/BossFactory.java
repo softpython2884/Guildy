@@ -31,6 +31,7 @@ import net.minecraft.world.entity.monster.Enderman;
 import net.minecraft.world.entity.monster.hoglin.Hoglin;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -58,6 +59,8 @@ final class BossFactory {
 	private static final Identifier RISEN_SCALE = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_scale");
 	private static final Identifier RISEN_SPEED = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_speed");
 	private static final Identifier RISEN_DAMAGE = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_damage");
+	private static final Identifier GROUP_HEALTH = Identifier.fromNamespaceAndPath("guildy", "ruin_group_health");
+	private static final Identifier GROUP_DAMAGE = Identifier.fromNamespaceAndPath("guildy", "ruin_group_damage");
 
 	private BossFactory() {
 	}
@@ -135,6 +138,10 @@ final class BossFactory {
 		if (mob instanceof Hoglin hoglin) {
 			hoglin.setImmuneToZombification(true);
 		}
+		if (mob instanceof Raider raider) {
+			// Never drawn into a village raid nearby.
+			raider.setCanJoinRaid(false);
+		}
 		if (mob instanceof Enderman) {
 			mob.removeAllGoals(goal -> {
 				String name = goal.getClass().getSimpleName();
@@ -211,6 +218,15 @@ final class BossFactory {
 		if (armor != null && scaling.armor() > 1.0E-4) {
 			armor.addOrReplacePermanentModifier(new AttributeModifier(THREAT_ARMOR, scaling.armor(), AttributeModifier.Operation.ADD_VALUE));
 		}
+	}
+
+	/**
+	 * Group scaling (players present at the awakening): more health and damage, multiplied with the threat level's
+	 * (permanent modifiers, idempotent: re-applied after a conversion).
+	 */
+	static void applyGroup(Mob mob, GroupScaling.Party party) {
+		multiply(mob, Attributes.MAX_HEALTH, GROUP_HEALTH, party.health());
+		multiply(mob, Attributes.ATTACK_DAMAGE, GROUP_DAMAGE, party.damage());
 	}
 
 	/** The risen guardian: bigger, faster, stronger (permanent modifiers, idempotent). */

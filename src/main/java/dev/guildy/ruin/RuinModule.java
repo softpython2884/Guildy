@@ -34,6 +34,8 @@ public final class RuinModule {
 		CursedLang.register();
 		Encounters.init();
 		Incantations.init();
+		RoomGuards.init();
+		Sanctuaries.init();
 		CursedFights.init();
 		RuinCommands.register();
 		CursedCommands.register();

@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Default guardians of the seven ruins (tier 1 to 5) and the generic tier-based guardian of unknown ruins.
+ * Default guardians of the eight ruins (tier 1 to 5) and the generic tier-based guardian of unknown ruins.
  * Balance: modest gold (never gold blocks), vanilla rare items through the ruin loot tables, a rare unique weapon and
- * spell scroll; the escort grows with the number of players.
+ * spell scroll; the escort grows with the number of players. Each ruin has its room guards (themed names, types).
  */
 final class RuinDefaults {
 	private RuinDefaults() {
@@ -31,6 +31,7 @@ final class RuinDefaults {
 		map.put("autel_infernal", infernalAltar());
 		map.put("citadelle_des_ames", soulCitadel());
 		map.put("temple_maya", featheredSerpentTemple());
+		map.put("grand_temple_maya", celestialJaguarTemple());
 		return map;
 	}
 
@@ -51,6 +52,7 @@ final class RuinDefaults {
 		def.rewards = rewards(4, 8, 80, "guildy:chests/ruin/rare", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 4, 8, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:wither_skeleton_skull", 1, 1, 0.15));
+		def.guards.name = "&7Gardien des cryptes";
 		return def;
 	}
 
@@ -70,6 +72,8 @@ final class RuinDefaults {
 		def.rewards = rewards(6, 10, 120, "guildy:chests/ruin/rare", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 6, 12, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:totem_of_undying", 1, 1, 0.25));
+		// No vex on guard duty: they fly through the walls.
+		guards(def, "&9Garde de l'Archimage", "minecraft:vindicator", 1);
 		return def;
 	}
 
@@ -91,6 +95,7 @@ final class RuinDefaults {
 		def.rewards = rewards(6, 10, 120, "guildy:chests/ruin/rare", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 6, 12, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:golden_apple", 1, 2, 0.6));
+		def.guards.name = "&6Momie gardienne";
 		return def;
 	}
 
@@ -112,6 +117,7 @@ final class RuinDefaults {
 		def.rewards = rewards(8, 14, 160, "guildy:chests/ruin/treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
+		def.guards.name = "&bSentinelle de givre";
 		return def;
 	}
 
@@ -133,6 +139,8 @@ final class RuinDefaults {
 		def.rewards = rewards(10, 18, 220, "guildy:chests/ruin/nether_treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:netherite_scrap", 1, 2, 0.5));
+		// No magma cube on guard duty (their split children would not be guards).
+		guards(def, "&cGarde infernal", "minecraft:piglin_brute", 1);
 		return def;
 	}
 
@@ -156,6 +164,8 @@ final class RuinDefaults {
 		def.rewards = rewards(14, 24, 300, "guildy:chests/ruin/nether_treasure", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 12, 24, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:netherite_scrap", 1, 3, 0.75));
+		// No blaze on guard duty: they fly off their post.
+		guards(def, "&3Gardien des âmes", "minecraft:wither_skeleton", 1);
 		return def;
 	}
 
@@ -180,6 +190,49 @@ final class RuinDefaults {
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
 		def.rewards.items.add(new ItemDrop("minecraft:emerald", 3, 8, 0.6));
+		def.guards.name = "&2Gardien du temple";
+		return def;
+	}
+
+	/**
+	 * Second jungle temple, the huge one (structure guildy:ruin/grand_temple_maya, indoor arena under a beacon): a giant
+	 * ravager. A robust indoor tier-5 fight: a heavy charging beast (a jaguar) that never digs (its leaf breaking is
+	 * cancelled for ruin mobs), never flies nor teleports on its own, never shoots (no projectile to cheese from afar),
+	 * climbs stairs (step height 1) and stays in its arena (leash). Solar, gold and jade abilities; jaguar warriors on guard
+	 * (vindicators with their axes, bogged archers, an evoker) under golden helmets; rewards above the soul citadel.
+	 */
+	private static RuinDef celestialJaguarTemple() {
+		RuinDef def = ruin("Grand Temple du Jaguar céleste", 5, "YELLOW", "minecraft:red_x");
+		def.activationRadius = 24;
+		def.leashRadius = 22;
+		def.boss = boss("minecraft:ravager", "&6&lLe Jaguar céleste", 760, 18, 16, 6, 0, 1.0, 1.6);
+		def.boss.effects.add(new EffectDef("minecraft:fire_resistance", 0));
+		def.minions = minions(4, 2, 10, 14, 1.5, 1.2);
+		def.minions.types.put("minecraft:vindicator", 3);
+		def.minions.types.put("minecraft:bogged", 2);
+		def.minions.types.put("minecraft:evoker", 1);
+		def.minions.equipment.put("head", "minecraft:golden_helmet");
+		def.abilities = new ArrayList<>(List.of(
+				ability("ground_slam", 11, 11, 7, 1, "gold", 1.0),
+				ability("fire_ring", 13, 9, 8, 1, "solar", 1.0),
+				ability("volley", 10, 6, 4, 6, "solar", 1.0),
+				ability("blink", 12, 12, 4, 1, "solar", 0.85),
+				ability("fire_ring", 16, 8, 9, 1, "jade", 0.7),
+				ability("life_drain", 18, 5, 12, 1, "gold", 0.5),
+				ability("summon", 24, 0, 5, 3, "", 0.6),
+				enrage(0.3, 2)));
+		def.rewards = rewards(18, 28, 380, "guildy:chests/ruin/treasure", 3);
+		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 16, 28, 1.0));
+		def.rewards.items.add(new ItemDrop("minecraft:diamond", 2, 4, 0.75));
+		def.rewards.items.add(new ItemDrop("minecraft:emerald", 6, 12, 0.75));
+		def.rewards.items.add(new ItemDrop("minecraft:totem_of_undying", 1, 1, 0.3));
+		def.rewards.items.add(new ItemDrop("minecraft:enchanted_golden_apple", 1, 1, 0.05));
+		guards(def, "&6Guerrier jaguar", "minecraft:vindicator", 4);
+		def.guards.types.put("minecraft:bogged", 2);
+		def.guards.types.put("minecraft:evoker", 1);
+		def.guards.equipment.put("head", "minecraft:golden_helmet");
+		def.guards.healthMultiplier = 1.8;
+		def.guards.damageMultiplier = 1.3;
 		return def;
 	}
 
@@ -278,6 +331,12 @@ final class RuinDefaults {
 		AbilityDef ability = ability("enrage", 1, 0, 1, 1, "", healthBelow);
 		ability.amplifier = amplifier;
 		return ability;
+	}
+
+	/** Named guards of one type (more types can be added to {@code def.guards.types}). */
+	private static void guards(RuinDef def, String name, String entity, int weight) {
+		def.guards.name = name;
+		def.guards.types.put(entity, weight);
 	}
 
 	private static RewardDef rewards(int goldMin, int goldMax, int xp, String lootTable, int lootRolls) {

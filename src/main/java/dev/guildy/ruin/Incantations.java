@@ -202,15 +202,21 @@ public final class Incantations {
 		if (refusal == Refusal.NONE && cursed && !cfg.cursed.enabled) {
 			refusal = Refusal.CURSED_DISABLED;
 		}
+		if (refusal == Refusal.NONE && RoomGuards.blocking(level, ruin) > 0) {
+			// The room guards first: they hold the arena (normal and cursed rituals alike).
+			refusal = Refusal.GUARDED;
+		}
 		return new Target(ruin, def, refusal, daysLeft);
 	}
 
-	/** Refusal message: {0} = ruin, {1} = days left, {2} = guardian, {3} = arena radius. */
+	/** Refusal message: {0} = ruin, {1} = days left, {2} = guardian, {3} = arena radius, {4} = guards left in the arena. */
 	private static void explain(ServerPlayer player, Target target) {
 		RuinDef def = target.def();
 		String ruinName = def == null ? "" : Lang.colorize(def.name);
 		String bossName = def == null ? "" : Lang.colorize(def.boss.name);
-		Msg.actionBar(player, target.refusal().langKey(), ruinName, Math.max(1, target.daysLeft()), bossName, RuinModule.config().summon.arenaRadius);
+		int guards = target.refusal() == Refusal.GUARDED && target.ruin() != null ? RoomGuards.blocking(player.level(), target.ruin()) : 0;
+		Msg.actionBar(player, target.refusal().langKey(), ruinName, Math.max(1, target.daysLeft()), bossName, RuinModule.config().summon.arenaRadius,
+				guards);
 		Msg.sound(player, SoundEvents.VILLAGER_NO, 0.6F, 1.2F);
 	}
 

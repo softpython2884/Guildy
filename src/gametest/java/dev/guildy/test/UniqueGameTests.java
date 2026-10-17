@@ -175,10 +175,12 @@ public class UniqueGameTests {
 		helper.assertTrue(UniqueDrops.roll("no_such_source", LUCKY).isEmpty(), "unknown source: nothing");
 		helper.assertTrue(UniqueDrops.create("no_such_unique").isEmpty(), "unknown id: nothing");
 
-		// Trade hub tier III: the unique offer sells a unique weapon for gold blocks.
+		// Trade hub: unique weapons are never sold by default; an offer added by an admin still works (gold blocks).
 		TradeConfig trades = TradeModule.config();
-		TradeEntry entry = trades.tier(3).usable().stream().filter(TradeEntry::isUnique).findFirst().orElse(null);
-		helper.assertTrue(entry != null, "tier III has a unique offer");
+		helper.assertTrue(trades.tiers.stream().flatMap(t -> t.usable().stream()).noneMatch(TradeEntry::isUnique), "no unique offer by default");
+		TradeEntry entry = TradeEntry.unique(TradeEntry.RANDOM_UNIQUE, 360, 3);
+		helper.assertTrue(dev.guildy.trade.TradeValidator.check(entry, id -> true, java.util.Map.of(), java.util.Map.of(), new java.util.ArrayList<>()) == null,
+				"an admin's unique offer is valid");
 		MerchantOffer offer = TradeOffers.offer(level.registryAccess(), entry);
 		helper.assertTrue(offer != null && UniqueItems.isUnique(offer.getResult()), "the offer sells a unique weapon");
 		helper.assertTrue(offer.getCostA().is(Items.GOLD_BLOCK), "paid in gold blocks");

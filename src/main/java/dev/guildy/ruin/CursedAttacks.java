@@ -33,7 +33,7 @@ import java.util.UUID;
  * lightning cages, the blood nova and the shadow clones. Each one is telegraphed (warning circle or charge) before it
  * strikes, hurts only survival / adventure players ({@link BossAbilities#valid}), changes no block (visual lightning, no
  * real explosion) and draws every tick within the fight's particle budget. Damage values are the configured ones times
- * the threat level and the phase bonus ({@link Context#damage}).
+ * the threat level, the group and the phase bonus ({@link Context#damage}).
  */
 final class CursedAttacks {
 	private CursedAttacks() {
@@ -67,9 +67,10 @@ final class CursedAttacks {
 			return settings.attacks;
 		}
 
-		/** Configured damage times the threat level and the phase bonus. */
+		/** Configured damage times the threat level and the group (combined), and the phase bonus. */
 		double damage(double base) {
-			return Math.max(0, base) * encounter.scaling.damage() * CursedRules.phaseDamage(cursed.phase, settings.phases.damageBonus);
+			return Math.max(0, base) * GroupScaling.combined(encounter.scaling.damage(), encounter.party.damage())
+					* CursedRules.phaseDamage(cursed.phase, settings.phases.damageBonus);
 		}
 
 		Vec3 core() {

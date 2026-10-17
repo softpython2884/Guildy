@@ -30,6 +30,9 @@ final class RuinFx {
 	private static final int MAX_RUNNING = 96;
 	private static final int MAX_AGE = 200;
 	private static final List<Running> RUNNING = new ArrayList<>();
+	/** Animations started by another one during {@link #tick} (a volley firing its blades): added after the loop. */
+	private static final List<Running> STARTED = new ArrayList<>();
+	private static boolean ticking;
 
 	private static final class Running {
 		final ResourceKey<Level> dimension;
@@ -53,6 +56,14 @@ final class RuinFx {
 			return;
 		}
 		running.age = 1;
+		if (ticking) {
+			STARTED.add(running);
+		} else {
+			add(running);
+		}
+	}
+
+	private static void add(Running running) {
 		if (RUNNING.size() >= MAX_RUNNING) {
 			RUNNING.removeFirst();
 		}
@@ -63,19 +74,29 @@ final class RuinFx {
 		if (RUNNING.isEmpty()) {
 			return;
 		}
-		Iterator<Running> it = RUNNING.iterator();
-		while (it.hasNext()) {
-			Running running = it.next();
-			ServerLevel level = server.getLevel(running.dimension);
-			int age = running.age++;
-			if (level == null || age > MAX_AGE || !Safe.get("ruin.fx", () -> running.animation.step(level, age), false)) {
-				it.remove();
+		ticking = true;
+		try {
+			Iterator<Running> it = RUNNING.iterator();
+			while (it.hasNext()) {
+				Running running = it.next();
+				ServerLevel level = server.getLevel(running.dimension);
+				int age = running.age++;
+				if (level == null || age > MAX_AGE || !Safe.get("ruin.fx", () -> running.animation.step(level, age), false)) {
+					it.remove();
+				}
 			}
+		} finally {
+			ticking = false;
+			for (Running running : STARTED) {
+				add(running);
+			}
+			STARTED.clear();
 		}
 	}
 
 	static void clear() {
 		RUNNING.clear();
+		STARTED.clear();
 	}
 
 	// ------------------------------------------------------------------ drawing helpers

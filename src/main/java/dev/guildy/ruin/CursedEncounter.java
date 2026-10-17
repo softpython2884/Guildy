@@ -195,13 +195,16 @@ final class CursedEncounter {
 		return list;
 	}
 
-	/** Boss bar title: "Gardien Maudit — Menace II — Phase II — 540/720 ❤" (or the transition). */
+	/** Boss bar title: "Gardien Maudit — Menace II — Phase II — 3 joueurs — 540/720 ❤" (or the transition). */
 	Component barName(Encounter encounter, float health, float max) {
 		String name = Lang.colorize(encounter.def.boss.name);
 		if (transition != null) {
 			return Lang.get("ruin.cursed.bar.transition", name, CursedRules.roman(transition.toPhase));
 		}
 		String title = Lang.raw("ruin.cursed.bar", name, Encounters.threatLabel(encounter.threat), CursedRules.roman(phase));
+		if (encounter.party.group()) {
+			title = Lang.raw("ruin.bar.group", title, encounter.party.players());
+		}
 		return Lang.get("ruin.bar", title, (int) Math.ceil(health), (int) Math.ceil(max));
 	}
 
@@ -462,6 +465,10 @@ final class CursedEncounter {
 			Msg.title(player, title, subtitle, 10, 70, 20);
 			Msg.send(player, "ruin.cursed.awaken.chat", bossName, ruinName, IncantationItems.number(stats.health()), IncantationItems.number(stats.damage()));
 			Msg.send(player, "ruin.awaken.threat", threatLine);
+			GroupScaling.Party party = encounter.party;
+			if (party.group()) {
+				Msg.send(player, "ruin.awaken.group", party.players(), GroupScaling.percent(party.health()), GroupScaling.percent(party.damage()));
+			}
 			Msg.sound(player, SoundEvents.ELDER_GUARDIAN_CURSE, 1.0F, 0.7F);
 		}
 		Vec3 at = boss.position().add(0, boss.getBbHeight() / 2, 0);
