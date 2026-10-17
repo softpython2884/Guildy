@@ -25,6 +25,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
@@ -47,6 +48,10 @@ final class BossAbilities {
 	private static final int RING_WAVE_TICKS = 16;
 	private static final int DRAIN_TICKS = 24;
 	private static final int SUMMON_TICKS = 14;
+	/** Jade green of the "jade" / "wind" styles (the feathered serpent). */
+	static final int JADE = 0x1FD08A;
+	private static final int WIND_BLADE_TICKS = 30;
+	private static final double WIND_BLADE_SPEED = 1.1;
 
 	private BossAbilities() {
 	}
@@ -141,7 +146,7 @@ final class BossAbilities {
 
 	// ================================================================== rings
 
-	/** A charged ring of fire / soul fire / frost expanding from the guardian. */
+	/** A charged ring of fire / soul fire / frost / jade wind (poison) expanding from the guardian. */
 	private static boolean ring(ServerLevel level, Mob boss, AbilityDef ability, List<ServerPlayer> targets) {
 		if (nearest(boss, targets, ability.radius + 2) == null) {
 			return false;
@@ -150,16 +155,19 @@ final class BossAbilities {
 		ParticleOptions main = switch (style) {
 			case "soul" -> ParticleTypes.SOUL_FIRE_FLAME;
 			case "frost" -> ParticleTypes.SNOWFLAKE;
+			case "jade" -> new DustParticleOptions(JADE, 1.5F);
 			default -> ParticleTypes.FLAME;
 		};
 		ParticleOptions extra = switch (style) {
 			case "soul" -> ParticleTypes.SOUL;
 			case "frost" -> ParticleTypes.ITEM_SNOWBALL;
+			case "jade" -> ParticleTypes.SMALL_GUST;
 			default -> ParticleTypes.LAVA;
 		};
 		switch (style) {
 			case "soul" -> RuinFx.sound(level, boss.position(), SoundEvents.SOUL_ESCAPE, 2.0F, 0.6F);
 			case "frost" -> RuinFx.sound(level, boss.position(), SoundEvents.PLAYER_HURT_FREEZE, 1.5F, 0.5F);
+			case "jade" -> RuinFx.sound(level, boss.position(), SoundEvents.BREEZE_INHALE, 2.0F, 0.6F);
 			default -> RuinFx.sound(level, boss.position(), SoundEvents.BLAZE_SHOOT, 1.5F, 0.6F);
 		}
 		Set<UUID> hit = new HashSet<>();
@@ -181,6 +189,7 @@ final class BossAbilities {
 				switch (style) {
 					case "soul" -> RuinFx.sound(lvl, c, SoundEvents.WITHER_SHOOT, 1.5F, 0.6F);
 					case "frost" -> RuinFx.sound(lvl, c, SoundEvents.GLASS_BREAK, 1.8F, 0.5F);
+					case "jade" -> RuinFx.sound(lvl, c, SoundEvents.BREEZE_WIND_CHARGE_BURST, 2.0F, 0.6F);
 					default -> RuinFx.sound(lvl, c, SoundEvents.FIRECHARGE_USE, 1.8F, 0.6F);
 				}
 				RuinFx.burst(lvl, extra, c.add(0, 1, 0), 25, 0.6, 0.1);
@@ -205,6 +214,13 @@ final class BossAbilities {
 						case "frost" -> {
 							player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 2), boss);
 							player.setTicksFrozen(Math.max(player.getTicksFrozen(), 200));
+						}
+						case "jade" -> {
+							// Venomous gust: poison and a blast of wind lifting the player away.
+							player.addEffect(new MobEffectInstance(MobEffects.POISON, 100, 1), boss);
+							Vec3 away = horizontalDirection(c, player.position());
+							player.push(away.x * 0.7, 0.6, away.z * 0.7);
+							player.syncVelocity = true;
 						}
 						default -> player.igniteForSeconds(5.0F);
 					}
@@ -257,10 +273,19 @@ final class BossAbilities {
 		}
 		Vec3 from = boss.position().add(0, boss.getBbHeight() / 2, 0);
 		Vec3 to = Vec3.atBottomCenterOf(dest).add(0, boss.getBbHeight() / 2, 0);
-		RuinFx.burst(level, ParticleTypes.REVERSE_PORTAL, from, 60, 0.5, 0.2);
-		RuinFx.burst(level, ParticleTypes.LARGE_SMOKE, from, 15, 0.4, 0.02);
-		RuinFx.line(level, ParticleTypes.WITCH, from, to, (int) Math.max(8, from.distanceTo(to) * 3));
-		RuinFx.sound(level, from, SoundEvents.ENDERMAN_TELEPORT, 1.5F, 0.6F);
+		boolean wind = "wind".equals(ability.style);
+		if (wind) {
+			// A gust: the guardian dissolves into wind and rushes along a jade trail.
+			RuinFx.burst(level, ParticleTypes.GUST_EMITTER_SMALL, from, 1, 0.0, 0.0);
+			RuinFx.burst(level, ParticleTypes.SMALL_GUST, from, 12, 0.6, 0.05);
+			RuinFx.line(level, new DustParticleOptions(JADE, 1.2F), from, to, (int) Math.max(8, from.distanceTo(to) * 3));
+			RuinFx.sound(level, from, SoundEvents.BREEZE_JUMP, 1.8F, 0.6F);
+		} else {
+			RuinFx.burst(level, ParticleTypes.REVERSE_PORTAL, from, 60, 0.5, 0.2);
+			RuinFx.burst(level, ParticleTypes.LARGE_SMOKE, from, 15, 0.4, 0.02);
+			RuinFx.line(level, ParticleTypes.WITCH, from, to, (int) Math.max(8, from.distanceTo(to) * 3));
+			RuinFx.sound(level, from, SoundEvents.ENDERMAN_TELEPORT, 1.5F, 0.6F);
+		}
 		boss.teleportTo(dest.getX() + 0.5, dest.getY(), dest.getZ() + 0.5);
 		boss.getNavigation().stop();
 		double dx = target.getX() - boss.getX();
@@ -270,8 +295,14 @@ final class BossAbilities {
 		boss.setYHeadRot(yaw);
 		boss.setYBodyRot(yaw);
 		boss.setTarget(target);
-		RuinFx.burst(level, ParticleTypes.PORTAL, to, 60, 0.5, 0.6);
-		RuinFx.sound(level, to, SoundEvents.ENDERMAN_TELEPORT, 1.5F, 0.8F);
+		if (wind) {
+			RuinFx.burst(level, ParticleTypes.GUST_EMITTER_SMALL, to, 1, 0.0, 0.0);
+			RuinFx.burst(level, new DustParticleOptions(JADE, 1.4F), to, 30, 0.6, 0.0);
+			RuinFx.sound(level, to, SoundEvents.BREEZE_LAND, 1.8F, 0.7F);
+		} else {
+			RuinFx.burst(level, ParticleTypes.PORTAL, to, 60, 0.5, 0.6);
+			RuinFx.sound(level, to, SoundEvents.ENDERMAN_TELEPORT, 1.5F, 0.8F);
+		}
 		ServerPlayer victim = target;
 		RuinFx.play(level, (lvl, age) -> {
 			if (!boss.isAlive() || !valid(victim, lvl)) {
@@ -295,7 +326,7 @@ final class BossAbilities {
 
 	// ================================================================== volley
 
-	/** A salvo of arrows, spectral arrows or fireballs fired one by one at the players around. */
+	/** A salvo of arrows, spectral arrows, fireballs or wind blades fired one by one at the players around. */
 	private static boolean volley(ServerLevel level, Mob boss, AbilityDef ability, List<ServerPlayer> targets, RandomGenerator random) {
 		List<ServerPlayer> inSight = new ArrayList<>();
 		for (ServerPlayer player : targets) {
@@ -308,7 +339,9 @@ final class BossAbilities {
 		}
 		String style = ability.style.isEmpty() ? "arrow" : ability.style;
 		boolean fireball = "fireball".equals(style);
-		RuinFx.sound(level, boss.position(), fireball ? SoundEvents.BLAZE_AMBIENT : SoundEvents.EVOKER_PREPARE_ATTACK, 1.5F, 0.8F);
+		boolean wind = "wind".equals(style);
+		RuinFx.sound(level, boss.position(), fireball ? SoundEvents.BLAZE_AMBIENT : wind ? SoundEvents.BREEZE_INHALE : SoundEvents.EVOKER_PREPARE_ATTACK,
+				1.5F, 0.8F);
 		int shots = Math.max(1, ability.count);
 		RuinFx.play(level, (lvl, age) -> {
 			if (!boss.isAlive()) {
@@ -316,7 +349,7 @@ final class BossAbilities {
 			}
 			Vec3 hand = boss.getEyePosition().add(boss.getLookAngle().scale(0.6));
 			if (age < 6) {
-				RuinFx.burst(lvl, fireball ? ParticleTypes.FLAME : ParticleTypes.CRIT, hand, 4, 0.25, 0.05);
+				RuinFx.burst(lvl, fireball ? ParticleTypes.FLAME : wind ? ParticleTypes.SMALL_GUST : ParticleTypes.CRIT, hand, wind ? 1 : 4, 0.25, 0.05);
 				return true;
 			}
 			int fired = (age - 6) / 3;
@@ -330,6 +363,12 @@ final class BossAbilities {
 			double spread = 0.08 * (fired - shots / 2.0);
 			Vec3 aim = target.position().add(0, target.getBbHeight() * 0.45, 0).subtract(hand);
 			Vec3 dir = aim.normalize().add(-aim.z * spread / Math.max(1, aim.length()), 0, aim.x * spread / Math.max(1, aim.length()));
+			if (wind) {
+				windBlade(lvl, boss, hand, dir.normalize(), ability.damage);
+				RuinFx.sound(lvl, hand, SoundEvents.BREEZE_SHOOT, 1.2F, 0.8F + random.nextFloat() * 0.3F);
+				RuinFx.burst(lvl, new DustParticleOptions(JADE, 1.0F), hand, 6, 0.15, 0.0);
+				return fired + 1 < shots;
+			}
 			if (fireball) {
 				SmallFireball ball = new SmallFireball(lvl, boss, dir.normalize());
 				ball.setPos(hand.x, hand.y, hand.z);
@@ -354,12 +393,46 @@ final class BossAbilities {
 		return true;
 	}
 
+	/**
+	 * A blade of wind flying straight ahead (simulated, no entity: never toggles a door nor breaks anything): stops on the
+	 * first solid block, or hits the first survival / adventure player on its way (damage + a gust pushing them away).
+	 */
+	private static void windBlade(ServerLevel level, Mob boss, Vec3 start, Vec3 dir, double damage) {
+		Vec3[] pos = {start};
+		RuinFx.play(level, (lvl, age) -> {
+			Vec3 next = pos[0].add(dir.scale(WIND_BLADE_SPEED));
+			BlockPos cell = BlockPos.containing(next);
+			if (!lvl.isLoaded(cell) || !lvl.getBlockState(cell).getCollisionShape(lvl, cell).isEmpty()) {
+				RuinFx.burst(lvl, ParticleTypes.SMALL_GUST, pos[0], 3, 0.2, 0.02);
+				return false;
+			}
+			Vec3 from = pos[0];
+			pos[0] = next;
+			RuinFx.line(lvl, new DustParticleOptions(JADE, 0.9F), from, next, 3);
+			if (age % 2 == 0) {
+				lvl.sendParticles(ParticleTypes.SMALL_GUST, next.x, next.y, next.z, 1, 0.05, 0.05, 0.05, 0.0);
+			}
+			for (ServerPlayer player : lvl.players()) {
+				AABB box = player.getBoundingBox().inflate(0.5);
+				if (valid(player, lvl) && (box.contains(next) || box.clip(from, next).isPresent())) {
+					player.hurtServer(lvl, lvl.damageSources().mobAttack(boss), (float) damage);
+					player.push(dir.x * 1.1, 0.45, dir.z * 1.1);
+					player.syncVelocity = true;
+					lvl.sendParticles(ParticleTypes.GUST_EMITTER_SMALL, next.x, next.y, next.z, 1, 0, 0, 0, 0);
+					RuinFx.sound(lvl, next, SoundEvents.BREEZE_WIND_CHARGE_BURST, 1.5F, 0.9F);
+					return false;
+				}
+			}
+			return age < WIND_BLADE_TICKS;
+		});
+	}
+
 	// ================================================================== summon
 
 	/** Soul columns rise at a few spots around the guardian, then escort mobs appear there. */
 	private static boolean summon(ServerLevel level, Encounter encounter, Mob boss, AbilityDef ability, RandomGenerator random, Summoner summoner) {
 		int alive = encounter.minionEntities(level).size();
-		int count = RuinRules.summonCount(ability.count, alive, encounter.def.minions.maxAlive);
+		int count = RuinRules.summonCount(ability.count, alive, encounter.maxAlive());
 		if (count <= 0 || encounter.def.minions.types.isEmpty()) {
 			return false;
 		}

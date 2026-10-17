@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Default guardians of the six ruins (tier 1 to 5) and the generic tier-based guardian of unknown ruins.
+ * Default guardians of the seven ruins (tier 1 to 5) and the generic tier-based guardian of unknown ruins.
  * Balance: modest gold (never gold blocks), vanilla rare items through the ruin loot tables, a rare unique weapon and
  * spell scroll; the escort grows with the number of players.
  */
@@ -30,6 +30,7 @@ final class RuinDefaults {
 		map.put("bastion_de_givre", frostBastion());
 		map.put("autel_infernal", infernalAltar());
 		map.put("citadelle_des_ames", soulCitadel());
+		map.put("temple_maya", featheredSerpentTemple());
 		return map;
 	}
 
@@ -155,6 +156,30 @@ final class RuinDefaults {
 		def.rewards = rewards(14, 24, 300, "guildy:chests/ruin/nether_treasure", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 12, 24, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:netherite_scrap", 1, 3, 0.75));
+		return def;
+	}
+
+	/**
+	 * Jungle temple (structure guildy:ruin/temple_maya): a giant breeze whose natural attack is the wind charge (it deflects
+	 * arrows and other projectiles, as in vanilla: a melee fight), jade wind rings that poison, wind blades and gusts;
+	 * bogged skeletons (poison arrows) and cave spiders. Same rewards as the other tier-3 ruin, emeralds for the jungle.
+	 */
+	private static RuinDef featheredSerpentTemple() {
+		RuinDef def = ruin("Temple du Serpent à plumes", 3, "GREEN", "minecraft:red_x");
+		def.boss = boss("minecraft:breeze", "&2&lLe Serpent à plumes", 360, 10, 8, 3, 0, 0.8, 2.0);
+		def.minions = minions(4, 2, 10, 14, 1.4, 1.1);
+		def.minions.types.put("minecraft:bogged", 3);
+		def.minions.types.put("minecraft:cave_spider", 2);
+		def.abilities = new ArrayList<>(List.of(
+				ability("volley", 9, 6, 4, 5, "wind", 1.0),
+				ability("fire_ring", 13, 7, 7, 1, "jade", 1.0),
+				ability("blink", 12, 8, 4, 1, "wind", 0.8),
+				ability("summon", 22, 0, 4, 3, "", 0.65),
+				enrage(0.3, 1)));
+		def.rewards = rewards(8, 14, 160, "guildy:chests/ruin/treasure", 1);
+		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
+		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
+		def.rewards.items.add(new ItemDrop("minecraft:emerald", 3, 8, 0.6));
 		return def;
 	}
 

@@ -153,9 +153,11 @@ final class Ritual {
 		level.playSound(null, ground.x, ground.y, ground.z, SoundEvents.AMBIENT_CAVE, SoundSource.HOSTILE, 3.0F, 0.6F);
 		Component title = Lang.get("ruin.summon.start.title");
 		Component subtitle = Lang.get("ruin.summon.start.subtitle", Lang.colorize(def.boss.name));
+		String threat = Encounters.threatLabel(Encounters.threatLevel(ruin));
 		for (ServerPlayer player : Encounters.present(level, ruin, cfg.encounter.presenceMargin)) {
 			Msg.title(player, title, subtitle, 10, 50, 15);
 			Msg.send(player, "ruin.summon.start.chat", casterName, Lang.colorize(def.boss.name), Lang.colorize(def.name));
+			Msg.send(player, "ruin.summon.start.threat", threat);
 		}
 		nextBeat = at(SummonRules.DRAIN_START);
 		syncBar(level, cfg);

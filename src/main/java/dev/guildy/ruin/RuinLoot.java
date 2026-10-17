@@ -32,7 +32,8 @@ import java.util.random.RandomGenerator;
 
 /**
  * Rewards of a defeated guardian: gold ingots, rolls in a vanilla loot table, extra items, a unique weapon and a spell
- * scroll (rare, protected drops), guild XP split between the guilds of the participants.
+ * scroll (rare, protected drops), guild XP split between the guilds of the participants. The ruin's threat level adds gold,
+ * XP and a chance of extra unique / scroll rolls; a guardian defeated in its risen form gives bonus rolls on top.
  */
 final class RuinLoot {
 	static final String SOURCE_OVERWORLD = "ruin_boss";
@@ -44,12 +45,15 @@ final class RuinLoot {
 	/** Drops everything at the guardian's position. @return the number of stacks dropped (unique / scroll included) */
 	static int drop(ServerLevel level, Encounter encounter, Mob boss, RandomGenerator random) {
 		RewardDef rewards = encounter.def.rewards;
+		ThreatRules.Rewards bonus = bonus(encounter);
 		List<ItemStack> drops = new ArrayList<>();
-		int gold = rewards.goldMin + (rewards.goldMax > rewards.goldMin ? random.nextInt(rewards.goldMax - rewards.goldMin + 1) : 0);
+		int rolled = rewards.goldMin + (rewards.goldMax > rewards.goldMin ? random.nextInt(rewards.goldMax - rewards.goldMin + 1) : 0);
+		int gold = ThreatRules.scaled(rolled, bonus.gold());
 		if (gold > 0) {
 			drops.add(new ItemStack(Items.GOLD_INGOT, gold));
 		}
-		if (!rewards.lootTable.isBlank() && rewards.lootRolls > 0) {
+		int lootRolls = rewards.lootRolls + bonus.extraLootRolls();
+		if (!rewards.lootTable.isBlank() && lootRolls > 0) {
 			Identifier id = Identifier.tryParse(rewards.lootTable);
 			if (id != null) {
 				LootTable table = level.getServer().reloadableRegistries().getLootTable(ResourceKey.create(Registries.LOOT_TABLE, id));
@@ -57,7 +61,7 @@ final class RuinLoot {
 						.withParameter(LootContextParams.ORIGIN, boss.position())
 						.withOptionalParameter(LootContextParams.THIS_ENTITY, boss)
 						.create(LootContextParamSets.CHEST);
-				for (int i = 0; i < rewards.lootRolls; i++) {
+				for (int i = 0; i < lootRolls; i++) {
 					drops.addAll(table.getRandomItems(params));
 				}
 			}
@@ -80,9 +84,27 @@ final class RuinLoot {
 			}
 		}
 		String source = source(encounter.ruin, rewards.uniqueSource);
-		dropped += protectedDrop(level, boss, UniqueDrops.roll(source, random, UniqueDrops.Recipient.topDamager(boss)));
-		dropped += protectedDrop(level, boss, ScrollDrops.roll(source(encounter.ruin, rewards.scrollSource), random));
+		int uniqueRolls = rolls(bonus.extraUniqueChance(), bonus.bonusUniqueRolls(), random);
+		for (int i = 0; i < uniqueRolls; i++) {
+			dropped += protectedDrop(level, boss, UniqueDrops.roll(source, random, UniqueDrops.Recipient.topDamager(boss)));
+		}
+		String scrollSource = source(encounter.ruin, rewards.scrollSource);
+		int scrollRolls = rolls(bonus.extraScrollChance(), bonus.bonusScrollRolls(), random);
+		for (int i = 0; i < scrollRolls; i++) {
+			dropped += protectedDrop(level, boss, ScrollDrops.roll(scrollSource, random));
+		}
 		return dropped;
+	}
+
+	/** Reward multipliers of the fight: threat level of the ruin, risen guardian. */
+	static ThreatRules.Rewards bonus(Encounter encounter) {
+		RuinConfig cfg = RuinModule.config();
+		return ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, encounter.risen);
+	}
+
+	/** One roll, one more with {@code extraChance}, plus the guaranteed bonus rolls. */
+	private static int rolls(double extraChance, int bonusRolls, RandomGenerator random) {
+		return 1 + (extraChance > 0 && random.nextDouble() < extraChance ? 1 : 0) + Math.max(0, bonusRolls);
 	}
 
 	/** Configured source, or ruin_boss / nether_ruin_boss by dimension. */
@@ -117,7 +139,8 @@ final class RuinLoot {
 				perGuild.merge(guild.id, 1, Integer::sum);
 			}
 		}
-		Map<UUID, Long> split = RuinRules.splitXp(perGuild, encounter.def.rewards.xp, minPerGuild);
+		long total = ThreatRules.scaled(encounter.def.rewards.xp, bonus(encounter).xp());
+		Map<UUID, Long> split = RuinRules.splitXp(perGuild, total, minPerGuild);
 		String ruinName = Lang.colorize(encounter.def.name);
 		for (Map.Entry<UUID, Long> entry : split.entrySet()) {
 			Guild guild = GuildManager.get(entry.getKey());

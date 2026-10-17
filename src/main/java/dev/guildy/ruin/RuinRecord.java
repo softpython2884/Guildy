@@ -37,6 +37,11 @@ public class RuinRecord {
 	/** In-game day (overworld clock / 24000) of the last victory, -1 if never defeated. */
 	public long clearedDay = -1;
 	public int timesCleared;
+	/**
+	 * Threat level ("Menace" I, II, III...), raised by each victory over the guardian: its next return is stronger. 0 in
+	 * saves older than the threat levels (read as 1 + {@link #timesCleared}, see {@link ThreatRules#stored}).
+	 */
+	public int threat;
 	/** Names of the players of the last victory. */
 	public String lastVictors = "";
 	public long discoveredAt;
@@ -121,5 +126,6 @@ public class RuinRecord {
 		if (lastVictors == null) {
 			lastVictors = "";
 		}
+		threat = Math.min(ThreatRules.MAX_LEVEL, ThreatRules.stored(threat, timesCleared));
 	}
 }

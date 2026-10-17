@@ -10,9 +10,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -22,8 +25,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * One running fight: the guardian, its escort, its boss bar, the participants and the ability cooldowns. Runtime
- * only: a fight never survives a restart or the unloading of its guardian (its tagged mobs are then refused at load).
+ * One running fight: the guardian, its escort, its boss bar, the participants, the ability cooldowns, the threat level
+ * of the ruin and the resurrection of a guardian killed too fast. Runtime only: a fight never survives a restart or the
+ * unloading of its guardian (its tagged mobs are then refused at load).
  */
 final class Encounter {
 	final RuinRecord ruin;
@@ -43,8 +47,25 @@ final class Encounter {
 	final long[] readyAt;
 	final double[] healthBelow;
 	@Nullable AbilityDef enrage;
+	/** Health ratio under which the guardian enrages (raised by the threat level). */
+	double enrageBelow;
 	boolean enraged;
-	double cooldownFactor = 1.0;
+	/** Threat level of this fight ("Menace", fixed at the awakening) and the statistics it gives. */
+	final int threat;
+	final ThreatRules.Scaling scaling;
+	/** Fast-kill window: a guardian killed less than this many ticks after it appeared rises again (0 = never). */
+	final long fastKillTicks;
+	/** The resurrection running (the guardian is invulnerable and frozen), null otherwise. */
+	@Nullable Resurrection rising;
+	/** The guardian came back from the dead (once per fight): enraged, bonus rewards. */
+	boolean risen;
+	/** Cooldown factor, extra damage, scale and speed of the risen guardian (re-applied after a conversion). */
+	double risenCooldown = 1.0;
+	double risenDamage;
+	double risenScale = 1.0;
+	double risenSpeed;
+	/** Where escort mobs died, most recent last (souls drawn by a resurrection). */
+	final Deque<Vec3> fallen = new ArrayDeque<>();
 	long nextAbilityTick;
 	int abilityOffset;
 	int secondsAlone;
@@ -52,13 +73,17 @@ final class Encounter {
 	/** Players currently seeing the boss bar. */
 	final Set<ServerPlayer> viewers = new HashSet<>();
 
-	Encounter(RuinRecord ruin, RuinDef def, ResourceKey<Level> dimension, BlockPos spawn, ServerBossEvent bar, long now, int firstAbilitySeconds) {
+	Encounter(RuinRecord ruin, RuinDef def, ResourceKey<Level> dimension, BlockPos spawn, ServerBossEvent bar, long now, int firstAbilitySeconds,
+			ThreatRules.Scaling scaling, double enragePerLevel, double maxEnrage, long fastKillTicks) {
 		this.ruin = ruin;
 		this.def = def;
 		this.dimension = dimension;
 		this.spawn = spawn;
 		this.bar = bar;
 		this.startedTick = now;
+		this.scaling = scaling;
+		this.threat = scaling.level();
+		this.fastKillTicks = Math.max(0, fastKillTicks);
 		for (AbilityDef ability : def.abilities) {
 			if ("enrage".equals(ability.type)) {
 				if (enrage == null) {
@@ -68,14 +93,39 @@ final class Encounter {
 				abilities.add(ability);
 			}
 		}
+		enrageBelow = enrage == null ? -1 : ThreatRules.enrageThreshold(enrage.healthBelow, enragePerLevel, threat, maxEnrage);
 		readyAt = new long[abilities.size()];
 		healthBelow = new double[abilities.size()];
 		for (int i = 0; i < abilities.size(); i++) {
 			// Staggered: each ability waits its cooldown once before its first use (the first one is quicker).
-			readyAt[i] = now + firstAbilitySeconds * 20L + (i == 0 ? 0 : RuinRules.cooldownTicks(abilities.get(i).cooldownSeconds, 0.5));
+			readyAt[i] = now + firstAbilitySeconds * 20L
+					+ (i == 0 ? 0 : RuinRules.cooldownTicks(abilities.get(i).cooldownSeconds, 0.5 * scaling.cooldownFactor()));
 			healthBelow[i] = abilities.get(i).healthBelow;
 		}
 		nextAbilityTick = now + firstAbilitySeconds * 20L;
+	}
+
+	/** Factor of the ability cooldowns: threat level, then halved by the enrage, then the risen guardian's factor. */
+	double cooldownFactor() {
+		return scaling.cooldownFactor() * (enraged ? 0.5 : 1.0) * (risen ? risenCooldown : 1.0);
+	}
+
+	/** Factor of the ability damage: threat level, then the risen guardian's bonus. */
+	double damageFactor() {
+		return scaling.damage() * (risen ? 1.0 + risenDamage : 1.0);
+	}
+
+	/** Cap of the living escort (the threat level adds mobs). */
+	int maxAlive() {
+		return Math.min(48, def.minions.maxAlive + scaling.extraMinions());
+	}
+
+	/** Remembers where an escort mob died (bounded). */
+	void addFallen(Vec3 pos) {
+		if (fallen.size() >= 12) {
+			fallen.removeFirst();
+		}
+		fallen.addLast(pos);
 	}
 
 	boolean tracks(UUID uuid) {

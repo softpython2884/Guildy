@@ -52,17 +52,29 @@ final class BossFactory {
 	static final String TAG_BOSS = "guildy_ruin_boss";
 	private static final Identifier MINION_HEALTH = Identifier.fromNamespaceAndPath("guildy", "ruin_minion_health");
 	private static final Identifier MINION_DAMAGE = Identifier.fromNamespaceAndPath("guildy", "ruin_minion_damage");
+	private static final Identifier THREAT_HEALTH = Identifier.fromNamespaceAndPath("guildy", "ruin_threat_health");
+	private static final Identifier THREAT_DAMAGE = Identifier.fromNamespaceAndPath("guildy", "ruin_threat_damage");
+	private static final Identifier THREAT_ARMOR = Identifier.fromNamespaceAndPath("guildy", "ruin_threat_armor");
+	private static final Identifier RISEN_SCALE = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_scale");
+	private static final Identifier RISEN_SPEED = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_speed");
+	private static final Identifier RISEN_DAMAGE = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_damage");
 
 	private BossFactory() {
 	}
 
 	/** Spawns the guardian (tracked by {@code track} BEFORE it enters the level, so that the load check accepts it). */
 	static @Nullable Mob spawnBoss(ServerLevel level, BossDef def, BlockPos pos, Predicate<Mob> track) {
+		return spawnBoss(level, def, pos, ThreatRules.Scaling.NONE, track);
+	}
+
+	/** Spawns the guardian, made stronger by the threat level of its ruin. */
+	static @Nullable Mob spawnBoss(ServerLevel level, BossDef def, BlockPos pos, ThreatRules.Scaling scaling, Predicate<Mob> track) {
 		Mob mob = create(level, def.entity, pos);
 		if (mob == null) {
 			return null;
 		}
 		applyBoss(mob, def);
+		applyThreat(mob, scaling);
 		equip(mob, def.equipment);
 		mob.addTag(TAG_BOSS);
 		mob.setCustomName(Component.literal(Lang.colorize(def.name)));
@@ -186,6 +198,26 @@ final class BossFactory {
 			follow.setBaseValue(def.followRange);
 		}
 		applyEffects(mob, def.effects);
+	}
+
+	/**
+	 * Threat level of the ruin: more health and damage (multiplied, on top of the configured values) and armor points
+	 * (vanilla cap 30). Permanent modifiers, idempotent (re-applied after a conversion).
+	 */
+	static void applyThreat(Mob mob, ThreatRules.Scaling scaling) {
+		multiply(mob, Attributes.MAX_HEALTH, THREAT_HEALTH, scaling.health());
+		multiply(mob, Attributes.ATTACK_DAMAGE, THREAT_DAMAGE, scaling.damage());
+		AttributeInstance armor = mob.getAttribute(Attributes.ARMOR);
+		if (armor != null && scaling.armor() > 1.0E-4) {
+			armor.addOrReplacePermanentModifier(new AttributeModifier(THREAT_ARMOR, scaling.armor(), AttributeModifier.Operation.ADD_VALUE));
+		}
+	}
+
+	/** The risen guardian: bigger, faster, stronger (permanent modifiers, idempotent). */
+	static void applyRisen(Mob mob, double scale, double speedBonus, double damageBonus) {
+		multiply(mob, Attributes.SCALE, RISEN_SCALE, scale);
+		multiply(mob, Attributes.MOVEMENT_SPEED, RISEN_SPEED, 1.0 + speedBonus);
+		multiply(mob, Attributes.ATTACK_DAMAGE, RISEN_DAMAGE, 1.0 + damageBonus);
 	}
 
 	private static void applyEffects(Mob mob, java.util.List<EffectDef> effects) {

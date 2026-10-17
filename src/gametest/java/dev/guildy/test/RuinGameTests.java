@@ -406,7 +406,10 @@ public class RuinGameTests {
 		helper.assertTrue(error == null, "guardian awakened, got " + error);
 	}
 
-	/** The generic guardian of unknown ruins, made quick to test (both fight tests set the same values). */
+	/**
+	 * The generic guardian of unknown ruins, made quick to test (both fight tests set the same values). It never rises
+	 * again here (killed at once): the resurrection has its own tests ({@link RuinThreatGameTests}, forced definitions).
+	 */
 	private static void testGuardian() {
 		RuinConfig.RuinDef def = RuinModule.config().def("test_ruin", false);
 		def.resetSeconds = 2;
@@ -414,6 +417,7 @@ public class RuinGameTests {
 		def.rewards.goldMin = 3;
 		def.rewards.goldMax = 5;
 		def.respawnDays = 7;
+		def.fastKillSeconds = 0;
 	}
 
 	/** Generates the test ruin start at the chunk of {@code at} (like /place structure, the pieces are not placed). */
