@@ -8,11 +8,15 @@ import dev.guildy.ruin.RuinConfig.MinionDef;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.EntityTypeTags;
+import net.minecraft.util.Unit;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
@@ -138,12 +142,29 @@ final class BossFactory {
 	}
 
 	private static @Nullable Mob add(ServerLevel level, Mob mob, Predicate<Mob> track) {
+		sunProof(mob);
 		if (!track.test(mob)) {
 			mob.discard();
 			return null;
 		}
 		boolean added = level.addFreshEntity(mob);
 		return added ? mob : null;
+	}
+
+	/**
+	 * Some arenas are open to the sky (the frost bastion's courtyard): equipment never wears out (a helmet protects an
+	 * undead from the sun only while it lasts) and an undead without a helmet gets fire resistance.
+	 */
+	private static void sunProof(Mob mob) {
+		for (EquipmentSlot slot : EquipmentSlot.VALUES) {
+			ItemStack stack = mob.getItemBySlot(slot);
+			if (!stack.isEmpty() && stack.isDamageableItem()) {
+				stack.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
+			}
+		}
+		if (mob.getType().is(EntityTypeTags.BURN_IN_DAYLIGHT) && mob.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
+			mob.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
+		}
 	}
 
 	/**
