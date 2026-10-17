@@ -228,7 +228,7 @@ NON_STRUCTURAL = {"air", "cave_air", "void_air", "water", "lava", "fire", "soul_
 	"peony", "sunflower", "pitcher_plant", "nether_wart", "seagrass", "kelp", "kelp_plant", "big_dripleaf",
 	"small_dripleaf", "big_dripleaf_stem", "pointed_dripstone", "amethyst_cluster", "sea_pickle", "lily_pad",
 	"cactus_flower", "tripwire", "tripwire_hook", "end_rod", "lightning_rod", "conduit", "frogspawn", "turtle_egg",
-	"sniffer_egg", "glow_berries"}
+	"sniffer_egg", "glow_berries", "bamboo", "cocoa"}
 NON_STRUCTURAL_SUFFIX = ("_chain", "_lantern", "lantern", "_candle", "_bed", "_sign", "_banner", "_skull", "_head",
 	"_button", "_pressure_plate", "_carpet", "_rail", "_tulip", "_sapling", "_door", "_trapdoor", "_campfire",
 	"_coral", "_coral_fan", "_coral_wall_fan", "_bud", "_torch", "_fungus", "_roots", "_mushroom", "_propagule")

@@ -75,6 +75,7 @@ class Ruin:
 		self.terrain = terrain  # preview only
 		self.processors = processors or []
 		self.big = False
+		self.set_weight = 1  # weight in the dimension's structure set (matters where ruins share biomes)
 
 	# the procedural variant (kept for the scripts / previews)
 	@property

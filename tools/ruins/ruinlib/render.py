@@ -28,7 +28,7 @@ _PLANT = ("sapling", "short_grass", "tall_grass", "fern", "flower", "tulip", "or
 	"warped_roots", "nether_sprouts", "fire", "soul_fire")
 _SMALL = ("torch", "lantern", "candle", "skull", "head", "flower_pot", "potted_", "button", "lever", "end_rod",
 	"amethyst_cluster", "_bud", "sea_pickle", "turtle_egg", "frogspawn", "tripwire_hook", "brewing_stand", "bell",
-	"decorated_pot", "lightning_rod", "redstone_torch", "chain")
+	"decorated_pot", "lightning_rod", "redstone_torch", "chain", "cocoa")
 _POST = ("fence", "_wall", "bars", "pane", "chain")
 
 

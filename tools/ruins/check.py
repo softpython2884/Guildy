@@ -394,7 +394,7 @@ def main():
 			print(report.text())
 			ok &= report.ok
 	else:
-		big_ids = {"bastion_de_givre", "citadelle_des_ames"}
+		big_ids = {"bastion_de_givre", "temple_maya", "citadelle_des_ames"}
 		for rid, t, nether, ground, multi in load_resources():
 			report = Report(rid)
 			check_template(t, report, nether, ground, rid.split("/")[0] in big_ids, multi)

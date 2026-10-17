@@ -15,6 +15,10 @@
     {
       "structure": "guildy:ruin/bastion_de_givre",
       "weight": 1
+    },
+    {
+      "structure": "guildy:ruin/temple_maya",
+      "weight": 2
     }
   ],
   "placement": {
