@@ -2,6 +2,7 @@ package dev.guildy.wave;
 
 import dev.guildy.core.GuildyItems;
 import dev.guildy.core.ItemUtil;
+import dev.guildy.core.ScrollDrops;
 import dev.guildy.core.UniqueDrops;
 import dev.guildy.data.Guild;
 import net.minecraft.core.BlockPos;
@@ -68,6 +69,7 @@ final class WaveLoot {
 		}
 		if (planned.isBoss()) {
 			dropUnique(level, mob, guild, random);
+			dropScroll(level, mob, guild, random);
 		}
 	}
 
@@ -81,6 +83,20 @@ final class WaveLoot {
 			return;
 		}
 		ItemEntity entity = mob.spawnAtLocation(level, unique);
+		if (entity != null) {
+			entity.setUnlimitedLifetime();
+			entity.setPermanentlyInvulnerable(true);
+			entity.setGlowingTag(true);
+		}
+	}
+
+	/** Spell scrolls of a boss (scrolls.json5: same "blood_boss" / "boss" tables), kept safe like the unique weapon. */
+	private static void dropScroll(ServerLevel level, Mob mob, Guild guild, RandomGenerator random) {
+		ItemStack scroll = ScrollDrops.roll(isBloodNight(guild) ? "blood_boss" : "boss", random);
+		if (scroll.isEmpty()) {
+			return;
+		}
+		ItemEntity entity = mob.spawnAtLocation(level, scroll);
 		if (entity != null) {
 			entity.setUnlimitedLifetime();
 			entity.setPermanentlyInvulnerable(true);

@@ -9,6 +9,7 @@ import dev.guildy.core.Lifecycle;
 import dev.guildy.core.Msg;
 import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
+import dev.guildy.core.ScrollDrops;
 import dev.guildy.core.UniqueDrops;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildEvents;
@@ -720,6 +721,13 @@ public final class QuestManager {
 		} else if (quest.legendary && cfg.legendary.fallbackGold > 0) {
 			GuildManager.addTreasury(guild, cfg.legendary.fallbackGold);
 			Msg.guild(guild, "quest.claimed.unique_none", cfg.legendary.fallbackGold);
+		}
+		// Spell scrolls (scrolls.json5, same "legendary_quest" / "quest" sources), also drawn at the reward.
+		ItemStack scroll = ScrollDrops.roll(quest.legendary ? UNIQUE_SOURCE_LEGENDARY : UNIQUE_SOURCE);
+		if (!scroll.isEmpty()) {
+			Component scrollName = scroll.getDisplayName();
+			ItemUtil.giveOrDrop(player, scroll);
+			Msg.guildRaw(guild, TextUtil.lang("scroll.reward.quest", player.getName().getString(), scrollName));
 		}
 	}
 
