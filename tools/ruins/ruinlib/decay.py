@@ -207,7 +207,7 @@ def _holds(b, state, pos, offset):
 		# hangs from a chain / block above, or stands on a block
 		return is_structural(other) or (offset == (0, 1, 0) and on.endswith("chain"))
 	if name.endswith("lantern"):
-		return is_structural(other) or on == "chain"
+		return is_structural(other) or on.endswith("chain")  # iron_chain, copper chains (26.x names)
 	if offset == (0, 1, 0) and any(k in name for k in UP_ATTACH):
 		return is_solid_full(other) or on == name or on == name.replace("_plant", "") or on + "_plant" == name or \
 			on == name + "_plant"

@@ -1,0 +1,14 @@
+{
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "guildy:ruin/temple_maya/below",
+        "processors": "guildy:ruin/temple_maya",
+        "projection": "rigid"
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Builds the six ruins and writes everything the mod needs under src/main/resources/data/guildy:
+Builds the ruins and writes everything the mod needs under src/main/resources/data/guildy:
   structure/ruin/<id>.nbt (or ruin/<id>/<piece>.nbt), worldgen/structure|template_pool|processor_list/ruin/...,
   worldgen/structure_set/ruins_overworld.json + ruins_nether.json, biome tags, structure tags.
 Then validates every template (check.py rules) and renders the previews (tools/ruins/previews/<id>.png).
@@ -21,7 +21,8 @@ import ruins  # noqa: E402
 from ruinlib.ruin import RESOURCES  # noqa: E402
 
 # Structure sets: one per dimension (random spread, unique salts). A set tries its structures by weight until one
-# accepts the biome of the chunk, so the biome tags decide which ruin appears where.
+# accepts the biome of the chunk, so the biome tags decide which ruin appears where; the weights (Ruin.set_weight)
+# only matter in the biomes several ruins share.
 SETS = {
 	"ruins_overworld": {"spacing": 34, "separation": 12, "salt": 1847203559},
 	"ruins_nether": {"spacing": 20, "separation": 7, "salt": 739018562},
@@ -47,7 +48,7 @@ def write_sets(built):
 		if not items:
 			continue
 		write_json(f"worldgen/structure_set/{name}.json", {
-			"structures": [{"structure": f"guildy:ruin/{r.id}", "weight": 1} for r in items],
+			"structures": [{"structure": f"guildy:ruin/{r.id}", "weight": r.set_weight} for r in items],
 			"placement": {"type": "minecraft:random_spread", "spacing": s["spacing"], "separation": s["separation"],
 				"salt": s["salt"]},
 		})

@@ -280,7 +280,7 @@ def main():
 		print("  " + m)
 	print(f"après conversion : {t.size[0]} x {t.size[1]} x {t.size[2]}, {len(t.cells)} blocs")
 	report = check.Report(f"{args.ruin}/{args.variant}")
-	check.check_template(t, report, nether, args.ground, args.ruin in ("bastion_de_givre", "citadelle_des_ames"))
+	check.check_template(t, report, nether, args.ground, args.ruin in ("bastion_de_givre", "temple_maya", "citadelle_des_ames"))
 	print(report.text())
 	ruin = ruins.load(args.ruin, with_imports=False)
 	from ruinlib.ruin import Variant, Piece, split_pieces

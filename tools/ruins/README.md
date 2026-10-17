@@ -1,6 +1,6 @@
 # Ruines de Guildy — outils de construction et d'import
 
-Six ruines à boss sont générées naturellement dans le monde (Overworld et Nether). Elles sont décrites par des
+Sept ruines à boss sont générées naturellement dans le monde (Overworld et Nether). Elles sont décrites par des
 scripts Python (`ruins/<id>.py`) qui écrivent les gabarits de structure vanilla (`.nbt`) et les fichiers de
 génération du monde dans `src/main/resources/data/guildy`. Vous pouvez aussi **construire vos propres ruines en
 créatif** et les envoyer : le convertisseur `import_schematic.py` les met au bon format et les ajoute au jeu.
@@ -11,6 +11,7 @@ créatif** et les envoyer : le convertisseur `import_schematic.py` les met au bo
 | Tour du Mage déchu | `tour_du_mage` | forêts, taïgas anciennes, jungles, forêt venteuse | 2 |
 | Ziggourat des sables | `ziggourat_des_sables` | désert, badlands | 2 |
 | Bastion de givre | `bastion_de_givre` | plaines et taïga enneigées, pics de glace, bosquet | 3 |
+| Temple du Serpent à plumes | `temple_maya` | jungle, jungle de bambous, jungle clairsemée | 3 |
 | Autel infernal | `autel_infernal` | Nether : désolation, forêt carmin | 4 |
 | Citadelle des âmes | `citadelle_des_ames` | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 |
 
@@ -21,8 +22,9 @@ vert = entrée).
 
 ```
 /place structure guildy:ruin/crypte_oubliee          (là où vous êtes ; dans le Nether pour les deux dernières)
+/place structure guildy:ruin/temple_maya             (64 x 64 : prévoir de la place)
 /locate structure guildy:ruin/tour_du_mage
-/locate structure #guildy:ruins                      (n'importe laquelle des six)
+/locate structure #guildy:ruins                      (n'importe laquelle des sept)
 /execute in minecraft:the_nether run locate structure guildy:ruin/citadelle_des_ames
 ```
 
@@ -35,8 +37,8 @@ aller voir une ruine trouvée avec `/locate` dans des chunks neufs.
 
 ### Règles de taille
 
-- Emprise : **48 × 48 blocs au maximum** (64 × 64 pour les deux grands repères : bastion de givre et citadelle des
-  âmes), hauteur **64 au maximum**, sous-sol compris.
+- Emprise : **48 × 48 blocs au maximum** (64 × 64 pour les trois grands repères : bastion de givre, temple du
+  Serpent à plumes et citadelle des âmes), hauteur **64 au maximum**, sous-sol compris.
 - Construisez sur un **monde plat** (superflat). Le **sol** du monde plat est la référence : la couche de blocs
   posée *à la place* du dernier bloc du sol naturel (pavés, dalles, chemin, sol des pièces) est le « rez-de-chaussée ».
   Tout ce qui est en dessous (caves, cryptes, fondations) est du sous-sol.
@@ -105,7 +107,7 @@ Posez un panneau (n'importe quel bois, debout ou mural) et écrivez sur **la pre
 ### Ce qu'il faut envoyer
 
 - le fichier (`.schem`, `.litematic` ou `.nbt`) ;
-- le nom de la ruine qu'il complète ou remplace (une des six), et s'il s'agit d'une **variante** (tirée au hasard
+- le nom de la ruine qu'il complète ou remplace (une des sept), et s'il s'agit d'une **variante** (tirée au hasard
   avec la version actuelle) ou d'un **remplacement** ;
 - la **couche du rez-de-chaussée** si la construction a un sous-sol (par exemple « le sol est la 5e couche en
   partant du bas ») ;
@@ -141,7 +143,7 @@ et `.nbt`, puis reconvertie et comparée à l'originale.
 
 | Fichier | Rôle |
 |---|---|
-| `build_all.py` | construit les six ruines (+ variantes importées), écrit les ressources du mod, vérifie, dessine |
+| `build_all.py` | construit les sept ruines (+ variantes importées), écrit les ressources du mod, vérifie, dessine |
 | `ruins/<id>.py` | une ruine par script (lancer seul : construit et dessine cette ruine) |
 | `render.py` | aperçus PNG (`python tools/ruins/render.py <id>` ou `--nbt fichier.nbt`) |
 | `check.py` | vérification du contrat sur les gabarits de `src/main/resources` (ou un fichier `.nbt` donné) |
@@ -157,7 +159,9 @@ bibliothèque standard.
 - Overworld : structures jigsaw projetées sur la surface (`WORLD_SURFACE_WG`, `start_height` 0 : la couche 0 de
   la pièce « surface » remplace le bloc du dessus du sol), adaptation du terrain `beard_thin` ; les sous-sols sont
   une deuxième pièce accrochée sous la première par un jigsaw (le terrain est ainsi aplani au vrai niveau du sol).
-  Un ensemble de structures `ruins_overworld` (espacement 34 chunks, séparation 12) : la ruine tirée dépend du biome.
+  Un ensemble de structures `ruins_overworld` (espacement 34 chunks, séparation 12) : la ruine tirée dépend du biome ;
+  là où plusieurs ruines partagent un biome, leur poids départage (jungles : temple du Serpent à plumes, poids 2,
+  contre tour du mage, poids 1).
 - Nether : une pièce à hauteur fixe (couche 0 à y = 32, juste au-dessus de la mer de lave), adaptation `beard_box`,
   et une « caverne » d'air explicite autour de la ruine pour qu'elle ne soit jamais noyée dans la netherrack ;
   ensemble `ruins_nether` (espacement 20, séparation 7).

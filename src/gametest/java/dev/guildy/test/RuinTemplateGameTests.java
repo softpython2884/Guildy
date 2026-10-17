@@ -36,17 +36,17 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * The six ruin structures (data/guildy/structure/ruin, worldgen/structure/ruin): every template loads and honours
+ * The ruin structures (data/guildy/structure/ruin, worldgen/structure/ruin): every template loads and honours
  * the ruin contract (size budget, exactly one guildy:boss DATA marker, minions, loot tables on every container),
  * and every worldgen structure generates and places without error (like /place structure) in its dimension.
  * Natural generation is kept out of the GameTest world by the test-only world preset override
  * (data/minecraft/worldgen/world_preset/flat_all_dimensions.json in the test resources).
  */
 public class RuinTemplateGameTests {
-	static final String[] OVERWORLD = {"crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre"};
+	static final String[] OVERWORLD = {"crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre", "temple_maya"};
 	static final String[] NETHER = {"autel_infernal", "citadelle_des_ames"};
-	/** The two landmarks allowed to reach 64 x 64. */
-	static final List<String> BIG = List.of("bastion_de_givre", "citadelle_des_ames");
+	/** The landmarks allowed to reach 64 x 64. */
+	static final List<String> BIG = List.of("bastion_de_givre", "temple_maya", "citadelle_des_ames");
 	/** Random per run (the test world is reused): far from the other scenarios (x > 40000, z = 8). */
 	private static final int BASE_X = -120000 - (int) (Math.random() * 400) * 2048;
 	private static final AtomicInteger SLOTS = new AtomicInteger();
@@ -148,6 +148,11 @@ public class RuinTemplateGameTests {
 	@GameTest(maxTicks = 200)
 	public void bastionDeGivreGenerates(GameTestHelper helper) {
 		place(helper, "bastion_de_givre", Level.OVERWORLD);
+	}
+
+	@GameTest(maxTicks = 200)
+	public void templeMayaGenerates(GameTestHelper helper) {
+		place(helper, "temple_maya", Level.OVERWORLD);
 	}
 
 	@GameTest(maxTicks = 200)
