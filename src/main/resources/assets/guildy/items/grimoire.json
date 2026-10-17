@@ -1,0 +1,97 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "pluie_de_meteores",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_pluie_de_meteores"
+        }
+      },
+      {
+        "when": "tempete_de_foudre",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_tempete_de_foudre"
+        }
+      },
+      {
+        "when": "blizzard",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_blizzard"
+        }
+      },
+      {
+        "when": "nova_solaire",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_nova_solaire"
+        }
+      },
+      {
+        "when": "singularite",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_singularite"
+        }
+      },
+      {
+        "when": "egide",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_egide"
+        }
+      },
+      {
+        "when": "rappel",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_rappel"
+        }
+      },
+      {
+        "when": "gardiens",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_gardiens"
+        }
+      },
+      {
+        "when": "benediction",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_benediction"
+        }
+      },
+      {
+        "when": "revelation",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_revelation"
+        }
+      },
+      {
+        "when": "seisme",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_seisme"
+        }
+      },
+      {
+        "when": "rayon_arcanique",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_rayon_arcanique"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "guildy:item/grimoire"
+    }
+  }
+}
