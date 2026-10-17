@@ -140,6 +140,13 @@ abstract class Planter {
 		return note;
 	}
 
+	/** Something new to plant appeared (farmland tilled again): the next round may start right away. */
+	final void wake() {
+		if (!active) {
+			nextRoundAt = 0;
+		}
+	}
+
 	/** The work area or the wishes changed: everything starts over. */
 	final void reset() {
 		clearRound();

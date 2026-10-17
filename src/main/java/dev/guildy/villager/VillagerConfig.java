@@ -443,15 +443,17 @@ public final class VillagerConfig implements Validatable {
 				"Semis : quand rien n'est mur, le fermier seme les terres labourees vides de ses champs : d'abord les cultures des",
 				"objectifs prioritaires, puis celle de la zone, puis les graines, carottes, pommes de terre ou graines de betterave de",
 				"son sac ou des coffres du stockage (Graines et pousses, Nourriture, depot, Divers) pour une zone 'Toutes les cultures'.",
-				"Melons, citrouilles et canne a sucre ne sont pas semes (la tige et la base restent a la recolte)"
+				"Melons, citrouilles et canne a sucre ne sont pas semes (la tige et la base restent a la recolte).",
+				"Dans une zone, autorisation 'Semer' du fanion"
 		})
 		public boolean sow = true;
 		@Comment("Semer aussi en mode automatique (sans zone : terres labourees du territoire et autour)")
 		public boolean sowInAutoMode = true;
 		@Comment({
-				"Zones de champs seulement : labourer (puis semer) l'herbe et la terre a l'air libre a moins de 4 blocs d'une eau (portee",
-				"d'hydratation vanilla), rien dessus, jamais un chemin, ni a cote d'un bloc pose par un joueur (sauf terre labouree, eau,",
-				"barrieres, torches)"
+				"Zones de champs seulement (autorisation 'Labourer' du fanion) : labourer l'herbe, la terre, la terre sterile et la",
+				"terre racinee hydratees (eau a 4 blocs ou moins, portee vanilla ; les points d'eau creuses comptent), rien dessus,",
+				"jamais un chemin, ni a cote d'un bloc pose par un joueur (sauf terre labouree, eau, barrieres, torches, lanternes,",
+				"chemins, composteurs...). false = aucun labour nouveau dans aucune zone"
 		})
 		public boolean tillSoil = true;
 		@Comment("Cultures semees par tournee avant de chercher de nouveau des cultures mures (1 a 256)")
@@ -462,11 +464,27 @@ public final class VillagerConfig implements Validatable {
 		public int sowFetchAmount = 32;
 		@Comment("Attente (secondes) avant de reessayer quand il n'y a plus rien a semer ou plus de graines (10 a 3600)")
 		public int sowPauseSeconds = 30;
+		@Comment({
+				"Travaux des champs (zones de champs) : chaque zone choisit les siens dans le menu de la zone, bouton",
+				"'Autorisations du fanion' (recolter, replanter, semer, relabourer, labourer, points d'eau, degager, aplanir,",
+				"poudre d'os ; preselections 'Entretenir un champ' et 'Creer des champs'). Sans zone : recolte et semis seulement"
+		})
+		public FieldWorkConfig fieldWork = new FieldWorkConfig();
+		@Comment("Points d'eau creuses par les fermiers (autorisation 'Creer des points d'eau' d'une zone de champs)")
+		public IrrigationConfig irrigation = new IrrigationConfig();
 
 		void validatePlanting() {
 			sowPerRound = clamp(sowPerRound, 1, 256);
 			sowFetchAmount = clamp(sowFetchAmount, 1, 64);
 			sowPauseSeconds = clamp(sowPauseSeconds, 10, 3600);
+			if (fieldWork == null) {
+				fieldWork = new FieldWorkConfig();
+			}
+			fieldWork.validate();
+			if (irrigation == null) {
+				irrigation = new IrrigationConfig();
+			}
+			irrigation.validate();
 		}
 	}
 

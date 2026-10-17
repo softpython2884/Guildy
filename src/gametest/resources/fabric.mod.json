@@ -30,7 +30,8 @@
 			"dev.guildy.test.StorageGameTests",
 			"dev.guildy.test.ChunkLoadGameTests",
 			"dev.guildy.test.VitalityGameTests",
-			"dev.guildy.test.PlantingGameTests"
+			"dev.guildy.test.PlantingGameTests",
+			"dev.guildy.test.FieldGameTests"
 		]
 	},
 	"depends": {

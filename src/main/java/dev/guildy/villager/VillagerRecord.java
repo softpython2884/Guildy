@@ -81,6 +81,9 @@ public class VillagerRecord {
 		/** Saplings planted by a lumberjack (replanting at a cut trunk not included) and crops sown by a farmer. */
 		public long planted;
 		public long sown;
+		/** Field works of a farmer: blocks tilled (retilled ones included) and water holes dug or refilled. */
+		public long tilled;
+		public long waterHoles;
 	}
 
 	public VillagerRecord() {

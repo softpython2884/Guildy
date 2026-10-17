@@ -42,7 +42,8 @@ final class SaplingPlanter extends Planter {
 	@Override
 	boolean enabled(WorkContext ctx, @Nullable WorkZone zone) {
 		VillagerConfig.Lumberjack config = ctx.config.lumberjack;
-		return config.plantSaplings && (zone != null ? zone.type == ZoneType.FOREST : config.plantInAutoMode);
+		return config.plantSaplings && (zone != null ? zone.type == ZoneType.FOREST && ZonePermissions.allows(zone, ZoneOption.TREE_PLANT)
+				: config.plantInAutoMode);
 	}
 
 	@Override

@@ -4,7 +4,9 @@ import net.minecraft.core.BlockPos;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A work zone (persisted in {@link GuildVillagerData#zones}): a square of chunks around a fanion. Zones may lie
@@ -31,6 +33,13 @@ public class WorkZone {
 	public @Nullable MineState mine;
 	/** "Objectifs prioritaires" shared by every villager of the zone (item ids, see {@link Wishlist}). */
 	public List<String> wishlist = new ArrayList<>();
+	/**
+	 * "Autorisations du fanion" of field and forest zones: option id → on / off, only the options changed by a player or
+	 * a preset (an absent option takes its default, see {@link ZonePermissions}).
+	 */
+	public Map<String, Boolean> options = new LinkedHashMap<>();
+	/** Field zones only: water holes dug and farmland to till again (null in older data and for other types). */
+	public @Nullable FieldState field;
 
 	public WorkZone() {
 	}
@@ -51,6 +60,14 @@ public class WorkZone {
 			mine = new MineState();
 		}
 		return mine;
+	}
+
+	/** Field state of a field zone (created when missing). */
+	public FieldState field() {
+		if (field == null) {
+			field = new FieldState();
+		}
+		return field;
 	}
 
 	/** A mine whose miners really dig (staircase and galleries inside the zone square). */
@@ -97,6 +114,8 @@ public class WorkZone {
 		if (type == ZoneType.MINE) {
 			MineState state = mine();
 			key += ":" + state.mode + ":" + state.targetY + ":" + state.epoch;
+		} else if (ZonePermissions.supports(type)) {
+			key += ":" + ZonePermissions.key(this);
 		}
 		return key;
 	}
@@ -112,6 +131,12 @@ public class WorkZone {
 			name = "";
 		}
 		wishlist = Wishlist.sanitize(wishlist);
+		ZonePermissions.sanitize(this);
+		if (type != ZoneType.FARM) {
+			field = null;
+		} else if (field != null) {
+			field.sanitize();
+		}
 		if (type != ZoneType.MINE) {
 			mine = null;
 		} else if (mine != null) {

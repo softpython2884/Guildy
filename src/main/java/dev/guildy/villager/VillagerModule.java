@@ -20,6 +20,7 @@ public final class VillagerModule {
 		ExpeditionLang.register();
 		WorkLang.register();
 		PlantingLang.register();
+		FieldLang.register();
 		Guards.init();
 		VillagerVitality.init();
 		NightShelter.init();
