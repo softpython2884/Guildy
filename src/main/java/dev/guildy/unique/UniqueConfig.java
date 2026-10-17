@@ -61,7 +61,7 @@ public final class UniqueConfig implements Validatable {
 	})
 	public String uniqueness = "guild";
 
-	@Comment("Quand toutes les armes d'une table sont deja detenues : tirage d'un parchemin de sort de la meme source a la place (false = rien)")
+	@Comment("Quand toutes les armes d'une table sont deja detenues : un parchemin de sort de la meme source a la place, garanti (false = rien)")
 	public boolean fallbackToScroll = true;
 
 	@Comment("Annonce a tout le serveur quand une guilde a reuni toutes les armes uniques (collection complete)")

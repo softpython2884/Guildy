@@ -22,7 +22,14 @@ public final class ScrollDrops {
 		ItemStack create(String id, int count);
 	}
 
+	/** Picks one scroll of a source's table without its drop chance (a guaranteed scroll, e.g. a replacement). */
+	@FunctionalInterface
+	public interface Picker {
+		ItemStack pick(String source, RandomGenerator random);
+	}
+
 	public static Roller roller = (source, random) -> ItemStack.EMPTY;
+	public static Picker picker = (source, random) -> ItemStack.EMPTY;
 	public static Factory factory = (id, count) -> ItemStack.EMPTY;
 
 	private ScrollDrops() {
@@ -35,6 +42,12 @@ public final class ScrollDrops {
 
 	public static ItemStack roll(String source, RandomGenerator random) {
 		ItemStack stack = Safe.get("scroll.roll", () -> roller.roll(source, random), ItemStack.EMPTY);
+		return stack == null ? ItemStack.EMPTY : stack;
+	}
+
+	/** One scroll of the source's table, chance ignored, or {@link ItemStack#EMPTY} (empty table, module absent). */
+	public static ItemStack pick(String source, RandomGenerator random) {
+		ItemStack stack = Safe.get("scroll.pick", () -> picker.pick(source, random), ItemStack.EMPTY);
 		return stack == null ? ItemStack.EMPTY : stack;
 	}
 

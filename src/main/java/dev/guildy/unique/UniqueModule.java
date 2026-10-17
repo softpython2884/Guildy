@@ -92,7 +92,8 @@ public final class UniqueModule {
 		UniqueRolls.Outcome outcome = UniqueRolls.roll(table, id -> cfg.item(id) != null, excluded, random);
 		if (outcome.kind() == UniqueRolls.Kind.EXHAUSTED) {
 			Guildy.LOGGER.debug("[uniques] '{}' roll: every weapon already held ({} mode){}", key, mode.id(), fallback ? ", scroll instead" : "");
-			ItemStack scroll = fallback ? ScrollDrops.roll(key, random) : ItemStack.EMPTY;
+			// The weapon's chance already passed: the replacement scroll is guaranteed (no second chance roll).
+			ItemStack scroll = fallback ? ScrollDrops.pick(key, random) : ItemStack.EMPTY;
 			ServerPlayer player = recipient.player() == null ? null : GuildyServer.player(recipient.player());
 			if (!scroll.isEmpty() && player != null) {
 				Msg.send(player, "unique.fallback.scroll");

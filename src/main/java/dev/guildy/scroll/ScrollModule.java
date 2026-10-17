@@ -37,6 +37,7 @@ public final class ScrollModule {
 		EffectRunner.init();
 		ScrollTracker.init();
 		ScrollDrops.roller = ScrollModule::roll;
+		ScrollDrops.picker = ScrollModule::pick;
 		ScrollDrops.factory = ScrollModule::create;
 	}
 
@@ -70,6 +71,18 @@ public final class ScrollModule {
 		ScrollRolls.Drop drop = ScrollRolls.roll(cfg.table(source), id -> cfg.scroll(id) != null, random);
 		ScrollConfig.ScrollDef def = drop == null ? null : cfg.scroll(drop.id());
 		return def == null ? ItemStack.EMPTY : ScrollItems.create(def, drop.count());
+	}
+
+	/** {@link ScrollDrops.Picker}: one scroll of the source's table, its chance ignored, or empty. */
+	static ItemStack pick(String source, RandomGenerator random) {
+		ScrollConfig cfg = config();
+		ScrollConfig.DropTable table = cfg.table(source);
+		if (!cfg.dropsEnabled || table == null || GuildyServer.server() == null) {
+			return ItemStack.EMPTY;
+		}
+		String id = ScrollRolls.pick(table, key -> cfg.scroll(key) != null, random);
+		ScrollConfig.ScrollDef def = id == null ? null : cfg.scroll(id);
+		return def == null ? ItemStack.EMPTY : ScrollItems.create(def, 1);
 	}
 
 	/** A blank grimoire with the source's grimoire.drops chance, or empty. */
