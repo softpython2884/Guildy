@@ -17,7 +17,9 @@ public enum Task {
 	/** Expedition in the wilds (simulated, the villager is away for a while). */
 	EXPLORER,
 	/** Expedition in the Nether through a portal of the territory (simulated, riskier, better loot). */
-	NETHER;
+	NETHER,
+	/** Works at the "Atelier du cartographe" on the guild's ruin research (dev.guildy.ruin). */
+	CARTOGRAPHER;
 
 	public String id() {
 		return name().toLowerCase(java.util.Locale.ROOT);
@@ -43,6 +45,7 @@ public enum Task {
 			case GUARD -> Items.IRON_SWORD;
 			case EXPLORER -> Items.COMPASS;
 			case NETHER -> Items.FLINT_AND_STEEL;
+			case CARTOGRAPHER -> Items.MAP;
 		};
 	}
 

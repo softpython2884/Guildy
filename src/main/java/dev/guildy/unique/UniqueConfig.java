@@ -29,10 +29,13 @@ import java.util.regex.Pattern;
 		"Commandes admin : /guild admin unique list | give <joueur> <id>."
 })
 public final class UniqueConfig implements Validatable {
-	/** Current file format (no migration yet). */
-	public static final int CURRENT_VERSION = 1;
+	/** Current file format: 2 = drop tables of the ruin bosses added to older files. */
+	public static final int CURRENT_VERSION = 2;
 	/** Drop sources used by the other modules (UniqueDrops.roll). */
-	public static final List<String> SOURCES = List.of("boss", "blood_boss", "quest", "legendary_quest", "expedition", "trade");
+	public static final List<String> SOURCES = List.of("boss", "blood_boss", "quest", "legendary_quest", "expedition", "trade",
+			"ruin_boss", "nether_ruin_boss");
+	/** Drop sources added by format 2 (ruin bosses). */
+	static final List<String> RUIN_SOURCES = List.of("ruin_boss", "nether_ruin_boss");
 	public static final Set<String> MODEL_MODES = Set.of("auto", "on", "off");
 	private static final Pattern ID = Pattern.compile("[a-z0-9_]{1,48}");
 	private static final Pattern RESOURCE = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
@@ -67,7 +70,8 @@ public final class UniqueConfig implements Validatable {
 			"Tables de butin par source : chance (0 a 1) qu'une arme unique tombe, puis tirage pondere dans items {id: poids}.",
 			"Sources : boss (boss des hordes), blood_boss (boss pendant une nuit de sang), quest (recompense de quete, rare),",
 			"legendary_quest (quete legendaire), expedition (expeditions des villageois), trade (Carrefour commercial : l'offre",
-			"\"arme unique\" de trade.json5 tire ici l'arme proposee). announce : annoncer l'obtention (raretes de \"announce\")."
+			"\"arme unique\" de trade.json5 tire ici l'arme proposee), ruin_boss / nether_ruin_boss (boss des ruines de l'Overworld",
+			"/ du Nether, ruins.json5). announce : annoncer l'obtention (raretes de \"announce\")."
 	})
 	public Map<String, DropTable> drops = defaultDrops();
 
@@ -346,6 +350,7 @@ public final class UniqueConfig implements Validatable {
 	/** Clamps the settings, validates the definitions and drop tables (pure). @return the problems found */
 	public List<String> rebuild(Predicate<String> itemExists) {
 		List<String> warnings = new ArrayList<>();
+		migrate();
 		configVersion = CURRENT_VERSION;
 		customModels = customModels == null ? "auto" : customModels.trim().toLowerCase(Locale.ROOT);
 		if (!MODEL_MODES.contains(customModels)) {
@@ -630,6 +635,23 @@ public final class UniqueConfig implements Validatable {
 		return Double.isNaN(value) ? min : Math.max(min, Math.min(max, value));
 	}
 
+	/**
+	 * Format 2: the ruin boss drop tables are added to files written before them (only when absent: a table removed or
+	 * edited by the admin afterwards is never touched again, the version is saved).
+	 */
+	void migrate() {
+		if (configVersion >= 2) {
+			return;
+		}
+		if (drops == null) {
+			drops = defaultDrops();
+		}
+		Map<String, DropTable> defaults = defaultDrops();
+		for (String source : RUIN_SOURCES) {
+			drops.putIfAbsent(source, defaults.get(source));
+		}
+	}
+
 	// ================================================================== defaults
 
 	public static Map<String, DropTable> defaultDrops() {
@@ -653,6 +675,13 @@ public final class UniqueConfig implements Validatable {
 		map.put("expedition", new DropTable(0.02, true)
 				.add("coutelas_du_contrebandier", 10).add("bottes_du_coursier", 10).add("pic_du_filon", 8)
 				.add("hache_sylvestre", 4).add("croc_de_givre", 3).add("arbalete_du_traqueur", 3).add("bottes_de_zephyr", 1));
+		map.put("ruin_boss", new DropTable(0.12, true)
+				.add("croc_de_givre", 6).add("hache_sylvestre", 5).add("arbalete_du_traqueur", 5).add("murmure_du_neant", 5)
+				.add("foudrelame", 4).add("pioche_du_titan", 4).add("bottes_de_zephyr", 4).add("arc_du_phenix", 4)
+				.add("marteau_du_seisme", 4).add("trident_du_leviathan", 2).add("faux_des_ames", 1));
+		map.put("nether_ruin_boss", new DropTable(0.25, true)
+				.add("murmure_du_neant", 5).add("foudrelame", 5).add("arc_du_phenix", 5).add("faux_des_ames", 4)
+				.add("pioche_du_titan", 4).add("bottes_de_zephyr", 4).add("marteau_du_seisme", 4).add("trident_du_leviathan", 2));
 		map.put("trade", new DropTable(1.0, false)
 				.add("croc_de_givre", 6).add("hache_sylvestre", 6).add("arbalete_du_traqueur", 6).add("murmure_du_neant", 5)
 				.add("pic_du_filon", 5).add("foudrelame", 3).add("pioche_du_titan", 3).add("bottes_de_zephyr", 3)
