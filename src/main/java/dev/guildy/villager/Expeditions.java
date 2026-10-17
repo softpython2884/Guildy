@@ -5,6 +5,7 @@ import dev.guildy.core.GuildyItems;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
+import dev.guildy.core.ScrollDrops;
 import dev.guildy.core.UniqueDrops;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
@@ -208,6 +209,16 @@ final class Expeditions {
 			}
 			total++;
 		}
+		// Spell scrolls (scrolls.json5, "expedition" table, same destination multiplier), also before the common loot.
+		ItemStack scroll = rollScroll(destination.uniqueChanceMultiplier());
+		if (!scroll.isEmpty()) {
+			int count = scroll.getCount();
+			int bagged = addToBag(record, scroll, carryStacks);
+			if (bagged < count) {
+				villager.spawnAtLocation(level, scroll.copyWithCount(count - bagged));
+			}
+			total += count;
+		}
 		List<VillagerConfig.LootEntry> loot = ExpeditionDestinations.boosted(destination.loot(), record.wishlist, config.expeditions.wishlistWeightMultiplier);
 		for (DepthLoot.Drop drop : DepthLoot.roll(new VillagerConfig.DepthTable(0, loot), destination.rolls(), ThreadLocalRandom.current())) {
 			Item item = ItemUtil.item(drop.item());
@@ -238,6 +249,18 @@ final class Expeditions {
 			ItemStack unique = UniqueDrops.roll(UNIQUE_SOURCE);
 			if (!unique.isEmpty()) {
 				return unique;
+			}
+		}
+		return ItemStack.EMPTY;
+	}
+
+	/** Spell scrolls of the "expedition" table, the chance scaled by the destination like the unique weapons, or empty. */
+	private static ItemStack rollScroll(double multiplier) {
+		int attempts = ExpeditionDestinations.uniqueAttempts(multiplier, ThreadLocalRandom.current());
+		for (int i = 0; i < attempts; i++) {
+			ItemStack scroll = ScrollDrops.roll(UNIQUE_SOURCE);
+			if (!scroll.isEmpty()) {
+				return scroll;
 			}
 		}
 		return ItemStack.EMPTY;

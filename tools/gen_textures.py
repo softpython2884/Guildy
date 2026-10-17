@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Guildy - generator of the optional resource pack of the unique weapons.
+Guildy - generator of the optional resource pack of the unique weapons and spell scrolls.
 
 Draws ORIGINAL 16x16 pixel art (simple vector shapes: lines, polylines, polygons, discs; automatic shading and
 outline; palette cycling for the animated ones) and writes, under src/main/resources/assets/guildy/:
@@ -492,6 +492,153 @@ SPRITES = {
 }
 
 
+# ---------------------------------------------------------------------------------------------------------- spell scrolls
+
+# Rune of each spell scroll (8 x 6 pixels drawn in the middle of the parchment), its glowing palette (cycled: animated),
+# and the wax seal color of its rarity.
+SCROLL_RUNES = {
+	"pluie_de_meteores": ([
+		"......#.",
+		".....#..",
+		"...##...",
+		".###....",
+		"####....",
+		".##.....",
+	], ["#ffb347", "#ff6a1a", "#c42a0a", "#ff6a1a"], "#ffb000"),
+	"tempete_de_foudre": ([
+		"....##..",
+		"...##...",
+		"..####..",
+		"....##..",
+		"...##...",
+		"..##....",
+	], ["#7fdbff", "#3fa9ff", "#2a5fd0", "#3fa9ff"], "#c86bff"),
+	"blizzard": ([
+		"#..#..#.",
+		".#.#.#..",
+		"..###...",
+		"#######.",
+		"..###...",
+		".#.#.#..",
+	], ["#9fe0ff", "#4aa8f0", "#2a62c0", "#4aa8f0"], "#c86bff"),
+	"nova_solaire": ([
+		"#..##..#",
+		"..####..",
+		".######.",
+		".######.",
+		"..####..",
+		"#..##..#",
+	], ["#ffc21a", "#ff8a00", "#e04a00", "#ff8a00"], "#ffb000"),
+	"singularite": ([
+		".#####..",
+		"#.....#.",
+		"#.###.#.",
+		"#.#.#.#.",
+		"#.#...#.",
+		"..#####.",
+	], ["#b45aff", "#7a1ad8", "#3a0a6a", "#7a1ad8"], "#ff3b3b"),
+	"egide": ([
+		".######.",
+		".#.##.#.",
+		".######.",
+		".######.",
+		"..####..",
+		"...##...",
+	], ["#ffc21a", "#e09a00", "#a86a00", "#e09a00"], "#c86bff"),
+	"rappel": ([
+		"...##...",
+		"..####..",
+		".######.",
+		".##..##.",
+		".##..##.",
+		".######.",
+	], ["#2ac0b0", "#1a9a8a", "#8a4ad8", "#1a9a8a"], "#5aa0ff"),
+	"gardiens": ([
+		".######.",
+		".######.",
+		".#.##.#.",
+		".######.",
+		"..#..#..",
+		"..####..",
+	], ["#b8c0cc", "#7a8494", "#3e4656", "#7a8494"], "#ffb000"),
+	"benediction": ([
+		".##..##.",
+		"########",
+		"########",
+		".######.",
+		"..####..",
+		"...##...",
+	], ["#ff7aa8", "#e0408a", "#3fbf3a", "#e0408a"], "#5aa0ff"),
+	"revelation": ([
+		"..####..",
+		".#....#.",
+		"#..##..#",
+		"#..##..#",
+		".#....#.",
+		"..####..",
+	], ["#00c8e8", "#0090d0", "#2b4cd0", "#0090d0"], "#5aa0ff"),
+	"seisme": ([
+		"...#....",
+		"...##...",
+		"....#...",
+		"...##...",
+		"...#.#..",
+		"########",
+	], ["#b07a3a", "#8b5a2b", "#5a3418", "#8b5a2b"], "#c86bff"),
+	"rayon_arcanique": ([
+		"...#....",
+		"...#....",
+		"#######.",
+		"...#....",
+		"..#.#...",
+		".#...#..",
+	], ["#ff3edb", "#c020b0", "#2aa8d8", "#c020b0"], "#ffb000"),
+}
+
+PARCHMENT = ("#fbf0d2", "#ecd6a4", "#c9a86c")
+ROLL = ("#e3c995", "#c19a5b", "#83602e")
+
+
+def scroll(rune, palette, seal):
+	"""Rolled parchment (two rolls, paper between) with a glowing rune (palette cycling) and a wax seal on a ribbon."""
+	c = Canvas()
+	c.ascii([
+		"................",
+		"................",
+		"..ERRRRRRRRRRE..",
+		"..ERRRRRRRRRRE..",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"...PPPPPPPPPP...",
+		"..ERRRRRRRRRRE..",
+		"..ERRRRRRRRRRE..",
+		".......SS.......",
+		".......S........",
+	], {"R": "roll", "E": "end", "P": "paper", "S": "seal"})
+	styles = {"roll": ROLL, "end": ("#6b4a22", "#5a3c1a", "#3e2810"), "paper": PARCHMENT,
+			  "seal": (seal, seal, "#5a1010")}
+	i = 0
+	for y, line in enumerate(rune):
+		for x, ch in enumerate(line):
+			if ch == "#":
+				part = "rune%d" % (i % 4)
+				c.put(4 + x, 5 + y, part)
+				styles[part] = flat(cycle(palette, i % 4))
+				i += 1
+	# Ink halo around the rune (contrast on the light parchment).
+	for y in range(SIZE):
+		for x in range(SIZE):
+			if c.get(x, y) == "paper" and any((c.get(x + dx, y + dy) or "").startswith("rune") for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+				c.put(x, y, "halo")
+	styles["halo"] = flat("#d2b27a")
+	return render(c, styles, "#2a1a0c", frames=4)
+
+
 def pack_icon(firsts):
 	"""64x64 icon: four uniques at 2x on a dark background."""
 	picks = [firsts[n] for n in ("foudrelame", "trident_du_leviathan", "faux_des_ames", "croc_de_givre")]
@@ -542,6 +689,12 @@ def main():
 		write_sprite(name, frames, 3)
 		sheets[name] = frames
 	bow_model("arc_du_phenix")
+	for name, (rune, palette, seal) in SCROLL_RUNES.items():
+		model = "parchemin_" + name
+		frames = scroll(rune, palette, seal)
+		write_sprite(model, frames, 4)
+		simple_model(model, "minecraft:item/generated")
+		sheets[model] = frames
 	pack_icon(firsts)
 	if "--preview" in sys.argv:
 		preview(sys.argv[sys.argv.index("--preview") + 1], sheets)

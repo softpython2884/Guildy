@@ -179,6 +179,9 @@ public final class Merchants {
 		}
 		List<TradeEntry> entries = kind.offers(guild, RANDOM);
 		MerchantOffers offers = TradeOffers.build(level.registryAccess(), entries);
+		if (TradeHub.KIND.equals(kind.id())) {
+			TradeOffers.addScrollOffer(offers, TradeHub.tier(guild));
+		}
 		if (offers.isEmpty()) {
 			return Result.NO_OFFERS;
 		}

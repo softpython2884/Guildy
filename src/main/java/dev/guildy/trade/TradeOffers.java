@@ -2,7 +2,9 @@ package dev.guildy.trade;
 
 import dev.guildy.Guildy;
 import dev.guildy.core.ItemUtil;
+import dev.guildy.core.ScrollDrops;
 import dev.guildy.core.UniqueDrops;
+import dev.guildy.scroll.ScrollModule;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
@@ -62,6 +64,22 @@ public final class TradeOffers {
 		}
 		// priceMultiplier 0: the price never changes with demand.
 		return new MerchantOffer(costA, costB, result, Math.max(1, entry.maxUses), 1, 0.0F);
+	}
+
+	/**
+	 * Sometimes a spell scroll (scrolls.json5: chance and scrolls of the "trade" table, price by rarity, minimum hub tier),
+	 * added to the offers of a trade hub merchant of this tier.
+	 */
+	public static void addScrollOffer(MerchantOffers offers, int tier) {
+		ItemStack scroll = ScrollDrops.roll("trade");
+		int price = scroll.isEmpty() ? 0 : ScrollModule.tradePrice(scroll, tier);
+		if (price <= 0) {
+			return;
+		}
+		int[] split = TradeRolls.priceSplit(price);
+		ItemCost costA = split[0] > 0 ? new ItemCost(Items.GOLD_BLOCK, split[0]) : new ItemCost(Items.GOLD_INGOT, split[1]);
+		Optional<ItemCost> costB = split[0] > 0 && split[1] > 0 ? Optional.of(new ItemCost(Items.GOLD_INGOT, split[1])) : Optional.empty();
+		offers.add(new MerchantOffer(costA, costB, scroll, 1, 1, 0.0F));
 	}
 
 	/** The sold stack (enchanted when the entry has an enchantment), or null when the item / enchantment is unknown. */
