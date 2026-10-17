@@ -80,7 +80,7 @@ final class RuinLoot {
 			}
 		}
 		String source = source(encounter.ruin, rewards.uniqueSource);
-		dropped += protectedDrop(level, boss, UniqueDrops.roll(source, random));
+		dropped += protectedDrop(level, boss, UniqueDrops.roll(source, random, UniqueDrops.Recipient.topDamager(boss)));
 		dropped += protectedDrop(level, boss, ScrollDrops.roll(source(encounter.ruin, rewards.scrollSource), random));
 		return dropped;
 	}

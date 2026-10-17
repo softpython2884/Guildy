@@ -709,14 +709,14 @@ public final class QuestManager {
 		QuestConfig cfg = config.get();
 		ItemStack unique = ItemStack.EMPTY;
 		if (quest.legendary) {
-			unique = UniqueDrops.roll(UNIQUE_SOURCE_LEGENDARY);
+			unique = UniqueDrops.roll(UNIQUE_SOURCE_LEGENDARY, UniqueDrops.Recipient.of(player, guild));
 		} else if (cfg.uniqueChance > 0 && RANDOM.nextDouble() < cfg.uniqueChance) {
-			unique = UniqueDrops.roll(UNIQUE_SOURCE);
+			unique = UniqueDrops.roll(UNIQUE_SOURCE, UniqueDrops.Recipient.of(player, guild));
 		}
 		if (!unique.isEmpty()) {
 			Component name = unique.getDisplayName();
 			ItemUtil.giveOrDrop(player, unique);
-			Msg.guildRaw(guild, TextUtil.lang("quest.claimed.unique", player.getName().getString(), name));
+			Msg.guildRaw(guild, TextUtil.lang(UniqueDrops.isUnique(unique) ? "quest.claimed.unique" : "scroll.reward.quest", player.getName().getString(), name));
 			Msg.guildSound(guild, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1.4f);
 		} else if (quest.legendary && cfg.legendary.fallbackGold > 0) {
 			GuildManager.addTreasury(guild, cfg.legendary.fallbackGold);

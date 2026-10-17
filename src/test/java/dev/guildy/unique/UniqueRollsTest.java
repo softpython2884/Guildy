@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.random.RandomGenerator;
 
@@ -77,6 +78,51 @@ class UniqueRollsTest {
 				assertTrue(id == null || cfg.item(id) != null, source + " rolled " + id);
 			}
 		}
+	}
+
+	@Test
+	void heldWeaponsAreNeverRolled() {
+		UniqueConfig.DropTable table = table(1, "foudrelame", 1, "croc_de_givre", 1);
+		// LOWEST picks the first entry: held, it is skipped, the other one comes out.
+		assertEquals(new UniqueRolls.Outcome(UniqueRolls.Kind.ITEM, "foudrelame"), UniqueRolls.roll(table, id -> true, Set.of(), LOWEST));
+		assertEquals(new UniqueRolls.Outcome(UniqueRolls.Kind.ITEM, "croc_de_givre"),
+				UniqueRolls.roll(table, id -> true, Set.of("foudrelame"), LOWEST));
+		SplittableRandom random = new SplittableRandom(3);
+		for (int i = 0; i < 500; i++) {
+			assertEquals("croc_de_givre", UniqueRolls.roll(table, id -> true, Set.of("foudrelame"), random).id());
+		}
+		// Everything held: exhausted (the module then falls back to a scroll), but only when the chance passed.
+		assertEquals(UniqueRolls.Kind.EXHAUSTED, UniqueRolls.roll(table, id -> true, Set.of("foudrelame", "croc_de_givre"), LOWEST).kind());
+		UniqueConfig.DropTable rare = table(0.3, "foudrelame", 1);
+		assertEquals(UniqueRolls.Kind.NOTHING, UniqueRolls.roll(rare, id -> true, Set.of("foudrelame"), HIGHEST).kind(), "failed chance");
+		assertEquals(UniqueRolls.Kind.EXHAUSTED, UniqueRolls.roll(rare, id -> true, Set.of("foudrelame"), LOWEST).kind());
+		// Items that cannot be created or weigh nothing are not "taken": an empty table is nothing, not exhausted.
+		assertEquals(UniqueRolls.Kind.NOTHING, UniqueRolls.roll(table(1, "zero", 0), id -> true, Set.of(), LOWEST).kind());
+		assertEquals(UniqueRolls.Kind.NOTHING, UniqueRolls.roll(table, id -> false, Set.of(), LOWEST).kind());
+		assertEquals(UniqueRolls.Kind.NOTHING, UniqueRolls.roll(null, id -> true, Set.of(), LOWEST).kind());
+	}
+
+	@Test
+	void uniquenessModeOfTheConfig() {
+		UniqueConfig cfg = new UniqueConfig();
+		assertTrue(cfg.rebuild(id -> true).isEmpty());
+		assertEquals(UniquenessMode.GUILD, cfg.mode(), "guild by default");
+		assertTrue(cfg.fallbackToScroll);
+		cfg.uniqueness = " Server ";
+		assertTrue(cfg.rebuild(id -> true).isEmpty());
+		assertEquals(UniquenessMode.SERVER, cfg.mode());
+		assertEquals("server", cfg.uniqueness);
+		cfg.uniqueness = "NONE";
+		cfg.rebuild(id -> true);
+		assertEquals(UniquenessMode.NONE, cfg.mode());
+		cfg.uniqueness = "everyone";
+		assertEquals(1, cfg.rebuild(id -> true).size(), "unknown mode reported");
+		assertEquals(UniquenessMode.GUILD, cfg.mode());
+		assertEquals("guild", cfg.uniqueness);
+		cfg.uniqueness = null;
+		cfg.rebuild(id -> true);
+		assertEquals(UniquenessMode.GUILD, cfg.mode());
+		assertEquals(null, UniquenessMode.parse("x"));
 	}
 
 	/** Expected rarity rank (RARE = 0 ... MYTHIC = 3) of an item rolled from the table. */

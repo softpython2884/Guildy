@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"package": "dev.guildy.unique.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"ItemStackBreakMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

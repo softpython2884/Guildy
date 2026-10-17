@@ -31,6 +31,10 @@ public final class Hooks {
 	public static BiConsumer<ServerPlayer, Guild> openVillagers = UNAVAILABLE;
 	/** Upgrade tree ("Arbre d'evolution"). */
 	public static BiConsumer<ServerPlayer, Guild> openUpgrades = UNAVAILABLE;
+	/** Collection of the unique weapons of the guild. Set by the unique items module. */
+	public static BiConsumer<ServerPlayer, Guild> openUniques = UNAVAILABLE;
+	/** Lore lines of the main menu "unique weapons" button (collection counter). */
+	public static Function<Guild, List<Component>> uniqueCollectionLore = guild -> List.of();
 
 	/** True while a night wave is running for this guild. Set by the wave module. */
 	public static Predicate<Guild> isWaveActive = guild -> false;

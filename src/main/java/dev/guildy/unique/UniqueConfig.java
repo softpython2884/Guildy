@@ -25,8 +25,9 @@ import java.util.regex.Pattern;
 @Comment({
 		"Guildy - armes uniques : armes et outils legendaires (enchantements de fou, pouvoirs, modeles optionnels).",
 		"Ils tombent des boss des hordes (bien plus souvent pendant une nuit de sang), des quetes, des expeditions des",
-		"villageois et se vendent parfois au Carrefour commercial palier III (trade.json5).",
-		"Commandes admin : /guild admin unique list | give <joueur> <id>."
+		"villageois, des gardiens des ruines et se vendent parfois au Carrefour commercial palier III (trade.json5).",
+		"Chaque exemplaire porte un numero de serie (registre : <monde>/guildy/uniques.json).",
+		"Commandes admin : /guild admin unique list | give <joueur> <id> | registry [id] | free <id> [guilde]."
 })
 public final class UniqueConfig implements Validatable {
 	/** Current file format: 2 = drop tables of the ruin bosses added to older files. */
@@ -51,6 +52,20 @@ public final class UniqueConfig implements Validatable {
 
 	@Comment("Pouvoirs des armes uniques (foudre, double saut, abattage...). false = elles ne gardent que leurs enchantements")
 	public boolean powersEnabled = true;
+
+	@Comment({
+			"Unicite des armes uniques :",
+			"\"guild\" = une guilde ne recoit jamais une arme qu'elle detient deja (une autre guilde peut l'obtenir) ;",
+			"\"server\" = un seul exemplaire de chaque arme sur tout le serveur (elle redevient disponible si elle est detruite) ;",
+			"\"none\" = aucune limite (ancien comportement). Les dons des admins ignorent cette regle (avertissement)."
+	})
+	public String uniqueness = "guild";
+
+	@Comment("Quand toutes les armes d'une table sont deja detenues : tirage d'un parchemin de sort de la meme source a la place (false = rien)")
+	public boolean fallbackToScroll = true;
+
+	@Comment("Annonce a tout le serveur quand une guilde a reuni toutes les armes uniques (collection complete)")
+	public boolean announceCollection = true;
 
 	@Comment({
 			"Modeles et textures personnalises (pack de ressources) :",
@@ -93,6 +108,7 @@ public final class UniqueConfig implements Validatable {
 	public List<UniqueDef> items = defaultItems();
 
 	private transient Map<String, UniqueDef> byId = new LinkedHashMap<>();
+	private transient UniquenessMode mode = UniquenessMode.GUILD;
 	private transient Set<UniqueRarity> announced = EnumSet.of(UniqueRarity.LEGENDARY, UniqueRarity.MYTHIC);
 
 	// ================================================================== sections
@@ -329,6 +345,11 @@ public final class UniqueConfig implements Validatable {
 		return source == null || drops == null ? null : drops.get(source.trim().toLowerCase(Locale.ROOT));
 	}
 
+	/** Parsed {@link #uniqueness} (GUILD before validation). */
+	public UniquenessMode mode() {
+		return mode == null ? UniquenessMode.GUILD : mode;
+	}
+
 	public boolean announces(UniqueRarity rarity) {
 		return announced.contains(rarity);
 	}
@@ -357,6 +378,13 @@ public final class UniqueConfig implements Validatable {
 			warnings.add("customModels '" + customModels + "' unknown (auto, on, off): auto used");
 			customModels = "auto";
 		}
+		UniquenessMode parsed = UniquenessMode.parse(uniqueness);
+		if (parsed == null) {
+			warnings.add("uniqueness '" + uniqueness + "' unknown (guild, server, none): guild used");
+			parsed = UniquenessMode.GUILD;
+		}
+		mode = parsed;
+		uniqueness = parsed.id();
 		rebuildAnnounce(warnings);
 		rebuildItems(itemExists, warnings);
 		rebuildDrops(warnings);

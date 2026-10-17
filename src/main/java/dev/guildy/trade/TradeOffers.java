@@ -3,6 +3,7 @@ package dev.guildy.trade;
 import dev.guildy.Guildy;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.core.UniqueDrops;
+import dev.guildy.data.Guild;
 import dev.guildy.scroll.ScrollModule;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -35,9 +36,14 @@ public final class TradeOffers {
 	}
 
 	public static MerchantOffers build(HolderLookup.Provider registries, List<TradeEntry> entries) {
+		return build(registries, entries, null);
+	}
+
+	/** Offers of a merchant visiting this guild: a unique weapon the guild may not receive is never offered. */
+	public static MerchantOffers build(HolderLookup.Provider registries, List<TradeEntry> entries, @Nullable Guild guild) {
 		MerchantOffers offers = new MerchantOffers();
 		for (TradeEntry entry : entries) {
-			MerchantOffer offer = offer(registries, entry);
+			MerchantOffer offer = offer(registries, entry, guild);
 			if (offer != null) {
 				offers.add(offer);
 			}
@@ -46,7 +52,11 @@ public final class TradeOffers {
 	}
 
 	public static @Nullable MerchantOffer offer(HolderLookup.Provider registries, TradeEntry entry) {
-		ItemStack result = result(registries, entry);
+		return offer(registries, entry, null);
+	}
+
+	public static @Nullable MerchantOffer offer(HolderLookup.Provider registries, TradeEntry entry, @Nullable Guild guild) {
+		ItemStack result = entry.isUnique() ? unique(entry, guild) : result(registries, entry);
 		if (result == null) {
 			return null;
 		}
@@ -84,7 +94,7 @@ public final class TradeOffers {
 	/** The sold stack (enchanted when the entry has an enchantment), or null when the item / enchantment is unknown. */
 	public static @Nullable ItemStack result(HolderLookup.Provider registries, TradeEntry entry) {
 		if (entry.isUnique()) {
-			return unique(entry);
+			return unique(entry, null);
 		}
 		Item item = ItemUtil.item(entry.item);
 		if (item == null) {
@@ -105,13 +115,17 @@ public final class TradeOffers {
 	}
 
 	/**
-	 * A unique weapon for a unique offer: drawn from the "trade" table of uniques.json5 ("random") or the given unique id.
-	 * Null (offer skipped) when the unique module gives nothing (unknown id, drops disabled).
+	 * A unique weapon for a unique offer: drawn from the "trade" table of uniques.json5 ("random") or the given unique id,
+	 * never one the visited guild may not receive (uniqueness of uniques.json5; previews without a guild show a fixed id as
+	 * is). Null (offer skipped) when the unique module gives nothing (unknown id, drops disabled, weapon already held).
 	 */
-	private static @Nullable ItemStack unique(TradeEntry entry) {
-		ItemStack stack = TradeEntry.RANDOM_UNIQUE.equals(entry.unique) ? UniqueDrops.roll("trade") : UniqueDrops.create(entry.unique);
+	private static @Nullable ItemStack unique(TradeEntry entry, @Nullable Guild guild) {
+		ItemStack stack = guild == null && !TradeEntry.RANDOM_UNIQUE.equals(entry.unique) ? UniqueDrops.create(entry.unique)
+				: UniqueDrops.offer("trade", entry.unique, UniqueDrops.Recipient.guild(guild));
 		if (stack.isEmpty()) {
-			warnOnce("unique:" + entry.unique, "unique weapon unavailable");
+			if (guild == null) {
+				warnOnce("unique:" + entry.unique, "unique weapon unavailable");
+			}
 			return null;
 		}
 		return stack;
