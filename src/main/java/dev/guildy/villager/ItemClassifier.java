@@ -1,6 +1,7 @@
 package dev.guildy.villager;
 
 import dev.guildy.Guildy;
+import dev.guildy.core.GuildyItems;
 import dev.guildy.core.GuildyServer;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -13,6 +14,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.SmithingTemplateItem;
 import net.minecraft.world.item.SpawnEggItem;
@@ -46,6 +48,9 @@ public final class ItemClassifier {
 	/** Item → its entries in the creative tabs (stack shown, position in the whole creative inventory), in order. */
 	private static @Nullable Map<Item, List<CreativeEntry>> creative;
 
+	/** Guildy magic items (custom_data kind) sorted like the enchanted books. */
+	private static final Set<String> MAGIC_KINDS = Set.of("scroll", "grimoire", "ruin_summon");
+
 	private record CreativeEntry(ItemStack stack, int index) {
 	}
 
@@ -55,6 +60,12 @@ public final class ItemClassifier {
 	/** Storage category of a stack (with the current villagers.json5 categories). */
 	public static String categoryOf(ItemStack stack) {
 		StorageCategories categories = categories();
+		String kind = GuildyItems.kind(stack);
+		if (kind != null && MAGIC_KINDS.contains(kind)) {
+			// Spell scrolls, grimoires and incantation scrolls are banner patterns or books underneath: they are sorted
+			// with the enchanted books.
+			return categoryOf(new ItemStack(Items.ENCHANTED_BOOK));
+		}
 		boolean plain = stack.getComponentsPatch().isEmpty();
 		if (plain) {
 			String cached = CATEGORIES.get(stack.getItem());
