@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:jigsaw",
+  "biomes": "#guildy:has_structure/ruin/autel_infernal",
+  "step": "surface_structures",
+  "terrain_adaptation": "beard_box",
+  "spawn_overrides": {},
+  "start_pool": "guildy:ruin/autel_infernal",
+  "size": 1,
+  "start_height": {
+    "absolute": 33
+  },
+  "max_distance_from_center": 80,
+  "use_expansion_hack": false
+}

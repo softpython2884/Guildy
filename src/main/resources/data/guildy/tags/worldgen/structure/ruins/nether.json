@@ -1,4 +1,7 @@
 {
   "replace": false,
-  "values": []
+  "values": [
+    "guildy:ruin/autel_infernal",
+    "guildy:ruin/citadelle_des_ames"
+  ]
 }

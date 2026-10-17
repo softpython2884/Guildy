@@ -1,0 +1,136 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "minecraft:overworld",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:desert",
+          "features": false,
+          "lakes": false,
+          "layers": [
+            {
+              "block": "minecraft:bedrock",
+              "height": 1
+            },
+            {
+              "block": "minecraft:sandstone",
+              "height": 67
+            }
+          ],
+          "structure_overrides": [
+            "minecraft:abandoned_camp",
+            "minecraft:ancient_cities",
+            "minecraft:buried_treasures",
+            "minecraft:desert_pyramids",
+            "minecraft:end_cities",
+            "minecraft:igloos",
+            "minecraft:jungle_temples",
+            "minecraft:mineshafts",
+            "minecraft:nether_complexes",
+            "minecraft:nether_fossils",
+            "minecraft:ocean_monuments",
+            "minecraft:ocean_ruins",
+            "minecraft:pillager_outposts",
+            "minecraft:ruined_portals",
+            "minecraft:shipwrecks",
+            "minecraft:strongholds",
+            "minecraft:swamp_huts",
+            "minecraft:trail_ruins",
+            "minecraft:trial_chambers",
+            "minecraft:villages",
+            "minecraft:woodland_mansions"
+          ]
+        }
+      }
+    },
+    "minecraft:the_end": {
+      "type": "minecraft:the_end",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:the_end",
+          "features": false,
+          "lakes": false,
+          "layers": [
+            {
+              "block": "minecraft:bedrock",
+              "height": 1
+            },
+            {
+              "block": "minecraft:end_stone",
+              "height": 3
+            }
+          ],
+          "structure_overrides": [
+            "minecraft:abandoned_camp",
+            "minecraft:ancient_cities",
+            "minecraft:buried_treasures",
+            "minecraft:desert_pyramids",
+            "minecraft:end_cities",
+            "minecraft:igloos",
+            "minecraft:jungle_temples",
+            "minecraft:mineshafts",
+            "minecraft:nether_complexes",
+            "minecraft:nether_fossils",
+            "minecraft:ocean_monuments",
+            "minecraft:ocean_ruins",
+            "minecraft:pillager_outposts",
+            "minecraft:ruined_portals",
+            "minecraft:shipwrecks",
+            "minecraft:strongholds",
+            "minecraft:swamp_huts",
+            "minecraft:trail_ruins",
+            "minecraft:trial_chambers",
+            "minecraft:villages",
+            "minecraft:woodland_mansions"
+          ]
+        }
+      }
+    },
+    "minecraft:the_nether": {
+      "type": "minecraft:the_nether",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:basalt_deltas",
+          "features": false,
+          "lakes": false,
+          "layers": [
+            {
+              "block": "minecraft:bedrock",
+              "height": 1
+            },
+            {
+              "block": "minecraft:basalt",
+              "height": 3
+            }
+          ],
+          "structure_overrides": [
+            "minecraft:abandoned_camp",
+            "minecraft:ancient_cities",
+            "minecraft:buried_treasures",
+            "minecraft:desert_pyramids",
+            "minecraft:end_cities",
+            "minecraft:igloos",
+            "minecraft:jungle_temples",
+            "minecraft:mineshafts",
+            "minecraft:nether_complexes",
+            "minecraft:nether_fossils",
+            "minecraft:ocean_monuments",
+            "minecraft:ocean_ruins",
+            "minecraft:pillager_outposts",
+            "minecraft:ruined_portals",
+            "minecraft:shipwrecks",
+            "minecraft:strongholds",
+            "minecraft:swamp_huts",
+            "minecraft:trail_ruins",
+            "minecraft:trial_chambers",
+            "minecraft:villages",
+            "minecraft:woodland_mansions"
+          ]
+        }
+      }
+    }
+  }
+}

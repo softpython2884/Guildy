@@ -1,4 +1,7 @@
 {
   "replace": false,
-  "values": []
+  "values": [
+    "#guildy:ruins/overworld",
+    "#guildy:ruins/nether"
+  ]
 }
