@@ -235,6 +235,24 @@
           "weight": 2
         }
       ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:empty",
+          "weight": 70
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:skull_banner_pattern",
+          "weight": 30,
+          "modifier": {
+            "type": "minecraft:set_custom_data",
+            "tag": "{guildy:{kind:\"ruin_summon\"}}"
+          }
+        }
+      ]
     }
   ],
   "random_sequence": "guildy:chests/ruin/nether_treasure"

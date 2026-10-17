@@ -43,6 +43,42 @@ final class RuinLang {
 		m.put("ruin.victory.announce", "&e{0} &7ont vaincu &c{1}&7 dans la &f{2}&7 !");
 		m.put("ruin.victory.xp", "&a+{0} XP de guilde &7pour la victoire dans la &f{1}&7.");
 
+		// Incantation scroll and ritual
+		m.put("ruin.summon.item.name", "&4&lParchemin d'incantation");
+		m.put("ruin.summon.item.header", "&5Objet rituel &8— usage unique");
+		m.put("ruin.summon.item.story", "&7Un rouleau taché de sang séché. Lu au cœur\n&7d'une &fruine&7 dont le gardien dort, il l'arrache\n&7au sommeil avec toute son escorte.");
+		m.put("ruin.summon.item.price", "&4Prix du sang : &c{0} ❤ &4par joueur présent");
+		m.put("ruin.summon.item.price.min", "&8(jamais en dessous de {0} ❤)");
+		m.put("ruin.summon.item.price.none", "&7Aucun prix du sang sur ce serveur.");
+		m.put("ruin.summon.item.use", "&7Clic droit maintenu &e{0} s&7, à moins de &e{1}&7 blocs");
+		m.put("ruin.summon.item.ritual", "&7du gardien endormi : le rituel dure &e{0} s&7.");
+		m.put("ruin.summon.item.dormant", "&8Ne fonctionne que dans une ruine dormante.");
+		m.put("ruin.summon.item.single_use", "&8Consommé au début du rituel, rendu s'il échoue.");
+		m.put("ruin.summon.fail.not_in_ruin", "&cCe parchemin n'agit que dans une ruine gardée par un boss.");
+		m.put("ruin.summon.fail.wrong_dimension", "&cCette ruine n'appartient pas à cette dimension.");
+		m.put("ruin.summon.fail.disabled", "&cLes gardiens des ruines sont désactivés sur ce serveur.");
+		m.put("ruin.summon.fail.peaceful", "&cLes gardiens restent sourds à l'appel en difficulté Paisible.");
+		m.put("ruin.summon.fail.cleared", "&c{0}&c : gardien vaincu, de retour dans &e{1}&c jour(s).");
+		m.put("ruin.summon.fail.cleared_forever", "&c{0}&c : le gardien est vaincu pour toujours, la ruine est apaisée.");
+		m.put("ruin.summon.fail.awake", "&c{2} &cest déjà éveillé !");
+		m.put("ruin.summon.fail.ritual", "&cUn rituel est déjà en cours dans cette ruine.");
+		m.put("ruin.summon.fail.too_far", "&cApprochez-vous du gardien endormi : à moins de &e{3}&c blocs de son repaire.");
+		m.put("ruin.summon.fail.busy", "&cTrop de gardiens sont déjà éveillés sur le serveur : réessayez plus tard.");
+		m.put("ruin.summon.fail.not_loaded", "&cLa ruine n'est pas entièrement chargée : approchez-vous.");
+		m.put("ruin.summon.interrupted", "&7L'incantation a été interrompue : le parchemin est intact.");
+		m.put("ruin.summon.bar", "&4Rituel d'incantation &7— {0}");
+		m.put("ruin.summon.start.title", "&4&lRituel d'incantation");
+		m.put("ruin.summon.start.subtitle", "&7Votre sang éveille {0}&7…");
+		m.put("ruin.summon.start.chat", "&5{0} &7lit le parchemin d'incantation : le sang des présents va éveiller {1}&7 dans la &f{2}&7 ! Restez près du cercle.");
+		m.put("ruin.summon.drain", "&4❤ &cLe rituel boit votre sang… &7restez près du cercle !");
+		m.put("ruin.summon.drain.none", "&5Le rituel puise dans votre énergie… &7restez près du cercle !");
+		m.put("ruin.summon.cancelled", "&7Le rituel de la &f{0}&7 se brise : plus personne ne le nourrit. &8(parchemin rendu à {1})");
+		m.put("ruin.summon.refunded", "&7Le parchemin d'incantation vous a été rendu.");
+		m.put("ruin.summon.failed", "&c{0} &cn'a pas répondu à l'appel : le parchemin est rendu.");
+		m.put("ruin.summon.hint.subtitle", "&7Une présence dort ici…");
+		m.put("ruin.summon.hint.actionbar", "&5Un parchemin d'incantation &7pourrait l'éveiller.");
+		m.put("ruin.summon.hint.chat", "&7Une présence dort dans la &f{0}&7 : {1}&7. Un &5parchemin d'incantation&7, lu au cœur de la ruine, pourrait l'éveiller.");
+
 		// Cartography
 		m.put("ruin.research.no_atelier", "&cLa guilde n'a pas d'Atelier du cartographe.");
 		m.put("ruin.research.busy", "&cUne recherche est déjà en cours (ou attend d'être récupérée).");
@@ -61,6 +97,7 @@ final class RuinLang {
 		m.put("ruin.research.failed", "&eLes cartographes n'ont trouvé aucune ruine : récupérez le remboursement à l'atelier.");
 		m.put("ruin.research.ready", "&6&lCarte prête ! &eUne ruine a été localisée : récupérez la carte à l'Atelier du cartographe.");
 		m.put("ruin.research.ready.nether", "&6&lBoussole prête ! &eUne ruine du Nether a été localisée : récupérez-la à l'Atelier du cartographe.");
+		m.put("ruin.research.incantation", "&5+{0} parchemin(s) d'incantation &7: lisez-le au cœur de la ruine pour éveiller son gardien.");
 
 		// Items
 		m.put("ruin.item.map.name", "&6Carte : {0}");
@@ -119,6 +156,8 @@ final class RuinLang {
 		m.put("ruin.known.title", "Ruines connues ({0})");
 		m.put("ruin.known.state.dormant", "&7État : &adormante");
 		m.put("ruin.known.state.awake", "&7État : &créveillée");
+		m.put("ruin.known.state.ritual", "&7État : &5rituel d'incantation en cours");
+		m.put("ruin.menu.incantation", "&7+ &5{0} parchemin(s) d'incantation &7(pour éveiller le gardien)");
 		m.put("ruin.known.state.cleared", "&7État : &8vaincue &7— de retour dans &e{0}&7 jour(s)");
 		m.put("ruin.known.state.cleared_forever", "&7État : &8vaincue &7(ne revient pas)");
 		m.put("ruin.known.victories", "&7Victoires : &e{0} &8(dernière : {1})");
@@ -148,6 +187,8 @@ final class RuinLang {
 		m.put("ruin.admin.info.fight", "&cCombat : {0} &c{1}/{2} ❤ &7| sbires : {3} | spectateurs : {4}");
 		m.put("ruin.admin.locate.none", "&cAucune ruine '{0}' trouvée.");
 		m.put("ruin.admin.map", "&a{0} &adonné à {1}.");
+		m.put("ruin.admin.incantation", "&a{0} parchemin(s) d'incantation donné(s) à {1}.");
+		m.put("ruin.admin.info.ritual", "&5Rituel d'incantation : {0} % &7| participants : {1}");
 		m.put("ruin.admin.ability.unknown", "&cCapacité ou style inconnu '{0}' ({1}).");
 		m.put("ruin.admin.ability.failed", "&cCapacité '{0}' impossible : aucun combat en cours, aucun joueur en survie à portée ou condition non remplie.");
 		m.put("ruin.admin.ability.used", "&aCapacité '{0}' utilisée.");

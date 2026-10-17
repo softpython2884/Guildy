@@ -13,10 +13,11 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Ruins: generated ruins guarded by bosses (Overworld and Nether), indexed from their data markers, and the
- * cartographer's research that locates them. Config: config/guildy/ruins.json5; data: {@code <world>/guildy/ruins.json}.
- * Entry points: {@link RuinIndex} (known ruins), {@link Encounters} (fights), {@link Cartography} (research),
- * {@link RuinCommands} ({@code /guild admin ruin ...}).
+ * Ruins: generated ruins guarded by bosses (Overworld and Nether), indexed from their data markers, awakened by an
+ * incantation ritual, and the cartographer's research that locates them. Config: config/guildy/ruins.json5; data:
+ * {@code <world>/guildy/ruins.json}. Entry points: {@link RuinIndex} (known ruins), {@link Incantations} (incantation
+ * scrolls and rituals), {@link Encounters} (fights), {@link Cartography} (research), {@link RuinCommands}
+ * ({@code /guild admin ruin ...}).
  */
 public final class RuinModule {
 	private static final RuinConfig DEFAULTS = new RuinConfig();
@@ -31,6 +32,7 @@ public final class RuinModule {
 		config = ConfigManager.register("ruins.json5", RuinConfig.class, RuinConfig::new);
 		RuinLang.register();
 		Encounters.init();
+		Incantations.init();
 		RuinCommands.register();
 		StructureBehavior.register(Cartography.STRUCTURE_ID, new CartographerBehavior());
 

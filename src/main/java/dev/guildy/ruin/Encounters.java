@@ -41,17 +41,25 @@ import java.util.SplittableRandom;
 import java.util.UUID;
 
 /**
- * Ruin fights: awakening when a survival player approaches the guardian, boss bar, arena leash, abilities, reset when
- * nobody is around, cancellation when the guardian is unloaded, rewards on its death. Runs once per second (the
- * animations every tick in {@link RuinFx}); every loop is bounded by the players online and the running fights.
+ * Ruin fights: awakening (at the climax of an incantation ritual, see {@link Incantations}, or in the "proximity" mode when
+ * a survival player approaches the guardian), boss bar, arena leash, abilities, reset when nobody is around, cancellation
+ * when the guardian is unloaded, rewards on its death. Runs once per second (the animations every tick in {@link RuinFx});
+ * every loop is bounded by the players online and the running fights.
  */
 public final class Encounters {
 	private static final Map<String, Encounter> ACTIVE = new LinkedHashMap<>();
 	private static final Map<UUID, Encounter> BY_MOB = new HashMap<>();
 	private static final Map<UUID, Long> HINTS = new HashMap<>();
+	/** Player → last dormant ruin they were seen in ("scroll" mode hint shown when they enter it). */
+	private static final Map<UUID, Presence> PRESENCE = new HashMap<>();
 	private static final SplittableRandom RANDOM = new SplittableRandom();
 	private static final int HINT_INTERVAL_TICKS = 60 * 20;
+	/** A player who left a dormant ruin for this long sees its hint again when coming back. */
+	private static final int PRESENCE_FORGET_TICKS = 2 * 60 * 20;
 	private static long seconds;
+
+	private record Presence(String ruinKey, long seen) {
+	}
 
 	private Encounters() {
 	}
@@ -158,13 +166,24 @@ public final class Encounters {
 				return;
 			}
 		}
-		if (ruin.state != RuinState.DORMANT || ACTIVE.containsKey(ruin.key) || player.isCreative()) {
+		if (ruin.state != RuinState.DORMANT || ACTIVE.containsKey(ruin.key) || Incantations.ritualRunning(ruin)) {
+			return;
+		}
+		if (!SummonRules.proximityAwakens(cfg.summon.mode)) {
+			// "scroll" mode: the guardian sleeps until an incantation scroll is read near it.
+			if (cfg.bossesEnabled) {
+				presenceHint(player, ruin, def);
+			}
+			return;
+		}
+		if (player.isCreative()) {
 			return;
 		}
 		BlockPos spawn = ruin.boss != null ? ruin.boss : ruin.center();
 		boolean inActivation = def.activationRadius <= 0
 				|| player.distanceToSqr(Vec3.atBottomCenterOf(spawn)) <= (double) def.activationRadius * def.activationRadius;
-		boolean enabled = cfg.bossesEnabled && level.getDifficulty() != Difficulty.PEACEFUL && ACTIVE.size() < cfg.encounter.maxActive;
+		boolean enabled = cfg.bossesEnabled && level.getDifficulty() != Difficulty.PEACEFUL
+				&& ACTIVE.size() + Incantations.ritualCount() < cfg.encounter.maxActive;
 		if (RuinRules.decide(RuinState.DORMANT, enabled, inActivation, 0, def.resetSeconds, false, false) == RuinRules.Action.AWAKEN) {
 			awaken(level, ruin, def, false);
 		}
@@ -179,6 +198,29 @@ public final class Encounters {
 		HINTS.put(player.getUUID(), now + HINT_INTERVAL_TICKS);
 		String name = Lang.colorize(def.name);
 		Msg.actionBar(player, daysLeft < 0 ? Lang.get("ruin.cleared.never", name) : Lang.get("ruin.cleared.hint", name, Math.max(1, daysLeft)));
+	}
+
+	/** "Une présence dort ici…": title and chat when the player enters a dormant ruin (again after a while away). */
+	private static void presenceHint(ServerPlayer player, RuinRecord ruin, RuinDef def) {
+		long now = Scheduler.ticks();
+		Presence last = PRESENCE.get(player.getUUID());
+		PRESENCE.put(player.getUUID(), new Presence(ruin.key, now));
+		if (last != null && last.ruinKey().equals(ruin.key) && now - last.seen() <= PRESENCE_FORGET_TICKS && now >= last.seen()) {
+			return;
+		}
+		String name = Lang.colorize(def.name);
+		Msg.title(player, Component.literal(name), Lang.get("ruin.summon.hint.subtitle"), 10, 60, 20);
+		Msg.actionBar(player, "ruin.summon.hint.actionbar");
+		Msg.send(player, "ruin.summon.hint.chat", name, Lang.colorize(def.boss.name));
+	}
+
+	/** A defeated guardian due back is re-armed now. @return true when the ruin is dormant again */
+	static boolean rearmIfDue(MinecraftServer server, RuinRecord ruin) {
+		if (ruin.state == RuinState.CLEARED && RuinRules.rearmed(ruin.clearedDay, day(server), def(ruin).respawnDays)) {
+			rearm(ruin);
+			return true;
+		}
+		return false;
 	}
 
 	private static void rearmAll(MinecraftServer server) {
@@ -204,7 +246,8 @@ public final class Encounters {
 	/**
 	 * Spawns the guardian and its escort. @return null on success, else the lang key of the reason (admin command)
 	 *
-	 * @param forced admin command: also re-arms a defeated guardian and ignores the fight limit
+	 * @param forced admin command: also re-arms a defeated guardian, ignores the fight limit and cancels a running
+	 *               incantation ritual (its scroll is refunded)
 	 */
 	public static @Nullable String awaken(ServerLevel level, RuinRecord ruin, @Nullable RuinDef forcedDef, boolean forced) {
 		if (ACTIVE.containsKey(ruin.key)) {
@@ -212,6 +255,12 @@ public final class Encounters {
 		}
 		if (!level.dimension().identifier().toString().equals(ruin.dimension)) {
 			return "ruin.admin.wrong_dimension";
+		}
+		if (Incantations.ritualRunning(ruin)) {
+			if (!forced) {
+				return "ruin.summon.fail.ritual";
+			}
+			Incantations.cancelRitual(ruin);
 		}
 		if (forced && ruin.state == RuinState.CLEARED) {
 			ruin.state = RuinState.DORMANT;
@@ -548,8 +597,9 @@ public final class Encounters {
 		encounter.bar.removeAllPlayers();
 	}
 
-	/** Admin reset: ends the fight and re-arms a defeated guardian. */
+	/** Admin reset: ends the fight (or cancels the ritual, scroll refunded) and re-arms a defeated guardian. */
 	public static void reset(RuinRecord ruin) {
+		Incantations.cancelRitual(ruin);
 		Encounter encounter = ACTIVE.get(ruin.key);
 		if (encounter != null) {
 			MinecraftServer server = GuildyServer.server();
@@ -559,8 +609,13 @@ public final class Encounters {
 		RuinIndex.markDirty();
 	}
 
-	/** Server stopping: every fight is cancelled (the guardians are removed before the chunks are saved). */
+	/**
+	 * Server stopping: every ritual is cancelled (scrolls refunded) and every fight too (the guardians are removed before
+	 * the chunks are saved).
+	 */
 	static void stopAll() {
+		Safe.run("ruin.ritual.stop", Incantations::stopAll);
+		PRESENCE.clear();
 		MinecraftServer server = GuildyServer.server();
 		for (Encounter encounter : new ArrayList<>(ACTIVE.values())) {
 			Safe.run("ruin.stop", () -> end(encounter, server == null ? null : server.getLevel(encounter.dimension), false));

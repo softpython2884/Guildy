@@ -72,8 +72,12 @@ final class AtelierMenu {
 		} else {
 			boolean ready = research.status == Research.Status.READY;
 			Item icon = ready ? (research.nether ? Items.COMPASS : Items.FILLED_MAP) : Items.PAPER;
-			GuiElementBuilder claim = GuiUtil.item(icon, Lang.get(ready ? "ruin.menu.claim" : "ruin.menu.refund"),
-					GuiUtil.lines(ready ? "ruin.menu.claim.lore" : "ruin.menu.refund.lore"));
+			List<Component> claimLore = new ArrayList<>(GuiUtil.lines(ready ? "ruin.menu.claim.lore" : "ruin.menu.refund.lore"));
+			int incantations = Cartography.settings().incantationsPerResearch;
+			if (ready && incantations > 0) {
+				claimLore.add(Lang.get("ruin.menu.incantation", incantations));
+			}
+			GuiElementBuilder claim = GuiUtil.item(icon, Lang.get(ready ? "ruin.menu.claim" : "ruin.menu.refund"), claimLore);
 			if (ready) {
 				claim.glow();
 			}
@@ -106,6 +110,9 @@ final class AtelierMenu {
 	private static GuiElementBuilder researchButton(ServerPlayer player, Guild guild, boolean nether) {
 		RuinConfig.CartographySettings cfg = Cartography.settings();
 		List<Component> lore = new ArrayList<>(GuiUtil.lines(nether ? "ruin.menu.research.nether.lore" : "ruin.menu.research.lore"));
+		if (cfg.incantationsPerResearch > 0) {
+			lore.add(Lang.get("ruin.menu.incantation", cfg.incantationsPerResearch));
+		}
 		lore.add(Component.empty());
 		lore.add(Lang.get("ruin.menu.research.cost"));
 		for (Map.Entry<String, Integer> entry : (nether ? cfg.netherCost : cfg.overworldCost).entrySet()) {
@@ -217,6 +224,9 @@ final class AtelierMenu {
 		}
 		if (Encounters.isActive(ruin)) {
 			return Lang.get("ruin.known.state.awake");
+		}
+		if (Incantations.ritualRunning(ruin)) {
+			return Lang.get("ruin.known.state.ritual");
 		}
 		return Lang.get("ruin.known.state.dormant");
 	}

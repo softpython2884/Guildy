@@ -8,7 +8,10 @@ import java.util.Locale;
  * State of a ruin's guardian. Persisted by name; {@link #AWAKE} never survives a restart (the fight is cancelled).
  */
 public enum RuinState {
-	/** The guardian sleeps: the next survival player who comes close awakens it. */
+	/**
+	 * The guardian sleeps: an incantation ritual awakens it (or, in the "proximity" mode, the next survival player who
+	 * comes close).
+	 */
 	DORMANT,
 	/** A fight is running (runtime only). */
 	AWAKE,
