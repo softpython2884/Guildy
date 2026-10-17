@@ -100,14 +100,23 @@ final class CraftJobs {
 		if (data.anvilsWorn > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.anvils", data.anvilsWorn));
 		}
+		AlchemistConfig alchemist = VillagerModule.config().alchemist;
+		int scrollsToday = data.scrollsToday(today);
 		if (data.books > 0) {
-			int made = AlchemyRules.madeToday(data.day, data.booksToday, today);
-			lore.add(Lang.get("villager.gui.lore.stat.books", data.books, made, VillagerModule.config().alchemist.maxBooksPerDay));
+			// The daily cap counts books and scrolls: the books of the day are the rest.
+			int books = Math.max(0, data.worksToday(today) - scrollsToday);
+			lore.add(Lang.get("villager.gui.lore.stat.books", data.books, books, alchemist.maxBooksPerDay));
 			if (!data.bestEnchant.isEmpty()) {
 				lore.add(Lang.get("villager.gui.lore.stat.best_enchant", CraftNames.enchantment(data.bestEnchant, data.bestLevel)));
 			}
 			if (!data.lastBook.isEmpty()) {
 				lore.add(Lang.get("villager.gui.lore.stat.last_book", CraftNames.saved(data.lastBook)));
+			}
+		}
+		if (data.scrolls > 0) {
+			lore.add(Lang.get("villager.gui.lore.stat.scrolls", data.scrolls, scrollsToday, alchemist.maxScrollsPerDay));
+			if (!data.lastScroll.isEmpty()) {
+				lore.add(Lang.get("villager.gui.lore.stat.last_scroll", AlchemistScrolls.name(data.lastScroll)));
 			}
 		}
 	}

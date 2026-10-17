@@ -19,7 +19,7 @@ final class CraftLang {
 		m.put("villager.task.blacksmith", "Forgeron");
 		m.put("villager.task.blacksmith.desc", "&7Répare peu à peu les &farmures et objets&7 posés\n&7sur les &fporte-armures&7 du territoire, à l'enclume\n&7la plus proche du porte-armure. L'objet reste\n&7sur le porte-armure ; chaque réparation use\n&7l'enclume comme en vanilla.");
 		m.put("villager.task.alchemist", "Alchimiste");
-		m.put("villager.task.alchemist.desc", "&7Avec une &dtable d'enchantement&7 du territoire\n&7(celle qui a le plus de bibliothèques), du temps\n&7et des &flivres&7 pris au stockage, fabrique des\n&dlivres enchantés&7 rangés dans le stockage.\n&7Plus de bibliothèques = meilleurs enchantements.");
+		m.put("villager.task.alchemist.desc", "&7Avec une &dtable d'enchantement&7 du territoire\n&7(celle qui a le plus de bibliothèques), du temps\n&7et des &flivres&7 pris au stockage, fabrique des\n&dlivres enchantés&7 rangés dans le stockage.\n&7Plus de bibliothèques = meilleurs enchantements.\n&7Parfois, avec du &fpapier&7, il écrit un\n&dparchemin de sort&7 (souvent un Rappel).");
 		// guild level requirement
 		m.put("villager.craft.level.required", "&cNiveau de guilde {0} requis &8(actuel : {1})");
 		m.put("villager.craft.level.ok", "&8Débloqué au niveau de guilde {0}");
@@ -49,17 +49,25 @@ final class CraftLang {
 		m.put("villager.status.alchemy.working", "&dEnchante un livre (niveau {0}) {1} %");
 		m.put("villager.status.alchemy.table_info", "&7Table avec {0} bibliothèque(s) : niveau {1} au plus");
 		m.put("villager.status.alchemy.done", "&aA enchanté un livre : &d{0}");
-		m.put("villager.status.alchemy.cap", "&7{0}/{1} livres enchantés aujourd'hui : reprend demain");
+		m.put("villager.status.alchemy.cap", "&7{0}/{1} livres et parchemins aujourd'hui : reprend demain");
 		m.put("villager.status.alchemy.delivering", "&eRange {0} livre(s) enchanté(s) au stockage");
 		m.put("villager.status.alchemy.no_room", "&cAucun coffre libre pour ranger les livres enchantés");
 		m.put("villager.status.alchemy.bag_full", "&cSac plein : attend de pouvoir ranger");
 		m.put("villager.status.alchemy.failed", "&cLa table n'a rien donné : nouvel essai");
+		// alchemist: spell scrolls
+		m.put("villager.status.alchemy.fetch_paper", "&eVa chercher du papier au stockage");
+		m.put("villager.status.alchemy.scroll_done", "&aÉcrit un parchemin : &d{0}");
+		m.put("villager.status.alchemy.no_paper", "&ePlus de papier : livre enchanté à la place &8· &d{0}");
+		m.put("villager.status.alchemy.delivering_scrolls", "&eRange {0} parchemin(s) au stockage");
+		m.put("villager.status.alchemy.no_room_scrolls", "&cAucun coffre libre pour ranger les parchemins");
 		// statistics (villager menu)
 		m.put("villager.gui.lore.stat.repaired", "&7Objets réparés : &f{0} &8(durabilité rendue : {1})");
 		m.put("villager.gui.lore.stat.anvils", "&7Enclumes usées : &f{0}");
 		m.put("villager.gui.lore.stat.books", "&7Livres enchantés : &f{0} &8(aujourd'hui : {1}/{2})");
 		m.put("villager.gui.lore.stat.best_enchant", "&7Meilleur enchantement : &d{0}");
 		m.put("villager.gui.lore.stat.last_book", "&7Dernier livre : &d{0}");
+		m.put("villager.gui.lore.stat.scrolls", "&7Parchemins écrits : &f{0} &8(aujourd'hui : {1}/{2})");
+		m.put("villager.gui.lore.stat.last_scroll", "&7Dernier parchemin : &d{0}");
 		// equipment names: special items, then "<piece> <material>" (iron_chestplate → Plastron en fer)
 		m.put("villager.craft.item.shield", "Bouclier");
 		m.put("villager.craft.item.bow", "Arc");

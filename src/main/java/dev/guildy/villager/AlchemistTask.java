@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * "Alchimiste": works at the enchanting table of the territory with the most bookshelves (ties: the nearest), found by
@@ -38,6 +39,11 @@ import java.util.Set;
  * enchanting table outcome for a book, restricted to {@code #minecraft:in_enchanting_table} (Guildy's enchantments are
  * never part of it, and are filtered out anyway). The enchanted book goes to the chest of its storage category (else a
  * fallback, else a deposit chest). At most {@code maxBooksPerDay} books per in-game day.
+ *
+ * <p>Spell scrolls ({@link AlchemistScrolls}): with chance {@code scrollChance} a finished cycle writes a scroll of the
+ * {@code scrolls} table instead (the rarer ones only from {@code epicScrollLevel}), using the same book and lapis plus
+ * {@code scrollPaper} sheets of paper, fetched from the storage like the books but optional (without paper: a book).
+ * Scrolls count in the daily cap, with their own {@code maxScrollsPerDay}, and are stored like the books.
  */
 final class AlchemistTask extends TaskHandler {
 	private enum Phase {
@@ -68,14 +74,20 @@ final class AlchemistTask extends TaskHandler {
 	private String supplyKey = "villager.status.alchemy.no_books";
 	/** Chests without supplies / full or unreachable chests during this period (retried every 30 s). */
 	private final Set<BlockPos> excluded = new HashSet<>();
+	private final Set<BlockPos> paperExcluded = new HashSet<>();
 	private final Set<BlockPos> full = new HashSet<>();
 	private long excludedResetAt;
+	/** No paper found in the storage: books only until then. */
+	private long paperRetryAt;
 	// work
 	private int enchantLevel;
 	private long progress;
 	private long required;
 	// delivery
 	private @Nullable BlockPos deliverTo;
+	/** Storage category of the products taken to {@link #deliverTo}, and whether they are scrolls (status). */
+	private String deliverCategory = "";
+	private boolean deliverScrolls;
 	private long deliverRetryAt;
 	private final DepositFlow deposit = new DepositFlow();
 	private long depositRetryAt;
@@ -92,6 +104,7 @@ final class AlchemistTask extends TaskHandler {
 		}
 		if (ctx.now >= excludedResetAt) {
 			excluded.clear();
+			paperExcluded.clear();
 			full.clear();
 			excludedResetAt = ctx.now + RETRY_TICKS;
 		}
@@ -181,14 +194,14 @@ final class AlchemistTask extends TaskHandler {
 
 	private void ready(WorkContext ctx) {
 		AlchemistConfig cfg = ctx.config.alchemist;
-		if (enchantedInBag(ctx) > 0 && ctx.now >= deliverRetryAt) {
+		if (productsInBag(ctx) > 0 && ctx.now >= deliverRetryAt) {
 			phase = Phase.DELIVER;
 			deliverStep(ctx);
 			return;
 		}
 		if (hasForeign(ctx) && ctx.now >= depositRetryAt) {
-			// Items of a former task go to a deposit chest; supplies and enchanted books stay in the bag.
-			DepositFlow.State state = deposit.tick(ctx, stack -> isSupply(stack, cfg) || stack.is(Items.ENCHANTED_BOOK));
+			// Items of a former task go to a deposit chest; supplies, enchanted books and scrolls stay in the bag.
+			DepositFlow.State state = deposit.tick(ctx, stack -> isSupply(stack, cfg) || isProduct(stack));
 			if (state == DepositFlow.State.WORKING) {
 				return;
 			}
@@ -206,7 +219,8 @@ final class AlchemistTask extends TaskHandler {
 			return;
 		}
 		CraftData data = CraftJobs.data(ctx.record);
-		int made = AlchemyRules.madeToday(data.day, data.booksToday, today(ctx));
+		long today = today(ctx);
+		int made = data.worksToday(today);
 		if (AlchemyRules.capReached(made, cfg.maxBooksPerDay)) {
 			ctx.status("villager.status.alchemy.cap", made, cfg.maxBooksPerDay);
 			return;
@@ -221,8 +235,11 @@ final class AlchemistTask extends TaskHandler {
 			supply(ctx, Items.LAPIS_LAZULI, cfg.lapisPerBook * Math.min(left, books), "villager.status.alchemy.no_lapis");
 			return;
 		}
+		if (paperSupply(ctx, cfg, data, today, Math.min(left, books))) {
+			return;
+		}
 		if (!roomForResult(ctx)) {
-			if (enchantedInBag(ctx) > 0) {
+			if (productsInBag(ctx) > 0) {
 				ctx.status("villager.status.alchemy.no_room");
 			} else {
 				ctx.status("villager.status.alchemy.bag_full");
@@ -233,25 +250,70 @@ final class AlchemistTask extends TaskHandler {
 		goStep(ctx);
 	}
 
-	/** Supplies stay in the bag: plain books, lapis when it is used. */
+	/** Scrolls may be written at all (a chance and a daily cap above 0). */
+	private static boolean scrollsEnabled(AlchemistConfig cfg) {
+		return cfg.scrollChance > 0 && cfg.maxScrollsPerDay > 0;
+	}
+
+	/**
+	 * Paper for the scrolls still possible today, fetched before going to the table when the bag lacks the paper of one
+	 * scroll. Optional: without paper in the storage, books are made (looked for again 30 s later).
+	 *
+	 * @return true while fetching
+	 */
+	private boolean paperSupply(WorkContext ctx, AlchemistConfig cfg, CraftData data, long today, int worksLeft) {
+		if (!scrollsEnabled(cfg) || cfg.scrollPaper <= 0 || ctx.now < paperRetryAt) {
+			return false;
+		}
+		int scrollsLeft = cfg.maxScrollsPerDay - data.scrollsToday(today);
+		int inBag = CraftStock.countInBag(ctx, Items.PAPER);
+		if (scrollsLeft <= 0 || inBag >= cfg.scrollPaper
+				|| !AlchemyRules.anyScroll(cfg.scrolls, AlchemistScrolls::rarity, AlchemyRules.maxLevel(shelves), cfg.epicScrollLevel)) {
+			return false;
+		}
+		// A new stack of paper must leave a bag slot for the result.
+		if (inBag == 0 && ctx.record.carried.size() + 2 > ctx.config.work.carryStacks) {
+			return false;
+		}
+		int wanted = AlchemyRules.paperWanted(cfg.scrollPaper, scrollsLeft, worksLeft, inBag);
+		BlockPos from = wanted <= 0 ? null : CraftStock.nearestWith(ctx, Items.PAPER, paperExcluded);
+		if (from == null) {
+			paperRetryAt = ctx.now + RETRY_TICKS;
+			return false;
+		}
+		fetchFrom = from;
+		fetchItem = Items.PAPER;
+		fetchAmount = wanted;
+		phase = Phase.FETCH;
+		fetchStep(ctx);
+		return true;
+	}
+
+	/** Supplies stay in the bag: plain books, lapis when it is used, paper when scrolls are written. */
 	private static boolean isSupply(ItemStack stack, AlchemistConfig cfg) {
-		return CraftStock.plain(stack, Items.BOOK) || (cfg.lapisPerBook > 0 && CraftStock.plain(stack, Items.LAPIS_LAZULI));
+		return CraftStock.plain(stack, Items.BOOK) || (cfg.lapisPerBook > 0 && CraftStock.plain(stack, Items.LAPIS_LAZULI))
+				|| (scrollsEnabled(cfg) && cfg.scrollPaper > 0 && CraftStock.plain(stack, Items.PAPER));
+	}
+
+	/** What the alchemist makes and stores: enchanted books and spell scrolls. */
+	private static boolean isProduct(ItemStack stack) {
+		return stack.is(Items.ENCHANTED_BOOK) || AlchemistScrolls.isScroll(stack);
 	}
 
 	private static boolean hasForeign(WorkContext ctx) {
 		AlchemistConfig cfg = ctx.config.alchemist;
 		for (ItemStack stack : ctx.record.carried) {
-			if (!isSupply(stack, cfg) && !stack.is(Items.ENCHANTED_BOOK)) {
+			if (!isSupply(stack, cfg) && !isProduct(stack)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private static int enchantedInBag(WorkContext ctx) {
+	private static int productsInBag(WorkContext ctx) {
 		int count = 0;
 		for (ItemStack stack : ctx.record.carried) {
-			if (stack.is(Items.ENCHANTED_BOOK)) {
+			if (isProduct(stack)) {
 				count += stack.getCount();
 			}
 		}
@@ -312,21 +374,28 @@ final class AlchemistTask extends TaskHandler {
 			phase = Phase.READY;
 			return;
 		}
+		// Paper is optional: a chest without paper is not skipped for the books.
+		Set<BlockPos> skip = fetchItem == Items.PAPER ? paperExcluded : excluded;
 		switch (Movement.moveTo(ctx, from, 2.5, ctx.config.work.walkTimeoutSeconds)) {
 			case UNREACHABLE -> {
-				excluded.add(from);
+				skip.add(from);
 				fetchFrom = null;
 				phase = Phase.READY;
 			}
-			case MOVING -> ctx.status(fetchItem == Items.BOOK ? "villager.status.alchemy.fetch_books" : "villager.status.alchemy.fetch_lapis");
+			case MOVING -> ctx.status(fetchItem == Items.BOOK ? "villager.status.alchemy.fetch_books"
+					: fetchItem == Items.PAPER ? "villager.status.alchemy.fetch_paper" : "villager.status.alchemy.fetch_lapis");
 			case ARRIVED -> {
 				int moved = CraftStock.fetch(ctx, from, fetchItem, fetchAmount);
 				if (moved > 0) {
 					Movement.hold(ctx, from);
 					WorldUtil.swing(ctx.villager);
 					WorldUtil.playSound(ctx.level, ctx.villager, SoundEvents.ITEM_PICKUP, 0.6f, 0.9f);
+					if (fetchItem == Items.BOOK) {
+						// Each trip for books also looks for paper again.
+						paperRetryAt = 0;
+					}
 				} else {
-					excluded.add(from);
+					skip.add(from);
 				}
 				fetchFrom = null;
 				phase = Phase.READY;
@@ -423,15 +492,29 @@ final class AlchemistTask extends TaskHandler {
 		}
 	}
 
-	/** The vanilla enchanting table outcome for a book (EnchantmentMenu.getEnchantmentList with a book). */
+	/**
+	 * End of a cycle: sometimes a spell scroll ({@link AlchemyRules#outcome}), else the vanilla enchanting table outcome for
+	 * a book (EnchantmentMenu.getEnchantmentList with a book).
+	 */
 	private void finish(WorkContext ctx, BlockPos at) {
 		AlchemistConfig cfg = ctx.config.alchemist;
 		ServerLevel level = ctx.level;
 		RandomSource random = level.getRandom();
+		int workLevel = enchantLevel;
+		AlchemyRules.Outcome outcome = AlchemyRules.Outcome.BOOK;
+		if (scrollsEnabled(cfg)) {
+			CraftData data = CraftJobs.data(ctx.record);
+			boolean possible = AlchemyRules.anyScroll(cfg.scrolls, AlchemistScrolls::rarity, workLevel, cfg.epicScrollLevel);
+			outcome = AlchemyRules.outcome(random.nextDouble(), cfg.scrollChance, possible, data.scrollsToday(today(ctx)), cfg.maxScrollsPerDay,
+					CraftStock.countInBag(ctx, Items.PAPER), cfg.scrollPaper);
+		}
+		if (outcome == AlchemyRules.Outcome.SCROLL && writeScroll(ctx, at, workLevel)) {
+			return;
+		}
 		Optional<HolderSet.Named<Enchantment>> tag = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
 				.get(EnchantmentTags.IN_ENCHANTING_TABLE);
 		List<EnchantmentInstance> list = tag.isEmpty() ? List.of()
-				: EnchantmentHelper.selectEnchantment(random, new ItemStack(Items.BOOK), enchantLevel,
+				: EnchantmentHelper.selectEnchantment(random, new ItemStack(Items.BOOK), workLevel,
 				tag.get().stream().filter(holder -> !isGuildy(holder)));
 		List<EnchantmentInstance> chosen = new ArrayList<>(list);
 		if (chosen.size() > 1) {
@@ -458,9 +541,42 @@ final class AlchemistTask extends TaskHandler {
 		level.playSound(null, at, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.BLOCKS, 1.0f, random.nextFloat() * 0.1f + 0.9f);
 		level.sendParticles(ParticleTypes.ENCHANT, at.getX() + 0.5, at.getY() + 1.5, at.getZ() + 0.5, 30, 0.5, 0.5, 0.5, 1.0);
 		WorldUtil.happy(level, ctx.villager);
-		ctx.status("villager.status.alchemy.done", CraftNames.book(result.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY)));
+		String book = CraftNames.book(result.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY));
+		ctx.status(outcome == AlchemyRules.Outcome.BOOK_NO_PAPER ? "villager.status.alchemy.no_paper" : "villager.status.alchemy.done", book);
 		deliverRetryAt = 0;
 		phase = Phase.DELIVER;
+	}
+
+	/**
+	 * A spell scroll of the table, allowed at the cycle's level: uses the book, the lapis and the paper (all or nothing).
+	 *
+	 * @return false (nothing used) when no scroll is possible or the scroll module creates none: a book is made instead
+	 */
+	private boolean writeScroll(WorkContext ctx, BlockPos at, int workLevel) {
+		AlchemistConfig cfg = ctx.config.alchemist;
+		String id = AlchemyRules.pickScroll(cfg.scrolls, AlchemistScrolls::rarity, workLevel, cfg.epicScrollLevel, ctx.level.getRandom().nextDouble());
+		ItemStack scroll = id == null ? ItemStack.EMPTY : AlchemistScrolls.create(id);
+		if (scroll.isEmpty() || CraftStock.countInBag(ctx, Items.BOOK) < 1 || CraftStock.countInBag(ctx, Items.LAPIS_LAZULI) < cfg.lapisPerBook
+				|| CraftStock.countInBag(ctx, Items.PAPER) < cfg.scrollPaper) {
+			return false;
+		}
+		CraftStock.takeFromBag(ctx, Items.BOOK, 1);
+		CraftStock.takeFromBag(ctx, Items.LAPIS_LAZULI, cfg.lapisPerBook);
+		CraftStock.takeFromBag(ctx, Items.PAPER, cfg.scrollPaper);
+		enchantLevel = 0;
+		progress = 0;
+		ctx.record.carried.add(scroll);
+		CraftData data = CraftJobs.data(ctx.record);
+		data.countWork(today(ctx), true);
+		data.scrolls++;
+		data.lastScroll = id;
+		GuildManager.markDirty();
+		AlchemistScrolls.effects(ctx.level, at);
+		WorldUtil.happy(ctx.level, ctx.villager);
+		ctx.status("villager.status.alchemy.scroll_done", AlchemistScrolls.name(id));
+		deliverRetryAt = 0;
+		phase = Phase.DELIVER;
+		return true;
 	}
 
 	private static boolean isGuildy(Holder<Enchantment> holder) {
@@ -470,9 +586,7 @@ final class AlchemistTask extends TaskHandler {
 	/** Statistics and the daily count. */
 	private static void record(WorkContext ctx, List<EnchantmentInstance> chosen) {
 		CraftData data = CraftJobs.data(ctx.record);
-		long today = today(ctx);
-		data.booksToday = AlchemyRules.madeToday(data.day, data.booksToday, today) + 1;
-		data.day = today;
+		data.countWork(today(ctx), false);
 		data.books++;
 		List<String> parts = new ArrayList<>();
 		for (EnchantmentInstance instance : chosen) {
@@ -491,40 +605,53 @@ final class AlchemistTask extends TaskHandler {
 
 	// ------------------------------------------------------------------ delivery
 
+	/**
+	 * Takes the products to the chest of their storage category (else a fallback, else a deposit chest), one category per
+	 * trip: enchanted books and scrolls usually belong to different categories.
+	 */
 	private void deliverStep(WorkContext ctx) {
-		if (enchantedInBag(ctx) == 0) {
+		if (productsInBag(ctx) == 0) {
 			deliverTo = null;
 			phase = Phase.READY;
 			return;
 		}
-		ItemStack first = null;
-		for (ItemStack stack : ctx.record.carried) {
-			if (stack.is(Items.ENCHANTED_BOOK)) {
-				first = stack;
-				break;
-			}
-		}
 		if (deliverTo == null || ctx.guild.villagers.chestAt(deliverTo) == null) {
-			StorageChest chest = first == null ? null : Storage.route(ctx, first, full, true);
+			StorageChest chest = null;
+			boolean scrolls = false;
+			for (ItemStack stack : ctx.record.carried) {
+				if (!isProduct(stack)) {
+					continue;
+				}
+				scrolls |= AlchemistScrolls.isScroll(stack);
+				chest = Storage.route(ctx, stack, full, true);
+				if (chest != null) {
+					deliverCategory = Storage.categoryOf(stack);
+					deliverScrolls = AlchemistScrolls.isScroll(stack);
+					break;
+				}
+			}
 			if (chest == null) {
 				deliverTo = null;
 				deliverRetryAt = ctx.now + RETRY_TICKS;
-				ctx.status("villager.status.alchemy.no_room");
+				ctx.status(scrolls ? "villager.status.alchemy.no_room_scrolls" : "villager.status.alchemy.no_room");
 				phase = Phase.READY;
 				return;
 			}
 			deliverTo = chest.pos;
 		}
 		BlockPos target = deliverTo;
+		String category = deliverCategory;
+		Predicate<ItemStack> load = stack -> isProduct(stack) && Storage.categoryOf(stack).equalsIgnoreCase(category);
 		switch (Movement.moveTo(ctx, target, 2.5, ctx.config.work.walkTimeoutSeconds)) {
 			case UNREACHABLE -> {
 				full.add(target);
 				deliverTo = null;
 			}
-			case MOVING -> ctx.status("villager.status.alchemy.delivering", enchantedInBag(ctx));
+			case MOVING -> ctx.status(deliverScrolls ? "villager.status.alchemy.delivering_scrolls" : "villager.status.alchemy.delivering",
+					count(ctx, load));
 			case ARRIVED -> {
 				Container container = Storage.container(ctx.level, target);
-				int moved = container == null ? 0 : Storage.insertCarried(ctx, container, stack -> stack.is(Items.ENCHANTED_BOOK));
+				int moved = container == null ? 0 : Storage.insertCarried(ctx, container, load);
 				if (moved > 0) {
 					Movement.hold(ctx, target);
 					WorldUtil.swing(ctx.villager);
@@ -536,5 +663,15 @@ final class AlchemistTask extends TaskHandler {
 				deliverTo = null;
 			}
 		}
+	}
+
+	private static int count(WorkContext ctx, Predicate<ItemStack> filter) {
+		int count = 0;
+		for (ItemStack stack : ctx.record.carried) {
+			if (filter.test(stack)) {
+				count += stack.getCount();
+			}
+		}
+		return count;
 	}
 }

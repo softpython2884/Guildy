@@ -3,6 +3,7 @@ package dev.guildy.scroll;
 import dev.guildy.config.ConfigHandle;
 import dev.guildy.config.ConfigManager;
 import dev.guildy.core.GuildyServer;
+import dev.guildy.core.Lang;
 import dev.guildy.core.ScrollDrops;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -15,7 +16,7 @@ import java.util.random.RandomGenerator;
  * config/guildy/scrolls.json5, cast with a vanilla channel animation, twelve spells with long animated particle shows (PvE
  * only, no block ever changed), drop tables per source and the admin commands; the grimoire binds up to four scrolls and
  * casts their spells for food. Implements the core {@link ScrollDrops} hook used by the ruin bosses, the hordes, the quests,
- * the merchants and the expeditions.
+ * the merchants, the expeditions and the alchemist villagers.
  */
 public final class ScrollModule {
 	/** Drop source of the trade hub merchant. */
@@ -39,6 +40,7 @@ public final class ScrollModule {
 		ScrollDrops.roller = ScrollModule::roll;
 		ScrollDrops.picker = ScrollModule::pick;
 		ScrollDrops.factory = ScrollModule::create;
+		ScrollDrops.lookup = ScrollModule::info;
 	}
 
 	/** Loaded config (validated defaults before the first load / in unit tests). */
@@ -113,6 +115,16 @@ public final class ScrollModule {
 	static ItemStack create(String id, int count) {
 		ScrollConfig.ScrollDef def = config().scroll(id);
 		return def == null ? ItemStack.EMPTY : ScrollItems.create(def, Math.max(1, count));
+	}
+
+	/**
+	 * {@link ScrollDrops.Lookup}: rarity and plain name of a defined scroll; obtainable while scrolls and their drops are
+	 * enabled (the alchemist writes none otherwise).
+	 */
+	static ScrollDrops.@Nullable Info info(String id) {
+		ScrollConfig cfg = config();
+		ScrollConfig.ScrollDef def = cfg.scroll(id);
+		return def == null ? null : new ScrollDrops.Info(def.rarity().name(), Lang.strip(Lang.colorize(def.name)), cfg.enabled && cfg.dropsEnabled);
 	}
 
 	/**

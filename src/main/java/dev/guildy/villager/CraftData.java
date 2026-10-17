@@ -25,9 +25,34 @@ public class CraftData {
 	public int bestScore;
 	/** Enchantments of the last book ("id=level;id=level"), "" before the first book. */
 	public String lastBook = "";
-	/** Claim-level day of {@link #booksToday} (-1 = none yet). */
+	/** Spell scrolls written (instead of a book). */
+	public long scrolls;
+	/** Scroll id of the last scroll written, "" before the first one. */
+	public String lastScroll = "";
+	/** Claim-level day of {@link #booksToday} and {@link #scrollsToday} (-1 = none yet). */
 	public long day = -1;
+	/** Works of that day: enchanted books and scrolls (the daily cap counts both). */
 	public int booksToday;
+	/** Scrolls of that day (their own cap, inside the one of {@link #booksToday}). */
+	public int scrollsToday;
+
+	/** Works done today (books and scrolls). */
+	public int worksToday(long today) {
+		return AlchemyRules.madeToday(day, booksToday, today);
+	}
+
+	public int scrollsToday(long today) {
+		return AlchemyRules.madeToday(day, scrollsToday, today);
+	}
+
+	/** Counts one finished work of {@code today} (both daily counts start over on a new day). */
+	public void countWork(long today, boolean scroll) {
+		int works = worksToday(today) + 1;
+		int written = scrollsToday(today) + (scroll ? 1 : 0);
+		booksToday = works;
+		scrollsToday = Math.min(written, works);
+		day = today;
+	}
 
 	void sanitize() {
 		if (bestEnchant == null) {
@@ -36,6 +61,11 @@ public class CraftData {
 		if (lastBook == null) {
 			lastBook = "";
 		}
+		if (lastScroll == null) {
+			lastScroll = "";
+		}
+		scrolls = Math.max(0, scrolls);
+		scrollsToday = Math.max(0, scrollsToday);
 		repaired = Math.max(0, repaired);
 		durability = Math.max(0, durability);
 		repairSteps = Math.max(0, repairSteps);
