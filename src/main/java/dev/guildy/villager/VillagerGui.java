@@ -220,6 +220,9 @@ public final class VillagerGui {
 		if (stats.sorted > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.sorted", stats.sorted));
 		}
+		if (stats.tidied > 0) {
+			lore.add(Lang.get("villager.gui.lore.stat.tidied", stats.tidied));
+		}
 		if (stats.mined > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.mined", stats.mined));
 		}

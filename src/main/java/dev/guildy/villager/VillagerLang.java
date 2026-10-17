@@ -22,7 +22,7 @@ final class VillagerLang {
 		m.put("villager.task.farmer", "Fermier");
 		m.put("villager.task.guard", "Garde");
 		m.put("villager.task.idle.desc", "&7Comportement normal d'un villageois :\n&7commerce, promenade, sommeil.");
-		m.put("villager.task.sorter.desc", "&7Vide les coffres de &bdépôt&7 et range chaque\n&7objet dans le coffre de son thème (bois, pierre,\n&7minerais, butin de monstres... 19 catégories).");
+		m.put("villager.task.sorter.desc", "&7Vide les coffres de &bdépôt&7 et range chaque\n&7objet dans le coffre de son thème (bois, pierre,\n&7minerais, butin de monstres... 19 catégories),\n&7puis re-range les coffres : piles fusionnées,\n&7bien ordonnées, colonne par colonne.");
 		m.put("villager.task.miner.desc", "&7Mine à sa zone (fanion « Mine ») et rapporte\n&7pierre et minerais. Mine réelle : creuse un\n&7escalier puis des galeries jusqu'à la profondeur\n&7cible. Mine simulée : butin selon la hauteur du\n&7fanion. Sans zone : la mine la plus proche,\n&7sinon la pierre à découvert.");
 		m.put("villager.task.lumberjack.desc", "&7Coupe les arbres naturels de sa zone (fanion\n&7« Coupe de bois »), replante et plante de\n&7nouvelles pousses. Sans zone : dans le territoire\n&7et jusqu'à 48 blocs autour.");
 		m.put("villager.task.farmer.desc", "&7Récolte les cultures mûres de sa zone (fanion\n&7« Champs »), les replante et sème les terres\n&7vides (laboure près de l'eau). Sans zone : dans\n&7le territoire et jusqu'à 48 blocs autour.");

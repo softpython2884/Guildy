@@ -32,6 +32,11 @@ public class GuildVillagerData {
 	public int nextRouteId = 1;
 	/** Fanions of deleted / moved zones whose chunk was not loaded: removed (without drop) once loaded. */
 	public List<StaleFanion> staleFanions = new ArrayList<>();
+	/** Chest rooms (automatic chests). */
+	public List<ChestRoom> rooms = new ArrayList<>();
+	public int nextRoomId = 1;
+	/** Storage order of the chest groups: "columns" or "rows" ("" = the default of villagers.json5). */
+	public String storageOrder = "";
 
 	/** A fanion block to remove later; only removed if the banner there still carries {@link #name}. */
 	public static class StaleFanion {
@@ -55,6 +60,18 @@ public class GuildVillagerData {
 		for (StorageChest chest : chests) {
 			if (pos.equals(chest.pos)) {
 				return chest;
+			}
+		}
+		return null;
+	}
+
+	public @Nullable ChestRoom room(int id) {
+		if (id <= 0) {
+			return null;
+		}
+		for (ChestRoom room : rooms) {
+			if (room.id == id) {
+				return room;
 			}
 		}
 		return null;
@@ -134,6 +151,35 @@ public class GuildVillagerData {
 			leaving = new LinkedHashSet<>();
 		}
 		leaving.remove(null);
+
+		if (rooms == null) {
+			rooms = new ArrayList<>();
+		}
+		rooms.removeIf(room -> room == null || room.min == null || room.max == null);
+		int maxRoom = 0;
+		for (ChestRoom room : rooms) {
+			maxRoom = Math.max(maxRoom, room.id);
+		}
+		nextRoomId = Math.max(Math.max(1, nextRoomId), maxRoom + 1);
+		Set<Integer> roomIds = new HashSet<>();
+		for (ChestRoom room : rooms) {
+			if (room.id <= 0 || !roomIds.add(room.id)) {
+				room.id = nextRoomId++;
+				roomIds.add(room.id);
+			}
+			room.sanitize();
+		}
+		// Room gone (edited data): its free chests leave the storage, the others stay as manual chests of their category.
+		chests.removeIf(chest -> chest.room > 0 && room(chest.room) == null && chest.isFree());
+		for (StorageChest chest : chests) {
+			if (chest.room > 0 && room(chest.room) == null) {
+				chest.room = 0;
+				chest.auto = false;
+			}
+		}
+		if (storageOrder == null) {
+			storageOrder = "";
+		}
 
 		if (zones == null) {
 			zones = new ArrayList<>();

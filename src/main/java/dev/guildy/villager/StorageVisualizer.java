@@ -39,6 +39,11 @@ final class StorageVisualizer {
 	private static final int MAX_PARTICLES = 400;
 	/** Filter of the deposit containers (category filters are category names). */
 	static final String DEPOSIT = "@deposit";
+	/** Filter prefix of the containers of a chest room ("@room:3"). */
+	static final String ROOM = "@room:";
+	/** Filter prefix of the chests of one group ("@group:" + {@link StorageGroups#key}). */
+	static final String GROUP = "@group:";
+	private static final char RESERVE_CODE = '8';
 	private static final char DEPOSIT_CODE = 'b';
 	private static final char FALLBACK_CODE = '7';
 	/** Legacy colour codes used for the categories (in config order, cycling), matching {@link #rgb(char)}. */
@@ -116,7 +121,14 @@ final class StorageVisualizer {
 		if (filter.equals(DEPOSIT)) {
 			return chest.isDeposit();
 		}
-		return !chest.isDeposit() && Storage.effectiveCategory(chest).equalsIgnoreCase(filter);
+		if (filter.startsWith(ROOM)) {
+			return chest.room > 0 && filter.equals(ROOM + chest.room);
+		}
+		if (filter.startsWith(GROUP)) {
+			return !chest.isDeposit() && !chest.isFree()
+					&& filter.substring(GROUP.length()).equals(StorageGroups.key(chest.room, Storage.effectiveCategory(chest)));
+		}
+		return !chest.isDeposit() && !chest.isFree() && Storage.effectiveCategory(chest).equalsIgnoreCase(filter);
 	}
 
 	/** Particle columns (and the top corners) above the nearest matching containers. */
@@ -174,6 +186,9 @@ final class StorageVisualizer {
 	static char code(StorageChest chest) {
 		if (chest.isDeposit()) {
 			return DEPOSIT_CODE;
+		}
+		if (chest.isFree()) {
+			return RESERVE_CODE;
 		}
 		int index = Storage.categories().indexOf(Storage.effectiveCategory(chest));
 		return index < 0 ? FALLBACK_CODE : PALETTE[index % PALETTE.length];

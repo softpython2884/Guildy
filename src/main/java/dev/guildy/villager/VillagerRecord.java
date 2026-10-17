@@ -72,6 +72,8 @@ public class VillagerRecord {
 	public static class Stats {
 		/** Items moved by the sorter. */
 		public long sorted;
+		/** Items the sorter moved while tidying the chest groups (merged, reordered, carried between chests). */
+		public long tidied;
 		/** Items brought back by the miner. */
 		public long mined;
 		public long logs;

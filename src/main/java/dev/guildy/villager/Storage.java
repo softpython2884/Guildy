@@ -6,8 +6,12 @@ import dev.guildy.data.GuildManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;
 import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.ChestBlock;
@@ -17,6 +21,7 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -59,6 +64,9 @@ final class Storage {
 	 * (removed or renamed in villagers.json5).
 	 */
 	static String effectiveCategory(StorageChest chest) {
+		if (chest.isFree()) {
+			return "";
+		}
 		String canonical = categories().canonical(chest.category);
 		return canonical == null ? categories().fallback() : canonical;
 	}
@@ -74,6 +82,9 @@ final class Storage {
 
 	/** Display name of a chest role ("Dépôt" or the effective category). */
 	static String roleName(StorageChest chest) {
+		if (chest.isFree()) {
+			return Lang.raw("villager.storage.role.reserve");
+		}
 		return chest.isDeposit() ? Lang.raw("villager.storage.role.deposit") : effectiveCategory(chest);
 	}
 
@@ -112,7 +123,74 @@ final class Storage {
 		return null;
 	}
 
-	private static boolean canPlace(Container container, int slot, ItemStack stack) {
+	/** The container and, for a double chest, its other half. */
+	static List<BlockPos> halves(ServerLevel level, BlockPos pos) {
+		List<BlockPos> halves = new ArrayList<>(2);
+		halves.add(pos);
+		BlockPos other = otherHalf(level, pos);
+		if (other != null) {
+			halves.add(other);
+		}
+		return halves;
+	}
+
+	/**
+	 * True while someone uses the container: a player whose open menu shows it (either half of a double chest), or any
+	 * vanilla container user (copper golems...). Sorters never touch such a container.
+	 */
+	static boolean inUse(ServerLevel level, BlockPos pos) {
+		return inUse(level, pos, shownContainers(level));
+	}
+
+	/** Same as {@link #inUse(ServerLevel, BlockPos)} with the containers of the open menus already listed. */
+	static boolean inUse(ServerLevel level, BlockPos pos, List<Container> shown) {
+		if (!level.isLoaded(pos)) {
+			return false;
+		}
+		for (BlockPos half : halves(level, pos)) {
+			if (!(level.getBlockEntity(half) instanceof Container part)) {
+				continue;
+			}
+			if (!part.getEntitiesWithContainerOpen().isEmpty()) {
+				return true;
+			}
+			for (Container container : shown) {
+				if (container == part || (container instanceof CompoundContainer compound && compound.contains(part))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/** Containers shown by the open menus of the players (their own inventories aside), each once. */
+	static List<Container> shownContainers(ServerLevel level) {
+		List<Container> shown = new ArrayList<>();
+		for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+			AbstractContainerMenu menu = player.containerMenu;
+			if (menu == null || menu == player.inventoryMenu) {
+				continue;
+			}
+			for (Slot slot : menu.slots) {
+				Container container = slot.container;
+				if (container != player.getInventory() && !containsSame(shown, container)) {
+					shown.add(container);
+				}
+			}
+		}
+		return shown;
+	}
+
+	private static boolean containsSame(List<Container> list, Container container) {
+		for (Container known : list) {
+			if (known == container) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean canPlace(Container container, int slot, ItemStack stack) {
 		if (!container.canPlaceItem(slot, stack)) {
 			return false;
 		}
@@ -210,6 +288,11 @@ final class Storage {
 				&& isStorageBlock(level.getBlockEntity(chest.pos));
 	}
 
+	/** Containers the sorter empties: deposits, and free chests of the chest rooms (reserve: they keep nothing). */
+	static boolean isSortSource(StorageChest chest) {
+		return chest.isDeposit() || chest.isFree();
+	}
+
 	static boolean hasDeposit(Guild guild) {
 		for (StorageChest chest : guild.villagers.chests) {
 			if (chest.isDeposit()) {
@@ -246,33 +329,40 @@ final class Storage {
 	 * (if {@code allowDeposit}) a deposit chest. Only usable chests with free space, not excluded. Nearest first.
 	 */
 	static @Nullable StorageChest route(WorkContext ctx, ItemStack stack, Set<BlockPos> excluded, boolean allowDeposit) {
+		return route(ctx.level, ctx.guild, ctx.villager.position(), stack, excluded, allowDeposit);
+	}
+
+	/** Same as {@link #route(WorkContext, ItemStack, Set, boolean)}, nearest to {@code from}. */
+	static @Nullable StorageChest route(ServerLevel level, Guild guild, Vec3 from, ItemStack stack, Set<BlockPos> excluded, boolean allowDeposit) {
 		String category = categoryOf(stack);
 		boolean isFallback = category.equalsIgnoreCase(categories().fallback());
 		if (!isFallback) {
-			StorageChest chest = nearestWithSpace(ctx, stack, excluded, c -> c.role == StorageChest.Role.CATEGORY && effectiveCategory(c).equalsIgnoreCase(category));
+			StorageChest chest = nearestWithSpace(level, guild, from, stack, excluded,
+					c -> c.role == StorageChest.Role.CATEGORY && !c.isFree() && effectiveCategory(c).equalsIgnoreCase(category));
 			if (chest != null) {
 				return chest;
 			}
 		}
-		StorageChest fallback = nearestWithSpace(ctx, stack, excluded, Storage::isFallback);
+		StorageChest fallback = nearestWithSpace(level, guild, from, stack, excluded, Storage::isFallback);
 		if (fallback != null || !allowDeposit) {
 			return fallback;
 		}
-		return nearestWithSpace(ctx, stack, excluded, StorageChest::isDeposit);
+		return nearestWithSpace(level, guild, from, stack, excluded, StorageChest::isDeposit);
 	}
 
-	private static @Nullable StorageChest nearestWithSpace(WorkContext ctx, ItemStack stack, Set<BlockPos> excluded, Predicate<StorageChest> filter) {
+	private static @Nullable StorageChest nearestWithSpace(ServerLevel level, Guild guild, Vec3 from, ItemStack stack, Set<BlockPos> excluded,
+			Predicate<StorageChest> filter) {
 		StorageChest best = null;
 		double bestDist = Double.MAX_VALUE;
-		for (StorageChest chest : ctx.guild.villagers.chests) {
-			if (!filter.test(chest) || excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
+		for (StorageChest chest : guild.villagers.chests) {
+			if (!filter.test(chest) || excluded.contains(chest.pos) || !usable(level, guild, chest)) {
 				continue;
 			}
-			Container container = container(ctx.level, chest.pos);
+			Container container = container(level, chest.pos);
 			if (container == null || spaceFor(container, stack) <= 0) {
 				continue;
 			}
-			double dist = ctx.distSq(chest.pos);
+			double dist = from.distanceToSqr(Vec3.atBottomCenterOf(chest.pos));
 			if (dist < bestDist) {
 				bestDist = dist;
 				best = chest;
@@ -291,13 +381,16 @@ final class Storage {
 		return known;
 	}
 
-	/** A usable deposit chest holding at least one stack the sorter can put away, nearest first. */
+	/**
+	 * A usable deposit chest (or free chest of a chest room, emptied the same way) holding at least one stack the sorter
+	 * can put away, nearest first.
+	 */
 	static @Nullable StorageChest findSortSource(WorkContext ctx, Set<BlockPos> excluded) {
 		StorageChest best = null;
 		double bestDist = Double.MAX_VALUE;
 		Map<Item, Boolean> memo = new HashMap<>();
 		for (StorageChest chest : ctx.guild.villagers.chests) {
-			if (!chest.isDeposit() || excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
+			if (!isSortSource(chest) || excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
 				continue;
 			}
 			Container container = container(ctx.level, chest.pos);
