@@ -131,9 +131,14 @@ public final class ScrollItems {
 
 	/** The spell description with its {param} placeholders replaced by the scroll's values. */
 	static String spellText(ScrollConfig.ScrollDef def) {
+		return spellText(def, 1.0);
+	}
+
+	/** The spell description with the values of a cast of this power (grimoire). */
+	static String spellText(ScrollConfig.ScrollDef def, double power) {
 		String text = Lang.raw(def.spell().langKey() + ".lore");
 		for (Spell.Param param : def.spell().params()) {
-			text = text.replace("{" + param.name() + "}", param.format(def.param(param.name())));
+			text = text.replace("{" + param.name() + "}", param.format(param.powered(def.param(param.name()), power)));
 		}
 		return text;
 	}
@@ -191,6 +196,7 @@ public final class ScrollItems {
 	/** Config or lang reloaded: stacks are compared to fresh signatures. */
 	static void clearSignatures() {
 		SIGNATURES.clear();
+		GrimoireItems.clearSignature();
 	}
 
 	/**

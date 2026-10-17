@@ -28,7 +28,8 @@ import java.util.regex.Pattern;
 		"Guildy - parchemins de sort : objets a usage unique qui lancent un sort tres puissant (clic droit maintenu).",
 		"Ils tombent des boss des ruines (surtout), des boss des hordes, des quetes, des expeditions des villageois et se",
 		"vendent parfois au Carrefour commercial. Les sorts ne blessent que les monstres et ne modifient aucun bloc.",
-		"Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre]."
+		"Le grimoire (section grimoire) relie jusqu'a 4 parchemins et relance leurs sorts contre de la nourriture.",
+		"Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre] | grimoire <joueur> [ids]."
 })
 public final class ScrollConfig implements Validatable {
 	/** Current file format (no migration yet). */
@@ -60,6 +61,14 @@ public final class ScrollConfig implements Validatable {
 
 	@Comment("Vente au Carrefour commercial (table \"trade\" : chance qu'un marchand du Carrefour propose un parchemin, un seul achat)")
 	public Trade trade = new Trade();
+
+	@Comment({
+			"Grimoire : un livre qui relie jusqu'a 4 parchemins (clic droit d'un parchemin sur le grimoire dans l'inventaire :",
+			"le parchemin est consomme et devient une page). Clic droit = lancer le sort de la page choisie (meme visee, meme",
+			"animation que le parchemin), accroupi + clic droit = page suivante, accroupi + touche d'echange de main (F) ou",
+			"/guild grimoire = gerer les pages. Rien n'est consomme : chaque sort coute de la nourriture."
+	})
+	public Grimoire grimoire = new Grimoire();
 
 	@Comment({
 			"Tables de butin par source : chance (0 a 1) qu'un parchemin tombe, min/max (nombre de parchemins), puis tirage",
@@ -116,6 +125,61 @@ public final class ScrollConfig implements Validatable {
 		public Map<String, Integer> prices = defaultPrices();
 		@Comment("Palier minimum du Carrefour pour vendre un parchemin de cette rarete")
 		public Map<String, Integer> minTiers = defaultMinTiers();
+	}
+
+	@Json5.Section
+	public static final class Grimoire {
+		@Comment("Grimoire actif (false = il ne lance plus rien et n'est plus obtenu ; ses pages sont conservees)")
+		public boolean enabled = true;
+		@Comment("Objet vanilla de base (simple, sans utilisation propre ; livre enchante par defaut)")
+		public String item = "minecraft:enchanted_book";
+		@Comment("Brillance")
+		public boolean glint = true;
+		@Comment("Duree de l'incantation (secondes, 0.05 a 5 ; les parchemins : 0.75 a 4)")
+		public double channelSeconds = 0.4;
+		@Comment("Animation de l'incantation (toot_horn, spyglass, bow, trident, brush, block...)")
+		public String animation = "toot_horn";
+		@Comment({"Recharge entre deux sorts (secondes, 0.05 a 600) : propre au grimoire (partagee par les grimoires d'un joueur),",
+				"independante des recharges des parchemins"})
+		public double cooldownSeconds = 3;
+		@Comment("Multiplicateur des degats, soins et durees des sorts lances avec le grimoire (0.1 a 5 ; 1 = comme le parchemin)")
+		public double powerMultiplier = 1.0;
+		@Comment({"Cout d'un sort en points de faim (0 a 20 ; la barre en compte 20) selon la rarete du parchemin : la saturation",
+				"part d'abord, puis la faim. Si la barre de faim est plus basse que le cout, le sort ne part pas. Creatif : gratuit"})
+		public Map<String, Integer> foodCost = defaultFoodCost();
+		@Comment({"Chance (0 a 1) qu'une source donne un grimoire vierge a la place de son tirage de parchemins (memes sources",
+				"que drops ; trade = un marchand du Carrefour le propose, a partir du palier tradeMinTier)"})
+		public Map<String, Double> drops = defaultGrimoireDrops();
+		@Comment("Prix (or) du grimoire au Carrefour commercial")
+		public int tradePrice = 400;
+		@Comment("Palier minimum du Carrefour pour proposer le grimoire")
+		public int tradeMinTier = 3;
+		@Comment("Texture du pack de ressources (vide = apparence vanilla ; suit le reglage customModels d'uniques.json5)")
+		public String model = "grimoire";
+
+		/** Channel time in ticks, computed like the vanilla consumable component does. */
+		public int channelTicks() {
+			return Math.max(1, (int) ((float) channelSeconds * 20.0F));
+		}
+
+		/** Chance (0..1) that a roll of this source gives a grimoire. */
+		public double dropChance(@Nullable String source) {
+			if (!enabled || source == null || drops == null) {
+				return 0;
+			}
+			Double chance = drops.get(source.trim().toLowerCase(Locale.ROOT));
+			return chance == null ? 0 : chance;
+		}
+
+		/** Food points a spell of this rarity costs. */
+		public int foodCost(UniqueRarity rarity) {
+			return GrimoireRules.foodCost(foodCost, rarity.name());
+		}
+
+		/** Stable fingerprint of what the item shows / does (grimoires built from another fingerprint are refreshed). */
+		public int fingerprint() {
+			return java.util.Objects.hash(enabled, item, glint, channelSeconds, animation, cooldownSeconds, powerMultiplier, foodCost, model);
+		}
 	}
 
 	/** One drop source: chance of a drop, number of scrolls, then a weighted pick. */
@@ -258,9 +322,52 @@ public final class ScrollConfig implements Validatable {
 		List<String> warnings = new ArrayList<>();
 		configVersion = CURRENT_VERSION;
 		rebuildSections(warnings);
+		rebuildGrimoire(plainItem, warnings);
 		rebuildScrolls(plainItem, warnings);
 		rebuildDrops(warnings);
 		return warnings;
+	}
+
+	private void rebuildGrimoire(Predicate<String> plainItem, List<String> warnings) {
+		if (grimoire == null) {
+			grimoire = new Grimoire();
+		}
+		Grimoire g = grimoire;
+		g.item = normalize(g.item);
+		if (!plainItem.test(g.item)) {
+			warnings.add("grimoire: base item '" + g.item + "' unknown or with its own right-click use: minecraft:enchanted_book used");
+			g.item = "minecraft:enchanted_book";
+		}
+		g.channelSeconds = clamp(g.channelSeconds, 0.05, 5);
+		g.animation = g.animation == null ? "" : g.animation.trim().toLowerCase(Locale.ROOT);
+		if (!ANIMATIONS.contains(g.animation)) {
+			warnings.add("grimoire: unknown animation '" + g.animation + "': toot_horn used");
+			g.animation = "toot_horn";
+		}
+		g.cooldownSeconds = clamp(g.cooldownSeconds, 0.05, 600);
+		g.powerMultiplier = clamp(g.powerMultiplier, 0.1, 5);
+		g.foodCost = rarityMap(g.foodCost, defaultFoodCost(), 0, 20, "grimoire.foodCost", warnings);
+		Map<String, Double> chances = new LinkedHashMap<>();
+		if (g.drops != null) {
+			for (Map.Entry<String, Double> entry : g.drops.entrySet()) {
+				if (entry.getKey() == null) {
+					continue;
+				}
+				String source = entry.getKey().trim().toLowerCase(Locale.ROOT);
+				if (!SOURCES.contains(source)) {
+					warnings.add("grimoire.drops: source '" + source + "' is never used (" + String.join(", ", SOURCES) + ")");
+				}
+				chances.put(source, entry.getValue() == null ? 0 : clamp(entry.getValue(), 0, 1));
+			}
+		}
+		g.drops = chances;
+		g.tradePrice = (int) clamp(g.tradePrice, 1, 100000);
+		g.tradeMinTier = (int) clamp(g.tradeMinTier, 1, 9);
+		g.model = g.model == null ? "" : g.model.trim().toLowerCase(Locale.ROOT);
+		if (!g.model.isEmpty() && !ID.matcher(g.model).matches()) {
+			warnings.add("grimoire: invalid model '" + g.model + "': vanilla look");
+			g.model = "";
+		}
 	}
 
 	private void rebuildSections(List<String> warnings) {
@@ -449,6 +556,24 @@ public final class ScrollConfig implements Validatable {
 		map.put("EPIC", 2);
 		map.put("LEGENDARY", 3);
 		map.put("MYTHIC", 3);
+		return map;
+	}
+
+	static Map<String, Integer> defaultFoodCost() {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		map.put("RARE", 3);
+		map.put("EPIC", 5);
+		map.put("LEGENDARY", 7);
+		map.put("MYTHIC", 10);
+		return map;
+	}
+
+	static Map<String, Double> defaultGrimoireDrops() {
+		Map<String, Double> map = new LinkedHashMap<>();
+		map.put("ruin_boss", 0.08);
+		map.put("nether_ruin_boss", 0.12);
+		map.put("legendary_quest", 0.04);
+		map.put("trade", 0.05);
 		return map;
 	}
 

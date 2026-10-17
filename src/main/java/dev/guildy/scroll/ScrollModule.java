@@ -7,15 +7,19 @@ import dev.guildy.core.ScrollDrops;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
 /**
  * Spell scrolls ("parchemins de sort"): single-use vanilla items (custom data + components) defined in
  * config/guildy/scrolls.json5, cast with a vanilla channel animation, twelve spells with long animated particle shows (PvE
- * only, no block ever changed), drop tables per source and the admin commands. Implements the core {@link ScrollDrops} hook
- * used by the ruin bosses, the hordes, the quests, the merchants and the expeditions.
+ * only, no block ever changed), drop tables per source and the admin commands; the grimoire binds up to four scrolls and
+ * casts their spells for food. Implements the core {@link ScrollDrops} hook used by the ruin bosses, the hordes, the quests,
+ * the merchants and the expeditions.
  */
 public final class ScrollModule {
+	/** Drop source of the trade hub merchant. */
+	static final String TRADE_SOURCE = "trade";
 	private static final ScrollConfig DEFAULTS = defaults();
 	private static @Nullable ConfigHandle<ScrollConfig> config;
 
@@ -27,6 +31,7 @@ public final class ScrollModule {
 		config = handle;
 		handle.onReload(ScrollItems::clearSignatures);
 		ScrollLang.register();
+		GrimoireLang.register();
 		ScrollCommands.register();
 		ScrollCasting.register();
 		EffectRunner.init();
@@ -47,15 +52,48 @@ public final class ScrollModule {
 		return cfg;
 	}
 
-	/** {@link ScrollDrops.Roller}: scrolls of the source's table, or empty. */
+	/**
+	 * {@link ScrollDrops.Roller}: a blank grimoire (grimoire.drops chance of the source, the trade hub excepted: see
+	 * {@link #tradeRoll}), else scrolls of the source's table, or empty.
+	 */
 	static ItemStack roll(String source, RandomGenerator random) {
 		ScrollConfig cfg = config();
 		if (!cfg.dropsEnabled || GuildyServer.server() == null) {
 			return ItemStack.EMPTY;
 		}
+		if (!TRADE_SOURCE.equals(source)) {
+			ItemStack grimoire = rollGrimoire(cfg, source, random);
+			if (!grimoire.isEmpty()) {
+				return grimoire;
+			}
+		}
 		ScrollRolls.Drop drop = ScrollRolls.roll(cfg.table(source), id -> cfg.scroll(id) != null, random);
 		ScrollConfig.ScrollDef def = drop == null ? null : cfg.scroll(drop.id());
 		return def == null ? ItemStack.EMPTY : ScrollItems.create(def, drop.count());
+	}
+
+	/** A blank grimoire with the source's grimoire.drops chance, or empty. */
+	private static ItemStack rollGrimoire(ScrollConfig cfg, String source, RandomGenerator random) {
+		double chance = cfg.grimoire.dropChance(source);
+		if (chance <= 0 || chance < 1 && random.nextDouble() >= chance) {
+			return ItemStack.EMPTY;
+		}
+		return GrimoireItems.create(GrimoireRules.Pages.EMPTY);
+	}
+
+	/**
+	 * What a trade hub merchant of this tier may sell besides its offers: a blank grimoire (grimoire.drops "trade" chance,
+	 * from grimoire.tradeMinTier), else a scroll of the "trade" table, or empty.
+	 */
+	public static ItemStack tradeRoll(int tier) {
+		ScrollConfig cfg = config();
+		if (cfg.dropsEnabled && GuildyServer.server() != null && tier >= cfg.grimoire.tradeMinTier) {
+			ItemStack grimoire = rollGrimoire(cfg, TRADE_SOURCE, ThreadLocalRandom.current());
+			if (!grimoire.isEmpty()) {
+				return grimoire;
+			}
+		}
+		return ScrollDrops.roll(TRADE_SOURCE);
 	}
 
 	/** {@link ScrollDrops.Factory}: scrolls of this id, or empty. */
@@ -69,6 +107,10 @@ public final class ScrollModule {
 	 * tier); 0 when it must not be sold there (or the stack is no scroll).
 	 */
 	public static int tradePrice(ItemStack stack, int tier) {
+		if (GrimoireItems.isGrimoire(stack)) {
+			ScrollConfig.Grimoire grimoire = config().grimoire;
+			return tier >= grimoire.tradeMinTier ? grimoire.tradePrice : 0;
+		}
 		ScrollConfig.ScrollDef def = ScrollItems.defOf(stack);
 		return def == null ? 0 : config().tradePrice(def.rarity(), tier) * Math.max(1, stack.getCount());
 	}
