@@ -1,0 +1,508 @@
+// Guildy - parchemins de sort : objets a usage unique qui lancent un sort tres puissant (clic droit maintenu).
+// Ils tombent des boss des ruines (surtout), des boss des hordes, des quetes, des expeditions des villageois et se
+// vendent parfois au Carrefour commercial. Les sorts ne blessent que les monstres et ne modifient aucun bloc.
+// Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre].
+{
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 1,
+
+	// Parchemins actifs (false = ils ne lancent plus rien, ils ne sont pas consommes)
+	"enabled": true,
+
+	// Butin : les parchemins tombent des boss, des quetes, des expeditions et se vendent au Carrefour (false = plus aucun)
+	"dropsEnabled": true,
+
+	// Incantation (clic droit maintenu)
+	"casting": {
+
+		// Vitesse de deplacement pendant l'incantation (0 a 1 ; manger = 0.2)
+		"moveSpeed": 0.35,
+
+		// Dimensions ou les parchemins ne fonctionnent pas (ex. "minecraft:the_end")
+		"disabledDimensions": [],
+
+		// En creatif le parchemin n'est jamais consomme ; true = la recharge s'applique quand meme
+		"creativeCooldown": true
+	},
+
+	// Limites des effets en cours (performances)
+	"limits": {
+
+		// Sorts actifs en meme temps par joueur (au-dela, le parchemin n'est pas utilise)
+		"maxEffectsPerPlayer": 3,
+
+		// Sorts actifs en meme temps sur tout le serveur
+		"maxEffectsServer": 40,
+
+		// Particules envoyees par tick, tous sorts confondus (au-dela, l'animation est allegee ; les effets restent)
+		"particleBudget": 2500,
+
+		// Distance (blocs) a laquelle les joueurs voient les animations (particules longue distance)
+		"viewDistance": 96,
+
+		// Gardiens (golems invoques) vivants en meme temps par joueur
+		"maxGuardiansPerPlayer": 4
+	},
+
+	// Vente au Carrefour commercial (table "trade" : chance qu'un marchand du Carrefour propose un parchemin, un seul achat)
+	"trade": {
+
+		// Prix (or) d'un parchemin au Carrefour selon sa rarete
+		"prices": {
+			"RARE": 40,
+			"EPIC": 80,
+			"LEGENDARY": 150,
+			"MYTHIC": 250
+		},
+
+		// Palier minimum du Carrefour pour vendre un parchemin de cette rarete
+		"minTiers": {
+			"RARE": 2,
+			"EPIC": 2,
+			"LEGENDARY": 3,
+			"MYTHIC": 3
+		}
+	},
+
+	// Tables de butin par source : chance (0 a 1) qu'un parchemin tombe, min/max (nombre de parchemins), puis tirage
+	// pondere dans items {id: poids}. Sources : ruin_boss et nether_ruin_boss (boss des ruines : les meilleurs
+	// parchemins), boss (boss des hordes), blood_boss (boss d'une nuit de sang), legendary_quest (quete legendaire),
+	// quest (recompense de quete, rare), expedition (expeditions des villageois), trade (marchand du Carrefour commercial).
+	"drops": {
+		"ruin_boss": {
+			"chance": 0.6,
+			"min": 1,
+			"max": 2,
+			"items": {
+				"tempete_de_foudre": 6.0,
+				"blizzard": 6.0,
+				"seisme": 6.0,
+				"egide": 5.0,
+				"rappel": 5.0,
+				"benediction": 5.0,
+				"revelation": 5.0,
+				"pluie_de_meteores": 4.0,
+				"nova_solaire": 4.0,
+				"gardiens": 3.0,
+				"rayon_arcanique": 3.0,
+				"singularite": 1.0
+			}
+		},
+		"nether_ruin_boss": {
+			"chance": 0.75,
+			"min": 1,
+			"max": 2,
+			"items": {
+				"pluie_de_meteores": 6.0,
+				"nova_solaire": 6.0,
+				"rayon_arcanique": 5.0,
+				"egide": 4.0,
+				"seisme": 4.0,
+				"tempete_de_foudre": 4.0,
+				"rappel": 4.0,
+				"benediction": 4.0,
+				"gardiens": 3.0,
+				"singularite": 3.0,
+				"revelation": 3.0,
+				"blizzard": 1.0
+			}
+		},
+		"boss": {
+			"chance": 0.08,
+			"min": 1,
+			"max": 1,
+			"items": {
+				"benediction": 8.0,
+				"revelation": 8.0,
+				"rappel": 8.0,
+				"seisme": 6.0,
+				"tempete_de_foudre": 5.0,
+				"blizzard": 5.0,
+				"egide": 4.0,
+				"nova_solaire": 2.0,
+				"pluie_de_meteores": 2.0,
+				"gardiens": 2.0,
+				"rayon_arcanique": 1.0
+			}
+		},
+		"blood_boss": {
+			"chance": 0.3,
+			"min": 1,
+			"max": 1,
+			"items": {
+				"tempete_de_foudre": 5.0,
+				"blizzard": 5.0,
+				"seisme": 5.0,
+				"egide": 5.0,
+				"nova_solaire": 4.0,
+				"pluie_de_meteores": 4.0,
+				"benediction": 3.0,
+				"rayon_arcanique": 3.0,
+				"gardiens": 3.0,
+				"singularite": 1.0
+			}
+		},
+		"legendary_quest": {
+			"chance": 0.5,
+			"min": 1,
+			"max": 1,
+			"items": {
+				"egide": 4.0,
+				"nova_solaire": 4.0,
+				"pluie_de_meteores": 4.0,
+				"gardiens": 4.0,
+				"tempete_de_foudre": 4.0,
+				"blizzard": 4.0,
+				"rayon_arcanique": 3.0,
+				"singularite": 1.0
+			}
+		},
+		"quest": {
+			"chance": 0.05,
+			"min": 1,
+			"max": 1,
+			"items": {
+				"benediction": 10.0,
+				"revelation": 10.0,
+				"rappel": 10.0,
+				"seisme": 4.0,
+				"tempete_de_foudre": 3.0,
+				"blizzard": 3.0
+			}
+		},
+		"expedition": {
+			"chance": 0.03,
+			"min": 1,
+			"max": 1,
+			"items": {
+				"rappel": 10.0,
+				"revelation": 8.0,
+				"benediction": 8.0,
+				"blizzard": 3.0,
+				"seisme": 3.0,
+				"tempete_de_foudre": 2.0
+			}
+		},
+		"trade": {
+			"chance": 0.35,
+			"min": 1,
+			"max": 1,
+			"items": {
+				"rappel": 8.0,
+				"benediction": 8.0,
+				"revelation": 8.0,
+				"seisme": 5.0,
+				"tempete_de_foudre": 5.0,
+				"blizzard": 5.0,
+				"egide": 4.0,
+				"nova_solaire": 2.0,
+				"pluie_de_meteores": 2.0,
+				"gardiens": 2.0
+			}
+		}
+	},
+
+	// Parchemins : id (minuscules, chiffres, _), name, rarity (RARE, EPIC, LEGENDARY, MYTHIC), lore (histoire, codes &),
+	// spell (meteor_shower, chain_storm, blizzard, solar_nova, singularity, aegis, recall, guardians, blessing, revelation,
+	// earthquake, arcane_ray), params (reglages du sort ; degats et soins en points de vie : 2 = 1 coeur ; les parametres
+	// absents prennent leur valeur par defaut, tous sont bornes), item (objet vanilla simple de base : papier, motif de
+	// banniere...), glint (brillance), maxStack (1 a 64), channelSeconds (duree de l'incantation, 0.25 a 10), animation
+	// (toot_horn, spyglass, bow, trident, brush, block...), cooldownGroup (les parchemins d'un meme groupe partagent la
+	// recharge), cooldownSeconds, model (texture du pack de ressources, vide = apparence vanilla ; suit le reglage
+	// customModels d'uniques.json5). Les parchemins deja obtenus se mettent a jour dans l'inventaire des joueurs.
+	"scrolls": [
+		{
+			"id": "pluie_de_meteores",
+			"name": "Pluie de météores",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Recopié d'une tablette fondue",
+				"retrouvée au cœur d'un cratère."
+			],
+			"spell": "meteor_shower",
+			"params": {
+				"range": 40.0,
+				"radius": 6.0,
+				"count": 10.0,
+				"damage": 12.0,
+				"impactRadius": 3.0,
+				"fireSeconds": 4.0
+			},
+			"item": "minecraft:piglin_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.5,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 25.0,
+			"model": "parchemin_pluie_de_meteores"
+		},
+		{
+			"id": "tempete_de_foudre",
+			"name": "Tempête de foudre",
+			"rarity": "EPIC",
+			"lore": [
+				"L'encre crépite encore",
+				"quand l'orage approche."
+			],
+			"spell": "chain_storm",
+			"params": {
+				"range": 24.0,
+				"count": 8.0,
+				"damage": 14.0,
+				"chainRadius": 10.0,
+				"stunSeconds": 2.0
+			},
+			"item": "minecraft:bordure_indented_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 20.0,
+			"model": "parchemin_tempete_de_foudre"
+		},
+		{
+			"id": "blizzard",
+			"name": "Blizzard",
+			"rarity": "EPIC",
+			"lore": [
+				"Écrit avec du givre",
+				"par un mage des cimes."
+			],
+			"spell": "blizzard",
+			"params": {
+				"range": 24.0,
+				"radius": 7.0,
+				"duration": 8.0,
+				"damage": 4.0,
+				"slowLevel": 4.0
+			},
+			"item": "minecraft:guster_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.25,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 25.0,
+			"model": "parchemin_blizzard"
+		},
+		{
+			"id": "nova_solaire",
+			"name": "Nova solaire",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Un fragment de soleil",
+				"enfermé dans un rouleau de parchemin."
+			],
+			"spell": "solar_nova",
+			"params": {
+				"radius": 10.0,
+				"damage": 20.0,
+				"fireSeconds": 6.0,
+				"undeadMultiplier": 1.5,
+				"knockback": 1.2
+			},
+			"item": "minecraft:flower_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.5,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 25.0,
+			"model": "parchemin_nova_solaire"
+		},
+		{
+			"id": "singularite",
+			"name": "Singularité",
+			"rarity": "MYTHIC",
+			"lore": [
+				"Ne pas lire à voix haute.",
+				"Ne pas lire du tout, en fait."
+			],
+			"spell": "singularity",
+			"params": {
+				"range": 32.0,
+				"radius": 10.0,
+				"pullSeconds": 3.0,
+				"pullStrength": 0.35,
+				"damage": 26.0
+			},
+			"item": "minecraft:flow_banner_pattern",
+			"glint": true,
+			"maxStack": 4,
+			"channelSeconds": 2.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 40.0,
+			"model": "parchemin_singularite"
+		},
+		{
+			"id": "egide",
+			"name": "Égide",
+			"rarity": "EPIC",
+			"lore": [
+				"Le serment des gardiens de la première guilde,",
+				"scellé dans la cire dorée."
+			],
+			"spell": "aegis",
+			"params": {
+				"radius": 6.0,
+				"duration": 12.0,
+				"absorptionLevel": 3.0,
+				"resistanceLevel": 2.0,
+				"push": 0.8,
+				"damage": 2.0
+			},
+			"item": "minecraft:field_masoned_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "soutien",
+			"cooldownSeconds": 30.0,
+			"model": "parchemin_egide"
+		},
+		{
+			"id": "rappel",
+			"name": "Rappel",
+			"rarity": "RARE",
+			"lore": [
+				"Chaque guilde garde une copie",
+				"de ce vieux chemin du retour."
+			],
+			"spell": "recall",
+			"params": {
+				"radius": 6.0,
+				"maxAllies": 8.0
+			},
+			"item": "minecraft:globe_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 4.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "rappel",
+			"cooldownSeconds": 60.0,
+			"model": "parchemin_rappel"
+		},
+		{
+			"id": "gardiens",
+			"name": "Gardiens",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Le fer se souvient des mains",
+				"qui l'ont forgé pour défendre."
+			],
+			"spell": "guardians",
+			"params": {
+				"count": 2.0,
+				"duration": 60.0
+			},
+			"item": "minecraft:creeper_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 2.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "invocation",
+			"cooldownSeconds": 60.0,
+			"model": "parchemin_gardiens"
+		},
+		{
+			"id": "benediction",
+			"name": "Bénédiction",
+			"rarity": "RARE",
+			"lore": [
+				"Une prière de guérisseuse",
+				"que les villageois récitent encore."
+			],
+			"spell": "blessing",
+			"params": {
+				"radius": 12.0,
+				"heal": 16.0,
+				"regenSeconds": 8.0,
+				"regenLevel": 2.0,
+				"cleanse": 1.0
+			},
+			"item": "minecraft:mojang_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.25,
+			"animation": "toot_horn",
+			"cooldownGroup": "soutien",
+			"cooldownSeconds": 20.0,
+			"model": "parchemin_benediction"
+		},
+		{
+			"id": "revelation",
+			"name": "Révélation",
+			"rarity": "RARE",
+			"lore": [
+				"Ce qui rôde dans le noir",
+				"ne s'y cachera plus."
+			],
+			"spell": "revelation",
+			"params": {
+				"radius": 64.0,
+				"duration": 30.0
+			},
+			"item": "minecraft:skull_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 0.75,
+			"animation": "toot_horn",
+			"cooldownGroup": "soutien",
+			"cooldownSeconds": 15.0,
+			"model": "parchemin_revelation"
+		},
+		{
+			"id": "seisme",
+			"name": "Séisme",
+			"rarity": "EPIC",
+			"lore": [
+				"La terre gronde sous l'encre",
+				"et se soulève à la dernière ligne."
+			],
+			"spell": "earthquake",
+			"params": {
+				"radius": 10.0,
+				"waves": 3.0,
+				"damage": 10.0,
+				"lift": 0.6,
+				"slowSeconds": 4.0
+			},
+			"item": "minecraft:field_masoned_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.25,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 20.0,
+			"model": "parchemin_seisme"
+		},
+		{
+			"id": "rayon_arcanique",
+			"name": "Rayon arcanique",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Une seule ligne de runes,",
+				"si dense qu'elle brûle le papier."
+			],
+			"spell": "arcane_ray",
+			"params": {
+				"length": 32.0,
+				"duration": 3.0,
+				"damage": 5.0,
+				"width": 0.9
+			},
+			"item": "minecraft:flow_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 0.75,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 25.0,
+			"model": "parchemin_rayon_arcanique"
+		}
+	]
+}

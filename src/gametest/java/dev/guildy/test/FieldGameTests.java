@@ -41,6 +41,10 @@ import java.util.List;
 public class FieldGameTests {
 	private static final int PLATFORM = 72;
 
+	private static boolean clearedOrSown(BlockState above) {
+		return above.isAir() || above.getBlock() instanceof CropBlock;
+	}
+
 	private static boolean tilledOrHole(ServerLevel level, FieldState state, BlockPos pos) {
 		BlockState block = level.getBlockState(pos);
 		return block.is(Blocks.FARMLAND) || (block.is(Blocks.WATER) && state.holes.contains(pos));
@@ -116,8 +120,9 @@ public class FieldGameTests {
 			}
 			helper.assertTrue(water >= 3 && state.holes.size() == water, "waiting for the water holes (" + water + ", remembered " + state.holes.size() + ")");
 			helper.assertTrue(farmland >= 100, "waiting for the plateau to be tilled (" + farmland + " farmland)");
-			// The hole grid is planned from the surveyed soil, so the flower or the coarse dirt may become a water hole.
-			helper.assertTrue(level.getBlockState(flower.above()).isAir() && tilledOrHole(level, state, flower),
+			// The hole grid is planned from the surveyed soil, so the flower or the coarse dirt may become a water hole; once
+			// tilled, the flower's soil may already be sown.
+			helper.assertTrue(clearedOrSown(level.getBlockState(flower.above())) && tilledOrHole(level, state, flower),
 					"waiting for the flower to be cleared and its soil tilled (soil " + level.getBlockState(flower) + ", above "
 							+ level.getBlockState(flower.above()) + ")");
 			helper.assertTrue(tilledOrHole(level, state, coarse), "waiting for the coarse dirt to be tilled (" + level.getBlockState(coarse) + ")");

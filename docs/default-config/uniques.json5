@@ -5,7 +5,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 1,
+	"configVersion": 2,
 
 	// Butin : les armes uniques tombent des boss, des quetes, des expeditions et se vendent au Carrefour (false = plus aucune)
 	"dropsEnabled": true,
@@ -38,7 +38,8 @@
 	// Tables de butin par source : chance (0 a 1) qu'une arme unique tombe, puis tirage pondere dans items {id: poids}.
 	// Sources : boss (boss des hordes), blood_boss (boss pendant une nuit de sang), quest (recompense de quete, rare),
 	// legendary_quest (quete legendaire), expedition (expeditions des villageois), trade (Carrefour commercial : l'offre
-	// "arme unique" de trade.json5 tire ici l'arme proposee). announce : annoncer l'obtention (raretes de "announce").
+	// "arme unique" de trade.json5 tire ici l'arme proposee), ruin_boss / nether_ruin_boss (boss des ruines de l'Overworld
+	// / du Nether, ruins.json5). announce : annoncer l'obtention (raretes de "announce").
 	"drops": {
 		"boss": {
 			"chance": 0.04,
@@ -115,6 +116,37 @@
 				"croc_de_givre": 3.0,
 				"arbalete_du_traqueur": 3.0,
 				"bottes_de_zephyr": 1.0
+			}
+		},
+		"ruin_boss": {
+			"chance": 0.12,
+			"announce": true,
+			"items": {
+				"croc_de_givre": 6.0,
+				"hache_sylvestre": 5.0,
+				"arbalete_du_traqueur": 5.0,
+				"murmure_du_neant": 5.0,
+				"foudrelame": 4.0,
+				"pioche_du_titan": 4.0,
+				"bottes_de_zephyr": 4.0,
+				"arc_du_phenix": 4.0,
+				"marteau_du_seisme": 4.0,
+				"trident_du_leviathan": 2.0,
+				"faux_des_ames": 1.0
+			}
+		},
+		"nether_ruin_boss": {
+			"chance": 0.25,
+			"announce": true,
+			"items": {
+				"murmure_du_neant": 5.0,
+				"foudrelame": 5.0,
+				"arc_du_phenix": 5.0,
+				"faux_des_ames": 4.0,
+				"pioche_du_titan": 4.0,
+				"bottes_de_zephyr": 4.0,
+				"marteau_du_seisme": 4.0,
+				"trident_du_leviathan": 2.0
 			}
 		},
 		"trade": {

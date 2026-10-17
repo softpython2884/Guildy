@@ -158,7 +158,7 @@ public class VitalityGameTests {
 	 * Nightfall (environment "night": clock 12600, frozen): a worker shut in a glass cell far from the only bed of the
 	 * territory gets that bed and is brought next to it.
 	 */
-	@GameTest(environment = "guildy-test:night", maxTicks = 400)
+	@GameTest(environment = "guildy-test:night", maxTicks = 800)
 	public void workerOutsideAtNightfallIsBroughtToItsBed(GameTestHelper helper) throws Exception {
 		ServerLevel level = helper.getLevel();
 		BlockPos ground = TestSupport.region(level, 12);

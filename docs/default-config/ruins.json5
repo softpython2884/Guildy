@@ -1,0 +1,830 @@
+// Guildy - ruines : des ruines generees dans l'Overworld et le Nether, chacune gardee par un boss.
+// Un joueur en survie qui approche du boss le reveille (avec son escorte) ; vaincu, il revient apres 'respawnDays' jours.
+// Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou
+// boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>.
+{
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 1,
+
+	// Boss des ruines actifs (false = plus aucun boss ne se reveille ; les cartes restent possibles)
+	"bossesEnabled": true,
+
+	// Reglages communs des combats
+	"encounter": {
+
+		// Marge (blocs) autour de la boite de la ruine dans laquelle un joueur compte comme 'dans la ruine'
+		"activationMargin": 2,
+
+		// Marge (blocs) autour de la ruine ou les joueurs entretiennent le combat et voient la barre du boss
+		"presenceMargin": 24,
+
+		// Combats simultanes au maximum sur le serveur
+		"maxActive": 8,
+
+		// Delai (secondes) avant la premiere capacite du boss apres son reveil
+		"firstAbilitySeconds": 4,
+
+		// Delai minimal (secondes) entre deux capacites du boss
+		"abilityGlobalCooldownSeconds": 3,
+
+		// Portee (blocs) des capacites : seuls les joueurs plus proches sont vises
+		"abilityRange": 24,
+
+		// Assombrir le ciel des joueurs qui voient la barre du boss
+		"darkenSky": true,
+
+		// Annonce a tout le serveur quand un boss de ruine est vaincu
+		"announce": true,
+
+		// XP de guilde minimale par guilde participante (la recompense 'xp' est partagee selon le nombre de participants)
+		"minXpPerGuild": 10
+	},
+
+	// Recherches de l'Atelier du cartographe
+	"cartography": {
+
+		// Minutes de travail d'un cartographe pour une recherche (plusieurs cartographes vont plus vite, pause la nuit)
+		"researchMinutes": 8.0,
+
+		// Cartographes qui comptent au maximum en meme temps (chacun ajoute une seconde de travail par seconde)
+		"maxCartographers": 3,
+
+		// Cout d'une recherche dans l'Overworld : objets pris dans l'inventaire du joueur {objet: nombre} (refuse en creatif)
+		"overworldCost": {
+			"minecraft:paper": 8,
+			"minecraft:compass": 1
+		},
+
+		// Cout d'une recherche dans le Nether
+		"netherCost": {
+			"minecraft:paper": 8,
+			"minecraft:compass": 1,
+			"minecraft:quartz": 4
+		},
+
+		// Or du tresor de guilde ajoute au cout (0 = aucun ; permission Tresor requise sinon)
+		"goldCost": 0,
+
+		// Rayon de recherche (en cases de la grille de placement des ruines, comme les cartes d'explorateur vanilla)
+		"searchRadius": 64,
+
+		// Zoom des cartes (0 a 4, 2 = comme les cartes d'explorateur)
+		"mapZoom": 2,
+
+		// Icone de la cible sur les cartes (type de decoration vanilla, ex. minecraft:red_x, minecraft:target_x)
+		"mapDecoration": "minecraft:red_x"
+	},
+
+	// Boss generique des ruines inconnues de ce fichier (ajoutees par un autre pack de donnees)
+	"generic": {
+
+		// Palier du boss generique d'une ruine inconnue de l'Overworld (1 a 5)
+		"overworldTier": 2,
+
+		// Palier du boss generique d'une ruine inconnue du Nether (1 a 5)
+		"netherTier": 4
+	},
+
+	// Ruines par id (le chemin du gabarit apres 'ruin/', ex. guildy:ruin/crypte_oubliee -> crypte_oubliee) :
+	// name, tier (1 a 5), activationRadius (blocs autour du point d'apparition du boss pour le reveiller, 0 = toute la ruine),
+	// resetSeconds (sans joueur proche pendant ce temps, le boss disparait et reviendra a pleine vie), respawnDays (jours
+	// de jeu avant le retour d'un boss vaincu, 0 = jamais), leashRadius (au-dela, le boss est ramene a son arene), bossBarColor
+	// (PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE), mapDecoration (icone de la carte, vide = celle de 'cartography').
+	// boss : entity, name (codes couleur &), health, damage, armor, armorToughness, speed (0 = vitesse vanilla),
+	// knockbackResistance (0 a 1), scale (taille, 1 = normale), followRange, equipment {emplacement: objet} (mainhand,
+	// offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents).
+	// minions (escorte) : types {entite: poids}, base + perExtraPlayer par joueur present au-dela du premier, max ;
+	// maxAlive (plafond avec les invocations), healthMultiplier, damageMultiplier, equipment, effects.
+	// abilities [{type, cooldownSeconds, damage, radius, count, style, healthBelow (0 a 1 : seulement sous ce ratio de vie),
+	// amplifier}] : summon (invoque count sbires), ground_slam (onde de choc, style sand pour du sable), fire_ring (anneau :
+	// style fire, soul ou frost), blink (se teleporte derriere un joueur et frappe), volley (salve : style arrow, spectral
+	// ou fireball), life_drain (draine la vie des joueurs proches), enrage (une fois sous healthBelow : Force + Vitesse
+	// de niveau amplifier, recharges reduites de moitie).
+	// rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +
+	// lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource
+	// (vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).
+	"ruins": {
+		"crypte_oubliee": {
+			"name": "Crypte oubliée",
+			"tier": 1,
+			"activationRadius": 20,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 18,
+			"bossBarColor": "PURPLE",
+			"mapDecoration": "minecraft:red_x",
+			"boss": {
+				"entity": "minecraft:wither_skeleton",
+				"name": "&5&lSeigneur des Cryptes",
+				"health": 220.0,
+				"damage": 9.0,
+				"armor": 8.0,
+				"armorToughness": 2.0,
+				"speed": 0.0,
+				"knockbackResistance": 0.6,
+				"scale": 1.5,
+				"followRange": 32.0,
+				"equipment": {
+					"mainhand": "minecraft:iron_sword",
+					"chest": "minecraft:chainmail_chestplate"
+				},
+				"effects": []
+			},
+			"minions": {
+				"types": {
+					"minecraft:skeleton": 3,
+					"minecraft:zombie": 3
+				},
+				"base": 3,
+				"perExtraPlayer": 2,
+				"max": 8,
+				"maxAlive": 12,
+				"healthMultiplier": 1.4,
+				"damageMultiplier": 1.1,
+				"equipment": {
+					"head": "minecraft:chainmail_helmet"
+				},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "ground_slam",
+					"cooldownSeconds": 12.0,
+					"damage": 6.0,
+					"radius": 5.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 22.0,
+					"damage": 0.0,
+					"radius": 4.0,
+					"count": 2,
+					"style": "",
+					"healthBelow": 0.8,
+					"amplifier": 1
+				},
+				{
+					"type": "life_drain",
+					"cooldownSeconds": 18.0,
+					"damage": 3.0,
+					"radius": 10.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.6,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 0
+				}
+			],
+			"rewards": {
+				"goldMin": 4,
+				"goldMax": 8,
+				"xp": 80,
+				"lootTable": "guildy:chests/ruin/rare",
+				"lootRolls": 1,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 4,
+						"max": 8,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:wither_skeleton_skull",
+						"min": 1,
+						"max": 1,
+						"chance": 0.15
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			}
+		},
+		"tour_du_mage": {
+			"name": "Tour du Mage déchu",
+			"tier": 2,
+			"activationRadius": 20,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 18,
+			"bossBarColor": "BLUE",
+			"mapDecoration": "minecraft:red_x",
+			"boss": {
+				"entity": "minecraft:evoker",
+				"name": "&9&lArchimage déchu",
+				"health": 260.0,
+				"damage": 8.0,
+				"armor": 6.0,
+				"armorToughness": 2.0,
+				"speed": 0.0,
+				"knockbackResistance": 0.7,
+				"scale": 1.4,
+				"followRange": 32.0,
+				"equipment": {},
+				"effects": [
+					{
+						"effect": "minecraft:slow_falling",
+						"amplifier": 0
+					}
+				]
+			},
+			"minions": {
+				"types": {
+					"minecraft:vindicator": 4,
+					"minecraft:vex": 2
+				},
+				"base": 3,
+				"perExtraPlayer": 2,
+				"max": 9,
+				"maxAlive": 12,
+				"healthMultiplier": 1.4,
+				"damageMultiplier": 1.1,
+				"equipment": {},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "blink",
+					"cooldownSeconds": 10.0,
+					"damage": 7.0,
+					"radius": 4.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "volley",
+					"cooldownSeconds": 9.0,
+					"damage": 5.0,
+					"radius": 4.0,
+					"count": 5,
+					"style": "spectral",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 15.0,
+					"damage": 6.0,
+					"radius": 7.0,
+					"count": 1,
+					"style": "fire",
+					"healthBelow": 0.85,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 24.0,
+					"damage": 0.0,
+					"radius": 4.0,
+					"count": 2,
+					"style": "",
+					"healthBelow": 0.7,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"rewards": {
+				"goldMin": 6,
+				"goldMax": 10,
+				"xp": 120,
+				"lootTable": "guildy:chests/ruin/rare",
+				"lootRolls": 2,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 6,
+						"max": 12,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:totem_of_undying",
+						"min": 1,
+						"max": 1,
+						"chance": 0.25
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			}
+		},
+		"ziggourat_des_sables": {
+			"name": "Ziggourat des sables",
+			"tier": 2,
+			"activationRadius": 20,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 18,
+			"bossBarColor": "YELLOW",
+			"mapDecoration": "minecraft:red_x",
+			"boss": {
+				"entity": "minecraft:husk",
+				"name": "&6&lPharaon des sables",
+				"health": 300.0,
+				"damage": 10.0,
+				"armor": 4.0,
+				"armorToughness": 2.0,
+				"speed": 0.26,
+				"knockbackResistance": 0.7,
+				"scale": 1.6,
+				"followRange": 32.0,
+				"equipment": {
+					"mainhand": "minecraft:golden_sword",
+					"head": "minecraft:golden_helmet",
+					"chest": "minecraft:golden_chestplate",
+					"legs": "minecraft:golden_leggings",
+					"feet": "minecraft:golden_boots"
+				},
+				"effects": []
+			},
+			"minions": {
+				"types": {
+					"minecraft:husk": 1
+				},
+				"base": 4,
+				"perExtraPlayer": 2,
+				"max": 10,
+				"maxAlive": 14,
+				"healthMultiplier": 1.4,
+				"damageMultiplier": 1.1,
+				"equipment": {},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "ground_slam",
+					"cooldownSeconds": 11.0,
+					"damage": 7.0,
+					"radius": 6.0,
+					"count": 1,
+					"style": "sand",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 18.0,
+					"damage": 0.0,
+					"radius": 4.0,
+					"count": 3,
+					"style": "",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 16.0,
+					"damage": 6.0,
+					"radius": 7.0,
+					"count": 1,
+					"style": "fire",
+					"healthBelow": 0.75,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"rewards": {
+				"goldMin": 6,
+				"goldMax": 10,
+				"xp": 120,
+				"lootTable": "guildy:chests/ruin/rare",
+				"lootRolls": 2,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 6,
+						"max": 12,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:golden_apple",
+						"min": 1,
+						"max": 2,
+						"chance": 0.6
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			}
+		},
+		"bastion_de_givre": {
+			"name": "Bastion de givre",
+			"tier": 3,
+			"activationRadius": 20,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 18,
+			"bossBarColor": "WHITE",
+			"mapDecoration": "minecraft:red_x",
+			"boss": {
+				"entity": "minecraft:stray",
+				"name": "&b&lRoi de givre",
+				"health": 380.0,
+				"damage": 11.0,
+				"armor": 10.0,
+				"armorToughness": 3.0,
+				"speed": 0.27,
+				"knockbackResistance": 0.8,
+				"scale": 1.7,
+				"followRange": 32.0,
+				"equipment": {
+					"mainhand": "minecraft:bow",
+					"head": "minecraft:diamond_helmet",
+					"chest": "minecraft:diamond_chestplate"
+				},
+				"effects": []
+			},
+			"minions": {
+				"types": {
+					"minecraft:stray": 1
+				},
+				"base": 4,
+				"perExtraPlayer": 2,
+				"max": 10,
+				"maxAlive": 14,
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {
+					"head": "minecraft:iron_helmet"
+				},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 12.0,
+					"damage": 7.0,
+					"radius": 7.0,
+					"count": 1,
+					"style": "frost",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "volley",
+					"cooldownSeconds": 10.0,
+					"damage": 6.0,
+					"radius": 4.0,
+					"count": 6,
+					"style": "arrow",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "blink",
+					"cooldownSeconds": 14.0,
+					"damage": 8.0,
+					"radius": 4.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.7,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 22.0,
+					"damage": 0.0,
+					"radius": 4.0,
+					"count": 3,
+					"style": "",
+					"healthBelow": 0.6,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"rewards": {
+				"goldMin": 8,
+				"goldMax": 14,
+				"xp": 160,
+				"lootTable": "guildy:chests/ruin/treasure",
+				"lootRolls": 1,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 8,
+						"max": 16,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:diamond",
+						"min": 1,
+						"max": 3,
+						"chance": 0.5
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			}
+		},
+		"autel_infernal": {
+			"name": "Autel infernal",
+			"tier": 4,
+			"activationRadius": 20,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 18,
+			"bossBarColor": "RED",
+			"mapDecoration": "minecraft:red_x",
+			"boss": {
+				"entity": "minecraft:piglin_brute",
+				"name": "&c&lSeigneur de guerre",
+				"health": 480.0,
+				"damage": 16.0,
+				"armor": 14.0,
+				"armorToughness": 5.0,
+				"speed": 0.38,
+				"knockbackResistance": 1.0,
+				"scale": 1.6,
+				"followRange": 32.0,
+				"equipment": {
+					"mainhand": "minecraft:netherite_axe",
+					"chest": "minecraft:netherite_chestplate"
+				},
+				"effects": [
+					{
+						"effect": "minecraft:fire_resistance",
+						"amplifier": 0
+					}
+				]
+			},
+			"minions": {
+				"types": {
+					"minecraft:piglin_brute": 3,
+					"minecraft:magma_cube": 2
+				},
+				"base": 3,
+				"perExtraPlayer": 2,
+				"max": 9,
+				"maxAlive": 12,
+				"healthMultiplier": 1.4,
+				"damageMultiplier": 1.1,
+				"equipment": {},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "ground_slam",
+					"cooldownSeconds": 10.0,
+					"damage": 10.0,
+					"radius": 6.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 14.0,
+					"damage": 8.0,
+					"radius": 8.0,
+					"count": 1,
+					"style": "fire",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "volley",
+					"cooldownSeconds": 12.0,
+					"damage": 5.0,
+					"radius": 4.0,
+					"count": 4,
+					"style": "fireball",
+					"healthBelow": 0.8,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 22.0,
+					"damage": 0.0,
+					"radius": 4.0,
+					"count": 2,
+					"style": "",
+					"healthBelow": 0.7,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"rewards": {
+				"goldMin": 10,
+				"goldMax": 18,
+				"xp": 220,
+				"lootTable": "guildy:chests/ruin/nether_treasure",
+				"lootRolls": 1,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 8,
+						"max": 16,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:netherite_scrap",
+						"min": 1,
+						"max": 2,
+						"chance": 0.5
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			}
+		},
+		"citadelle_des_ames": {
+			"name": "Citadelle des âmes",
+			"tier": 5,
+			"activationRadius": 20,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 18,
+			"bossBarColor": "BLUE",
+			"mapDecoration": "minecraft:red_x",
+			"boss": {
+				"entity": "minecraft:wither_skeleton",
+				"name": "&3&lChampion des âmes",
+				"health": 650.0,
+				"damage": 20.0,
+				"armor": 18.0,
+				"armorToughness": 8.0,
+				"speed": 0.3,
+				"knockbackResistance": 1.0,
+				"scale": 2.0,
+				"followRange": 32.0,
+				"equipment": {
+					"mainhand": "minecraft:netherite_sword",
+					"head": "minecraft:netherite_helmet",
+					"chest": "minecraft:netherite_chestplate"
+				},
+				"effects": []
+			},
+			"minions": {
+				"types": {
+					"minecraft:wither_skeleton": 3,
+					"minecraft:blaze": 2
+				},
+				"base": 4,
+				"perExtraPlayer": 2,
+				"max": 10,
+				"maxAlive": 14,
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "life_drain",
+					"cooldownSeconds": 14.0,
+					"damage": 5.0,
+					"radius": 12.0,
+					"count": 1,
+					"style": "soul",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 12.0,
+					"damage": 9.0,
+					"radius": 8.0,
+					"count": 1,
+					"style": "soul",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "blink",
+					"cooldownSeconds": 11.0,
+					"damage": 12.0,
+					"radius": 4.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "ground_slam",
+					"cooldownSeconds": 13.0,
+					"damage": 12.0,
+					"radius": 7.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.8,
+					"amplifier": 1
+				},
+				{
+					"type": "volley",
+					"cooldownSeconds": 12.0,
+					"damage": 5.0,
+					"radius": 4.0,
+					"count": 5,
+					"style": "fireball",
+					"healthBelow": 0.6,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 24.0,
+					"damage": 0.0,
+					"radius": 4.0,
+					"count": 3,
+					"style": "",
+					"healthBelow": 0.6,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 2
+				}
+			],
+			"rewards": {
+				"goldMin": 14,
+				"goldMax": 24,
+				"xp": 300,
+				"lootTable": "guildy:chests/ruin/nether_treasure",
+				"lootRolls": 2,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 12,
+						"max": 24,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:netherite_scrap",
+						"min": 1,
+						"max": 3,
+						"chance": 0.75
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			}
+		}
+	},
+
+	// Ruines par defaut deja proposees. Une ruine ajoutee par une mise a jour du mod est ajoutee automatiquement a
+	// 'ruins' une seule fois ; pour ne plus l'utiliser, retirez-la de 'ruins' (pas d'ici).
+	"knownDefaults": [
+		"crypte_oubliee",
+		"tour_du_mage",
+		"ziggourat_des_sables",
+		"bastion_de_givre",
+		"autel_infernal",
+		"citadelle_des_ames"
+	]
+}

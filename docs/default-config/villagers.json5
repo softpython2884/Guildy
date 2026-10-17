@@ -919,15 +919,17 @@
 		// Semis : quand rien n'est mur, le fermier seme les terres labourees vides de ses champs : d'abord les cultures des
 		// objectifs prioritaires, puis celle de la zone, puis les graines, carottes, pommes de terre ou graines de betterave de
 		// son sac ou des coffres du stockage (Graines et pousses, Nourriture, depot, Divers) pour une zone 'Toutes les cultures'.
-		// Melons, citrouilles et canne a sucre ne sont pas semes (la tige et la base restent a la recolte)
+		// Melons, citrouilles et canne a sucre ne sont pas semes (la tige et la base restent a la recolte).
+		// Dans une zone, autorisation 'Semer' du fanion
 		"sow": true,
 
 		// Semer aussi en mode automatique (sans zone : terres labourees du territoire et autour)
 		"sowInAutoMode": true,
 
-		// Zones de champs seulement : labourer (puis semer) l'herbe et la terre a l'air libre a moins de 4 blocs d'une eau (portee
-		// d'hydratation vanilla), rien dessus, jamais un chemin, ni a cote d'un bloc pose par un joueur (sauf terre labouree, eau,
-		// barrieres, torches)
+		// Zones de champs seulement (autorisation 'Labourer' du fanion) : labourer l'herbe, la terre, la terre sterile et la
+		// terre racinee hydratees (eau a 4 blocs ou moins, portee vanilla ; les points d'eau creuses comptent), rien dessus,
+		// jamais un chemin, ni a cote d'un bloc pose par un joueur (sauf terre labouree, eau, barrieres, torches, lanternes,
+		// chemins, composteurs...). false = aucun labour nouveau dans aucune zone
 		"tillSoil": true,
 
 		// Cultures semees par tournee avant de chercher de nouveau des cultures mures (1 a 256)
@@ -940,7 +942,57 @@
 		"sowFetchAmount": 32,
 
 		// Attente (secondes) avant de reessayer quand il n'y a plus rien a semer ou plus de graines (10 a 3600)
-		"sowPauseSeconds": 30
+		"sowPauseSeconds": 30,
+
+		// Travaux des champs (zones de champs) : chaque zone choisit les siens dans le menu de la zone, bouton
+		// 'Autorisations du fanion' (recolter, replanter, semer, relabourer, labourer, points d'eau, degager, aplanir,
+		// poudre d'os ; preselections 'Entretenir un champ' et 'Creer des champs'). Sans zone : recolte et semis seulement
+		"fieldWork": {
+
+			// Travaux des champs (zones de champs seulement, selon les autorisations du fanion de chaque zone) : labourer, degager
+			// le sol, creuser des points d'eau, aplanir, poudre d'os, relabourer la terre pietinee. false = aucun de ces travaux
+			// (le fermier recolte, replante et seme seulement)
+			"enabled": true,
+
+			// Actions (labour, trou d'eau, aplanissement, poudre d'os...) par seconde au plus (1 a 16)
+			"actionsPerSecond": 3,
+
+			// Actions par tournee de travaux avant de chercher de nouveau des cultures mures (1 a 512)
+			"perRound": 48,
+
+			// Chunks de la zone inspectes par seconde avant une tournee de travaux (1 a 16)
+			"surveyChunksPerStep": 2,
+
+			// Attente (secondes) avant d'inspecter de nouveau un champ ou il n'y avait plus rien a faire (10 a 3600)
+			"pauseSeconds": 60,
+
+			// Terres labourees redevenues de la terre (pietinees, dessechees) retenues par zone pour etre relabourees puis
+			// ressemees (0 a 4096, 0 = rien n'est retenu)
+			"retillMemory": 256,
+
+			// Prendre de la terre (aplanir) et de la poudre d'os dans les coffres du stockage quand son sac n'en a plus
+			"fromStorage": true,
+
+			// Terre ou poudre d'os prise au stockage en un voyage (1 a 64)
+			"fetchAmount": 16,
+
+			// Poudre d'os : cultures traitees par tournee au plus (1 a 256)
+			"boneMealPerRound": 16
+		},
+
+		// Points d'eau creuses par les fermiers (autorisation 'Creer des points d'eau' d'une zone de champs)
+		"irrigation": {
+
+			// Seaux d'eau consommes par point d'eau creuse ou rempli (0 a 4 ; 0 = eau gratuite). Plus de 0 : le fermier prend les
+			// seaux d'eau dans les coffres du stockage (depot, categorie, Divers) et rapporte les seaux vides au coffre de depot
+			"waterBucketCost": 0,
+
+			// Seaux d'eau pris au stockage en un voyage (1 a 16)
+			"bucketFetchAmount": 4,
+
+			// Points d'eau retenus (et remplis s'ils disparaissent) par zone au plus (1 a 4096)
+			"maxHolesPerZone": 512
+		}
 	},
 
 	// Tache 'Garde' : patrouille (zone ou parcours) ou defend le coeur ; pendant les vagues, defend toujours le coeur
@@ -3537,6 +3589,58 @@
 				]
 			}
 		]
+	},
+
+	// Tache 'Forgeron' : repare peu a peu l'equipement abime (armures et objets en main) pose sur les porte-armures du
+	// territoire, a l'enclume la plus proche du porte-armure ; chaque etape use l'enclume comme en vanilla
+	"blacksmith": {
+
+		// Niveau de guilde minimum pour donner cette tache a un villageois (1 a 100)
+		"minGuildLevel": 3,
+
+		// Distance maximum (blocs) entre un porte-armure et l'enclume utilisee (la plus proche, dans le territoire) ;
+		// un porte-armure sans enclume assez proche est ignore (2 a 32)
+		"anvilRadius": 12,
+
+		// Temps de travail (secondes) pour une etape de reparation ; le bonus de vitesse de travail s'applique (1 a 600)
+		"secondsPerRepair": 8,
+
+		// Durabilite rendue a chaque etape, en pourcentage de la durabilite maximum de l'objet (1 a 100). L'objet le plus
+		// abime du porte-armure (plus petite part de durabilite restante) passe en premier ; il reste toujours sur le porte-armure
+		"repairPercent": 10,
+
+		// Chaque etape est une utilisation de l'enclume : chance (0 a 1) de l'abimer d'un cran comme en vanilla (0.12) :
+		// enclume -> ebrechee -> endommagee -> detruite. Detruite : le forgeron cherche une autre enclume
+		"anvilDamageChance": 0.12,
+
+		// Intervalle minimum (secondes) entre deux recherches des porte-armures du territoire (5 a 600)
+		"scanIntervalSeconds": 30
+	},
+
+	// Tache 'Alchimiste' : avec une table d'enchantement du territoire (celle qui a le plus de bibliotheques), du temps
+	// et des livres (sac puis coffres du stockage), il fabrique des livres enchantes ranges dans le stockage
+	"alchemist": {
+
+		// Niveau de guilde minimum pour donner cette tache a un villageois (1 a 100)
+		"minGuildLevel": 5,
+
+		// Temps de travail (secondes) par niveau d'enchantement : un livre de niveau 30 prend 30 x cette valeur ; le bonus
+		// de vitesse de travail s'applique (1 a 120). Le niveau suit la 3e ligne de la table vanilla selon le nombre de
+		// bibliotheques (15 bibliotheques : niveau 30 ; table seule : niveau 1 a 8)
+		"secondsPerLevel": 6,
+
+		// Livres enchantes au plus par alchimiste et par jour de jeu (1 a 1000)
+		"maxBooksPerDay": 8,
+
+		// Lapis-lazuli consomme par livre (0 a 3) ; 0 = seulement du temps et des livres. Pris dans son sac puis dans les
+		// coffres du stockage, comme les livres
+		"lapisPerBook": 0,
+
+		// Livres pris dans les coffres du stockage en un voyage (1 a 64)
+		"booksPerTrip": 4,
+
+		// Intervalle minimum (secondes) entre deux recherches des tables d'enchantement du territoire (10 a 3600)
+		"scanIntervalSeconds": 120
 	},
 
 	// Chargement des chunks : les villageois au travail gardent leurs chunks actifs pour continuer sans joueur a
