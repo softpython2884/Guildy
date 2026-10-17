@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** ruins.json5: defaults, validation, generic guardian, new default ruins, threat and resurrection settings, round trip. */
 class RuinConfigTest {
-	private static final List<String> SEVEN = List.of("crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre",
-			"autel_infernal", "citadelle_des_ames", "temple_maya");
+	private static final List<String> EIGHT = List.of("crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre",
+			"autel_infernal", "citadelle_des_ames", "temple_maya", "grand_temple_maya");
 
 	private static List<String> rebuild(RuinConfig cfg) {
 		return cfg.rebuild(id -> true, id -> true, id -> true);
@@ -33,7 +33,7 @@ class RuinConfigTest {
 		List<String> warnings = rebuild(cfg);
 		assertTrue(warnings.isEmpty(), "ruins.json5 defaults: " + warnings);
 		assertEquals(RuinConfig.CURRENT_VERSION, cfg.configVersion);
-		assertEquals(SEVEN, new ArrayList<>(cfg.ruins.keySet()));
+		assertEquals(EIGHT, new ArrayList<>(cfg.ruins.keySet()));
 		Set<Integer> tiers = new HashSet<>();
 		for (Map.Entry<String, RuinConfig.RuinDef> entry : cfg.ruins.entrySet()) {
 			RuinConfig.RuinDef def = entry.getValue();
@@ -47,10 +47,13 @@ class RuinConfigTest {
 			assertTrue(def.abilities.stream().anyMatch(a -> a.type.equals("enrage")), id + " enrages");
 			assertTrue(def.abilities.stream().filter(a -> !a.type.equals("enrage")).count() >= 3, id + " has 3 active abilities");
 			assertEquals(7, def.respawnDays, id + " back after a week");
-			assertTrue(def.rewards.goldMax <= 24 && def.rewards.goldMin >= 1, id + " modest gold");
+			assertTrue(def.rewards.goldMax <= 30 && def.rewards.goldMin >= 1, id + " modest gold");
 			assertTrue(def.rewards.lootTable.startsWith("guildy:chests/ruin/"), id + " ruin loot table");
 			assertTrue(def.rewards.items.stream().noneMatch(i -> i.item.equals("minecraft:gold_block")), id + " never gold blocks");
 			assertTrue(def.boss.health >= 200, id + " is a boss");
+			assertEquals(-1, def.guards.count, id + " guards by tier");
+			assertFalse(def.guards.name.isBlank(), id + " named guards");
+			assertTrue(def.guards.healthMultiplier >= 1, id + " sturdy guards");
 		}
 		assertEquals(Set.of(1, 2, 3, 4, 5), tiers, "tiers 1 to 5");
 		assertTrue(cfg.ruins.get("citadelle_des_ames").boss.health > cfg.ruins.get("crypte_oubliee").boss.health, "tier 5 > tier 1");
@@ -190,8 +193,8 @@ class RuinConfigTest {
 		ruins.put("crypte_oubliee", RuinDefaults.ruins().get("crypte_oubliee"));
 		List<String> known = new ArrayList<>(List.of("crypte_oubliee"));
 		List<String> added = RuinConfig.mergeNewDefaults(ruins, known);
-		assertEquals(SEVEN.subList(1, 7), added);
-		assertEquals(SEVEN, new ArrayList<>(ruins.keySet()));
+		assertEquals(EIGHT.subList(1, 8), added);
+		assertEquals(EIGHT, new ArrayList<>(ruins.keySet()));
 		ruins.remove("tour_du_mage");
 		assertTrue(RuinConfig.mergeNewDefaults(ruins, known).isEmpty(), "removed by the admin: never added back");
 		assertFalse(ruins.containsKey("tour_du_mage"));
@@ -226,11 +229,95 @@ class RuinConfigTest {
 		RuinConfig old = Json5.fromString("{ \"knownDefaults\": [\"crypte_oubliee\", \"tour_du_mage\", \"ziggourat_des_sables\", \"bastion_de_givre\","
 				+ " \"autel_infernal\", \"citadelle_des_ames\"], \"ruins\": { \"crypte_oubliee\": { \"name\": \"Ma crypte\", \"tier\": 1 } } }", RuinConfig.class);
 		assertTrue(rebuild(old).isEmpty());
-		assertEquals(List.of("crypte_oubliee", "temple_maya"), new ArrayList<>(old.ruins.keySet()), "only the new default ruin is added");
+		assertEquals(List.of("crypte_oubliee", "temple_maya", "grand_temple_maya"), new ArrayList<>(old.ruins.keySet()),
+				"only the new default ruins are added");
 		assertEquals("Ma crypte", old.ruins.get("crypte_oubliee").name, "the admin's ruins are untouched");
 		old.ruins.remove("temple_maya");
 		assertTrue(rebuild(old).isEmpty());
 		assertFalse(old.ruins.containsKey("temple_maya"), "removed by the admin: never added back");
+	}
+
+	@Test
+	void theCelestialJaguarTemple() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		RuinConfig.RuinDef temple = cfg.ruins.get("grand_temple_maya");
+		assertNotNull(temple, "8th ruin");
+		assertEquals("Grand Temple du Jaguar céleste", temple.name);
+		assertEquals(5, temple.tier);
+		assertEquals("YELLOW", temple.bossBarColor);
+		assertEquals("minecraft:ravager", temple.boss.entity, "a giant ravager");
+		assertTrue(temple.boss.name.contains("Jaguar céleste"));
+		assertTrue(temple.boss.scale >= 1.5, "scaled up");
+		assertTrue(temple.leashRadius >= 20, "a large indoor arena");
+		assertEquals(Set.of("minecraft:vindicator", "minecraft:bogged", "minecraft:evoker"), temple.minions.types.keySet(), "jungle warriors");
+		assertEquals(Set.of("minecraft:vindicator", "minecraft:bogged", "minecraft:evoker"), temple.guards.types.keySet(), "jaguar warriors on guard");
+		assertEquals("minecraft:golden_helmet", temple.guards.equipment.get("head"));
+		assertTrue(temple.guards.name.contains("jaguar"));
+		Set<String> styles = new HashSet<>();
+		temple.abilities.forEach(a -> styles.add(a.style));
+		assertTrue(styles.containsAll(Set.of("solar", "gold", "jade")), "solar, gold and jade abilities: " + styles);
+		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("volley") && a.style.equals("solar")), "sun spears");
+
+		RuinConfig.RuinDef citadel = cfg.ruins.get("citadelle_des_ames");
+		assertEquals(citadel.tier, temple.tier, "the other tier-5 ruin");
+		assertTrue(temple.boss.health > citadel.boss.health, "the strongest guardian");
+		assertTrue(temple.rewards.goldMin > citadel.rewards.goldMin && temple.rewards.goldMax > citadel.rewards.goldMax, "more gold");
+		assertTrue(temple.rewards.xp > citadel.rewards.xp, "more XP");
+		assertTrue(temple.rewards.lootRolls > citadel.rewards.lootRolls, "more loot rolls");
+		assertEquals(-1, temple.fastKillSeconds, "the resurrection formula");
+
+		// A ruins.json5 written before the 8th ruin: it is added once.
+		RuinConfig old = Json5.fromString("{ \"knownDefaults\": [\"crypte_oubliee\", \"tour_du_mage\", \"ziggourat_des_sables\", \"bastion_de_givre\","
+				+ " \"autel_infernal\", \"citadelle_des_ames\", \"temple_maya\"], \"ruins\": { \"temple_maya\": { \"name\": \"Mon temple\", \"tier\": 3 } } }",
+				RuinConfig.class);
+		assertTrue(rebuild(old).isEmpty());
+		assertEquals(List.of("temple_maya", "grand_temple_maya"), new ArrayList<>(old.ruins.keySet()));
+		assertEquals(-1, old.ruins.get("temple_maya").guards.count, "an older ruin definition gets the default guards");
+		assertTrue(old.ruins.get("temple_maya").guards.types.isEmpty(), "... with the escort's types");
+	}
+
+	@Test
+	void guardSettings() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		RuinConfig.GuardSettings g = cfg.guards;
+		assertTrue(g.enabled);
+		assertTrue(g.blockRitual, "the incantation waits for the guards");
+		assertEquals(List.of(2, 3, 4, 5, 6), g.countByTier);
+		assertEquals(8, g.triggerMargin);
+		assertTrue(cfg.generic.guards);
+
+		RuinConfig broken = new RuinConfig();
+		broken.guards.countByTier = new ArrayList<>(List.of(3, 99));
+		broken.guards.triggerMargin = -5;
+		broken.guards.leashRadius = 0;
+		broken.guards.max = 500;
+		RuinConfig.RuinDef def = broken.ruins.get("crypte_oubliee");
+		def.guards.count = -9;
+		def.guards.types.put("minecraft:unicorn", 2);
+		def.guards.types.put("husk", 1);
+		def.guards.healthMultiplier = 0;
+		def.guards.equipment.put("tail", "minecraft:iron_axe");
+		def.guards.name = null;
+		List<String> warnings = broken.rebuild(id -> !id.contains("unicorn"), id -> true, id -> true);
+		assertEquals(2, warnings.size(), "unknown guard entity and slot: " + warnings);
+		assertEquals(List.of(3, 32, 32, 32, 32), broken.guards.countByTier, "five tiers, the last value repeated, bounded");
+		assertEquals(0, broken.guards.triggerMargin);
+		assertEquals(3, broken.guards.leashRadius);
+		assertEquals(32, broken.guards.max);
+		assertEquals(-1, def.guards.count);
+		assertEquals(java.util.Map.of("minecraft:husk", 1), def.guards.types);
+		assertEquals(0.1, def.guards.healthMultiplier);
+		assertTrue(def.guards.equipment.isEmpty());
+		assertEquals("", def.guards.name);
+
+		RuinConfig missing = new RuinConfig();
+		missing.guards = null;
+		missing.ruins.get("crypte_oubliee").guards = null;
+		assertTrue(rebuild(missing).isEmpty(), "missing sections: defaults");
+		assertTrue(missing.guards.enabled);
+		assertEquals(-1, missing.ruins.get("crypte_oubliee").guards.count);
 	}
 
 	@Test

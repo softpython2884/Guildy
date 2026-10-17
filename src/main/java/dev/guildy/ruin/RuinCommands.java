@@ -46,7 +46,7 @@ import java.util.Set;
 
 /**
  * {@code /guild admin ruin list | info | awaken | reset | locate <id> | map <player> <id> | incantation <player> [count] |
- * ability <type> [style] | threat <level> | research <guild> finish} (the admin node is already permission-gated).
+ * ability <type> [style] | threat <level> | guards [clear] | research <guild> finish} (the admin node is already permission-gated).
  * "Nearest" = nearest known ruin in the dimension of the command source. {@code awaken} is instant (no scroll, no ritual).
  */
 final class RuinCommands {
@@ -84,6 +84,9 @@ final class RuinCommands {
 				.then(Commands.literal("threat")
 						.then(Commands.argument("level", IntegerArgumentType.integer(1, ThreatRules.MAX_LEVEL))
 								.executes(ctx -> Safe.get("ruin.admin.threat", () -> threat(ctx, IntegerArgumentType.getInteger(ctx, "level")), 0))))
+				.then(Commands.literal("guards")
+						.executes(ctx -> Safe.get("ruin.admin.guards", () -> guards(ctx), 0))
+						.then(Commands.literal("clear").executes(ctx -> Safe.get("ruin.admin.guards", () -> clearGuards(ctx), 0))))
 				.then(Commands.literal("research")
 						.then(GuildArgument.guild("guild")
 								.then(Commands.literal("finish").executes(ctx -> Safe.get("ruin.admin.research", () -> finish(ctx), 0)))))));
@@ -155,6 +158,8 @@ final class RuinCommands {
 		double window = Encounters.fastKillSeconds(def, threat);
 		lines.add(Lang.get("ruin.admin.info.threat", Encounters.threatLabel(threat), ThreatRules.stored(ruin.threat, ruin.timesCleared),
 				RuinModule.config().escalation.maxLevel, window > 0 ? ThreatRules.clock(Math.round(window)) : Lang.raw("ruin.admin.resurrection.never")));
+		lines.add(Lang.get("ruin.admin.info.guards", RoomGuards.alive(ruin), RoomGuards.killed(ruin), ruin.guards.isEmpty() ? "-" : ruin.guards.size(),
+				Lang.raw(ruin.guards.isEmpty() ? "ruin.admin.info.guards.fallback" : "ruin.admin.info.guards.markers")));
 		double ritual = Incantations.ritualProgress(ruin);
 		if (ritual >= 0) {
 			lines.add(Lang.get("ruin.admin.info.ritual", (int) Math.round(ritual * 100), Incantations.ritualParticipants(ruin).size()));
@@ -168,6 +173,12 @@ final class RuinCommands {
 					: Encounters.risen(ruin) ? Lang.raw("ruin.admin.resurrection.risen")
 					: left > 0 ? Lang.raw("ruin.admin.resurrection.window", ThreatRules.clock(left)) : Lang.raw("ruin.admin.resurrection.closed");
 			lines.add(Lang.get("ruin.admin.info.resurrection", state));
+			int party = Encounters.partySize(ruin);
+			if (party > 1) {
+				GroupScaling.Party group = GroupScaling.party(RuinModule.config().scaling, party);
+				lines.add(Lang.get("ruin.admin.info.group", party, String.format(Locale.ROOT, "%.2f", group.health()),
+						String.format(Locale.ROOT, "%.2f", group.damage())));
+			}
 		}
 		for (Component line : lines) {
 			source.sendSuccess(() -> line, false);
@@ -196,9 +207,44 @@ final class RuinCommands {
 			return 0;
 		}
 		Encounters.reset(ruin);
+		RoomGuards.reset(ruin);
 		RuinDef def = Encounters.def(ruin);
 		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.reset", Lang.colorize(def.name))), true);
 		return 1;
+	}
+
+	/** Posts the room guards of the nearest ruin now (the previous ones leave first). */
+	private static int guards(CommandContext<CommandSourceStack> ctx) {
+		RuinRecord ruin = nearest(ctx);
+		if (ruin == null) {
+			return 0;
+		}
+		ServerLevel level = ctx.getSource().getLevel();
+		if (!level.dimension().identifier().toString().equals(ruin.dimension)) {
+			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("ruin.admin.wrong_dimension")));
+			return 0;
+		}
+		int posted = RoomGuards.postNow(level, ruin);
+		RuinDef def = Encounters.def(ruin);
+		if (posted <= 0) {
+			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("ruin.admin.guards.none")));
+			return 0;
+		}
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.guards.posted", posted, Lang.colorize(def.name))), true);
+		return posted;
+	}
+
+	/** The room guards of the nearest ruin leave (fresh ones come at the next approach). */
+	private static int clearGuards(CommandContext<CommandSourceStack> ctx) {
+		RuinRecord ruin = nearest(ctx);
+		if (ruin == null) {
+			return 0;
+		}
+		RuinDef def = Encounters.def(ruin);
+		boolean cleared = RoomGuards.reset(ruin);
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get(cleared ? "ruin.admin.guards.cleared" : "ruin.admin.guards.nothing", Lang.colorize(def.name))),
+				true);
+		return cleared ? 1 : 0;
 	}
 
 	private static int locate(CommandContext<CommandSourceStack> ctx) {

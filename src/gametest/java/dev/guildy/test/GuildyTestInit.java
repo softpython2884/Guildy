@@ -2,6 +2,7 @@ package dev.guildy.test;
 
 import dev.guildy.data.GuildStorage;
 import dev.guildy.event.EventModule;
+import dev.guildy.ruin.RuinModule;
 import dev.guildy.trade.TradeModule;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -28,6 +29,9 @@ public class GuildyTestInit implements ModInitializer {
 			}
 			EventModule.config().randomEvents = false;
 			TradeModule.config().visits.enabled = false;
+			// The test ruin (unknown id: generic guardian) has no room guards, so that the fights of the other ruin tests
+			// stay as they were; RuinGuardGameTests give their ruins a configured definition with guards.
+			RuinModule.config().generic.guards = false;
 		});
 	}
 }

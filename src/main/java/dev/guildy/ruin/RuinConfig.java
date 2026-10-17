@@ -25,12 +25,13 @@ import java.util.function.Predicate;
 		"des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.",
 		"Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou",
 		"boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>",
-		"| incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche)."
+		"| incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle)."
 })
 public final class RuinConfig implements Validatable {
 	public static final int CURRENT_VERSION = 1;
 	public static final Set<String> ABILITIES = Set.of("summon", "ground_slam", "fire_ring", "blink", "volley", "life_drain", "enrage");
-	public static final Set<String> STYLES = Set.of("", "fire", "soul", "frost", "sand", "arrow", "spectral", "fireball", "jade", "wind");
+	public static final Set<String> STYLES = Set.of("", "fire", "soul", "frost", "sand", "arrow", "spectral", "fireball", "jade", "wind",
+			"solar", "gold");
 	public static final Set<String> BAR_COLORS = Set.of("PINK", "BLUE", "RED", "GREEN", "YELLOW", "PURPLE", "WHITE");
 	public static final Set<String> SLOTS = Set.of("mainhand", "offhand", "head", "chest", "legs", "feet");
 	/** Base item of the incantation scroll (a banner pattern: no crafting recipe, never bought by villagers). */
@@ -61,6 +62,19 @@ public final class RuinConfig implements Validatable {
 	})
 	public ResurrectionSettings resurrection = new ResurrectionSettings();
 
+	@Comment({
+			"Gardiens de salle : quand un joueur en survie / aventure approche d'une ruine dormante, des ennemis apparaissent a leurs",
+			"postes (marqueurs guildy:guard, sinon pres des sbires, de l'entree et autour du gardien endormi). Une fois par periode",
+			"dormante : tues, ils ne reviennent qu'apres le depart de tous les joueurs (resetSeconds de la ruine)"
+	})
+	public GuardSettings guards = new GuardSettings();
+
+	@Comment({
+			"Renfort selon le groupe : plus il y a de joueurs en survie / aventure a l'apparition du gardien (arene ou ruine), plus il",
+			"est fort et plus il rapporte. Se multiplie avec la menace (ex. menace III +40 % de vie et 3 joueurs +100 % : x2.8)"
+	})
+	public ScalingSettings scaling = new ScalingSettings();
+
 	@Comment("Recherches de l'Atelier du cartographe")
 	public CartographySettings cartography = new CartographySettings();
 
@@ -87,7 +101,10 @@ public final class RuinConfig implements Validatable {
 			"joueurs proches), enrage (une fois sous healthBelow : Force + Vitesse de niveau amplifier, recharges reduites de moitie).",
 			"rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +",
 			"lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource",
-			"(vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins)."
+			"(vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).",
+			"guards (gardiens de salle) : count (-1 = 'guards.countByTier' du palier, 0 = aucun), name (nom affiche en les visant,",
+			"vide = aucun), types {entite: poids}, healthMultiplier, damageMultiplier, equipment, effects (types, equipment et",
+			"effects vides = ceux de l'escorte)."
 	})
 	public Map<String, RuinDef> ruins = RuinDefaults.ruins();
 
@@ -239,6 +256,53 @@ public final class RuinConfig implements Validatable {
 	}
 
 	@Json5.Section
+	public static final class GuardSettings {
+		@Comment("Gardiens de salle actifs")
+		public boolean enabled = true;
+		@Comment("Marge (blocs) autour de la boite de la ruine : un joueur en survie / aventure qui y entre fait apparaitre les gardiens")
+		public int triggerMargin = 8;
+		@Comment("Gardiens par palier de ruine (palier 1, 2, 3, 4, 5)")
+		public List<Integer> countByTier = new ArrayList<>(List.of(2, 3, 4, 5, 6));
+		@Comment("Gardiens en plus par joueur en survie / aventure present au-dela du premier")
+		public int perExtraPlayer = 1;
+		@Comment("Un gardien de plus tous les N niveaux de menace (0 = jamais)")
+		public int threatLevelsPerGuard = 2;
+		@Comment("Gardiens au maximum par ruine")
+		public int max = 12;
+		@Comment("Distance (blocs) a leur poste au-dela de laquelle les gardiens y retournent (au double : ramenes d'un coup)")
+		public int leashRadius = 10;
+		@Comment({
+				"Tant que des gardiens vivent dans l'arene (rayon 'summon.arenaRadius' autour du gardien endormi), l'incantation est",
+				"refusee (en mode proximity, le gardien ne se reveille pas)"
+		})
+		public boolean blockRitual = true;
+		@Comment("Ruines sans marqueur guildy:guard : rayon (blocs) du cercle de postes de secours autour du gardien endormi")
+		public int fallbackRadius = 7;
+		@Comment("Ruines sans marqueur guildy:guard : postes de secours sur ce cercle (en plus des sbires et de l'entree)")
+		public int fallbackPoints = 6;
+	}
+
+	@Json5.Section
+	public static final class ScalingSettings {
+		@Comment("Renfort selon le nombre de joueurs presents")
+		public boolean enabled = true;
+		@Comment("Joueurs comptes au maximum (1 a 32)")
+		public int maxPlayers = 8;
+		@Comment("Vie du gardien en plus par joueur au-dela du premier (0.5 = +50 %)")
+		public double healthPerPlayer = 0.5;
+		@Comment("Degats du gardien (attaque et capacites) en plus par joueur au-dela du premier (0.15 = +15 %)")
+		public double damagePerPlayer = 0.15;
+		@Comment("Sbires en plus par joueur au-dela du premier (escorte et plafond des invocations, arrondi a l'inferieur)")
+		public double minionsPerPlayer = 0.5;
+		@Comment("Or du butin en plus par joueur au-dela du premier (0.5 = +50 %)")
+		public double goldPerPlayer = 0.5;
+		@Comment("XP de guilde en plus par joueur au-dela du premier (0.5 = +50 %)")
+		public double xpPerPlayer = 0.5;
+		@Comment("L'or du gardien est partage entre les participants : chacun recoit sa part, que lui seul peut ramasser")
+		public boolean shareGold = true;
+	}
+
+	@Json5.Section
 	public static final class CartographySettings {
 		@Comment("Minutes de travail d'un cartographe pour une recherche (plusieurs cartographes vont plus vite, pause la nuit)")
 		public double researchMinutes = 8.0;
@@ -266,6 +330,8 @@ public final class RuinConfig implements Validatable {
 		public int overworldTier = 2;
 		@Comment("Palier du boss generique d'une ruine inconnue du Nether (1 a 5)")
 		public int netherTier = 4;
+		@Comment("Gardiens de salle dans les ruines inconnues (false = aucun)")
+		public boolean guards = true;
 	}
 
 	/** One ruin: its guardian, escort, abilities, timings and rewards. */
@@ -284,6 +350,7 @@ public final class RuinConfig implements Validatable {
 		public MinionDef minions = new MinionDef();
 		public List<AbilityDef> abilities = new ArrayList<>();
 		public RewardDef rewards = new RewardDef();
+		public GuardDef guards = new GuardDef();
 
 		public RuinDef() {
 		}
@@ -325,6 +392,21 @@ public final class RuinConfig implements Validatable {
 		public List<EffectDef> effects = new ArrayList<>();
 
 		public MinionDef() {
+		}
+	}
+
+	/** Room guards of a ruin (empty types / equipment / effects: those of the escort). */
+	public static final class GuardDef {
+		/** -1 = the count of the ruin's tier ({@code guards.countByTier}), 0 = no guards. */
+		public int count = -1;
+		public String name = "";
+		public Map<String, Integer> types = new LinkedHashMap<>();
+		public double healthMultiplier = 1.5;
+		public double damageMultiplier = 1.2;
+		public Map<String, String> equipment = new LinkedHashMap<>();
+		public List<EffectDef> effects = new ArrayList<>();
+
+		public GuardDef() {
 		}
 	}
 
@@ -519,6 +601,8 @@ public final class RuinConfig implements Validatable {
 		r.bonusXp = clamp(r.bonusXp, 0, 5);
 		r.bonusUniqueRolls = clamp(r.bonusUniqueRolls, 0, 5);
 		r.bonusScrollRolls = clamp(r.bonusScrollRolls, 0, 5);
+		fixGuardSettings();
+		fixScaling();
 		if (cartography == null) {
 			cartography = new CartographySettings();
 		}
@@ -555,6 +639,41 @@ public final class RuinConfig implements Validatable {
 		}
 		ruins = fixed;
 		return warnings;
+	}
+
+	private void fixGuardSettings() {
+		if (guards == null) {
+			guards = new GuardSettings();
+		}
+		GuardSettings g = guards;
+		g.triggerMargin = clamp(g.triggerMargin, 0, 64);
+		List<Integer> tiers = new ArrayList<>();
+		List<Integer> configured = g.countByTier == null || g.countByTier.isEmpty() ? new GuardSettings().countByTier : g.countByTier;
+		for (int tier = 1; tier <= 5; tier++) {
+			// Missing tiers repeat the last value given.
+			Integer value = configured.get(Math.min(tier, configured.size()) - 1);
+			tiers.add(clamp(value == null ? 0 : value, 0, 32));
+		}
+		g.countByTier = tiers;
+		g.perExtraPlayer = clamp(g.perExtraPlayer, 0, 8);
+		g.threatLevelsPerGuard = clamp(g.threatLevelsPerGuard, 0, ThreatRules.MAX_LEVEL);
+		g.max = clamp(g.max, 0, 32);
+		g.leashRadius = clamp(g.leashRadius, 3, 64);
+		g.fallbackRadius = clamp(g.fallbackRadius, 2, 32);
+		g.fallbackPoints = clamp(g.fallbackPoints, 0, 16);
+	}
+
+	private void fixScaling() {
+		if (scaling == null) {
+			scaling = new ScalingSettings();
+		}
+		ScalingSettings s = scaling;
+		s.maxPlayers = clamp(s.maxPlayers, 1, 32);
+		s.healthPerPlayer = clamp(s.healthPerPlayer, 0, 5);
+		s.damagePerPlayer = clamp(s.damagePerPlayer, 0, 2);
+		s.minionsPerPlayer = clamp(s.minionsPerPlayer, 0, 4);
+		s.goldPerPlayer = clamp(s.goldPerPlayer, 0, 2);
+		s.xpPerPlayer = clamp(s.xpPerPlayer, 0, 5);
 	}
 
 	/** Appends the default ruins not yet known (once), like the structures' knownDefaults. @return ids added */
@@ -641,6 +760,18 @@ public final class RuinConfig implements Validatable {
 		m.equipment = fixEquipment(m.equipment, itemExists, where + ".minions", warnings);
 		m.effects = fixEffects(m.effects, effectExists, where + ".minions", warnings);
 
+		if (def.guards == null) {
+			def.guards = new GuardDef();
+		}
+		GuardDef g = def.guards;
+		g.count = g.count < 0 ? -1 : Math.min(g.count, 32);
+		g.name = g.name == null ? "" : g.name.trim();
+		g.types = fixTypes(g.types, entityExists, where + ".guards", warnings);
+		g.healthMultiplier = clamp(g.healthMultiplier, 0.1, 20);
+		g.damageMultiplier = clamp(g.damageMultiplier, 0.1, 20);
+		g.equipment = fixEquipment(g.equipment, itemExists, where + ".guards", warnings);
+		g.effects = fixEffects(g.effects, effectExists, where + ".guards", warnings);
+
 		List<AbilityDef> abilities = new ArrayList<>();
 		if (def.abilities != null) {
 			for (AbilityDef a : def.abilities) {
@@ -697,6 +828,25 @@ public final class RuinConfig implements Validatable {
 			}
 		}
 		r.items = items;
+	}
+
+	/** Entity weights: ids normalized, unknown entities dropped (reported), weights 1 to 1000. */
+	private static Map<String, Integer> fixTypes(@Nullable Map<String, Integer> types, Predicate<String> entityExists, String where,
+			List<String> warnings) {
+		Map<String, Integer> fixed = new LinkedHashMap<>();
+		if (types == null) {
+			return fixed;
+		}
+		for (Map.Entry<String, Integer> type : types.entrySet()) {
+			String entity = normalize(type.getKey());
+			int weight = type.getValue() == null ? 0 : type.getValue();
+			if (!entityExists.test(entity)) {
+				warnings.add(where + ": unknown entity '" + type.getKey() + "': ignored");
+			} else if (weight > 0) {
+				fixed.put(entity, Math.min(weight, 1000));
+			}
+		}
+		return fixed;
 	}
 
 	private static Map<String, Integer> fixCost(@Nullable Map<String, Integer> cost, Predicate<String> itemExists, String where, List<String> warnings) {

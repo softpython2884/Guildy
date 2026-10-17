@@ -33,6 +33,8 @@ public final class RuinModule {
 		RuinLang.register();
 		Encounters.init();
 		Incantations.init();
+		RoomGuards.init();
+		Sanctuaries.init();
 		RuinCommands.register();
 		StructureBehavior.register(Cartography.STRUCTURE_ID, new CartographerBehavior());
 

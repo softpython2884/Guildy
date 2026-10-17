@@ -37,7 +37,9 @@ public final class SummonRules {
 		RITUAL,
 		TOO_FAR,
 		BUSY,
-		NOT_LOADED;
+		NOT_LOADED,
+		/** Room guards are still alive in the arena (see {@link RoomGuardRules#blocksRitual}). */
+		GUARDED;
 
 		public String langKey() {
 			return "ruin.summon.fail." + name().toLowerCase(Locale.ROOT);

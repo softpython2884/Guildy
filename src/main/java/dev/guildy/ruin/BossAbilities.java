@@ -39,7 +39,9 @@ import java.util.random.RandomGenerator;
 
 /**
  * The guardians' abilities (data-driven list in ruins.json5): animated particle effects and sounds over several ticks
- * ({@link RuinFx}), damage only to survival / adventure players, everything bounded (radius, count, duration).
+ * ({@link RuinFx}), damage only to survival / adventure players, everything bounded (radius, count, duration). Styles of the
+ * celestial jaguar: "solar" (sunfire: burns and dazzles, sun spears, a golden pounce) and "gold" (golden shockwave and ring:
+ * slows; golden threads of the life drain).
  */
 final class BossAbilities {
 	private static final int SLAM_RISE_TICKS = 8;
@@ -50,6 +52,9 @@ final class BossAbilities {
 	private static final int SUMMON_TICKS = 14;
 	/** Jade green of the "jade" / "wind" styles (the feathered serpent). */
 	static final int JADE = 0x1FD08A;
+	/** Sun orange of the "solar" style and gold of the "gold" style (the celestial jaguar). */
+	static final int SOLAR = 0xFFA21C;
+	static final int GOLD = 0xFFD84A;
 	private static final int WIND_BLADE_TICKS = 30;
 	private static final double WIND_BLADE_SPEED = 1.1;
 
@@ -93,6 +98,8 @@ final class BossAbilities {
 		RuinFx.sound(level, boss.position(), SoundEvents.RAVAGER_ROAR, 1.6F, 0.7F);
 		RuinFx.burst(level, ParticleTypes.CLOUD, boss.position(), 20, 0.6, 0.05);
 		boolean sand = "sand".equals(ability.style);
+		boolean gold = "gold".equals(ability.style);
+		boolean solar = "solar".equals(ability.style);
 		Set<UUID> hit = new HashSet<>();
 		int[] impact = {-1};
 		Vec3[] center = {boss.position()};
@@ -108,20 +115,28 @@ final class BossAbilities {
 					RuinFx.sound(lvl, center[0], SoundEvents.GENERIC_EXPLODE, 1.4F, 0.6F);
 					RuinFx.sound(lvl, center[0], SoundEvents.MACE_SMASH_GROUND_HEAVY, 1.6F, 0.8F);
 					RuinFx.burst(lvl, ParticleTypes.EXPLOSION_EMITTER, center[0], 1, 0.0, 0.0);
+					if (gold || solar) {
+						// A flash of gold / sunlight at the impact.
+						RuinFx.burst(lvl, gold ? ParticleTypes.WAX_ON : ParticleTypes.FLAME, center[0].add(0, 0.5, 0), 40, 1.2, 0.2);
+						RuinFx.burst(lvl, ParticleTypes.END_ROD, center[0].add(0, 1, 0), 20, 0.8, 0.15);
+						RuinFx.sound(lvl, center[0], SoundEvents.BELL_RESONATE, 1.6F, gold ? 0.7F : 1.1F);
+					}
 				}
 				return true;
 			}
 			int t = age - impact[0];
 			double radius = ability.radius * Math.min(1.0, (t + 1) / (double) SLAM_WAVE_TICKS);
 			Vec3 c = center[0];
-			BlockState ground = sand ? Blocks.SAND.defaultBlockState() : lvl.getBlockState(BlockPos.containing(c.x, c.y - 0.5, c.z));
+			BlockState ground = sand ? Blocks.SAND.defaultBlockState() : gold ? Blocks.GOLD_BLOCK.defaultBlockState()
+					: lvl.getBlockState(BlockPos.containing(c.x, c.y - 0.5, c.z));
 			if (ground.isAir()) {
 				ground = Blocks.STONE.defaultBlockState();
 			}
 			ParticleOptions dust = new BlockParticleOption(ParticleTypes.BLOCK, ground);
 			int points = (int) Math.max(10, radius * 7);
 			RuinFx.ring(lvl, dust, c.add(0, 0.15, 0), radius, points, 0.15);
-			RuinFx.ring(lvl, ParticleTypes.CRIT, c.add(0, 0.4, 0), radius, points / 2, 0.1);
+			RuinFx.ring(lvl, gold ? new DustParticleOptions(GOLD, 1.4F) : solar ? new DustParticleOptions(SOLAR, 1.4F) : ParticleTypes.CRIT,
+					c.add(0, 0.4, 0), radius, points / 2, 0.1);
 			if (t % 3 == 0) {
 				RuinFx.ring(lvl, ParticleTypes.CLOUD, c.add(0, 0.3, 0), radius, points / 3, 0.2);
 			}
@@ -137,6 +152,12 @@ final class BossAbilities {
 					Vec3 away = horizontalDirection(c, player.position());
 					player.push(away.x * 0.9, 0.55, away.z * 0.9);
 					player.syncVelocity = true;
+					if (gold) {
+						// The weight of gold: slowed down.
+						player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 60, 2), boss);
+					} else if (solar) {
+						player.igniteForSeconds(4.0F);
+					}
 				}
 			}
 			return t < SLAM_WAVE_TICKS;
@@ -156,18 +177,24 @@ final class BossAbilities {
 			case "soul" -> ParticleTypes.SOUL_FIRE_FLAME;
 			case "frost" -> ParticleTypes.SNOWFLAKE;
 			case "jade" -> new DustParticleOptions(JADE, 1.5F);
+			case "solar" -> new DustParticleOptions(SOLAR, 1.6F);
+			case "gold" -> new DustParticleOptions(GOLD, 1.5F);
 			default -> ParticleTypes.FLAME;
 		};
 		ParticleOptions extra = switch (style) {
 			case "soul" -> ParticleTypes.SOUL;
 			case "frost" -> ParticleTypes.ITEM_SNOWBALL;
 			case "jade" -> ParticleTypes.SMALL_GUST;
+			case "solar" -> ParticleTypes.FLAME;
+			case "gold" -> ParticleTypes.WAX_ON;
 			default -> ParticleTypes.LAVA;
 		};
 		switch (style) {
 			case "soul" -> RuinFx.sound(level, boss.position(), SoundEvents.SOUL_ESCAPE, 2.0F, 0.6F);
 			case "frost" -> RuinFx.sound(level, boss.position(), SoundEvents.PLAYER_HURT_FREEZE, 1.5F, 0.5F);
 			case "jade" -> RuinFx.sound(level, boss.position(), SoundEvents.BREEZE_INHALE, 2.0F, 0.6F);
+			case "solar" -> RuinFx.sound(level, boss.position(), SoundEvents.BEACON_ACTIVATE, 2.0F, 1.4F);
+			case "gold" -> RuinFx.sound(level, boss.position(), SoundEvents.ARMOR_EQUIP_GOLD, 2.0F, 0.6F);
 			default -> RuinFx.sound(level, boss.position(), SoundEvents.BLAZE_SHOOT, 1.5F, 0.6F);
 		}
 		Set<UUID> hit = new HashSet<>();
@@ -190,9 +217,15 @@ final class BossAbilities {
 					case "soul" -> RuinFx.sound(lvl, c, SoundEvents.WITHER_SHOOT, 1.5F, 0.6F);
 					case "frost" -> RuinFx.sound(lvl, c, SoundEvents.GLASS_BREAK, 1.8F, 0.5F);
 					case "jade" -> RuinFx.sound(lvl, c, SoundEvents.BREEZE_WIND_CHARGE_BURST, 2.0F, 0.6F);
+					case "solar" -> RuinFx.sound(lvl, c, SoundEvents.FIRECHARGE_USE, 2.0F, 0.8F);
+					case "gold" -> RuinFx.sound(lvl, c, SoundEvents.BELL_RESONATE, 2.0F, 0.6F);
 					default -> RuinFx.sound(lvl, c, SoundEvents.FIRECHARGE_USE, 1.8F, 0.6F);
 				}
 				RuinFx.burst(lvl, extra, c.add(0, 1, 0), 25, 0.6, 0.1);
+				if ("solar".equals(style) || "gold".equals(style)) {
+					// A sunburst: rays of light rising from the guardian.
+					RuinFx.burst(lvl, ParticleTypes.END_ROD, c.add(0, boss.getBbHeight() * 0.6, 0), 30, 0.5, 0.25);
+				}
 			}
 			double radius = ability.radius * Math.min(1.0, (t + 1) / (double) RING_WAVE_TICKS);
 			int points = (int) Math.max(12, radius * 8);
@@ -221,6 +254,16 @@ final class BossAbilities {
 							Vec3 away = horizontalDirection(c, player.position());
 							player.push(away.x * 0.7, 0.6, away.z * 0.7);
 							player.syncVelocity = true;
+						}
+						case "solar" -> {
+							// Sunfire: burning, dazzled for a moment.
+							player.igniteForSeconds(6.0F);
+							player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 30, 0), boss);
+						}
+						case "gold" -> {
+							// Turning to gold: heavy limbs.
+							player.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 2), boss);
+							player.addEffect(new MobEffectInstance(MobEffects.MINING_FATIGUE, 80, 1), boss);
 						}
 						default -> player.igniteForSeconds(5.0F);
 					}
@@ -274,7 +317,14 @@ final class BossAbilities {
 		Vec3 from = boss.position().add(0, boss.getBbHeight() / 2, 0);
 		Vec3 to = Vec3.atBottomCenterOf(dest).add(0, boss.getBbHeight() / 2, 0);
 		boolean wind = "wind".equals(ability.style);
-		if (wind) {
+		boolean solar = "solar".equals(ability.style) || "gold".equals(ability.style);
+		if (solar) {
+			// A pounce: the guardian leaps in a streak of sunlight and gold.
+			RuinFx.burst(level, ParticleTypes.END_ROD, from, 20, 0.6, 0.1);
+			RuinFx.burst(level, new DustParticleOptions(GOLD, 1.4F), from, 20, 0.6, 0.0);
+			RuinFx.line(level, new DustParticleOptions(SOLAR, 1.3F), from, to, (int) Math.max(8, from.distanceTo(to) * 3));
+			RuinFx.sound(level, from, SoundEvents.RAVAGER_ROAR, 1.6F, 1.3F);
+		} else if (wind) {
 			// A gust: the guardian dissolves into wind and rushes along a jade trail.
 			RuinFx.burst(level, ParticleTypes.GUST_EMITTER_SMALL, from, 1, 0.0, 0.0);
 			RuinFx.burst(level, ParticleTypes.SMALL_GUST, from, 12, 0.6, 0.05);
@@ -295,7 +345,11 @@ final class BossAbilities {
 		boss.setYHeadRot(yaw);
 		boss.setYBodyRot(yaw);
 		boss.setTarget(target);
-		if (wind) {
+		if (solar) {
+			RuinFx.burst(level, ParticleTypes.FLAME, to, 30, 0.7, 0.05);
+			RuinFx.burst(level, new DustParticleOptions(SOLAR, 1.5F), to, 30, 0.7, 0.0);
+			RuinFx.sound(level, to, SoundEvents.RAVAGER_ATTACK, 1.6F, 0.8F);
+		} else if (wind) {
 			RuinFx.burst(level, ParticleTypes.GUST_EMITTER_SMALL, to, 1, 0.0, 0.0);
 			RuinFx.burst(level, new DustParticleOptions(JADE, 1.4F), to, 30, 0.6, 0.0);
 			RuinFx.sound(level, to, SoundEvents.BREEZE_LAND, 1.8F, 0.7F);
@@ -316,6 +370,9 @@ final class BossAbilities {
 			boss.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT);
 			if (victim.distanceToSqr(boss) <= 6.5 * 6.5) {
 				victim.hurtServer(lvl, lvl.damageSources().mobAttack(boss), (float) ability.damage);
+				if (solar) {
+					victim.igniteForSeconds(3.0F);
+				}
 				lvl.sendParticles(ParticleTypes.SWEEP_ATTACK, victim.getX(), victim.getY() + 1, victim.getZ(), 1, 0, 0, 0, 0);
 				RuinFx.sound(lvl, victim.position(), SoundEvents.EVOKER_FANGS_ATTACK, 1.2F, 0.7F);
 			}
@@ -340,8 +397,9 @@ final class BossAbilities {
 		String style = ability.style.isEmpty() ? "arrow" : ability.style;
 		boolean fireball = "fireball".equals(style);
 		boolean wind = "wind".equals(style);
-		RuinFx.sound(level, boss.position(), fireball ? SoundEvents.BLAZE_AMBIENT : wind ? SoundEvents.BREEZE_INHALE : SoundEvents.EVOKER_PREPARE_ATTACK,
-				1.5F, 0.8F);
+		boolean solar = "solar".equals(style);
+		RuinFx.sound(level, boss.position(), fireball ? SoundEvents.BLAZE_AMBIENT : wind ? SoundEvents.BREEZE_INHALE
+				: solar ? SoundEvents.BEACON_POWER_SELECT : SoundEvents.EVOKER_PREPARE_ATTACK, 1.5F, 0.8F);
 		int shots = Math.max(1, ability.count);
 		RuinFx.play(level, (lvl, age) -> {
 			if (!boss.isAlive()) {
@@ -349,7 +407,8 @@ final class BossAbilities {
 			}
 			Vec3 hand = boss.getEyePosition().add(boss.getLookAngle().scale(0.6));
 			if (age < 6) {
-				RuinFx.burst(lvl, fireball ? ParticleTypes.FLAME : wind ? ParticleTypes.SMALL_GUST : ParticleTypes.CRIT, hand, wind ? 1 : 4, 0.25, 0.05);
+				RuinFx.burst(lvl, fireball ? ParticleTypes.FLAME : wind ? ParticleTypes.SMALL_GUST : solar ? ParticleTypes.END_ROD : ParticleTypes.CRIT, hand,
+						wind ? 1 : 4, 0.25, 0.05);
 				return true;
 			}
 			int fired = (age - 6) / 3;
@@ -363,6 +422,12 @@ final class BossAbilities {
 			double spread = 0.08 * (fired - shots / 2.0);
 			Vec3 aim = target.position().add(0, target.getBbHeight() * 0.45, 0).subtract(hand);
 			Vec3 dir = aim.normalize().add(-aim.z * spread / Math.max(1, aim.length()), 0, aim.x * spread / Math.max(1, aim.length()));
+			if (solar) {
+				sunSpear(lvl, boss, hand, dir.normalize(), ability.damage);
+				RuinFx.sound(lvl, hand, SoundEvents.BLAZE_SHOOT, 1.0F, 1.3F + random.nextFloat() * 0.3F);
+				RuinFx.burst(lvl, new DustParticleOptions(SOLAR, 1.0F), hand, 6, 0.15, 0.0);
+				return fired + 1 < shots;
+			}
 			if (wind) {
 				windBlade(lvl, boss, hand, dir.normalize(), ability.damage);
 				RuinFx.sound(lvl, hand, SoundEvents.BREEZE_SHOOT, 1.2F, 0.8F + random.nextFloat() * 0.3F);
@@ -420,6 +485,43 @@ final class BossAbilities {
 					player.syncVelocity = true;
 					lvl.sendParticles(ParticleTypes.GUST_EMITTER_SMALL, next.x, next.y, next.z, 1, 0, 0, 0, 0);
 					RuinFx.sound(lvl, next, SoundEvents.BREEZE_WIND_CHARGE_BURST, 1.5F, 0.9F);
+					return false;
+				}
+			}
+			return age < WIND_BLADE_TICKS;
+		});
+	}
+
+	/**
+	 * A spear of sunlight flying straight ahead (simulated, no entity: never sets a block on fire): stops on the first solid
+	 * block, or hits the first survival / adventure player on its way (damage, set on fire, pushed back).
+	 */
+	private static void sunSpear(ServerLevel level, Mob boss, Vec3 start, Vec3 dir, double damage) {
+		Vec3[] pos = {start};
+		RuinFx.play(level, (lvl, age) -> {
+			Vec3 next = pos[0].add(dir.scale(WIND_BLADE_SPEED));
+			BlockPos cell = BlockPos.containing(next);
+			if (!lvl.isLoaded(cell) || !lvl.getBlockState(cell).getCollisionShape(lvl, cell).isEmpty()) {
+				RuinFx.burst(lvl, ParticleTypes.SMALL_FLAME, pos[0], 6, 0.2, 0.02);
+				return false;
+			}
+			Vec3 from = pos[0];
+			pos[0] = next;
+			RuinFx.line(lvl, new DustParticleOptions(SOLAR, 1.0F), from, next, 3);
+			if (age % 2 == 0) {
+				lvl.sendParticles(ParticleTypes.END_ROD, next.x, next.y, next.z, 1, 0.03, 0.03, 0.03, 0.0);
+			} else {
+				lvl.sendParticles(ParticleTypes.SMALL_FLAME, next.x, next.y, next.z, 1, 0.05, 0.05, 0.05, 0.0);
+			}
+			for (ServerPlayer player : lvl.players()) {
+				AABB box = player.getBoundingBox().inflate(0.5);
+				if (valid(player, lvl) && (box.contains(next) || box.clip(from, next).isPresent())) {
+					player.hurtServer(lvl, lvl.damageSources().mobAttack(boss), (float) damage);
+					player.igniteForSeconds(4.0F);
+					player.push(dir.x * 0.6, 0.25, dir.z * 0.6);
+					player.syncVelocity = true;
+					RuinFx.burst(lvl, ParticleTypes.FLAME, next, 12, 0.3, 0.05);
+					RuinFx.sound(lvl, next, SoundEvents.FIRECHARGE_USE, 1.2F, 1.2F);
 					return false;
 				}
 			}
@@ -492,7 +594,8 @@ final class BossAbilities {
 			return false;
 		}
 		boolean soul = "soul".equals(ability.style);
-		ParticleOptions thread = soul ? ParticleTypes.SCULK_SOUL : new DustParticleOptions(0xB0101A, 1.3F);
+		boolean gold = "gold".equals(ability.style) || "solar".equals(ability.style);
+		ParticleOptions thread = soul ? ParticleTypes.SCULK_SOUL : gold ? new DustParticleOptions(GOLD, 1.3F) : new DustParticleOptions(0xB0101A, 1.3F);
 		RuinFx.sound(level, boss.position(), SoundEvents.WARDEN_HEARTBEAT, 2.0F, 0.6F);
 		RuinFx.play(level, (lvl, age) -> {
 			if (!boss.isAlive()) {
@@ -529,7 +632,7 @@ final class BossAbilities {
 			}
 			if (drained > 0) {
 				boss.heal(drained * 2.0F);
-				RuinFx.burst(lvl, soul ? ParticleTypes.SOUL : ParticleTypes.HAPPY_VILLAGER, core, 20, 0.6, 0.05);
+				RuinFx.burst(lvl, soul ? ParticleTypes.SOUL : gold ? ParticleTypes.WAX_ON : ParticleTypes.HAPPY_VILLAGER, core, 20, 0.6, 0.05);
 				RuinFx.sound(lvl, core, SoundEvents.SOUL_ESCAPE, 1.5F, 1.2F);
 			}
 			return false;
