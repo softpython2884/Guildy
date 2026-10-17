@@ -11,7 +11,7 @@ créatif** et les envoyer : le convertisseur `import_schematic.py` les met au bo
 | Tour du Mage déchu | `tour_du_mage` | forêts, taïgas anciennes, jungles, forêt venteuse | 2 |
 | Ziggourat des sables | `ziggourat_des_sables` | désert, badlands | 2 |
 | Bastion de givre | `bastion_de_givre` | plaines et taïga enneigées, pics de glace, bosquet | 3 |
-| Autel infernal | `autel_infernal` | Nether : désolation, forêt écarlate | 4 |
+| Autel infernal | `autel_infernal` | Nether : désolation, forêt carmin | 4 |
 | Citadelle des âmes | `citadelle_des_ames` | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 |
 
 Les aperçus sont dans `previews/` (vues isométriques, coupes, plans ; marqueurs : rouge = boss, orange = sbires,
