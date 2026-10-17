@@ -29,6 +29,9 @@ KEEP = (23, 3, 36, 14)  # x0, z0, x1, z1
 KEEP_TOP = FLOOR + 34
 ARENA_C = (29.5, 30.0)
 ARENA_R = 11.6
+# room guards (guildy:guard): the gatehouse, the west breach (foundry), the keep, the chapel postern, the field
+GUARDS = [(28, FLOOR + 1, 53), (31, FLOOR + 1, 53), (11, FLOOR + 1, 31), (24, FLOOR + 1, 10), (54, FLOOR + 1, 29),
+	(29, FLOOR + 1, 36)]
 
 
 def build():
@@ -43,6 +46,8 @@ def build():
 	courtyard(b, m)
 	chapel(b, m)
 	foundry(b, m)
+	for p in GUARDS:
+		deco.guard(b, *p)
 	ruin_it(b, m)
 	life(b, m)
 	# the cavern the citadel needs when the site is inside a netherrack / soul soil mass (no effect in open space)

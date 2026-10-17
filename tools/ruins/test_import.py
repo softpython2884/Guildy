@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Self-test of the schematic converter: every ruin is exported the way a builder would hand it in (DATA markers
-replaced by [boss] / [sbire] / [entree] signs, loot tables replaced by [coffre ...] signs on the chests, the whole
-box filled with air, a structure_void border) as Sponge v2, Sponge v3, Litematica and structure .nbt files, then
-converted back. The result must have the same markers, loot tables and blocks as the original.
+replaced by [boss] / [sbire] / [garde] / [entree] signs, loot tables replaced by [coffre ...] signs on the chests,
+the whole box filled with air, a structure_void border) as Sponge v2, Sponge v3, Litematica and structure .nbt
+files, then converted back. The result must have the same markers, loot tables and blocks as the original.
 
   python tools/ruins/test_import.py [ids...]
 """
@@ -19,7 +19,7 @@ from ruinlib.template import Template, AIR  # noqa: E402
 import import_schematic as I  # noqa: E402
 import ruins  # noqa: E402
 
-LABEL = {"guildy:boss": "[boss]", "guildy:minion": "[sbire]", "guildy:entrance": "[Entrée]"}
+LABEL = {"guildy:boss": "[boss]", "guildy:minion": "[sbire]", "guildy:guard": "[Garde]", "guildy:entrance": "[Entrée]"}
 TIER_LABEL = {"common": "[coffre commun]", "rare": "[coffre rare]", "treasure": "[Coffre trésor]"}
 
 

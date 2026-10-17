@@ -11,10 +11,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BeaconBeamBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
@@ -37,16 +40,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The ruin structures (data/guildy/structure/ruin, worldgen/structure/ruin): every template loads and honours
- * the ruin contract (size budget, exactly one guildy:boss DATA marker, minions, loot tables on every container),
- * and every worldgen structure generates and places without error (like /place structure) in its dimension.
+ * the ruin contract (size budget, exactly one guildy:boss DATA marker, minions, room guards, loot tables on every
+ * container), and every worldgen structure generates and places without error (like /place structure) in its
+ * dimension. The grand temple carries a working beacon: a full iron base, nothing opaque above it.
  * Natural generation is kept out of the GameTest world by the test-only world preset override
  * (data/minecraft/worldgen/world_preset/flat_all_dimensions.json in the test resources).
  */
 public class RuinTemplateGameTests {
-	static final String[] OVERWORLD = {"crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre", "temple_maya"};
+	static final String[] OVERWORLD = {"crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre", "temple_maya",
+		"grand_temple_maya"};
 	static final String[] NETHER = {"autel_infernal", "citadelle_des_ames"};
 	/** The landmarks allowed to reach 64 x 64. */
 	static final List<String> BIG = List.of("bastion_de_givre", "temple_maya", "citadelle_des_ames");
+	/** The grand temple: up to 116 x 116 x 128 (its start piece stays within the 8 chunks a structure start reaches). */
+	static final String GRAND = "grand_temple_maya";
 	/** Random per run (the test world is reused): far from the other scenarios (x > 40000, z = 8). */
 	private static final int BASE_X = -120000 - (int) (Math.random() * 400) * 2048;
 	private static final AtomicInteger SLOTS = new AtomicInteger();
@@ -78,18 +85,20 @@ public class RuinTemplateGameTests {
 			Map<String, List<Identifier>> variants = variants(manager, id);
 			helper.assertTrue(variants.containsKey("ruin/" + id), "ruin " + id + " has its templates, found " + variants.keySet());
 			for (Map.Entry<String, List<Identifier>> variant : variants.entrySet()) {
-				checkVariant(helper, manager, variant.getKey(), variant.getValue(), BIG.contains(id), nether);
+				int footprint = id.equals(GRAND) ? 116 : BIG.contains(id) ? 64 : 48;
+				checkVariant(helper, manager, variant.getKey(), variant.getValue(), footprint, id.equals(GRAND) ? 128 : 64, nether);
 			}
 		}
 		helper.succeed();
 	}
 
-	/** One variant: size budget, one boss marker, 2-8 minions, one treasure, loot tables on every container. */
+	/** One variant: size budget, one boss marker, 2-8 minions, 2-8 room guards, one treasure, loot tables on every container. */
 	private static void checkVariant(GameTestHelper helper, StructureTemplateManager manager, String name, List<Identifier> ids,
-		boolean big, boolean nether) {
+		int footprint, int maxHeight, boolean nether) {
 		helper.assertTrue(ids.size() == 1 || ids.size() == 2, name + " has one template or a surface + below pair, got " + ids);
 		int bosses = 0;
 		int minions = 0;
+		int guards = 0;
 		int height = 0;
 		int treasure = 0;
 		for (Identifier templateId : ids) {
@@ -97,8 +106,7 @@ public class RuinTemplateGameTests {
 			helper.assertTrue(found.isPresent(), "template " + templateId + " loads");
 			StructureTemplate template = found.get();
 			Vec3i size = template.getSize();
-			int limit = big ? 64 : 48;
-			helper.assertTrue(size.getX() <= limit && size.getZ() <= limit, templateId + " footprint " + size + " within " + limit);
+			helper.assertTrue(size.getX() <= footprint && size.getZ() <= footprint, templateId + " footprint " + size + " within " + footprint);
 			height += size.getY();
 			StructurePlaceSettings settings = new StructurePlaceSettings();
 			for (StructureTemplate.StructureBlockInfo info : template.filterBlocks(BlockPos.ZERO, settings, Blocks.STRUCTURE_BLOCK)) {
@@ -109,6 +117,8 @@ public class RuinTemplateGameTests {
 					bosses++;
 				} else if (meta.equals("guildy:minion")) {
 					minions++;
+				} else if (meta.equals("guildy:guard")) {
+					guards++;
 				}
 			}
 			for (Block container : new Block[]{Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL}) {
@@ -124,9 +134,10 @@ public class RuinTemplateGameTests {
 			helper.assertTrue(template.filterBlocks(BlockPos.ZERO, settings, Blocks.COMMAND_BLOCK).isEmpty()
 				&& template.filterBlocks(BlockPos.ZERO, settings, Blocks.BARRIER).isEmpty(), templateId + " has no command block / barrier");
 		}
-		helper.assertTrue(height <= 64, name + " height " + height + " <= 64");
+		helper.assertTrue(height <= maxHeight, name + " height " + height + " <= " + maxHeight);
 		helper.assertTrue(bosses == 1, name + " has exactly one guildy:boss marker, got " + bosses);
 		helper.assertTrue(minions >= 2 && minions <= 8, name + " has 2-8 minion markers, got " + minions);
+		helper.assertTrue(guards >= 2 && guards <= 8, name + " has 2-8 guard markers, got " + guards);
 		helper.assertTrue(treasure == 1, name + " has one treasure container, got " + treasure);
 	}
 
@@ -155,6 +166,44 @@ public class RuinTemplateGameTests {
 		place(helper, "temple_maya", Level.OVERWORLD);
 	}
 
+	/** The grand temple places like the others and its beacon works: full iron base, nothing opaque above. */
+	@GameTest(maxTicks = 400)
+	public void grandTempleMayaGeneratesWithItsBeacon(GameTestHelper helper) {
+		StructureStart start = placeStart(helper, GRAND, Level.OVERWORLD);
+		ServerLevel level = helper.getLevel().getServer().getLevel(Level.OVERWORLD);
+		BoundingBox box = start.getBoundingBox();
+		List<BlockPos> beacons = new ArrayList<>();
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		for (int x = box.minX(); x <= box.maxX(); x++) {
+			for (int z = box.minZ(); z <= box.maxZ(); z++) {
+				for (int y = box.minY(); y <= box.maxY(); y++) {
+					if (level.getBlockState(pos.set(x, y, z)).is(Blocks.BEACON)) {
+						beacons.add(pos.immutable());
+					}
+				}
+			}
+		}
+		helper.assertTrue(beacons.size() == 1, "the grand temple has one beacon, got " + beacons);
+		BlockPos beacon = beacons.getFirst();
+		for (int step = 1; step <= 4; step++) {
+			for (int x = -step; x <= step; x++) {
+				for (int z = -step; z <= step; z++) {
+					BlockPos base = beacon.offset(x, -step, z);
+					helper.assertTrue(level.getBlockState(base).is(BlockTags.BEACON_BASE_BLOCKS),
+						"beacon base level " + step + " complete at " + base + ", got " + level.getBlockState(base));
+				}
+			}
+		}
+		for (int y = beacon.getY() + 1; y <= level.getMaxY(); y++) {
+			BlockState above = level.getBlockState(pos.set(beacon.getX(), y, beacon.getZ()));
+			helper.assertTrue(above.getBlock() instanceof BeaconBeamBlock || above.getLightDampening() < 15,
+				"open sky above the beacon, blocked at y " + y + " by " + above);
+		}
+		int top = start.getPieces().stream().mapToInt(piece -> piece.getBoundingBox().maxY()).max().orElseThrow();
+		helper.assertTrue(beacon.getY() >= top - 3, "the beacon crowns the temple (" + beacon + ", top of the pieces " + top + ")");
+		helper.succeed();
+	}
+
 	@GameTest(maxTicks = 200)
 	public void autelInfernalGeneratesInTheNether(GameTestHelper helper) {
 		place(helper, "autel_infernal", Level.NETHER);
@@ -165,11 +214,16 @@ public class RuinTemplateGameTests {
 		place(helper, "citadelle_des_ames", Level.NETHER);
 	}
 
+	private static void place(GameTestHelper helper, String id, ResourceKey<Level> dimension) {
+		placeStart(helper, id, dimension);
+		helper.succeed();
+	}
+
 	/**
 	 * Generates the structure start in a far chunk and places it in every chunk it covers (PlaceCommand.placeStructure),
 	 * then finds the boss marker through the pieces, as the ruin runtime does.
 	 */
-	private static void place(GameTestHelper helper, String id, ResourceKey<Level> dimension) {
+	private static StructureStart placeStart(GameTestHelper helper, String id, ResourceKey<Level> dimension) {
 		ServerLevel level = helper.getLevel().getServer().getLevel(dimension);
 		helper.assertTrue(level != null, "dimension " + dimension.identifier() + " exists");
 		ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath("guildy", "ruin/" + id));
@@ -205,6 +259,6 @@ public class RuinTemplateGameTests {
 		helper.assertTrue(box.isInside(boss), id + " boss marker " + boss + " inside the structure " + box);
 		helper.assertFalse(level.getBlockState(boss.below()).isAir(), id + " boss marker stands on a block");
 		helper.assertTrue(level.getBlockState(boss.above(2)).isAir(), id + " free space above the boss marker");
-		helper.succeed();
+		return start;
 	}
 }

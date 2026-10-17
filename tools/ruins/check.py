@@ -7,9 +7,11 @@ Validates ruin templates against the Guildy ruin contract.
 
 Rules: valid 26.3 block states, no forbidden block (command blocks, barriers, light, leftover jigsaws...), size
 budget, exactly one guildy:boss DATA marker with free space (3 air above, free cells around, standing on a
-block), 2-8 guildy:minion markers with the same rule, at most one guildy:entrance, a boss arena of at least
-13 x 13 walkable cells and 6 blocks high without lava, every chest / barrel with a guildy loot table (1 treasure,
-1-3 rare, 2-6 common), at most 2 spawners with SpawnData, only decorative entities, no floating blocks.
+block), 2-8 guildy:minion markers with the same rule, 2-8 guildy:guard markers (room guards: 2 free cells above,
+a solid floor, room to move, on the walkable path), at most one guildy:entrance, a boss arena of at least 13 x 13
+walkable cells and 6 blocks high without lava (25 x 25 and 12 high for the grand temple), every chest / barrel with
+a guildy loot table (1 treasure, 1-3 rare, 2-6 common), at most 2 spawners with SpawnData, only decorative
+entities, no floating blocks.
 """
 import argparse
 import json
@@ -25,14 +27,24 @@ from ruinlib.build import is_structural, DIRS  # noqa: E402
 from ruinlib.template import Template, AIR  # noqa: E402
 from ruinlib.ruin import RESOURCES  # noqa: E402
 
-MAX_FOOTPRINT, MAX_FOOTPRINT_BIG, MAX_HEIGHT = 48, 64, 64
+# Size classes: (footprint, height, arena side, arena height). "big" = the 64 x 64 landmarks, "grand" = the grand
+# temple (116 x 116: the start piece of a jigsaw structure, randomly rotated around the corner of its start chunk,
+# must stay within the 8 chunks the structure references reach, with the 12-block margin of the terrain adaptation).
+LIMITS = {
+	"normal": (48, 64, 13, 6),
+	"big": (64, 64, 13, 6),
+	"grand": (116, 128, 25, 12),
+}
+BIG_IDS = {"bastion_de_givre", "temple_maya", "citadelle_des_ames"}
+GRAND_IDS = {"grand_temple_maya"}
 CONTAINERS = ("minecraft:chest", "minecraft:trapped_chest", "minecraft:barrel")
 ALLOWED_ENTITIES = ("minecraft:item_frame", "minecraft:glow_item_frame", "minecraft:armor_stand")
 PASSABLE = ("air", "cave_air", "short_grass", "fern", "moss_carpet", "pale_moss_carpet", "snow", "cobweb", "vine",
 	"glow_lichen", "hanging_roots", "dead_bush", "short_dry_grass", "crimson_roots", "warped_roots", "nether_sprouts",
 	"leaf_litter", "structure_block", "tall_dry_grass", "weeping_vines", "weeping_vines_plant", "candle", "torch",
 	"wall_torch", "iron_chain", "lantern", "soul_lantern", "crimson_fungus", "warped_fungus", "dandelion", "poppy",
-	"white_tulip", "oxeye_daisy", "lily_of_the_valley", "azalea", "fire", "soul_fire")
+	"white_tulip", "oxeye_daisy", "lily_of_the_valley", "azalea", "fire", "soul_fire", "cave_vines", "cave_vines_plant",
+	"copper_wall_torch", "copper_torch", "tripwire")
 
 
 class Report:
@@ -62,18 +74,26 @@ def passable(state):
 	if state is None:
 		return False
 	n = _name(state)
-	return n in PASSABLE or n.endswith("_carpet")
+	return n in PASSABLE or n.endswith("_carpet") or n.endswith("_pressure_plate")
+
+
+def size_class(rid):
+	return "grand" if rid in GRAND_IDS else "big" if rid in BIG_IDS else "normal"
 
 
 def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jigsaw=False):
-	"""Checks one (assembled) template. ground = layer of the ground floor (natural top block level)."""
+	"""
+	Checks one (assembled) template. ground = layer of the ground floor (natural top block level). big: False /
+	True (the 64 x 64 landmarks) or a size class name of LIMITS ("normal", "big", "grand").
+	"""
 	sx, sy, sz = t.size
-	limit = MAX_FOOTPRINT_BIG if big else MAX_FOOTPRINT
+	limits = LIMITS[big if isinstance(big, str) else ("big" if big else "normal")]
+	limit, max_height = limits[0], limits[1]
 	report.info.append(f"taille {sx} x {sy} x {sz}, sol a la couche {ground}, {len(t.cells)} blocs")
 	if sx > limit or sz > limit:
 		report.errors.append(f"emprise {sx} x {sz} > {limit} x {limit}")
-	if sy > MAX_HEIGHT:
-		report.errors.append(f"hauteur {sy} > {MAX_HEIGHT}")
+	if sy > max_height:
+		report.errors.append(f"hauteur {sy} > {max_height}")
 	# block states
 	bad = {}
 	for pos, state in t.cells.items():
@@ -101,19 +121,25 @@ def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jig
 	markers = t.markers()
 	bosses = [p for p, meta in markers if meta == "guildy:boss"]
 	minions = [p for p, meta in markers if meta == "guildy:minion"]
+	guards = [p for p, meta in markers if meta == "guildy:guard"]
 	entrances = [p for p, meta in markers if meta == "guildy:entrance"]
-	others = [(p, meta) for p, meta in markers if meta not in ("guildy:boss", "guildy:minion", "guildy:entrance")]
-	report.info.append(f"marqueurs : {len(bosses)} boss, {len(minions)} sbires, {len(entrances)} entree")
+	others = [(p, meta) for p, meta in markers if meta not in ("guildy:boss", "guildy:minion", "guildy:guard",
+		"guildy:entrance")]
+	report.info.append(f"marqueurs : {len(bosses)} boss, {len(minions)} sbires, {len(guards)} gardes, {len(entrances)} entree")
 	if len(bosses) != 1:
 		report.errors.append(f"il faut exactement 1 marqueur guildy:boss (trouve {len(bosses)})")
 	if not 2 <= len(minions) <= 8:
 		report.errors.append(f"il faut 2 a 8 marqueurs guildy:minion (trouve {len(minions)})")
+	if not 2 <= len(guards) <= 8:
+		report.errors.append(f"il faut 2 a 8 marqueurs guildy:guard (trouve {len(guards)})")
 	if len(entrances) > 1:
 		report.errors.append(f"au plus 1 marqueur guildy:entrance (trouve {len(entrances)})")
 	for p, meta in others:
 		report.warnings.append(f"marqueur DATA inconnu '{meta}' en {p}")
 	for p in bosses + minions:
 		spawn_room(t, p, report, ground)
+	for p in guards:
+		guard_post(t, p, report, ground)
 	# containers
 	loot = {"common": 0, "rare": 0, "treasure": 0}
 	prefix = "guildy:chests/ruin/" + ("nether_" if nether else "")
@@ -146,8 +172,11 @@ def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jig
 		if d > 24:
 			report.warnings.append(f"le coffre tresor est a {d:.0f} blocs du boss (le mettre dans / pres de l'arene)")
 	if bosses:
-		arena(t, bosses[0], report)
-		reachable(t, bosses[0], entrances[0] if entrances else None, report, ground)
+		arena(t, bosses[0], report, limits[2], limits[3])
+		walkable = reachable(t, bosses[0], entrances[0] if entrances else None, report, ground)
+		lost = [p for p in guards if p not in walkable]
+		if lost:
+			report.warnings.append(f"{len(lost)} garde(s) hors du chemin praticable depuis l'entrée, ex. {lost[:3]}")
 	floating(t, report, ground)
 
 
@@ -179,7 +208,31 @@ def spawn_room(t, p, report, ground):
 		report.errors.append(f"marqueur {what} en {p} : trop encombre ({blocked} cases voisines bloquees)")
 
 
-def arena(t, boss, report):
+def guard_post(t, p, report, ground):
+	"""A room guard stands on a solid floor with two free cells above and at least two free cells around."""
+	x, y, z = p
+	for dy in (1, 2):
+		s = t.get(x, y + dy, z)
+		if not passable(s) and not (s is None and y + dy > ground):
+			report.errors.append(f"marqueur garde en {p} : pas 2 blocs libres au-dessus (y+{dy} = {s or 'vide'})")
+			return
+	below = t.get(x, y - 1, z)
+	if below is None and y - 1 > ground or below is not None and (not is_structural(below) or passable(below)):
+		report.errors.append(f"marqueur garde en {p} : pas de sol solide dessous")
+	free = 0
+	for dx in (-1, 0, 1):
+		for dz in (-1, 0, 1):
+			if (dx or dz) and all(_free(t.get(x + dx, y + dy, z + dz), y + dy, ground) for dy in (0, 1)):
+				free += 1
+	if free < 2:
+		report.errors.append(f"marqueur garde en {p} : coince ({free} case(s) voisine(s) libre(s))")
+
+
+def _free(state, y, ground):
+	return passable(state) or (state is None and y > ground)
+
+
+def arena(t, boss, report, side=13, min_height=6):
 	"""Walkable area around the boss (feet level +-1), its size, height and lava."""
 	x0, y0, z0 = boss
 	seen = {(x0, z0): y0}
@@ -201,22 +254,24 @@ def arena(t, boss, report):
 	xs = [p[0] for p in seen]
 	zs = [p[1] for p in seen]
 	w, d = max(xs) - min(xs) + 1, max(zs) - min(zs) + 1
-	# biggest square of walkable cells (pillars allowed: 75 % of a 13 x 13 window must be walkable)
+	# biggest square of walkable cells (pillars allowed: 75 % of a side x side window must be walkable)
 	best = 0
-	for cx in range(min(xs), max(xs) - 11):
-		for cz in range(min(zs), max(zs) - 11):
-			n = sum(1 for i in range(13) for j in range(13) if (cx + i, cz + j) in seen)
+	area = side * side
+	for cx in range(min(xs), max(xs) - side + 2):
+		for cz in range(min(zs), max(zs) - side + 2):
+			n = sum(1 for i in range(side) for j in range(side) if (cx + i, cz + j) in seen)
 			best = max(best, n)
 	height = 0
 	while passable(t.get(x0, y0 + height, z0)) and height < 40:
 		height += 1
 	lava = sum(1 for (x, z), y in seen.items() for dy in (-1, 0) if (t.get(x, y + dy, z) or "").startswith("minecraft:lava"))
 	report.info.append(f"arene : {len(seen)} cases praticables autour du boss ({w} x {d}), {height} de haut au boss, "
-		f"meilleure fenetre 13x13 = {best}/169")
-	if best < 169 * 0.75:
-		report.errors.append("arene trop petite : il faut au moins 13 x 13 cases praticables autour du boss (piliers toleres)")
-	if height < 6:
-		report.errors.append(f"arene trop basse au boss ({height} < 6)")
+		f"meilleure fenetre {side}x{side} = {best}/{area}")
+	if best < area * 0.75:
+		report.errors.append(f"arene trop petite : il faut au moins {side} x {side} cases praticables autour du boss "
+			"(piliers toleres)")
+	if height < min_height:
+		report.errors.append(f"arene trop basse au boss ({height} < {min_height})")
 	if lava:
 		report.errors.append(f"lave dans le sol de l'arene ({lava} cases)")
 
@@ -238,7 +293,10 @@ def _walk_cell(t, x, y, z, ground):
 
 
 def reachable(t, boss, entrance, report, ground):
-	"""A player can walk (jumps of one block, falls of up to 3, ladders) from the entrance to the boss."""
+	"""
+	A player can walk (jumps of one block, falls of up to 3, ladders) from the entrance to the boss. Returns every
+	feet cell reached from the entrance.
+	"""
 	sx, sy, sz = t.size
 	starts = []
 	if entrance is not None and _walk_cell(t, *entrance, ground):
@@ -259,11 +317,12 @@ def reachable(t, boss, entrance, report, ground):
 			seen.add(p)
 			queue.append(p)
 	target = boss
+	found = False
 	while queue:
 		x, y, z = queue.popleft()
-		if (x, y, z) == target:
+		if (x, y, z) == target and not found:
 			report.info.append("chemin praticable de l'entrée jusqu'au boss")
-			return True
+			found = True
 		moves = []
 		for dx, dz in DIRS.values():
 			for dy in (0, 1, -1, -2, -3):
@@ -281,8 +340,9 @@ def reachable(t, boss, entrance, report, ground):
 			if _walk_cell(t, *q, ground):
 				seen.add(q)
 				queue.append(q)
-	report.warnings.append("aucun chemin praticable trouvé de l'entrée jusqu'au boss (vérifier les accès)")
-	return False
+	if not found:
+		report.warnings.append("aucun chemin praticable trouvé de l'entrée jusqu'au boss (vérifier les accès)")
+	return seen
 
 
 def floating(t, report, ground):
@@ -314,8 +374,9 @@ def check_ruin(ruin):
 	report = Report(f"{ruin.id} ({ruin.title})")
 	for v in ruin.variants:
 		sub = Report(v.name or "procedurale")
+		cls = "grand" if getattr(ruin, "grand", False) else "big" if getattr(ruin, "big", False) else "normal"
 		check_template(v.assembled(ruin.id), sub, nether=ruin.dimension == "nether", ground=v.ground,
-			big=getattr(ruin, "big", False), pieces_with_jigsaw=v.multi)
+			big=cls, pieces_with_jigsaw=v.multi)
 		prefix = f"[variante {v.name}] " if v.name else ""
 		report.info += [prefix + i for i in sub.info]
 		report.warnings += [prefix + w for w in sub.warnings]
@@ -378,6 +439,7 @@ def main():
 	ap.add_argument("--ground", type=int, default=0)
 	ap.add_argument("--nether", action="store_true")
 	ap.add_argument("--big", action="store_true")
+	ap.add_argument("--grand", action="store_true", help="limites du grand temple (116 x 116 x 128, arene 25 x 25)")
 	args = ap.parse_args()
 	ok = True
 	if args.files:
@@ -390,14 +452,13 @@ def main():
 				print(report.text())
 				ok = False
 				continue
-			check_template(t, report, args.nether, args.ground, args.big)
+			check_template(t, report, args.nether, args.ground, "grand" if args.grand else "big" if args.big else "normal")
 			print(report.text())
 			ok &= report.ok
 	else:
-		big_ids = {"bastion_de_givre", "temple_maya", "citadelle_des_ames"}
 		for rid, t, nether, ground, multi in load_resources():
 			report = Report(rid)
-			check_template(t, report, nether, ground, rid.split("/")[0] in big_ids, multi)
+			check_template(t, report, nether, ground, size_class(rid.split("/")[0]), multi)
 			print(report.text())
 			ok &= report.ok
 	sys.exit(0 if ok else 1)

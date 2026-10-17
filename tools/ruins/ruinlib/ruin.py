@@ -74,8 +74,10 @@ class Ruin:
 		self.start_height = start_height
 		self.terrain = terrain  # preview only
 		self.processors = processors or []
-		self.big = False
+		self.big = False  # one of the 64 x 64 landmarks
+		self.grand = False  # the grand temple size class (116 x 116 x 128)
 		self.set_weight = 1  # weight in the dimension's structure set (matters where ruins share biomes)
+		self.structure_set = None  # None = the dimension's set (ruins_overworld / ruins_nether), else its own set
 
 	# the procedural variant (kept for the scripts / previews)
 	@property

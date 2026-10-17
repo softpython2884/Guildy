@@ -16,6 +16,9 @@ with open(os.path.join(B.DATA, "colors.json"), encoding="utf-8") as _f:
 	COLORS = json.load(_f)["colors"]
 
 SHADE_TOP, SHADE_EAST, SHADE_SOUTH = 1.0, 0.78, 0.62
+# boss red, minions orange, room guards blue, entrance green
+MARKER_COLORS = {"guildy:boss": (230, 30, 30), "guildy:minion": (245, 140, 20), "guildy:guard": (40, 110, 240),
+	"guildy:entrance": (40, 200, 60)}
 UNKNOWN = (255, 0, 255)
 
 _PLANT = ("sapling", "short_grass", "tall_grass", "fern", "flower", "tulip", "orchid", "allium", "bluet", "daisy",
@@ -190,7 +193,7 @@ def render_iso(template, unit=8, terrain=None, ground=0, hide=None, rotation=0, 
 	for (x, y, z), state in order:
 		if "|" in state:
 			meta = state.split("|", 1)[1]
-			c = {"guildy:boss": (230, 30, 30), "guildy:minion": (245, 140, 20), "guildy:entrance": (40, 200, 60)}.get(meta, (200, 0, 200))
+			c = MARKER_COLORS.get(meta, (200, 0, 200))
 			scene.box(x + 0.15, y, z + 0.15, x + 0.85, y + 1.6, z + 0.85, _mul(c, 1.0), _mul(c, 0.8), _mul(c, 0.65), "tes", (40, 0, 0))
 			continue
 		block_id = state.split("[", 1)[0]
@@ -335,6 +338,13 @@ def render_plan(template, y, unit=6, below=6, bright=1.0, terrain=None, ground=N
 				if d == 0 and unit >= 5 and opaque(state):
 					draw.rectangle([x * unit, z * unit, x * unit + unit - 1, z * unit + unit - 1], outline=_mul(side, 0.5))
 				break
+	# spawn markers standing on this level (feet cell within the slice)
+	for (x, my, z), meta in template.markers():
+		if y - below <= my <= y + 1:
+			c = MARKER_COLORS.get(meta, (200, 0, 200))
+			m = max(1, unit // 5)
+			draw.rectangle([x * unit + m, z * unit + m, x * unit + unit - 1 - m, z * unit + unit - 1 - m], fill=c,
+				outline=(20, 20, 20))
 	return img
 
 

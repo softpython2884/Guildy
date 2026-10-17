@@ -23,6 +23,8 @@ SX, SY, SZ = 44, 26, 44
 C = 21.5
 FLOOR = 3  # sanctum floor layer (players walk at FLOOR + 1)
 WALL_TOP = FLOOR + 9
+# room guards (guildy:guard): the south bridge passage, the back door, the doors of the two wings
+GUARDS = [(20, FLOOR + 1, 36), (23, FLOOR + 1, 36), (21, FLOOR + 1, 6), (11, FLOOR + 1, 21), (32, FLOOR + 1, 22)]
 
 
 def build():
@@ -32,6 +34,8 @@ def build():
 	sanctum(b, m)
 	wings(b, m)
 	approach(b, m)
+	for p in GUARDS:
+		deco.guard(b, *p)
 	ruin_it(b, m)
 	life(b, m)
 	# the cavern the sanctum needs when the site is inside a netherrack mass (no effect in open space)

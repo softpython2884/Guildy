@@ -1,0 +1,18 @@
+{
+  "structures": [
+    {
+      "structure": "guildy:ruin/grand_temple_maya",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 56,
+    "separation": 20,
+    "salt": 1490335872,
+    "exclusion_zone": {
+      "other_set": "guildy:ruins_overworld",
+      "chunk_count": 10
+    }
+  }
+}

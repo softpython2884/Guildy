@@ -24,6 +24,8 @@ G = 6  # ground floor layer (the below piece holds the foundations)
 CX, CZ = 20, 20
 F1, F2, F3, ARENA = G + 8, G + 16, G + 24, G + 32
 R_OUT, R_IN = 7.3, 5.3
+# room guards (guildy:guard): one on each upper floor, the top of the stair and the ladder hatch of the observatory
+GUARDS = [(19, F1 + 1, 18), (19, F2 + 1, 19), (23, F3 + 1, 22), (23, ARENA + 1, 27), (18, ARENA + 1, 13)]
 
 
 def build():
@@ -35,6 +37,8 @@ def build():
 	ladder_shaft(b, m)
 	observatory(b, m)
 	floors(b, m)
+	for p in GUARDS:
+		deco.guard(b, *p)
 	ruin_it(b, m)
 	life(b, m)
 	b.open_clear_zones()

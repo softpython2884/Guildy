@@ -1,0 +1,14 @@
+{
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "guildy:ruin/grand_temple_maya/surface",
+        "processors": "guildy:ruin/grand_temple_maya",
+        "projection": "rigid"
+      }
+    }
+  ]
+}

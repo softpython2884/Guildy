@@ -1,6 +1,6 @@
 # Ruines de Guildy — outils de construction et d'import
 
-Sept ruines à boss sont générées naturellement dans le monde (Overworld et Nether). Elles sont décrites par des
+Huit ruines à boss sont générées naturellement dans le monde (Overworld et Nether). Elles sont décrites par des
 scripts Python (`ruins/<id>.py`) qui écrivent les gabarits de structure vanilla (`.nbt`) et les fichiers de
 génération du monde dans `src/main/resources/data/guildy`. Vous pouvez aussi **construire vos propres ruines en
 créatif** et les envoyer : le convertisseur `import_schematic.py` les met au bon format et les ajoute au jeu.
@@ -14,17 +14,33 @@ créatif** et les envoyer : le convertisseur `import_schematic.py` les met au bo
 | Temple du Serpent à plumes | `temple_maya` | jungle, jungle de bambous, jungle clairsemée | 3 |
 | Autel infernal | `autel_infernal` | Nether : désolation, forêt carmin | 4 |
 | Citadelle des âmes | `citadelle_des_ames` | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 |
+| Grand Temple du Jaguar céleste | `grand_temple_maya` | jungle, jungle de bambous, jungle clairsemée (rare) | 5 |
 
 Les aperçus sont dans `previews/` (vues isométriques, coupes, plans ; marqueurs : rouge = boss, orange = sbires,
-vert = entrée).
+bleu = gardes, vert = entrée). Le grand temple a une deuxième planche, `grand_temple_maya_coupes.png` (vues
+sud-ouest et nord-est, coupes verticales, plans de chaque niveau).
+
+### Le Grand Temple du Jaguar céleste
+
+Le repère ultime des jungles : 112 × 116 blocs, une pyramide de dix terrasses (69 × 69 à la base, 50 de haut) et
+son temple au sommet, la crête faîtière portant un **vrai beacon** (base de fer cachée dans la couronne, verre doré :
+le rayon se voit de très loin) à ~80 blocs au-dessus du sol, plus 18 couches de sous-sol. Autour : la place et son
+sacbé, l'observatoire rond, le jeu de balle, le tzompantli, le petit temple de la lune, le cénote sacré, des ceibas
+géants. Trois chemins mènent à la salle du Jaguar céleste (arène 29 × 29, 15 de haut, sous le cœur de la pyramide) :
+la voie cachée (gueule de la tête de serpent ouest, galeries des glyphes, rideau de lianes lumineuses ou détour par la
+galerie des eaux et la salle des offrandes), la voie du roi (escalier en colimaçon du puits de l'arbre du monde depuis
+le temple du sommet, tombeau du roi, descente de l'âme) et la voie des eaux (tunnel du cénote, sortie par le sentier
+taillé dans sa paroi). Ensemble de structures à part, beaucoup plus rare que les autres ruines (voir plus bas).
 
 ## Tester en jeu
 
 ```
-/place structure guildy:ruin/crypte_oubliee          (là où vous êtes ; dans le Nether pour les deux dernières)
+/place structure guildy:ruin/crypte_oubliee          (là où vous êtes ; dans le Nether pour l'autel et la citadelle)
 /place structure guildy:ruin/temple_maya             (64 x 64 : prévoir de la place)
+/place structure guildy:ruin/grand_temple_maya       (112 x 116, ~100 de haut : beaucoup de place, loin du spawn)
 /locate structure guildy:ruin/tour_du_mage
-/locate structure #guildy:ruins                      (n'importe laquelle des sept)
+/locate structure guildy:ruin/grand_temple_maya      (rare : la recherche peut être longue)
+/locate structure #guildy:ruins                      (n'importe laquelle des huit)
 /execute in minecraft:the_nether run locate structure guildy:ruin/citadelle_des_ames
 ```
 
@@ -38,7 +54,9 @@ aller voir une ruine trouvée avec `/locate` dans des chunks neufs.
 ### Règles de taille
 
 - Emprise : **48 × 48 blocs au maximum** (64 × 64 pour les trois grands repères : bastion de givre, temple du
-  Serpent à plumes et citadelle des âmes), hauteur **64 au maximum**, sous-sol compris.
+  Serpent à plumes et citadelle des âmes), hauteur **64 au maximum**, sous-sol compris. Le grand temple du Jaguar
+  céleste a droit à **116 × 116** et **128 de haut** (une structure ne peut pas dépasser 8 chunks autour de son chunk de
+  départ, marge d'adaptation du terrain de 12 blocs comprise ; la pièce est tournée au hasard autour de ce chunk).
 - Construisez sur un **monde plat** (superflat). Le **sol** du monde plat est la référence : la couche de blocs
   posée *à la place* du dernier bloc du sol naturel (pavés, dalles, chemin, sol des pièces) est le « rez-de-chaussée ».
   Tout ce qui est en dessous (caves, cryptes, fondations) est du sous-sol.
@@ -61,6 +79,7 @@ aller voir une ruine trouvée avec `/locate` dans des chunks neufs.
   **au moins deux accès** (deux portes, une porte et un escalier, une brèche…), **pas de lave dans le sol** de
   l'arène (de la lave dans des canaux fermés autour, oui).
 - Le coffre **trésor** va dans l'arène ou juste à côté (derrière le trône, sur l'estrade…).
+- Grand temple : arène d'au moins **25 × 25** cases et **12 de haut**, au moins 5 blocs libres au-dessus du boss.
 
 ### Les marqueurs : des panneaux
 
@@ -70,6 +89,7 @@ Posez un panneau (n'importe quel bois, debout ou mural) et écrivez sur **la pre
 |---|---|
 | `[boss]` | le boss apparaît sur cette case (exactement **un** par ruine) |
 | `[sbire]` | un sbire apparaît ici (**2 à 8**) |
+| `[garde]` | poste d'un garde de salle (**2 à 8**) : ils protègent la salle du boss avant qu'on l'affronte |
 | `[entree]` | l'entrée de la ruine (facultatif, un seul) |
 | `[coffre commun]` | le coffre / tonneau sur lequel le panneau est accroché reçoit la table « commun » |
 | `[coffre rare]` | idem, table « rare » |
@@ -78,6 +98,9 @@ Posez un panneau (n'importe quel bois, debout ou mural) et écrivez sur **la pre
 - Les majuscules et les accents ne comptent pas (`[Entrée]`, `[Coffre Trésor]` marchent).
 - Panneaux `[boss]` / `[sbire]` : posez-les **au sol** à l'endroit exact de l'apparition, avec **3 blocs d'air
   au-dessus** et de la place autour (pas collés à un mur).
+- Panneaux `[garde]` : sur le chemin qui mène au boss (couloirs, antichambres, entrées de l'arène, un ou deux dans
+  l'arène), **au sol** sur un bloc plein, **2 blocs libres au-dessus** et au moins 2 cases libres autour (un garde
+  peut tenir un couloir de 3 de large, pas une niche).
 - Panneaux `[coffre …]` : **accrochez-les sur la face** du coffre / tonneau (ou posez-les dessus). Si aucun coffre
   n'est à côté, le convertisseur met un coffre à la place du panneau.
 - Nombre de coffres : **1 trésor, 1 à 3 rares, 2 à 6 communs**. Un coffre sans panneau devient « commun » (avec un
@@ -107,7 +130,7 @@ Posez un panneau (n'importe quel bois, debout ou mural) et écrivez sur **la pre
 ### Ce qu'il faut envoyer
 
 - le fichier (`.schem`, `.litematic` ou `.nbt`) ;
-- le nom de la ruine qu'il complète ou remplace (une des sept), et s'il s'agit d'une **variante** (tirée au hasard
+- le nom de la ruine qu'il complète ou remplace (une des huit), et s'il s'agit d'une **variante** (tirée au hasard
   avec la version actuelle) ou d'un **remplacement** ;
 - la **couche du rez-de-chaussée** si la construction a un sous-sol (par exemple « le sol est la 5e couche en
   partant du bas ») ;
@@ -143,10 +166,10 @@ et `.nbt`, puis reconvertie et comparée à l'originale.
 
 | Fichier | Rôle |
 |---|---|
-| `build_all.py` | construit les sept ruines (+ variantes importées), écrit les ressources du mod, vérifie, dessine |
+| `build_all.py` | construit les huit ruines (+ variantes importées), écrit les ressources du mod, vérifie, dessine |
 | `ruins/<id>.py` | une ruine par script (lancer seul : construit et dessine cette ruine) |
-| `render.py` | aperçus PNG (`python tools/ruins/render.py <id>` ou `--nbt fichier.nbt`) |
-| `check.py` | vérification du contrat sur les gabarits de `src/main/resources` (ou un fichier `.nbt` donné) |
+| `render.py` | aperçus PNG (`python tools/ruins/render.py <id>` ou `--nbt fichier.nbt`) ; planche de coupes pour les ruines qui déclarent des `sections` |
+| `check.py` | vérification du contrat sur les gabarits de `src/main/resources` (ou un fichier `.nbt` donné, `--big` / `--grand` pour les limites des repères) |
 | `import_schematic.py`, `test_import.py` | convertisseur de schématiques et son test |
 | `gen_block_data.py` | régénère `data/blocks.json` (blocs / propriétés) et `data/colors.json` (couleurs des aperçus) pour une autre version de Minecraft, à partir du rapport du générateur de données et du jar client |
 | `ruinlib/` | NBT, gabarits, états de blocs, formats, techniques de construction (murs à relief, contreforts, arcs, voûtes, toits, flèches, dômes, matériaux patinés), ruine (dégâts, effondrement sans bloc flottant, gravats), végétation, rendu |
@@ -162,9 +185,21 @@ bibliothèque standard.
   Un ensemble de structures `ruins_overworld` (espacement 34 chunks, séparation 12) : la ruine tirée dépend du biome ;
   là où plusieurs ruines partagent un biome, leur poids départage (jungles : temple du Serpent à plumes, poids 2,
   contre tour du mage, poids 1).
+- Le grand temple a son propre ensemble `ruins_landmark` (espacement 56 chunks, séparation 20, sel unique) avec une
+  zone d'exclusion : jamais à moins de 10 chunks d'un emplacement de `ruins_overworld` (pas de chevauchement avec une
+  autre ruine, environ 60 % des emplacements restent valables). Avec la rareté des jungles, il faut compter de l'ordre
+  d'un grand temple par carré de 5 à 7 000 blocs de côté (selon la part de jungle du monde).
+  Il fait partie du tag `#guildy:ruins/overworld` (cartes, `/locate`). Son beacon est un vrai beacon vanilla au sommet
+  (base de fer de 4 niveaux 9 × 9 → 3 × 3 cachée dans la couronne de la crête, verre jaune au-dessus, ciel libre) : le
+  module des ruines protège le beacon et sa base. Une bande d'air explicite (14 blocs au-dessus du sol, rayon ~66)
+  dégage les collines de la jungle sur la place ; la place est pavée presque partout, si bien que les arbres de la
+  jungle (générés après les structures) n'y prennent guère racine : surtout la canopée des bords qui déborde.
 - Nether : une pièce à hauteur fixe (couche 0 à y = 32, juste au-dessus de la mer de lave), adaptation `beard_box`,
   et une « caverne » d'air explicite autour de la ruine pour qu'elle ne soit jamais noyée dans la netherrack ;
   ensemble `ruins_nether` (espacement 20, séparation 7).
-- Marqueurs : blocs de structure en mode DATA (`guildy:boss`, `guildy:minion`, `guildy:entrance`), ignorés par la
-  génération vanilla ; le module des ruines les lit dans les pièces de la structure et vide ces cases.
+- Marqueurs : blocs de structure en mode DATA (`guildy:boss`, `guildy:minion`, `guildy:guard`, `guildy:entrance`),
+  ignorés par la génération vanilla ; le module des ruines les lit dans les pièces de la structure et vide ces cases.
+  Les gardes (`guildy:guard`, 2 à 8 par ruine) tiennent les couloirs, antichambres et entrées de l'arène : ils
+  défendent la salle du boss avant le combat. `check.py` vérifie leur nombre, leur place (sol plein, 2 blocs libres
+  au-dessus, de quoi bouger) et qu'ils sont sur le chemin praticable depuis l'entrée.
 - Coffres : tables `guildy:chests/ruin/common|rare|treasure` (Nether : `nether_common|nether_rare|nether_treasure`).

@@ -79,9 +79,37 @@ def render_variant(ruin, variant, out=None):
 	return path
 
 
+def render_sections(ruin, unit=5, plan_unit=6):
+	"""
+	Second sheet for the big ruins that declare `sections` [(axis, coordinate, caption)]: the two other corner views,
+	vertical sections (axis 'x': the part west of the cut, seen from the south-east; 'z': the part north of it) and
+	large plans of every level -> previews/<id>_coupes.png.
+	"""
+	t = ruin.assembled()
+	g = ruin.ground
+	glow = under_brightness(t, g)
+	panels = [(R.render_iso(t, unit, ruin.terrain, g, rotation=3), "Vue sud-ouest"),
+		(R.render_iso(t, unit, ruin.terrain, g, rotation=1), "Vue nord-est")]
+	for axis, c, caption in ruin.sections:
+		hide = (lambda x, y, z, c=c: x > c) if axis == "x" else (lambda x, y, z, c=c: z > c)
+		panels.append((R.render_iso(t, unit, ruin.terrain, g, rotation=0, hide=hide, bright=1.25), caption))
+	for y, caption in getattr(ruin, "plan_levels", []):
+		img = R.render_plan(t, y, plan_unit, below=3, bright=1.0 if y > g else glow, terrain=ruin.terrain, ground=g)
+		panels.append((img, caption))
+	img = R.sheet(panels, 2)
+	out = R.Image.new("RGB", (img.width, img.height + 34), (236, 233, 226))
+	out.paste(img, (0, 34))
+	R.label(out, f"{ruin.title} : coupes et plans  ({ruin.id})", 22, (10, 6), (20, 20, 20))
+	path = os.path.join(PREVIEWS, ruin.id + "_coupes.png")
+	R.save_png(out, path)
+	return path
+
+
 def render_ruin(ruin, detail=False, out=None):
 	if ruin.variants and ruin.variants[0].name:
 		return render_variant(ruin, ruin.variants[0], out)
+	if getattr(ruin, "sections", None) and not detail and out is None:
+		render_sections(ruin)
 	t = ruin.assembled()
 	levels = getattr(ruin, "plan_levels", None)
 	img = sheet_for(t, f"{ruin.title}  ({ruin.id}, palier {ruin.tier}, {t.size[0]}x{t.size[1]}x{t.size[2]})",
