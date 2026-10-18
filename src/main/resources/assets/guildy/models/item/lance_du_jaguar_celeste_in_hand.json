@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/spear_in_hand",
+  "textures": {
+    "layer0": "guildy:item/lance_du_jaguar_celeste_in_hand"
+  }
+}

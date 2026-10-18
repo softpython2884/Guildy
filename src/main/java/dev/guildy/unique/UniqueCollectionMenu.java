@@ -173,10 +173,29 @@ final class UniqueCollectionMenu extends GuildGui {
 				lore.add(Lang.get("unique.collection.where_line", Lang.raw(sourceKey(entry.getKey())), UniqueCommands.percent(chance)));
 			}
 		}
+		// Guardians that favour this weapon (their own, higher odds).
+		for (Map.Entry<String, Map<String, Double>> entry : cfg.favorites.entrySet()) {
+			if (entry.getValue().getOrDefault(def.id, 0.0) <= 0) {
+				continue;
+			}
+			double chance = UniqueRolls.probability(cfg.effectiveTable(entry.getKey()), def.id, key -> cfg.item(key) != null);
+			if (chance > 0) {
+				any = true;
+				lore.add(Lang.get("unique.collection.where_line", favoriteName(entry.getKey()), UniqueCommands.percent(chance)));
+			}
+		}
 		if (!any) {
 			lore.add(Lang.get("unique.collection.where_none"));
 		}
 		return GuiUtil.item(Items.FIREWORK_STAR, Lang.get("unique.collection.unknown", def.rarity().namePrefix()), lore);
+	}
+
+	/** "le gardien du Bastion de givre" for "ruin_boss@bastion_de_givre" (unknown context: source name + context id). */
+	static String favoriteName(String key) {
+		List<String> contexts = UniqueConfig.contexts(key);
+		String context = contexts.isEmpty() ? "" : contexts.getFirst();
+		String lang = "unique.favorite." + context;
+		return Lang.has(lang) ? Lang.raw(lang) : Lang.raw("unique.favorite.unknown", Lang.raw(sourceKey(UniqueConfig.baseSource(key))), context);
 	}
 
 	static String sourceKey(String source) {

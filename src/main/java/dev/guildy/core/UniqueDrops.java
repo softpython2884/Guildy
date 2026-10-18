@@ -178,6 +178,23 @@ public final class UniqueDrops {
 		return stack == null ? ItemStack.EMPTY : stack;
 	}
 
+	/**
+	 * A source with a drop context: {@code withContext("ruin_boss", "grand_temple_maya", "cursed")} =
+	 * "ruin_boss@grand_temple_maya,cursed". The unique module rolls in the table of the plain source, where the favourite
+	 * weapons of each context (uniques.json5 "favorites") weigh more; blank contexts are skipped.
+	 */
+	public static String withContext(String source, String... contexts) {
+		StringBuilder out = new StringBuilder(source);
+		char separator = '@';
+		for (String context : contexts) {
+			if (context != null && !context.isBlank()) {
+				out.append(separator).append(context.trim());
+				separator = ',';
+			}
+		}
+		return out.toString();
+	}
+
 	/** True for a unique item (a roll may also give a spell scroll instead). */
 	public static boolean isUnique(ItemStack stack) {
 		return !stack.isEmpty() && GuildyItems.is(stack, KIND);

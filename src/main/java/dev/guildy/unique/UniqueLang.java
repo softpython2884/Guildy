@@ -48,10 +48,43 @@ final class UniqueLang {
 		m.put("unique.power.tide_call.lore", "Lancé, il foudroie sa cible ({0} ❤) et l'éclair\nrebondit sur {1} monstres proches.");
 		m.put("unique.power.soul_harvest.name", "Moisson des âmes");
 		m.put("unique.power.soul_harvest.lore", "Chaque monstre tué vous rend {0} ❤\net vous donne un regain de vitesse.");
+		m.put("unique.power.jaguar_pounce.name", "Bond du jaguar");
+		m.put("unique.power.jaguar_pounce.lore", "Clic droit (charge) : vous bondissez comme un jaguar ;\nà l'atterrissage, les griffes lacèrent les monstres\n"
+				+ "à {0} blocs ({1} ❤, Lenteur {2} pendant {3} s).\nAucun dégât de chute pendant le bond.");
+		m.put("unique.power.frost_crown.name", "Couronne de givre");
+		m.put("unique.power.frost_crown.lore", "Un monstre qui vous frappe est pris dans la glace\n(Lenteur {0} pendant {1} s, {2} ❤ de froid) et le froid\n"
+				+ "ralentit les monstres proches. Vous ne gelez jamais.");
+		m.put("unique.power.soul_aegis.name", "Rempart des âmes");
+		m.put("unique.power.soul_aegis.lore", "Un coup de monstre paré au bouclier revient à son\nauteur ({0} % des dégâts, {1} ❤ au moins) et son\n"
+				+ "âme vous rend {2} ❤.");
+		m.put("unique.power.solar_leap.name", "Ascension solaire");
+		m.put("unique.power.solar_leap.lore", "Clic droit : vous jaillissez vers le ciel (sans dégâts\nde chute). À l'atterrissage ou au coup écrasant, un\n"
+				+ "soleil éclate : les monstres à {0} blocs brûlent\n({1} ❤ de feu, ×{2} contre les morts-vivants).");
+		m.put("unique.power.pact_seal.name", "Sceau du pacte");
+		m.put("unique.power.pact_seal.lore", "Chaque coup scelle le monstre. Au {0}e sceau, un\npentagramme maudit s'ouvre sous lui et éclate\n"
+				+ "({1} ❤, Flétrissement) ; la malédiction gagne\nles monstres à {2} blocs.");
+		m.put("unique.power.infernal_rift.name", "Faille infernale");
+		m.put("unique.power.infernal_rift.lore", "Clic droit : la hache fend le sol ; une faille de\nmagma file devant vous sur {0} blocs et embrase\n"
+				+ "les monstres qu'elle traverse ({1} ❤ de feu).");
+		m.put("unique.power.jade_gale.name", "Souffle de jade");
+		m.put("unique.power.jade_gale.lore", "Sous {0} % de vie, le souffle du Serpent à plumes\nrepousse et empoisonne les monstres à {1} blocs ;\n"
+				+ "vous régénérez et planez comme une plume.");
+		// favourite weapons of some guardians (uniques.json5 "favorites", context after the '@')
+		m.put("unique.favorite.grand_temple_maya", "&6le gardien du Grand Temple du Jaguar céleste");
+		m.put("unique.favorite.temple_maya", "&2le gardien du Temple du Serpent à plumes");
+		m.put("unique.favorite.bastion_de_givre", "&ble gardien du Bastion de givre");
+		m.put("unique.favorite.ziggourat_des_sables", "&ele gardien de la Ziggourat des sables");
+		m.put("unique.favorite.citadelle_des_ames", "&3le gardien de la Citadelle des âmes");
+		m.put("unique.favorite.autel_infernal", "&cle gardien de l'Autel infernal");
+		m.put("unique.favorite.crypte_oubliee", "&5le gardien de la Crypte oubliée");
+		m.put("unique.favorite.tour_du_mage", "&9le gardien de la Tour du Mage déchu");
+		m.put("unique.favorite.cursed", "&5&ples gardiens maudits");
+		m.put("unique.favorite.unknown", "{0} &8({1})");
 		// feedback
 		m.put("unique.cooldown", "&7{0} &8» &crecharge : &f{1} s");
 		m.put("unique.blink.no_target", "&7Aucun monstre en vue.");
 		m.put("unique.blink.blocked", "&cImpossible de vous téléporter là-bas.");
+		m.put("unique.leap.blocked", "&cPas assez de place au-dessus de vous.");
 		// announcements
 		m.put("unique.announce", "&6✦ &e{0} &6a obtenu {1} &8({2}&8) &6!");
 		m.put("unique.announce.title", "&6&l✦ Arme unique ✦");

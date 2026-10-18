@@ -84,7 +84,9 @@ final class RuinLoot {
 				}
 			}
 		}
-		String source = source(encounter.ruin, rewards.uniqueSource);
+		// The guardian of each ruin (and every cursed guardian) favours its own unique weapons (uniques.json5 "favorites").
+		String source = UniqueDrops.withContext(source(encounter.ruin, rewards.uniqueSource), encounter.ruin.ruinId,
+				encounter.cursed != null ? "cursed" : "");
 		int uniqueRolls = rolls(bonus.extraUniqueChance(), bonus.bonusUniqueRolls(), random);
 		// A cursed guardian gets many attempts, but never more than maxUniques weapons.
 		int uniqueCap = encounter.cursed != null ? RuinModule.config().cursed.rewards.maxUniques : Integer.MAX_VALUE;

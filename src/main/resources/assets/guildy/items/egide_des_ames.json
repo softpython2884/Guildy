@@ -1,0 +1,57 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": "gui",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/egide_des_ames"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:condition",
+      "property": "minecraft:using_item",
+      "on_false": {
+        "type": "minecraft:special",
+        "base": "minecraft:item/shield",
+        "model": {
+          "type": "minecraft:shield"
+        }
+      },
+      "on_true": {
+        "type": "minecraft:special",
+        "base": "minecraft:item/shield_blocking",
+        "model": {
+          "type": "minecraft:shield"
+        }
+      },
+      "transformation": {
+        "left_rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "right_rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": [
+          1.0,
+          -1.0,
+          -1.0
+        ],
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  }
+}

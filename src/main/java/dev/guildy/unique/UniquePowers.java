@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -21,6 +22,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.KineticWeapon;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,13 +41,23 @@ final class UniquePowers {
 		UseItemCallback.EVENT.register(UniquePowers::onUse);
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
 				Safe.get("unique.allow_damage", () -> allowDamage(entity, source), true));
-		ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) ->
-				Safe.run("unique.hit", () -> onHit(entity, source, false)));
+		ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
+			Safe.run("unique.hit", () -> onHit(entity, source, false));
+			if (entity instanceof ServerPlayer player) {
+				Safe.run("unique.defense", () -> DefensePowers.onDamaged(player, source, base, taken, blocked));
+			}
+		});
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) ->
 				Safe.run("unique.kill", () -> onHit(entity, source, true)));
 		PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) ->
 				Safe.run("unique.break", () -> afterBreak(level, player, pos, state, blockEntity)));
-		ServerTickEvents.END_SERVER_TICK.register(server -> Safe.run("unique.double_jump", DoubleJump::tick));
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			Safe.run("unique.double_jump", DoubleJump::tick);
+			Safe.run("unique.leaps", Leaps::tick);
+			Safe.run("unique.seals", CursePowers::tick);
+			Safe.run("unique.crown", DefensePowers::tick);
+			Safe.run("unique.fx", UniqueFx::tick);
+		});
 	}
 
 	// ================================================================== right click
@@ -73,6 +85,9 @@ final class UniquePowers {
 			case STORM_CALL -> LightningPowers.stormCall(player);
 			case FROST_NOVA -> CombatPowers.frostNova(player);
 			case BLINK_STRIKE -> CombatPowers.blinkStrike(player);
+			case JAGUAR_POUNCE -> JaguarPowers.pounce(player);
+			case SOLAR_LEAP -> SolarPowers.leap(player);
+			case INFERNAL_RIFT -> InfernalPowers.rift(player);
 			default -> false;
 		};
 		if (!fired) {
@@ -80,6 +95,15 @@ final class UniquePowers {
 		}
 		if (cooldown > 0) {
 			player.getCooldowns().addCooldown(stack, (int) Math.round(cooldown * 20));
+		}
+		KineticWeapon kinetic = stack.get(DataComponents.KINETIC_WEAPON);
+		if (kinetic != null) {
+			// A spear: the pounce is the start of its charge, which the vanilla use would now refuse (cooldown just set).
+			if (!player.isUsingItem()) {
+				player.startUsingItem(InteractionHand.MAIN_HAND);
+				kinetic.makeSound(player);
+			}
+			return InteractionResult.CONSUME;
 		}
 		return InteractionResult.SUCCESS;
 	}
@@ -98,7 +122,8 @@ final class UniquePowers {
 		if (type.is(PowerUtil.FOUDRE) || type.is(PowerUtil.BRASIER) || type.is(PowerUtil.GIVRE)) {
 			entity.damageCooldownTime = 0;
 		}
-		return true;
+		// No fall damage during a pounce or a solar leap.
+		return !Leaps.cancelsFall(entity, source);
 	}
 
 	/** A hit by a player (killed or not): shockwave (mace smash), phoenix arrows, tide call; kills: soul harvest. */
@@ -112,6 +137,12 @@ final class UniquePowers {
 			UniquePower power = UniqueItems.powerOf(weapon);
 			if (power == UniquePower.SHOCKWAVE && source.is(DamageTypes.MACE_SMASH)) {
 				CombatPowers.shockwave(player, victim);
+			}
+			if (power == UniquePower.SOLAR_LEAP && source.is(DamageTypes.MACE_SMASH)) {
+				SolarPowers.smash(player, victim);
+			}
+			if (!killed && power == UniquePower.PACT_SEAL && source.is(DamageTypes.PLAYER_ATTACK)) {
+				CursePowers.hit(player, victim);
 			}
 			if (killed && power == UniquePower.SOUL_HARVEST && PowerUtil.isHostileType(victim)) {
 				CombatPowers.soulHarvest(player, victim);

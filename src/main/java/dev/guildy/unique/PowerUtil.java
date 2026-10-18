@@ -14,6 +14,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
@@ -123,6 +124,36 @@ final class PowerUtil {
 		}
 		ServerLevel level = player.level();
 		return hurt(level, target, level.damageSources().playerAttack(player), amount);
+	}
+
+	/**
+	 * Magic damage of the player (indirect magic: kill credit, loot) that lands even right after another hit (the target's
+	 * invulnerability time is reset, like the guildy proc damage types): pact bursts, blows sent back by a shield.
+	 */
+	static boolean magic(LivingEntity target, ServerPlayer player, double amount) {
+		if (amount <= 0 || !target.isAlive()) {
+			return false;
+		}
+		target.damageCooldownTime = 0;
+		ServerLevel level = player.level();
+		return hurt(level, target, level.damageSources().indirectMagic(player, player), amount);
+	}
+
+	/** Undead monsters (zombies, skeletons...): the sun burns them twice as much. */
+	static boolean isUndead(Entity entity) {
+		return entity.is(EntityTypeTags.UNDEAD);
+	}
+
+	/** The horizontal unit vector of {@code v} (south when vertical). */
+	static Vec3 horizontal(Vec3 v) {
+		Vec3 flat = new Vec3(v.x, 0, v.z);
+		return flat.lengthSqr() < 1.0E-6 ? new Vec3(0, 0, 1) : flat.normalize();
+	}
+
+	/** Pushes a monster (velocity added and synchronised). */
+	static void push(LivingEntity target, Vec3 impulse) {
+		target.setDeltaMovement(target.getDeltaMovement().add(impulse));
+		target.syncVelocity = true;
 	}
 
 	private static boolean hurt(ServerLevel level, LivingEntity target, DamageSource source, double amount) {

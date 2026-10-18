@@ -18,6 +18,7 @@ import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.component.CustomData;
@@ -27,6 +28,8 @@ import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.component.UseCooldown;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.block.entity.BannerPattern;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -81,6 +84,9 @@ public final class UniqueItems {
 		}
 		if (def.color >= 0) {
 			stack.set(DataComponents.DYED_COLOR, new DyedItemColor(def.color));
+		}
+		if (def.banner != null) {
+			applyBanner(stack, def, registries);
 		}
 		UniquePower power = def.power();
 		if (power != null && power.active) {
@@ -145,6 +151,14 @@ public final class UniqueItems {
 			case PHOENIX_ARROWS -> new Object[] {number(p.phoenixArrows.radius), hearts(p.phoenixArrows.damage)};
 			case TIDE_CALL -> new Object[] {hearts(p.tideCall.damage), p.tideCall.chainTargets};
 			case SOUL_HARVEST -> new Object[] {hearts(p.soulHarvest.heal)};
+			case JAGUAR_POUNCE -> new Object[] {number(p.jaguarPounce.radius), hearts(p.jaguarPounce.damage), roman(p.jaguarPounce.slowLevel),
+					p.jaguarPounce.slowSeconds};
+			case FROST_CROWN -> new Object[] {roman(p.frostCrown.slowLevel), p.frostCrown.freezeSeconds, hearts(p.frostCrown.damage)};
+			case SOUL_AEGIS -> new Object[] {number(p.soulAegis.reflectRatio * 100), hearts(p.soulAegis.reflectMin), hearts(p.soulAegis.heal)};
+			case SOLAR_LEAP -> new Object[] {number(p.solarLeap.radius), hearts(p.solarLeap.damage), number(p.solarLeap.undeadMultiplier)};
+			case PACT_SEAL -> new Object[] {p.pactSeal.seals, hearts(p.pactSeal.damage), number(p.pactSeal.spreadRadius)};
+			case INFERNAL_RIFT -> new Object[] {p.infernalRift.length, hearts(p.infernalRift.damage)};
+			case JADE_GALE -> new Object[] {number(p.jadeGale.healthThreshold * 100), number(p.jadeGale.radius)};
 			default -> new Object[0];
 		};
 	}
@@ -166,6 +180,30 @@ public final class UniqueItems {
 				mutable.set(holder.get(), entry.getValue());
 			}
 		});
+	}
+
+	/** Shield look: base color + vanilla banner patterns (drawn by vanilla clients, with or without the resource pack). */
+	private static void applyBanner(ItemStack stack, UniqueConfig.UniqueDef def, HolderLookup.Provider registries) {
+		UniqueConfig.Banner banner = def.banner;
+		DyeColor base = banner == null ? null : DyeColor.byName(banner.base, null);
+		if (base == null) {
+			return;
+		}
+		stack.set(DataComponents.BASE_COLOR, base);
+		HolderLookup.RegistryLookup<BannerPattern> patterns = registries.lookupOrThrow(Registries.BANNER_PATTERN);
+		BannerPatternLayers.Builder layers = new BannerPatternLayers.Builder();
+		for (UniqueConfig.BannerLayer layer : banner.patterns) {
+			Identifier id = Identifier.tryParse(layer.pattern);
+			Optional<Holder.Reference<BannerPattern>> pattern = id == null ? Optional.empty()
+					: patterns.get(ResourceKey.create(Registries.BANNER_PATTERN, id));
+			DyeColor color = DyeColor.byName(layer.color, null);
+			if (pattern.isEmpty() || color == null) {
+				warnOnce("banner:" + layer.pattern, "[uniques] unknown banner pattern '" + layer.pattern + "' on '" + def.id + "' (skipped)");
+				continue;
+			}
+			layers.add(pattern.get(), color);
+		}
+		stack.set(DataComponents.BANNER_PATTERNS, layers.build());
 	}
 
 	private static void applyAttributes(ItemStack stack, UniqueConfig.UniqueDef def) {

@@ -1141,6 +1141,443 @@ WEAPONS = {
 }
 
 
+# ---------------------------------------------------------------------------------------------------------- uniques of the ruins
+# The seven uniques dropped by the ruin guardians (uniques.json5 format 4). Same conventions as the weapons above; the
+# spear also has its 32 x 32 in-hand texture (vanilla spear layout: tip toward the top-left corner), the shield a 2D
+# inventory icon (in hand, the vanilla shield model draws the banner patterns of the item).
+
+def paint_sized(rows, palette, size, frame=0):
+	"""paint() for a size x size layer (the 32 x 32 in-hand spear)."""
+	if len(rows) != size or any(len(row) != size for row in rows):
+		raise ValueError("a %d px layer must be %d rows of %d characters: %r" % (size, size, size, rows))
+	grid = [[TRANSPARENT] * size for _ in range(size)]
+	for y, row in enumerate(rows):
+		for x, ch in enumerate(row):
+			if ch in "._":
+				continue
+			color = palette[ch]
+			if isinstance(color, list):
+				color = color[frame % len(color)]
+			grid[y][x] = rgba(color)
+	return grid
+
+
+def put_sized(grid, points, color):
+	"""put() for a frame of any size."""
+	for x, y in points:
+		if 0 <= y < len(grid) and 0 <= x < len(grid[0]):
+			grid[y][x] = rgba(color)
+	return grid
+
+
+JAGUAR_SPEAR = [
+	".............OOO",
+	"............OWWO",
+	"...........OWGhO",
+	"..........OWGshO",
+	".........OWsGghO",
+	"........OWGGshO.",
+	"........OWGghO..",
+	".......OJWghO...",
+	"......OJjOOO....",
+	".....OwkORO.....",
+	"....OyYOOrO.....",
+	"...OYyO..O......",
+	"..OyYO..........",
+	".ObnO...........",
+	"OwdO............",
+	"nnO.............",
+]
+
+JAGUAR_PALETTE = {"O": "#2a1406", "W": "#fff6c4", "G": "#ffd447", "g": "#e3a020", "h": "#a85e14", "s": "#6a3608",
+				  "y": "#f7c84a", "J": "#8af5c8", "j": "#22a070", "k": "#0f5a40", "w": "#a0603a", "d": "#5e3218",
+				  "b": "#ffe27a", "n": "#b87a1e", "Y": "#3a1c08", "R": "#ff5a3a", "r": "#a82418"}
+
+
+def lance_du_jaguar_celeste():
+	"""
+	Spear of the celestial jaguar: a golden fang-shaped head spotted with black rosettes, two little jaguar-ear guards, a
+	jade collar, a mahogany shaft with a spotted pelt wrap and a golden band, a red quetzal tassel. A sun glint runs up
+	the blade, then the jade collar flashes.
+	"""
+	base = paint(JAGUAR_SPEAR, JAGUAR_PALETTE)
+	blade = cells(JAGUAR_SPEAR, "WGgh")
+	frames = [copy(base)] + sweep(base, blade, -3, 15, (0.65, 0.3), "#fffbe6")
+	flash = put(copy(base), [(8, 7), (7, 8)], "#e4fff4")
+	put(flash, [(8, 8), (7, 9)], "#5ad8a8")
+	frames.append(flash)
+	order = [{"index": 0, "time": 50}] + list(range(1, len(frames) - 1)) + [{"index": len(frames) - 1, "time": 4}]
+	return Sprite(frames, anim(1, order))
+
+
+def lance_du_jaguar_celeste_in_hand():
+	"""
+	The spear in hand, 32 x 32 like the vanilla spears (tip toward the top-left corner): the head of the inventory icon
+	mirrored, the tassel longer, the shaft carried to the corner (pelt wrap, golden bands, a golden butt). Same animation.
+	"""
+	gui = lance_du_jaguar_celeste()
+	size = 32
+	shaft = {13: "Yy", 14: "yY", 15: "Yy", 16: "bn", 25: "bn", 28: "bn", 29: "yn", 30: "yn", 31: "Wn"}
+	frames = []
+	for frame in gui.frames:
+		g = [[TRANSPARENT] * size for _ in range(size)]
+		for y in range(13):
+			for x in range(SIZE):
+				g[y][SIZE - 1 - x] = frame[y][x]
+		for y in range(13, size):
+			light, dark = shaft.get(y, "wd")
+			put_sized(g, [(y + 1, y), (y - 2, y)], JAGUAR_PALETTE["O"])
+			put_sized(g, [(y, y)], JAGUAR_PALETTE[light])
+			put_sized(g, [(y - 1, y)], JAGUAR_PALETTE[dark])
+		# A grain mark on the wood here and there, the tassel hanging longer from the jade collar.
+		put_sized(g, [(20, 20), (23, 23)], "#7a4426")
+		put_sized(g, [(6, 11)], JAGUAR_PALETTE["R"])
+		put_sized(g, [(6, 12)], JAGUAR_PALETTE["r"])
+		put_sized(g, [(5, 11), (7, 11), (5, 12), (7, 12), (6, 13)], JAGUAR_PALETTE["O"])
+		frames.append(g)
+	return Sprite(frames, gui.meta)
+
+
+def couronne_du_roi_de_givre():
+	"""
+	Helmet-crown of the frost king: five ice spikes above a band of frosted silver set with frost gems, cheek guards with
+	icicles and a gem hanging on the nose guard over the dark inside of the helmet. A frost glint crosses the band, the
+	gems pulse, a star twinkles on the highest spike.
+	"""
+	rows = [
+		"................",
+		".......OO.......",
+		"...O...OIO...O..",
+		"..OIO.OIiCO.OIO.",
+		"..OiCOOicCOOicO.",
+		".OOicCOicCCOicOO",
+		".OSSSSSSSSSSSSsO",
+		".OSSEeSSSSSeEstO",
+		".OstsfssEssfsttO",
+		".OsOOOOseeOOOOtO",
+		".OsOKKKOfOKKKOtO",
+		".OcOKKKKOKKKKOcO",
+		"..OcO.......OcO.",
+		"...O.........O..",
+		"................",
+		"................",
+	]
+	pal = {"O": "#0b2238", "I": "#ffffff", "i": "#c4ecff", "c": "#7cc8f0", "C": "#3f8fd0", "S": "#dfeaf4", "s": "#98aec4",
+		   "t": "#5a7088", "K": "#13314c", "E": "#c6fbff", "e": "#38c4ee", "f": "#1660a8"}
+	frames = []
+	band = cells(rows, "Ss")
+	for f in range(8):
+		light, mid, dark = [("#d6fdff", "#5ad6f6", "#1a6cb8"), ("#ecffff", "#7ae4ff", "#2280c8"),
+							("#ffffff", "#a8f0ff", "#3496d8"), ("#ecffff", "#7ae4ff", "#2280c8")][f % 4]
+		g = paint(rows, dict(pal, E=light, e=mid, f=dark))
+		shine(g, band, -8 + f * 3, (0.55, 0.25))
+		if f in (2, 3):
+			put(g, [(8, 0), (7, 1), (9, 1)], "#ffffff" if f == 2 else "#c4ecff")
+		frames.append(g)
+	return Sprite(frames, anim(3))
+
+
+def egide_des_ames():
+	"""
+	Shield of the souls: a heater shield of blackened soul-steel with a cyan rim, a bone skull with glowing eyes amid soul
+	flames in the middle. The soul fire flickers, the eyes flare and a soul glint runs down the rim.
+	"""
+	rows = [
+		"................",
+		".OOOOOOOOOOOOOO.",
+		".OaAAAAAAAAAAdO.",
+		".OAkkfkkkkfkkdO.",
+		".OAkfBBBBBBfkdO.",
+		".OAkBBBBBBBbkdO.",
+		".OAkBnnBBnnbkdO.",
+		".OAkBnEBBEnbkdO.",
+		".OAkBBBnnBBbkdO.",
+		".OAkkbBnBnbkkdO.",
+		"..OAkfkbbkfkdO..",
+		"..OAkFkkkkFkdO..",
+		"...OAkfkkfkdO...",
+		"....OAkkkkdO....",
+		".....OOddOO.....",
+		".......OO.......",
+	]
+	pal = {"O": "#04121a", "A": "#7ff6ff", "a": "#e4ffff", "d": "#1d7486", "k": "#0e2028", "B": "#eaf6f2", "b": "#94bcc0",
+		   "n": "#03090c", "F": "#5ff0ff", "f": "#1aa8c0", "E": "#ffffff"}
+	rim = [(2, y) for y in range(3, 10)] + [(3, 10), (3, 11), (4, 12), (5, 13), (6, 14)]
+	frames = []
+	for f in range(8):
+		flame, ember = [("#5ff0ff", "#1aa8c0"), ("#8ffbff", "#2ac4dc"), ("#3fd8f0", "#128ca4"), ("#8ffbff", "#2ac4dc")][f % 4]
+		eye = ["#ffffff", "#bffcff", "#5ff0ff", "#bffcff"][f % 4]
+		g = paint(rows, dict(pal, F=flame, f=ember, E=eye))
+		gleam(g, rim, f * 2 - 1, ["#ffffff", "#c8fdff"])
+		frames.append(g)
+	return Sprite(frames, anim(3))
+
+
+def masse_du_zenith():
+	"""
+	Mace of the zenith: a golden sun disc with eight rays and a white-hot core, on a dark bronze-wood handle bound with gold
+	and a sunstone pommel. The core breathes while the tips of the rays flare one after the other.
+	"""
+	rows = [
+		"..........OyO...",
+		"......OyO.OGO.Oy",
+		".......OGOOGOOGO",
+		"........OOGWGOO.",
+		".....OyOOGWCWGOO",
+		"......OGGWCcCWGG",
+		".......OOGWCWGOO",
+		".......OaOOGWGO.",
+		"......OabOOGOOGO",
+		".....OabO.OGO.Oy",
+		"....OnNO..OyO...",
+		"...OabO.........",
+		"..OabO..........",
+		".OnNO...........",
+		"OabO............",
+		"OsO.............",
+	]
+	pal = {"O": "#3a1606", "y": "#ffe27a", "G": "#f0a524", "W": "#fff3b0", "a": "#8a5a30", "b": "#4a2a14",
+		   "n": "#ffd96a", "N": "#b0761e", "s": "#ff8a2a"}
+	import math
+	tips = sorted(cells(rows, "y"), key=lambda p: math.atan2(p[1] - 5, p[0] - 11))
+	pulse = [("#fff6c8", "#ffcf3a"), ("#ffffff", "#ffe070"), ("#fffbe0", "#fff0a0"), ("#ffffff", "#ffe070"),
+			 ("#fff6c8", "#ffcf3a"), ("#ffe8a0", "#ff9a20")]
+	frames = []
+	for f, (hot, core) in enumerate(pulse):
+		g = paint(rows, dict(pal, C=core, c=hot))
+		for i, p in enumerate(tips):
+			if i % len(pulse) == f:
+				put(g, [p], "#ffffff")
+		frames.append(g)
+	return Sprite(frames, anim(4, interpolate=True))
+
+
+def lame_du_pacte():
+	"""
+	Blade of the pact: a blade of black steel engraved with blood runes, a guard of curved bone horns around a violet gem,
+	a grip wrapped in blood-red leather and a pommel with a violet eye. The runes light up from the guard to the tip, the
+	eye blinks.
+	"""
+	rows = [
+		".............OOO",
+		"............OKkO",
+		"...........OKRkO",
+		"..........OKkkdO",
+		".........OKRkdO.",
+		"........OKkkdO..",
+		"...BO..OKRkdO...",
+		"..BbO.OKkkdO....",
+		"..ObBOKRkdO.....",
+		"...ObHHkdO......",
+		"....OHeHO.BO....",
+		"...OrHOObbO.....",
+		"..OrgO..OO......",
+		".OrgO...........",
+		"OEeO............",
+		"eeO.............",
+	]
+	pal = {"O": "#0a050e", "K": "#b0a8c0", "k": "#544a62", "d": "#262030", "R": "#6a1424", "B": "#f2e6d0", "b": "#b4a48a",
+		   "H": "#2e1c2a", "e": "#b02ad8", "r": "#5a0e1a", "g": "#a02234", "E": "#e070ff"}
+	runes = sorted(cells(rows, "R"), key=lambda p: -p[1])
+	glow = ["#ff3a5a", "#d0203e", "#a01a30"]
+	frames = []
+	for f in range(10):
+		g = paint(rows, pal)
+		for i, p in enumerate(runes):
+			d = f - i * 2
+			if 0 <= d < len(glow):
+				put(g, [p], glow[d])
+				if d == 0:
+					x, y = p
+					g[y - 1][x] = mix(g[y - 1][x], "#ff3a5a", 0.35)
+					g[y][x + 1] = mix(g[y][x + 1], "#ff3a5a", 0.35)
+		if f in (8, 9):
+			put(g, [(1, 14)], "#3a0a52")
+		frames.append(g)
+	return Sprite(frames, anim(2))
+
+
+def hache_du_seigneur_de_guerre():
+	"""
+	Axe of the warlord: a huge bearded head of blackened netherite veined with magma, a sharpened steel edge, gilded
+	blackstone trim and a back spike, on a crimson-stem haft bound with gold. The magma veins throb, an ember flies off.
+	"""
+	rows = [
+		"........OOO.....",
+		".......OEKKOO...",
+		"......OEKmKkeO..",
+		"......OKKmkkkeO.",
+		".....OgKkkmkkeO.",
+		"...OOgGgKkkmkeO.",
+		"...OGgOOgGkkmEO.",
+		"....OO.OcOggkEO.",
+		"......OcbOOOkKO.",
+		".....OnNO...OO..",
+		"....OcbO........",
+		"...OcbO.........",
+		"..OcbO..........",
+		".OnNO...........",
+		"OcbO............",
+		"OOO.............",
+	]
+	pal = {"O": "#120808", "E": "#a89ca4", "K": "#5e5056", "k": "#2c2226", "e": "#d8d0d6", "g": "#c8902a", "G": "#ffd45a",
+		   "c": "#8a2a3a", "b": "#4e1420", "n": "#ffcf5a", "N": "#a8701a"}
+	pulse = ["#c83a0c", "#ff6a1a", "#ffa040", "#ffd070", "#ffa040", "#ff6a1a"]
+	frames = []
+	for i, color in enumerate(pulse):
+		g = paint(rows, dict(pal, m=color))
+		if i in (3, 4):
+			put(g, [(15, 1 + i)], "#ffb040" if i == 3 else "#ff7a20")
+		frames.append(g)
+	return Sprite(frames, anim(4))
+
+
+def plastron_du_serpent():
+	"""
+	Chestplate of the feathered serpent: rows of jade scales lit from the top-left, a golden collar opening on a serpent
+	medallion with ruby eyes, quetzal feathers (green, red tips) on the shoulders, a golden belt. A glint runs over the
+	scales, the serpent's eyes shine.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		".RF..........FR.",
+		".FfJJ......JJfF.",
+		".fJjGggggggGjJf.",
+		"..JjjGJjjJGjjJ..",
+		"...jJjGMMGjJj...",
+		"...JjJMeeMJjJ...",
+		"...jJjJMMJjJj...",
+		"...JjJjJjJjJj...",
+		"...jJjJjJjJjJ...",
+		"....JjJjJjJj....",
+		"....gggggggg....",
+		"................",
+		"................",
+		"................",
+	])
+	pal = {"O": "#0a2a1c", "J": "#4fd090", "j": "#1f8a5a", "G": "#ffd45a", "g": "#c8902a", "F": "#3ccf78", "f": "#1c7a44",
+		   "R": "#ff5a3a", "M": "#e8b032", "e": "#ff3a30"}
+	base = paint(rows, pal)
+	scales = cells(rows, "Jj")
+	for x, y in scales:
+		if x >= 10:
+			base[y][x] = mix(base[y][x], "#06301e", 0.3)
+		elif x <= 4:
+			base[y][x] = mix(base[y][x], "#e8fff0", 0.15)
+	frames = [copy(base)] + sweep(base, scales, -12, 7, (0.45, 0.2), "#e8fff0")
+	eyes = put(copy(base), [(7, 7), (8, 7)], "#ffd0a0")
+	frames.append(eyes)
+	order = [{"index": 0, "time": 40}] + list(range(1, len(frames) - 1)) + [{"index": len(frames) - 1, "time": 6}]
+	return Sprite(frames, anim(2, order))
+
+
+RUIN_UNIQUES = {
+	# name: (draw, parent model)
+	"lance_du_jaguar_celeste": (lance_du_jaguar_celeste, "minecraft:item/generated"),
+	"couronne_du_roi_de_givre": (couronne_du_roi_de_givre, "minecraft:item/generated"),
+	"egide_des_ames": (egide_des_ames, "minecraft:item/generated"),
+	"masse_du_zenith": (masse_du_zenith, "minecraft:item/handheld_mace"),
+	"lame_du_pacte": (lame_du_pacte, "minecraft:item/handheld"),
+	"hache_du_seigneur_de_guerre": (hache_du_seigneur_de_guerre, "minecraft:item/handheld"),
+	"plastron_du_serpent": (plastron_du_serpent, "minecraft:item/generated"),
+}
+
+SPEAR_UNIQUES = ("lance_du_jaguar_celeste",)
+SHIELD_UNIQUES = ("egide_des_ames",)
+
+
+def ruin_unique_sprites():
+	"""Texture name -> Sprite of the 16 x 16 textures of the uniques of the ruins (inventory icons)."""
+	return {name: draw() for name, (draw, _) in RUIN_UNIQUES.items()}
+
+
+def write_sprite_sized(name, sprite):
+	"""write_sprite() for a texture of any size (the 32 x 32 in-hand spear)."""
+	size = len(sprite.frames[0][0])
+	path = os.path.join(ASSETS, "textures", "item", name + ".png")
+	write_png(path, size, size * len(sprite.frames), [row for frame in sprite.frames for row in frame])
+	WRITTEN.add(os.path.normcase(path))
+	if sprite.meta:
+		write_json(path + ".mcmeta", sprite.meta)
+
+
+def spear_model(name):
+	"""Same item definition as the vanilla spears: the flat icon in inventories, frames and on the ground (and shelves), the
+	long in-hand model (vanilla parent item/spear_in_hand, 32 x 32 texture) everywhere else."""
+	model_file(name, "minecraft:item/generated")
+	model_file(name + "_in_hand", "minecraft:item/spear_in_hand")
+	write_json(os.path.join(ASSETS, "items", name + ".json"), {
+		"model": {
+			"type": "minecraft:select",
+			"property": "minecraft:display_context",
+			"cases": [{"when": ["gui", "ground", "fixed", "on_shelf"], "model": ref(name)}],
+			"fallback": ref(name + "_in_hand"),
+		},
+		"swap_animation_scale": 1.95,
+	})
+
+
+def shield_model(name):
+	"""The flat icon in inventories; everywhere else the vanilla shield (special model, same states and transformation as
+	minecraft:items/shield.json), which draws the base color and banner patterns of the item."""
+	model_file(name, "minecraft:item/generated")
+
+	def special(base):
+		return {"type": "minecraft:special", "base": base, "model": {"type": "minecraft:shield"}}
+
+	item_file(name, {
+		"type": "minecraft:select",
+		"property": "minecraft:display_context",
+		"cases": [{"when": "gui", "model": ref(name)}],
+		"fallback": {
+			"type": "minecraft:condition",
+			"property": "minecraft:using_item",
+			"on_false": special("minecraft:item/shield"),
+			"on_true": special("minecraft:item/shield_blocking"),
+			"transformation": {"left_rotation": [0.0, 0.0, 0.0, 1.0], "right_rotation": [0.0, 0.0, 0.0, 1.0],
+							   "scale": [1.0, -1.0, -1.0], "translation": [0.0, 0.0, 0.0]},
+		},
+	})
+
+
+def ruin_unique_models():
+	"""Models and item definitions of the uniques of the ruins, and the in-hand texture of the spear."""
+	for name, (_, parent) in RUIN_UNIQUES.items():
+		if name in SPEAR_UNIQUES:
+			spear_model(name)
+		elif name in SHIELD_UNIQUES:
+			shield_model(name)
+		else:
+			simple_model(name, parent)
+	for name in SPEAR_UNIQUES:
+		write_sprite_sized(name + "_in_hand", lance_du_jaguar_celeste_in_hand())
+
+
+def ruin_unique_preview(path):
+	"""tools/previews/textures_in_hand.png: the 32 x 32 in-hand spear (x6, every frame at x2) beside its inventory icon."""
+	sprite = lance_du_jaguar_celeste_in_hand()
+	icon = lance_du_jaguar_celeste().frames[0]
+	frames = sprite.frames
+	strip = 10
+	lines = (len(frames) + strip - 1) // strip
+	img = Image(max(12 + 32 * 6 + 24 + 16 * 6 + 12, 12 + strip * 70), 12 + 18 + 32 * 6 + 12 + lines * 70 + 12, (34, 34, 42, 255))
+	img.text(12, 12, "lance_du_jaguar_celeste_in_hand (%d)" % len(frames), 2, (230, 230, 230, 255))
+
+	def draw(x0, y0, frame, scale, cell):
+		img.checker(x0, y0, len(frame) * scale, cell)
+		for y, row in enumerate(frame):
+			for x, px in enumerate(row):
+				if px[3]:
+					img.rect(x0 + x * scale, y0 + y * scale, scale, scale, px[:3] + (255,))
+
+	draw(12, 30, frames[0], 6, 12)
+	draw(12 + 32 * 6 + 24, 30, icon, 6, 12)
+	for i, frame in enumerate(frames):
+		draw(12 + (i % strip) * 70, 30 + 32 * 6 + 12 + (i // strip) * 70, frame, 2, 4)
+	img.save(path)
+
+
 # ---------------------------------------------------------------------------------------------------------- spell scrolls
 # (drawn from shapes with automatic shading; the incantation scroll reuses the same renderer)
 
@@ -1364,6 +1801,7 @@ def all_sprites():
 		sprites["arc_du_phenix" + ("" if pull == 0 else "_pulling_%d" % (pull - 1))] = arc_du_phenix(pull)
 	for state in CROSSBOW_STATES:
 		sprites["arbalete_du_traqueur" + ("" if state == "standby" else "_" + state)] = arbalete_du_traqueur(state)
+	sprites.update(ruin_unique_sprites())
 	for name, (rune, palette, seal) in SCROLL_RUNES.items():
 		sprites["parchemin_" + name] = scroll(rune, palette, seal)
 	sprites["parchemin_incantation"] = parchemin_incantation()
@@ -1597,6 +2035,7 @@ def main():
 		simple_model(name, parent)
 	bow_model("arc_du_phenix")
 	crossbow_model("arbalete_du_traqueur")
+	ruin_unique_models()
 	for name in SCROLL_RUNES:
 		simple_model("parchemin_" + name, "minecraft:item/generated")
 	simple_model("parchemin_incantation", "minecraft:item/generated")
@@ -1607,6 +2046,7 @@ def main():
 	pack_icon(sprites)
 	preview_sheet(os.path.join(PREVIEWS, "textures.png"), sprites)
 	animated_preview(os.path.join(PREVIEWS, "textures_animated.png"), sprites)
+	ruin_unique_preview(os.path.join(PREVIEWS, "textures_in_hand.png"))
 	print("textures, models and item definitions written to", ASSETS)
 
 
