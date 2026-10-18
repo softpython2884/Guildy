@@ -172,7 +172,7 @@ def shrine(b, m):
 			b.set(x, y, z0, red.full(x, y, z0) if y > TOP + 1 else face.full(x, y, z0))
 	b.set(C, TOP + 1, z0 + 1, "minecraft:chiseled_red_sandstone")
 	b.set(C, TOP + 2, z0 + 1, "minecraft:decorated_pot[cracked=false,facing=south,waterlogged=false]")
-	b.t.nbt[(C, TOP + 2, z0 + 1)] = deco.N.Compound(id=deco.N.String("minecraft:decorated_pot"))
+	b.t.nbt[(C, TOP + 2, z0 + 1)] = deco.pot_nbt()
 	deco.candles(b, C - 1, TOP + 1, z0 + 1, 3, color="orange")
 	deco.candles(b, C + 1, TOP + 1, z0 + 1, 2, color="orange")
 	deco.chest(b, C + 3, TOP + 1, z0 + 1, "south", "common")
@@ -304,7 +304,7 @@ def chamber(b, m, x0, z0, x1, z1, floor, door_z, loot, spawner=False):
 	deco.chest(b, cx, floor + 1, far_z, facing, tier)
 	for x in (x0, x1):
 		b.set(x, floor + 1, far_z, "minecraft:decorated_pot[cracked=true,facing=north,waterlogged=false]")
-		b.t.nbt[(x, floor + 1, far_z)] = deco.N.Compound(id=deco.N.String("minecraft:decorated_pot"))
+		b.t.nbt[(x, floor + 1, far_z)] = deco.pot_nbt()
 	if spawner:
 		deco.spawner(b, cx, floor + 1, (z0 + z1) // 2, "minecraft:husk", count=3, max_nearby=5)
 	else:

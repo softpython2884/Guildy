@@ -42,6 +42,14 @@ def loot_nbt(block_entity_id, tier):
 	return N.Compound(id=N.String(block_entity_id), LootTable=N.String(LOOT[tier]))
 
 
+POT_LOOT = {False: "guildy:pots/ruin", True: "guildy:pots/ruin_nether"}
+
+
+def pot_nbt(nether=False):
+	"""Block entity of a decorated pot: one modest item of the ruin pot table, spilled when the pot is broken."""
+	return N.Compound(id=N.String("minecraft:decorated_pot"), LootTable=N.String(POT_LOOT[nether]))
+
+
 def chest(b, x, y, z, facing, tier, kind="chest"):
 	"""kind: chest | trapped_chest | barrel. facing = the side the lid opens toward (the player stands there)."""
 	if kind == "barrel":

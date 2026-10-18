@@ -10,8 +10,15 @@ budget, exactly one guildy:boss DATA marker with free space (3 air above, free c
 block), 2-8 guildy:minion markers with the same rule, 2-8 guildy:guard markers (room guards: 2 free cells above,
 a solid floor, room to move, on the walkable path), at most one guildy:entrance, a boss arena of at least 13 x 13
 walkable cells and 6 blocks high without lava (25 x 25 and 12 high for the grand temple), every chest / barrel with
-a guildy loot table (1 treasure, 1-3 rare, 2-6 common), at most 2 spawners with SpawnData, only decorative
-entities, no floating blocks.
+a guildy loot table (1 treasure, 1-3 rare, 2-6 common), every decorated pot with the pot loot table, at most 2
+spawners with SpawnData, only decorative entities, no floating blocks.
+
+Water audit (ruinlib/water.py, the vanilla flow rules): the template's water (and lava) is let flow until it is
+stable; water that ends up anywhere it was not built (on floors, steps, in the arena, waterlogging blocks) is an
+error, a fall into a basin is fine; dry troughs that look like canals are reported. Under the ground floor: holes in
+the rooms (structure void: the terrain shows through, or the water of a flooded ground), the openings through which
+the water of a flooded ground (an aquifer) would get in, and the structures that let the placement waterlog their
+blocks with the world's water (liquid_settings apply_waterlogging). Ice melted by nearby lights is reported.
 """
 import argparse
 import json
@@ -23,6 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from ruinlib import blocks as B  # noqa: E402
+from ruinlib import water as W  # noqa: E402
 from ruinlib.build import is_structural, DIRS  # noqa: E402
 from ruinlib.template import Template, AIR  # noqa: E402
 from ruinlib.ruin import RESOURCES  # noqa: E402
@@ -38,6 +46,7 @@ LIMITS = {
 BIG_IDS = {"bastion_de_givre", "temple_maya", "citadelle_des_ames"}
 GRAND_IDS = {"grand_temple_maya"}
 CONTAINERS = ("minecraft:chest", "minecraft:trapped_chest", "minecraft:barrel")
+POT_LOOT = ("guildy:pots/ruin", "guildy:pots/ruin_nether")
 ALLOWED_ENTITIES = ("minecraft:item_frame", "minecraft:glow_item_frame", "minecraft:armor_stand")
 PASSABLE = ("air", "cave_air", "short_grass", "fern", "moss_carpet", "pale_moss_carpet", "snow", "cobweb", "vine",
 	"glow_lichen", "hanging_roots", "dead_bush", "short_dry_grass", "crimson_roots", "warped_roots", "nether_sprouts",
@@ -81,10 +90,12 @@ def size_class(rid):
 	return "grand" if rid in GRAND_IDS else "big" if rid in BIG_IDS else "normal"
 
 
-def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jigsaw=False):
+def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jigsaw=False,
+	liquid="ignore_waterlogging"):
 	"""
 	Checks one (assembled) template. ground = layer of the ground floor (natural top block level). big: False /
-	True (the 64 x 64 landmarks) or a size class name of LIMITS ("normal", "big", "grand").
+	True (the 64 x 64 landmarks) or a size class name of LIMITS ("normal", "big", "grand"). liquid: the liquid_settings
+	of the structure (apply_waterlogging lets the placement waterlog the blocks standing in the world's water).
 	"""
 	sx, sy, sz = t.size
 	limits = LIMITS[big if isinstance(big, str) else ("big" if big else "normal")]
@@ -144,6 +155,7 @@ def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jig
 	loot = {"common": 0, "rare": 0, "treasure": 0}
 	prefix = "guildy:chests/ruin/" + ("nether_" if nether else "")
 	treasure_pos = []
+	pots = 0
 	for pos, state in t.cells.items():
 		block_id = state.split("[", 1)[0]
 		if block_id in CONTAINERS:
@@ -157,8 +169,14 @@ def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jig
 		if block_id == "minecraft:spawner":
 			if "SpawnData" not in t.nbt.get(pos, {}):
 				report.errors.append(f"spawner sans SpawnData en {pos}")
+		if block_id == "minecraft:decorated_pot":
+			pots += 1
+			table = str(t.nbt.get(pos, {}).get("LootTable", ""))
+			if table != POT_LOOT[1 if nether else 0]:
+				report.errors.append(f"pot décoré en {pos} : table de butin '{table}' invalide (attendu {POT_LOOT[1 if nether else 0]})")
 	spawners = sum(1 for s in t.cells.values() if s.startswith("minecraft:spawner"))
-	report.info.append(f"coffres : {loot['treasure']} tresor, {loot['rare']} rares, {loot['common']} communs ; {spawners} spawner(s)")
+	report.info.append(f"coffres : {loot['treasure']} tresor, {loot['rare']} rares, {loot['common']} communs ; {spawners} spawner(s) ; "
+		f"{pots} pot(s) décoré(s)")
 	if loot["treasure"] != 1:
 		report.errors.append(f"il faut 1 coffre tresor (trouve {loot['treasure']})")
 	if not 1 <= loot["rare"] <= 3:
@@ -178,6 +196,7 @@ def check_template(t, report, nether=False, ground=0, big=False, pieces_with_jig
 		if lost:
 			report.warnings.append(f"{len(lost)} garde(s) hors du chemin praticable depuis l'entrée, ex. {lost[:3]}")
 	floating(t, report, ground)
+	water(t, report, nether, ground, liquid, bosses[0] if bosses else None)
 
 
 def _dist(a, b):
@@ -367,6 +386,114 @@ def floating(t, report, ground):
 		report.errors.append(f"{len(lost)} bloc(s) flottant(s) (non relies au sol), ex. {lost[:4]}")
 
 
+# ------------------------------------------------------------------------------------------------- water
+
+def _box(cells):
+	xs, ys, zs = zip(*cells)
+	return f"x {min(xs)}..{max(xs)}, y {min(ys)}..{max(ys)}, z {min(zs)}..{max(zs)}"
+
+
+def _sunk(flow, p):
+	"""The fluid cell p lies in a groove of a floor: two of its sides are solid blocks with open space above (lips)."""
+	lips = 0
+	for d in W.HORIZONTAL:
+		n = W.rel(p, d)
+		s = flow.state(n)
+		if s is not None and W.classify(s).kind in ("sealed", "container") and n not in flow.fluid and \
+			W.is_open(flow.state(W.rel(n, W.UP))):
+			lips += 1
+	return lips >= 2
+
+
+def _spill(flow, comp, boss):
+	"""
+	(kind, description) of a group of cells the fluid reached outside what was built: "flood" (water on floors, steps,
+	in the arena, waterlogged blocks), "trough" (flowing water lower than the rest of a canal: a gap in it), "fall" (a
+	fall into a basin).
+	"""
+	flat = [p for p in comp if not flow.fluid[p][1] and p not in flow.waterlogged]
+	if flat and sum(_sunk(flow, p) for p in flat) >= 0.75 * len(flat) and not flow.waterlogged & set(comp):
+		return "trough", f"{len(comp)} case(s) d'eau courante plus basse que le reste du canal, {_box(comp)}"
+	floor, steps, arena, falls = [], 0, 0, 0
+	for p in comp:
+		below = (p[0], p[1] - 1, p[2])
+		under = flow.state(below)
+		if p in flow.waterlogged:
+			floor.append(p)
+			steps += "_stairs" in flow.cells[p]
+		elif below not in flow.fluid and under is not None and W.classify(under).kind != "open":
+			floor.append(p)
+			steps += "_stairs" in under
+		above = flow.fluid.get((p[0], p[1] + 1, p[2]))
+		if flow.fluid[p][1] and not (above and above[1]):
+			falls += 1
+		if boss and p in floor and abs(p[0] - boss[0]) <= 15 and abs(p[2] - boss[2]) <= 15 and abs(p[1] - boss[1]) <= 3:
+			arena += 1
+	origin = sorted({q for p in comp for d in W.HORIZONTAL + (W.UP,) for q in [W.rel(p, d)] if q in flow.initial})
+	basin = sorted({q for p in comp for q in [W.rel(p, W.DOWN)] if q in flow.initial})
+	where = f"{len(comp)} case(s), {_box(comp)}, depuis {origin[:2]}"
+	if not floor:
+		return "fall", f"chute contenue : {where}, {falls} filet(s) qui tombe(nt) dans l'eau en {basin[:2]}"
+	what = [f"{len(floor)} sur des sols"]
+	if steps:
+		what.append(f"{steps} sur des marches")
+	if arena:
+		what.append(f"{arena} dans l'arène")
+	if flow.waterlogged & set(comp):
+		what.append(f"{len(flow.waterlogged & set(comp))} bloc(s) noyé(s)")
+	if falls:
+		what.append(f"{falls} chute(s)")
+	return "flood", f"{where} ({', '.join(what)})"
+
+
+def water(t, report, nether=False, ground=0, liquid="ignore_waterlogging", boss=None):
+	"""Water audit of a template (see the module doc)."""
+	built = set()  # every cell the template's own water wets
+	for fluid in ((W.LAVA_NETHER if nether else W.LAVA), W.WATER):
+		name = "eau" if fluid is W.WATER else "lave"
+		flow = W.Flow(t, fluid).run()
+		if not flow.initial:
+			continue
+		if fluid is W.WATER:
+			built = set(flow.fluid)
+		spilled = flow.spilled()
+		report.info.append(f"{name} : {len(flow.initial)} case(s) du gabarit, écoulement stable après {flow.ticks} ticks, "
+			f"{len(spilled)} case(s) atteinte(s) en plus")
+		if not flow.converged:
+			report.warnings.append(f"{name} : l'écoulement n'est pas stable après {flow.ticks} ticks")
+		for comp in flow.components(spilled):
+			kind, text = _spill(flow, comp, boss)
+			if kind == "flood":
+				report.errors.append(f"{name} qui déborde : {text}")
+			elif kind == "trough":
+				report.warnings.append(f"canal cassé : {text}")
+			else:
+				report.info.append(f"{name} : {text}")
+		if fluid is W.WATER:
+			for group in W.dry_channels(flow):
+				report.warnings.append(f"canal à sec : {len(group)} case(s) creusée(s) dans le sol sans eau, {_box(group)}")
+	if not nether:
+		for p, lv in W.melting_ice(t):
+			report.warnings.append(f"glace en {p} : lumière {lv}, elle fondra en eau")
+	if nether or ground <= 0:
+		return
+	for v in W.holes(t, ground):
+		report.errors.append(f"trou en {v} : vide de structure au milieu d'une salle souterraine (le terrain s'y montre, "
+			"ou l'eau d'un sol noyé)")
+	flow = W.Flow(t, W.WATER, terrain_water_below=ground).run()
+	leak = [p for p in flow.spilled() if p not in built]
+	if leak:
+		entries = sorted({q for p in leak for d in W.STEP for q in [W.rel(p, d)] if q in flow.terrain})
+		report.warnings.append(f"sol noyé (nappe sous le sol) : l'eau du terrain entrerait par {len(entries)} case(s) "
+			f"(ex. {entries[:3]}) et mouillerait {len(leak)} case(s) ({_box(leak)})")
+	if liquid != "ignore_waterlogging":
+		wet, flooded = W.flooded_ground(t, ground)
+		if wet:
+			drowned = sum(1 for p in flooded.fluid if p not in built)
+			report.errors.append(f"liquid_settings {liquid} : dans un sol noyé, le placement noie {len(wet)} bloc(s) du "
+				f"sous-sol (escaliers, dalles, chaînes...) et l'eau inonde {drowned} case(s) : mettre ignore_waterlogging")
+
+
 # ------------------------------------------------------------------------------------------- ruin files
 
 def check_ruin(ruin):
@@ -376,7 +503,7 @@ def check_ruin(ruin):
 		sub = Report(v.name or "procedurale")
 		cls = "grand" if getattr(ruin, "grand", False) else "big" if getattr(ruin, "big", False) else "normal"
 		check_template(v.assembled(ruin.id), sub, nether=ruin.dimension == "nether", ground=v.ground,
-			big=cls, pieces_with_jigsaw=v.multi)
+			big=cls, pieces_with_jigsaw=v.multi, liquid=ruin.liquid_settings)
 		prefix = f"[variante {v.name}] " if v.name else ""
 		report.info += [prefix + i for i in sub.info]
 		report.warnings += [prefix + w for w in sub.warnings]
@@ -423,13 +550,23 @@ def load_resources():
 	return out
 
 
-def _nether(rid):
+def _structure(rid):
 	path = os.path.join(RESOURCES, "worldgen", "structure", "ruin", rid + ".json")
 	try:
 		with open(path, encoding="utf-8") as f:
-			return "project_start_to_heightmap" not in json.load(f)
+			return json.load(f)
 	except OSError:
-		return False
+		return {}
+
+
+def _nether(rid):
+	data = _structure(rid)
+	return bool(data) and "project_start_to_heightmap" not in data
+
+
+def liquid_settings(rid):
+	"""liquid_settings of a ruin's structure (the vanilla default is apply_waterlogging)."""
+	return _structure(rid.split("/")[0]).get("liquid_settings", "apply_waterlogging")
 
 
 def main():
@@ -458,7 +595,7 @@ def main():
 	else:
 		for rid, t, nether, ground, multi in load_resources():
 			report = Report(rid)
-			check_template(t, report, nether, ground, size_class(rid.split("/")[0]), multi)
+			check_template(t, report, nether, ground, size_class(rid.split("/")[0]), multi, liquid_settings(rid))
 			print(report.text())
 			ok &= report.ok
 	sys.exit(0 if ok else 1)

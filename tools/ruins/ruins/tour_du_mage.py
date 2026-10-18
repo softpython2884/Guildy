@@ -461,7 +461,7 @@ def floors(b, m):
 	for x in range(CX - 1, CX + 2):
 		b.set(x, F1 + 1, CZ, stairs("minecraft:dark_oak_stairs", "north", "top"))
 	b.set(CX - 1, F1 + 2, CZ, "minecraft:decorated_pot[cracked=false,facing=south,waterlogged=false]")
-	b.t.nbt[(CX - 1, F1 + 2, CZ)] = deco.N.Compound(id=deco.N.String("minecraft:decorated_pot"))
+	b.t.nbt[(CX - 1, F1 + 2, CZ)] = deco.pot_nbt()
 	b.set(CX, F1 + 2, CZ, "minecraft:amethyst_cluster[facing=up]")
 	deco.candles(b, CX + 1, F1 + 2, CZ, 3, color="purple")
 	for (x, z) in ((CX - 2, CZ + 2), (CX + 2, CZ - 2)):

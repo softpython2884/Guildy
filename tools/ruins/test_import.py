@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Self-test of the schematic converter: every ruin is exported the way a builder would hand it in (DATA markers
-replaced by [boss] / [sbire] / [garde] / [entree] signs, loot tables replaced by [coffre ...] signs on the chests,
+replaced by [boss] / [sbire] / [garde] / [entree] signs, loot tables replaced by [coffre ...] signs on the chests
+and removed from the decorated pots,
 the whole box filled with air, a structure_void border) as Sponge v2, Sponge v3, Litematica and structure .nbt
 files, then converted back. The result must have the same markers, loot tables and blocks as the original.
 
@@ -55,6 +56,10 @@ def as_builder_file(t):
 	k = 0
 	for (x, y, z), tag in list(t.nbt.items()):
 		table = str(tag.get("LootTable", ""))
+		if table.startswith("guildy:pots/"):
+			del out.nbt[(x + 1, y, z + 1)]["LootTable"]  # a plain pot: the converter gives it the pot table
+			expected_loot[(x + 1, y, z + 1)] = table
+			continue
 		if not table.startswith("guildy:chests/ruin/"):
 			continue
 		p = (x + 1, y, z + 1)

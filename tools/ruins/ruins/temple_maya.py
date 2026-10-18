@@ -166,7 +166,7 @@ def step_y(z):
 
 def pot(b, x, y, z, cracked=False, facing="south"):
 	b.t.set(x, y, z, f"minecraft:decorated_pot[cracked={'true' if cracked else 'false'},facing={facing},waterlogged=false]",
-		deco.N.Compound(id=deco.N.String("minecraft:decorated_pot")))
+		deco.pot_nbt())
 
 
 # --------------------------------------------------------------------------------------------- foundations

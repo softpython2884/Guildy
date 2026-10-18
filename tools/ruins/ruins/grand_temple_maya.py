@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ruinlib import build as K, decay, veg, deco, shapes  # noqa: E402
 from ruinlib import blocks as B  # noqa: E402
 from ruinlib import nbt as N  # noqa: E402
+from ruinlib import water as W  # noqa: E402
 from ruinlib.build import Mat, Mix, AIR, DIRS, OPP, CW  # noqa: E402
 from ruinlib.ruin import Ruin, split_pieces, rules  # noqa: E402
 from ruins.temple_maya import leaves, blob, log_line, prune, pot, unprotect, double_plants  # noqa: E402
@@ -96,6 +97,7 @@ def build():
 	ruin_it(b, m)
 	life(b, m)
 	b.carve_dome(PX, PZ + 20, 66.0, G + 1, 14, rough=3.0)
+	waterworks(b, m)
 	b.open_clear_zones()
 	shapes.fix(b.t)
 	pieces = split_pieces(ID, b.t, G, jigsaw_xz=(0, SZ - 1))
@@ -2390,6 +2392,35 @@ def life(b, m):
 			if "jungle_log" not in (b.get(x + dx, y, z + dz) or "") and "jungle_wood" not in (b.get(x + dx, y, z + dz) or ""):
 				b.set(x, y, z, AIR)
 	decay.cleanup(b)
+
+
+# ------------------------------------------------------------------------------------------------ the water
+
+def waterworks(b, m):
+	"""
+	The water stays where it was built. The structure ignores the world's water (Ruin.liquid_settings: in the jungles
+	the basement is dug under the water table, and the placement used to waterlog every stair, chain and lantern standing
+	in it: water poured from the vaults into the hall, the stairs and the galleries). Here, last of all:
+	  - the canal of the cenote tunnel runs on through the east door to the foot of the hall's wall (it stopped short of
+	    the door: a dry gap), as in the temple of the Feathered Serpent;
+	  - the lanterns of the vault of the hall of offerings lost their chain to the decay: the chains hang again from the
+	    capstone (the cell above them was left to the terrain, a floating block or a water source in flooded ground);
+	  - the cells of terrain still touching the basement's rooms (behind the niches of the hall of offerings, a corner
+	    of the path cut into the cenote's wall) become the masonry (or the rock) around them, so the water of a flooded
+	    ground never gets in.
+	"""
+	for x in (PX + HALL + 1, PX + HALL + 2):
+		b.set(x, FEET - 1, PZ, "minecraft:water")
+		b.set(x, FEET - 2, PZ, "minecraft:polished_tuff")
+	for (x, y, z), s in sorted(b.t.cells.items()):
+		if y < G and "lantern[" in s and "hanging=true" in s and b.get(x, y + 1, z) is None:
+			top = y + 1
+			while top < y + 12 and b.t.inside(x, top, z) and b.empty(x, top, z):
+				top += 1
+			for yy in range(y + 1, top):
+				b.t.set(x, yy, z, "minecraft:oxidized_copper_chain[axis=y,waterlogged=false]")
+	for (x, y, z) in sorted(W.terrain_contacts(b.t, G)):
+		b.set(x, y, z, m["rock"].full(x, y, z) if dist(x, z, CEN) < 16 else m["deep"].full(x, y, z))
 
 
 if __name__ == "__main__":
