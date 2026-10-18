@@ -8,6 +8,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +20,8 @@ import java.util.UUID;
 /**
  * Pluie de météores: a red runic circle marks the area around the aimed point, then burning meteors fall one after the other
  * from behind the caster (fire trail, smoke, color-fading embers), each one announced by a shrinking warning ring; every
- * impact bursts (no real explosion, no block touched) and hurts, ignites and throws back the monsters around it.
+ * impact bursts (no real explosion, no block touched) and hurts, ignites and throws back the monsters around it. Two meteors
+ * out of three are called down on a monster of the area and follow it while they fall ({@link MeteorRules}).
  */
 final class MeteorShowerSpell extends SpellEffect {
 	private static final int FLIGHT = 16;
@@ -37,18 +39,24 @@ final class MeteorShowerSpell extends SpellEffect {
 	private final float fireSeconds;
 	private final List<Meteor> meteors = new ArrayList<>();
 	private final List<Crater> craters = new ArrayList<>();
+	/** Meteors called on each monster during this cast, and the damage of those still falling on it. */
+	private final Map<UUID, Integer> aimed = new HashMap<>();
+	private final Map<UUID, Double> pending = new HashMap<>();
 	private int launched;
 
 	private static final class Meteor {
 		final Vec3 start;
-		final Vec3 impact;
+		Vec3 impact;
 		Vec3 last;
+		/** The monster it was called on (followed until just before the impact), or null. */
+		@Nullable LivingEntity target;
 		int age;
 
-		Meteor(Vec3 start, Vec3 impact) {
+		Meteor(Vec3 start, Vec3 impact, @Nullable LivingEntity target) {
 			this.start = start;
 			this.impact = impact;
 			this.last = start;
+			this.target = target;
 		}
 	}
 
@@ -109,12 +117,16 @@ final class MeteorShowerSpell extends SpellEffect {
 		while (it.hasNext()) {
 			Meteor meteor = it.next();
 			meteor.age++;
+			follow(meteor);
 			double t = Math.min(1, meteor.age / (double) FLIGHT);
 			// Accelerating fall.
 			Vec3 pos = meteor.start.add(meteor.impact.subtract(meteor.start).scale(t * t * 0.6 + t * 0.4));
 			drawMeteor(fx, meteor, pos, t);
 			meteor.last = pos;
 			if (meteor.age >= FLIGHT) {
+				if (meteor.target != null) {
+					pending.computeIfPresent(meteor.target.getUUID(), (k, v) -> v - damage > 1.0E-6 ? v - damage : null);
+				}
 				impact(fx, meteor.impact);
 				it.remove();
 			}
@@ -136,16 +148,56 @@ final class MeteorShowerSpell extends SpellEffect {
 	}
 
 	private void launch() {
-		double angle = random.nextDouble() * Math.PI * 2;
-		double distance = Math.sqrt(random.nextDouble()) * radius;
-		Vec3 point = center.add(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
-		// The ground near the area's height (never deep down a ravine nor on a far roof).
-		Vec3 ground = SpellTargets.ground(level, point.add(0, 6, 0), 14);
-		Vec3 impact = Math.abs(ground.y - center.y) <= 8 ? ground : point;
+		LivingEntity target = MeteorRules.aimed(launched) ? pickTarget() : null;
+		Vec3 impact;
+		if (target != null) {
+			impact = target.position();
+			aimed.merge(target.getUUID(), 1, Integer::sum);
+			pending.merge(target.getUUID(), damage, Double::sum);
+		} else {
+			double angle = random.nextDouble() * Math.PI * 2;
+			double distance = Math.sqrt(random.nextDouble()) * radius;
+			Vec3 point = center.add(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+			// The ground near the area's height (never deep down a ravine nor on a far roof).
+			Vec3 ground = SpellTargets.ground(level, point.add(0, 6, 0), 14);
+			impact = Math.abs(ground.y - center.y) <= 8 ? ground : point;
+		}
 		Vec3 start = impact.add(from).add((random.nextDouble() - 0.5) * 6, random.nextDouble() * 4, (random.nextDouble() - 0.5) * 6);
-		meteors.add(new Meteor(start, impact));
+		meteors.add(new Meteor(start, impact, target));
 		launched++;
 		sound(start, SoundEvents.FIRECHARGE_USE, 2.0F, 0.6F + random.nextFloat() * 0.3F);
+	}
+
+	/** The monster of the area this meteor is called on ({@link MeteorRules#pick}), or null. */
+	private @Nullable LivingEntity pickTarget() {
+		List<LivingEntity> around = SpellTargets.hostiles(ctx, level, center, reach(), 16);
+		List<MeteorRules.Candidate> candidates = new ArrayList<>(around.size());
+		for (LivingEntity monster : around) {
+			UUID id = monster.getUUID();
+			candidates.add(new MeteorRules.Candidate(monster.getHealth() + monster.getAbsorptionAmount(), pending.getOrDefault(id, 0.0),
+					aimed.getOrDefault(id, 0), SpellTargets.distance(monster, center)));
+		}
+		int index = MeteorRules.pick(candidates);
+		return index < 0 ? null : around.get(index);
+	}
+
+	/** Monsters within this distance of the aimed point may be called on (and are followed while they stay in it). */
+	private double reach() {
+		return radius + impactRadius;
+	}
+
+	/** A called meteor follows its monster until just before the impact (it keeps its last point once the monster is gone). */
+	private void follow(Meteor meteor) {
+		LivingEntity target = meteor.target;
+		if (target == null || meteor.age > FLIGHT - 2) {
+			return;
+		}
+		if (!target.isAlive() || target.isRemoved() || target.level() != level || SpellTargets.distance(target, center) > reach() + 2) {
+			pending.computeIfPresent(target.getUUID(), (k, v) -> v - damage > 1.0E-6 ? v - damage : null);
+			meteor.target = null;
+			return;
+		}
+		meteor.impact = target.position();
 	}
 
 	private void drawMeteor(Fx fx, Meteor meteor, Vec3 pos, double t) {
@@ -177,8 +229,8 @@ final class MeteorShowerSpell extends SpellEffect {
 		IMPACTS.merge(owner, 1, Integer::sum);
 		sound(p, SoundEvents.GENERIC_EXPLODE, 2.2F, 0.75F + random.nextFloat() * 0.35F);
 		sound(p, SoundEvents.FIRECHARGE_USE, 1.5F, 0.5F);
-		for (LivingEntity target : SpellTargets.hostiles(ctx, level, p, impactRadius + 0.6, 16)) {
-			double distance = Math.sqrt(target.distanceToSqr(p));
+		for (LivingEntity target : SpellTargets.hostiles(ctx, level, p, impactRadius + 0.3, 16)) {
+			double distance = SpellTargets.distance(target, p);
 			double falloff = Math.max(0.5, 1.0 - 0.5 * distance / Math.max(1, impactRadius));
 			SpellTargets.hurt(ctx, target, SpellTargets.Element.FIRE, damage * falloff);
 			if (fireSeconds > 0) {

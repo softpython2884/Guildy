@@ -22,13 +22,16 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -321,6 +324,52 @@ public class ScrollGameTests {
 			helper.assertFalse(scene.level().getBlockState(impact).is(Blocks.FIRE), "no fire block");
 			cleanup(scene);
 		});
+	}
+
+	/**
+	 * Balance (Guildy 1.10): a meteor shower on an armored guardian (armor 30, toughness 20: four fifths of a vanilla hit
+	 * absorbed) and its escort. Spell damage ignores armor and two meteors out of three follow a monster: the escort dies,
+	 * the guardian takes several full meteors.
+	 */
+	@GameTest(environment = ENV, maxTicks = 260)
+	public void meteorShowerDentsAnArmoredGuardian(GameTestHelper helper) {
+		Scene scene = scene(helper, "Meteores lourds", new BlockPos(6, 0, 2), new BlockPos(6, 0, -2), 10, 14);
+		Zombie guardian = EntityTypes.ZOMBIE.create(scene.level(), EntitySpawnReason.COMMAND);
+		BlockPos at = scene.ground().east(6);
+		guardian.snapTo(at.getX() + 0.5, at.getY() + 1, at.getZ() + 0.5, 90.0F, 0.0F);
+		guardian.getAttribute(Attributes.MAX_HEALTH).setBaseValue(1000);
+		guardian.getAttribute(Attributes.ARMOR).setBaseValue(30);
+		guardian.getAttribute(Attributes.ARMOR_TOUGHNESS).setBaseValue(20);
+		guardian.setHealth(1000);
+		// No burning damage: only the meteors count.
+		guardian.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
+		guardian.setNoAi(true);
+		guardian.setPersistenceRequired();
+		scene.level().addFreshEntity(guardian);
+		helper.assertTrue(guardian.getArmorValue() >= 30, "armored guardian, armor " + guardian.getArmorValue());
+		double meteor = ScrollModule.config().scroll("pluie_de_meteores").param("damage");
+		int count = ScrollModule.config().scroll("pluie_de_meteores").intParam("count");
+		helper.assertTrue(meteor >= 28, "Guildy 1.10 meteor damage, got " + meteor);
+		cast(helper, scene, "pluie_de_meteores");
+		helper.startSequence()
+				.thenIdle(110)
+				.thenExecute(() -> {
+					for (Husk husk : scene.husks()) {
+						helper.assertTrue(husk.isRemoved() || husk.isDeadOrDying(), "escort husk at " + husk.blockPosition() + " killed, health "
+								+ husk.getHealth());
+					}
+					double dealt = guardian.getMaxHealth() - guardian.getHealth();
+					// Logged with the chat of the test players (balance figures).
+					scene.caster().sendSystemMessage(Component.literal("meteor shower: " + dealt + " health points through armor "
+							+ guardian.getArmorValue() + " (" + count + " meteors of " + meteor + ")"));
+					// At least three full meteors (seven are called, two of them on the escort); never more than every meteor.
+					helper.assertTrue(dealt >= 3 * meteor - 0.01, "several full meteors through the armor, dealt " + dealt);
+					helper.assertTrue(dealt <= count * meteor + 0.01, "at most every meteor once, dealt " + dealt);
+					untouched(helper, scene);
+					guardian.discard();
+					cleanup(scene);
+				})
+				.thenSucceed();
 	}
 
 	@GameTest(environment = ENV, maxTicks = 120)
