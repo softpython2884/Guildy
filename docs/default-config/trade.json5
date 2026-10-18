@@ -13,7 +13,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 2,
+	"configVersion": 3,
 
 	// Visites des marchands au Carrefour commercial
 	"visits": {
@@ -1342,16 +1342,6 @@
 					"enchantment": "",
 					"level": 1,
 					"unique": ""
-				},
-				{
-					"item": "minecraft:nether_star",
-					"count": 1,
-					"price": 360,
-					"maxUses": 1,
-					"weight": 3.0,
-					"enchantment": "",
-					"level": 1,
-					"unique": "random"
 				}
 			]
 		}

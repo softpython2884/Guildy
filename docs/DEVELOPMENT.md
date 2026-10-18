@@ -351,6 +351,29 @@ schématiques) : `tools/ruins/`.
     `booksToday` commun + `scrollsToday`). Les objets magiques Guildy (`custom_data` kind scroll / grimoire / ruin_summon)
     sont rangés dans la catégorie du livre enchanté (`ItemClassifier`).
 
+50. **Gardiens de salle, renfort de groupe, sanctuaires, 8e ruine** : marqueur DATA `guildy:guard` (`RuinRules.Marker.GUARD`,
+    `RuinRecord.guards`) ; `RoomGuards` poste les gardiens quand un joueur survie/aventure approche une ruine DORMANTE sans
+    combat ni rituel, une fois par période dormante (`RoomGuardRules` : nombre par palier + joueurs + menace, postes =
+    marqueurs sinon postes de secours, laisse) ; tag `guildy_ruin_guard`, refusés au chargement sans `Watch` ;
+    `RoomGuards.blocking` → `Refusal.GUARDED`. `GroupScaling` (pur) : joueurs figés dans `Encounter.party`, modificateurs
+    `guildy:ruin_group_*` en ADD_MULTIPLIED_TOTAL (multipliés avec la menace et la malédiction), or réparti par
+    `ItemEntity.setTarget`. Sanctuaires : `Sanctuaries` + `BeaconRules` (niveaux complets comme
+    `BeaconBlockEntity.updateBase`), cassure annulée (`AttackBlockCallback`, `PlayerBlockBreakEvents.BEFORE`), mixins RETURN
+    de `ServerExplosion.calculateExplodedPositions` et `PistonStructureResolver.resolve`. 8e ruine `grand_temple_maya`
+    (112 × 104 × 116, deux pièces, balise sur base de fer à ~83 blocs, structure set `ruins_landmark` espacement 56 avec
+    exclusion de 10 chunks autour de `ruins_overworld` ; emprise max 116 = 8 chunks de référence + marge d'adaptation de 12)
+    : ravageur ×1,6 (`RavagerRuinMixin` annule la casse des feuilles), styles `solar` / `gold`. Raiders des ruines
+    `setCanJoinRaid(false)` ; `RuinFx.play` pendant `tick` mis en file.
+51. **Gardiens maudits** : `CursedItems` (kind `ruin_summon_cursed`), même chemin que le parchemin normal (`Incantations` +
+    mixin), refus `CURSED_DISABLED` / `GUARDED` ; `CursedRitual` étend `Ritual`. `Encounters.awaken(..., cursed)` crée
+    `Encounter.cursed` (`CursedEncounter`) : modificateurs `guildy:ruin_cursed_*`, barre PURPLE NOTCHED_6, pas de
+    résurrection. Phases `CursedRules` (pur) : `ALLOW_DEATH` et `AFTER_DAMAGE` ramènent la vie au seuil et lancent
+    `CursedTransition` ; `CursedFights` avance chaque tick avec un `RitualFx` partagé. Attaques (`Pentagrams`,
+    `CursedAttacks`) télégraphiées, joueurs seulement, dégâts × menace × groupe × phase ; ombres via `BossFactory`, suivies
+    comme escorte. Récompenses `CursedRules.rewards` (`maxUniques`), grimoire / parchemin garanti ; menace +`threatGain`.
+    GameTests : `GuildyTestInit` monte `encounter.maxActive` à 64. Les armes uniques ne sont plus vendues au Carrefour
+    (`trade.json5` format 3 retire l'ancienne offre une fois).
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).

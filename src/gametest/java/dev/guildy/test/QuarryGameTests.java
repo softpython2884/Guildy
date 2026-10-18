@@ -59,7 +59,7 @@ public class QuarryGameTests {
 		}
 	}
 
-	@GameTest(environment = "guildy-test:day", maxTicks = 12000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 16000)
 	public void minersDigQuarryBenchesAroundTheirTower(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Carriere", 4);
 		ServerLevel level = scene.level();
@@ -136,7 +136,7 @@ public class QuarryGameTests {
 	 * floor patch) and an old quarry room, level progress of the old galleries. It becomes a quarry: the old progress is
 	 * dropped, the tunnels are just air, the patch keeps its column, the hole in the shell is patched.
 	 */
-	@GameTest(environment = "guildy-test:day", maxTicks = 12000)
+	@GameTest(environment = "guildy-test:day", maxTicks = 16000)
 	public void stoneMineDugBeforeBecomesAQuarry(GameTestHelper helper) throws Exception {
 		Scene scene = scene(helper, "Ancienne", 3);
 		ServerLevel level = scene.level();

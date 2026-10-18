@@ -3,7 +3,7 @@
 // des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.
 // Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou
 // boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>
-// | incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche).
+// | incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle).
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
@@ -198,6 +198,297 @@
 		"bonusScrollRolls": 1
 	},
 
+	// Gardiens de salle : quand un joueur en survie / aventure approche d'une ruine dormante, des ennemis apparaissent a leurs
+	// postes (marqueurs guildy:guard, sinon pres des sbires, de l'entree et autour du gardien endormi). Une fois par periode
+	// dormante : tues, ils ne reviennent qu'apres le depart de tous les joueurs (resetSeconds de la ruine)
+	"guards": {
+
+		// Gardiens de salle actifs
+		"enabled": true,
+
+		// Marge (blocs) autour de la boite de la ruine : un joueur en survie / aventure qui y entre fait apparaitre les gardiens
+		"triggerMargin": 8,
+
+		// Gardiens par palier de ruine (palier 1, 2, 3, 4, 5)
+		"countByTier": [
+			2,
+			3,
+			4,
+			5,
+			6
+		],
+
+		// Gardiens en plus par joueur en survie / aventure present au-dela du premier
+		"perExtraPlayer": 1,
+
+		// Un gardien de plus tous les N niveaux de menace (0 = jamais)
+		"threatLevelsPerGuard": 2,
+
+		// Gardiens au maximum par ruine
+		"max": 12,
+
+		// Distance (blocs) a leur poste au-dela de laquelle les gardiens y retournent (au double : ramenes d'un coup)
+		"leashRadius": 10,
+
+		// Tant que des gardiens vivent dans l'arene (rayon 'summon.arenaRadius' autour du gardien endormi), l'incantation est
+		// refusee (en mode proximity, le gardien ne se reveille pas)
+		"blockRitual": true,
+
+		// Ruines sans marqueur guildy:guard : rayon (blocs) du cercle de postes de secours autour du gardien endormi
+		"fallbackRadius": 7,
+
+		// Ruines sans marqueur guildy:guard : postes de secours sur ce cercle (en plus des sbires et de l'entree)
+		"fallbackPoints": 6
+	},
+
+	// Renfort selon le groupe : plus il y a de joueurs en survie / aventure a l'apparition du gardien (arene ou ruine), plus il
+	// est fort et plus il rapporte. Se multiplie avec la menace (ex. menace III +40 % de vie et 3 joueurs +100 % : x2.8)
+	"scaling": {
+
+		// Renfort selon le nombre de joueurs presents
+		"enabled": true,
+
+		// Joueurs comptes au maximum (1 a 32)
+		"maxPlayers": 8,
+
+		// Vie du gardien en plus par joueur au-dela du premier (0.5 = +50 %)
+		"healthPerPlayer": 0.5,
+
+		// Degats du gardien (attaque et capacites) en plus par joueur au-dela du premier (0.15 = +15 %)
+		"damagePerPlayer": 0.15,
+
+		// Sbires en plus par joueur au-dela du premier (escorte et plafond des invocations, arrondi a l'inferieur)
+		"minionsPerPlayer": 0.5,
+
+		// Or du butin en plus par joueur au-dela du premier (0.5 = +50 %)
+		"goldPerPlayer": 0.5,
+
+		// XP de guilde en plus par joueur au-dela du premier (0.5 = +50 %)
+		"xpPerPlayer": 0.5,
+
+		// L'or du gardien est partage entre les participants : chacun recoit sa part, que lui seul peut ramasser
+		"shareGold": true
+	},
+
+	// Gardiens maudits : le parchemin d'incantation maudit eveille le gardien d'une ruine dormante sous une forme maudite
+	// (bien plus forte, trois phases, attaques folles, recompenses enormes). Admin : /guild admin ruin incantation <joueur>
+	// [nombre] cursed | awaken cursed | cursed phase | cursed attack <attaque>
+	"cursed": {
+
+		// Gardiens maudits actifs (false = le parchemin d'incantation maudit est refuse, il n'apparait plus a la vente)
+		"enabled": true,
+
+		// Le parchemin d'incantation maudit et son rituel
+		"ritual": {
+
+			// Objet vanilla de base du parchemin maudit (son apparence sans pack de ressources)
+			"item": "minecraft:piglin_banner_pattern",
+
+			// Taille maximale d'une pile de parchemins maudits (1 a 64)
+			"maxStack": 4,
+
+			// Duree (secondes) du clic droit maintenu avant le debut du rituel maudit (0.25 a 10)
+			"channelSeconds": 2.5,
+
+			// Duree (secondes) du rituel maudit avant l'apparition du gardien (2 a 30)
+			"ritualSeconds": 10.0,
+
+			// Points de vie draines a chaque participant pendant le rituel maudit (6 = trois coeurs, 0 = aucun)
+			"drainHealth": 6.0,
+
+			// Le drain ne fait jamais descendre un participant sous ces points de vie (1 au minimum)
+			"minHealth": 4.0
+		},
+
+		// Le gardien maudit : le gardien de la ruine, nomme "Maudit", barre violette. Ces multiplicateurs s'ajoutent a ceux
+		// de la menace (et de la taille du groupe) : vie = vie de la ruine x menace x healthMultiplier
+		"guardian": {
+
+			// Vie du gardien maudit (multiplicateur, 1 a 20)
+			"healthMultiplier": 3.0,
+
+			// Degats du gardien maudit : attaque et capacites (multiplicateur, 1 a 10)
+			"damageMultiplier": 2.0,
+
+			// Points d'armure en plus (armure vanilla plafonnee a 30)
+			"armorBonus": 8.0,
+
+			// Robustesse d'armure en plus
+			"toughnessBonus": 4.0,
+
+			// Taille du gardien maudit (multiplicateur, 1 a 2 ; limitee par la hauteur libre de l'arene)
+			"scale": 1.3,
+
+			// Vitesse de deplacement en plus (0.15 = +15 %)
+			"speedBonus": 0.15,
+
+			// Resistance au recul minimale du gardien maudit (0 a 1)
+			"knockbackResistance": 0.9,
+
+			// Recharges de ses capacites normales (facteur, 0.6 = -40 % ; en plus de la menace et de la rage)
+			"cooldownFactor": 0.6,
+
+			// Escorte maudite : nombre de sbires multiplie par escortMultiplier, plus escortBonus
+			"escortMultiplier": 1.5,
+			"escortBonus": 2,
+
+			// Sbires vivants en plus au maximum (plafond de l'escorte)
+			"extraAlive": 6,
+
+			// Vie et degats des sbires maudits (multiplicateurs, en plus de ceux de la ruine)
+			"minionHealthMultiplier": 1.5,
+			"minionDamageMultiplier": 1.3
+		},
+
+		// Les trois phases : sous phase2Below puis phase3Below (part de la vie), une transition ou il est invulnerable
+		"phases": {
+
+			// Part de la vie sous laquelle commence la phase 2 (0.66 = 66 %)
+			"phase2Below": 0.66,
+
+			// Part de la vie sous laquelle commence la phase 3 (inferieure a phase2Below)
+			"phase3Below": 0.33,
+
+			// Duree (secondes) d'une transition de phase (2 a 10) : le gardien est invulnerable et s'eleve, un pentagramme geant
+			// s'embrase, des chaines d'ames lient les joueurs, une onde de choc les repousse (sans degats), des sbires surgissent
+			"transitionSeconds": 4.0,
+
+			// Degats en plus a chaque phase au-dela de la premiere (0.25 = +25 % en phase 2, +50 % en phase 3)
+			"damageBonus": 0.25,
+
+			// Recharges multipliees a chaque phase au-dela de la premiere (0.85 = -15 % par phase)
+			"cooldownFactor": 0.85,
+
+			// Vitesse en plus a chaque phase au-dela de la premiere (0.1 = +10 %)
+			"speedBonus": 0.1,
+
+			// Sbires qui surgissent du sol a chaque transition (dans la limite de l'escorte vivante)
+			"minions": 3,
+
+			// Rayon (blocs) et force de l'onde de choc d'une transition (repousse les joueurs, sans degats)
+			"shockwaveRadius": 9.0,
+			"shockwaveStrength": 1.4,
+
+			// Duree (secondes) de l'effet Obscurite donne aux joueurs quand l'arene s'assombrit (0 = aucun)
+			"darknessSeconds": 4.0
+		},
+
+		// Attaques maudites (en plus de ses capacites normales) : phase 2 = pentagrammes (drainent la vie des joueurs qui
+		// restent dedans et soignent le gardien), chaines d'ames (attirent un joueur), meteores noirs ; phase 3 = en plus
+		// ondes de tenebres (effet Obscurite), cages de foudre (foudre visuelle, degats si on reste dans le cercle), nova de
+		// sang (draine tous les joueurs proches), ombres (copies faibles et temporaires), aura maudite permanente.
+		// Chaque attaque est annoncee (cercle d'alerte) avant de frapper. Recharges en secondes, degats en points de vie
+		"attacks": {
+
+			// Delai minimal (secondes) entre deux attaques maudites
+			"globalCooldownSeconds": 3.0,
+
+			// Pentagrammes (phase 2) : recharge, nombre (+1 en phase 3), rayon, duree, degats par pulsation (toutes les 0,5 s)
+			"pentagramCooldownSeconds": 15.0,
+			"pentagramCount": 3,
+			"pentagramRadius": 2.5,
+			"pentagramSeconds": 8.0,
+			"pentagramDamage": 1.5,
+
+			// Le gardien se soigne de pentagramHeal fois la vie drainee par les pentagrammes
+			"pentagramHeal": 2.0,
+
+			// Chaines d'ames (phase 2) : recharge, joueurs vises, force de l'attraction (0 a 2), degats quand elles se brisent
+			"chainCooldownSeconds": 12.0,
+			"chainTargets": 2,
+			"chainPull": 0.9,
+			"chainDamage": 4.0,
+
+			// Meteores noirs (phase 2) : recharge, nombre, degats au centre, rayon de l'impact
+			"meteorCooldownSeconds": 14.0,
+			"meteorCount": 6,
+			"meteorDamage": 8.0,
+			"meteorRadius": 2.5,
+
+			// Ondes de tenebres (phase 3) : recharge, duree de l'Obscurite (secondes), degats
+			"darknessCooldownSeconds": 18.0,
+			"darknessSeconds": 6.0,
+			"darknessDamage": 2.0,
+
+			// Cages de foudre (phase 3) : recharge, joueurs vises, rayon, duree (secondes), degats par pulsation si on reste dedans
+			"cageCooldownSeconds": 15.0,
+			"cageTargets": 2,
+			"cageRadius": 2.5,
+			"cageSeconds": 3.0,
+			"cageDamage": 3.0,
+
+			// Nova de sang (phase 3) : recharge, rayon, degats, soin du gardien (fois la vie drainee)
+			"novaCooldownSeconds": 22.0,
+			"novaRadius": 14.0,
+			"novaDamage": 6.0,
+			"novaHeal": 1.5,
+
+			// Ombres (phase 3) : recharge, nombre, duree de vie (secondes), vie, part des degats du gardien
+			"cloneCooldownSeconds": 25.0,
+			"cloneCount": 2,
+			"cloneSeconds": 20.0,
+			"cloneHealth": 30.0,
+			"cloneDamageRatio": 0.4,
+
+			// Aura maudite (phase 3) : rayon (blocs) et duree (secondes) de l'effet Wither donne aux joueurs trop proches (0 = aucun)
+			"auraRadius": 3.5,
+			"auraWitherSeconds": 2.0,
+
+			// Particules envoyees au maximum par tick pour tous les rituels et combats maudits (au-dela, l'animation est allegee)
+			"particleBudget": 1200
+		},
+
+		// Recompenses d'une victoire sur un gardien maudit (en plus des bonus de la menace)
+		"rewards": {
+
+			// Or et XP de guilde multiplies (en plus de la menace)
+			"goldMultiplier": 3.0,
+			"xpMultiplier": 3.0,
+
+			// Tirages en plus dans la table de butin de la ruine
+			"extraLootRolls": 4,
+
+			// Tentatives d'arme unique en plus (chacune avec la chance de la source de la ruine dans uniques.json5, regles
+			// d'unicite respectees) et nombre maximal d'armes uniques par victoire
+			"extraUniqueRolls": 5,
+			"maxUniques": 2,
+
+			// Tirages de parchemin de sort en plus (chance de la source dans scrolls.json5)
+			"extraScrollRolls": 3,
+
+			// Au moins un parchemin de sort garanti (si aucun tirage n'en donne)
+			"guaranteedScroll": true,
+
+			// Chance (0 a 1) d'un grimoire vierge en plus
+			"grimoireChance": 0.35,
+
+			// Niveaux de menace gagnes par la ruine apres une victoire sur son gardien maudit (au lieu de 1)
+			"threatGain": 2,
+
+			// Annonce a tout le serveur ("La malediction est brisee...")
+			"announce": true
+		},
+
+		// Ou trouver le parchemin maudit (en plus de la commande admin)
+		"sources": {
+
+			// Palier minimal du Carrefour commercial dont le marchand propose parfois le parchemin maudit (0 = jamais)
+			"tradeTier": 3,
+
+			// Chance (0 a 1) que le marchand du Carrefour le propose a une visite
+			"tradeChance": 0.25,
+
+			// Prix (lingots d'or) du parchemin maudit chez le marchand du Carrefour
+			"tradePrice": 250,
+
+			// Chance (0 a 1) qu'un gardien vaincu sous sa forme ressuscitee (Enrage) laisse un parchemin maudit
+			"risenChance": 0.15,
+
+			// Chance (0 a 1) qu'un contrat legendaire termine donne un parchemin maudit
+			"legendaryQuestChance": 0.1
+		}
+	},
+
 	// Recherches de l'Atelier du cartographe
 	"cartography": {
 
@@ -243,7 +534,10 @@
 		"overworldTier": 2,
 
 		// Palier du boss generique d'une ruine inconnue du Nether (1 a 5)
-		"netherTier": 4
+		"netherTier": 4,
+
+		// Gardiens de salle dans les ruines inconnues (false = aucun)
+		"guards": true
 	},
 
 	// Ruines par id (le chemin du gabarit apres 'ruin/', ex. guildy:ruin/crypte_oubliee -> crypte_oubliee) :
@@ -266,6 +560,9 @@
 	// rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +
 	// lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource
 	// (vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).
+	// guards (gardiens de salle) : count (-1 = 'guards.countByTier' du palier, 0 = aucun), name (nom affiche en les visant,
+	// vide = aucun), types {entite: poids}, healthMultiplier, damageMultiplier, equipment, effects (types, equipment et
+	// effects vides = ceux de l'escorte).
 	"ruins": {
 		"crypte_oubliee": {
 			"name": "Crypte oubliée",
@@ -374,6 +671,15 @@
 				],
 				"uniqueSource": "",
 				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&7Gardien des cryptes",
+				"types": {},
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
 			}
 		},
 		"tour_du_mage": {
@@ -493,6 +799,17 @@
 				],
 				"uniqueSource": "",
 				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&9Garde de l'Archimage",
+				"types": {
+					"minecraft:vindicator": 1
+				},
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
 			}
 		},
 		"ziggourat_des_sables": {
@@ -602,6 +919,15 @@
 				],
 				"uniqueSource": "",
 				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&6Momie gardienne",
+				"types": {},
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
 			}
 		},
 		"bastion_de_givre": {
@@ -721,6 +1047,15 @@
 				],
 				"uniqueSource": "",
 				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&bSentinelle de givre",
+				"types": {},
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
 			}
 		},
 		"autel_infernal": {
@@ -843,6 +1178,17 @@
 				],
 				"uniqueSource": "",
 				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&cGarde infernal",
+				"types": {
+					"minecraft:piglin_brute": 1
+				},
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
 			}
 		},
 		"citadelle_des_ames": {
@@ -981,6 +1327,17 @@
 				],
 				"uniqueSource": "",
 				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&3Gardien des âmes",
+				"types": {
+					"minecraft:wither_skeleton": 1
+				},
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
 			}
 		},
 		"temple_maya": {
@@ -1101,6 +1458,200 @@
 				],
 				"uniqueSource": "",
 				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&2Gardien du temple",
+				"types": {},
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {},
+				"effects": []
+			}
+		},
+		"grand_temple_maya": {
+			"name": "Grand Temple du Jaguar céleste",
+			"tier": 5,
+			"activationRadius": 24,
+			"resetSeconds": 60,
+			"respawnDays": 7,
+			"leashRadius": 22,
+			"bossBarColor": "YELLOW",
+			"mapDecoration": "minecraft:red_x",
+			"fastKillSeconds": -1.0,
+			"boss": {
+				"entity": "minecraft:ravager",
+				"name": "&6&lLe Jaguar céleste",
+				"health": 760.0,
+				"damage": 18.0,
+				"armor": 16.0,
+				"armorToughness": 6.0,
+				"speed": 0.0,
+				"knockbackResistance": 1.0,
+				"scale": 1.6,
+				"followRange": 32.0,
+				"equipment": {},
+				"effects": [
+					{
+						"effect": "minecraft:fire_resistance",
+						"amplifier": 0
+					}
+				]
+			},
+			"minions": {
+				"types": {
+					"minecraft:vindicator": 3,
+					"minecraft:bogged": 2,
+					"minecraft:evoker": 1
+				},
+				"base": 4,
+				"perExtraPlayer": 2,
+				"max": 10,
+				"maxAlive": 14,
+				"healthMultiplier": 1.5,
+				"damageMultiplier": 1.2,
+				"equipment": {
+					"head": "minecraft:golden_helmet"
+				},
+				"effects": []
+			},
+			"abilities": [
+				{
+					"type": "ground_slam",
+					"cooldownSeconds": 11.0,
+					"damage": 11.0,
+					"radius": 7.0,
+					"count": 1,
+					"style": "gold",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 13.0,
+					"damage": 9.0,
+					"radius": 8.0,
+					"count": 1,
+					"style": "solar",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "volley",
+					"cooldownSeconds": 10.0,
+					"damage": 6.0,
+					"radius": 4.0,
+					"count": 6,
+					"style": "solar",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "blink",
+					"cooldownSeconds": 12.0,
+					"damage": 12.0,
+					"radius": 4.0,
+					"count": 1,
+					"style": "solar",
+					"healthBelow": 0.85,
+					"amplifier": 1
+				},
+				{
+					"type": "fire_ring",
+					"cooldownSeconds": 16.0,
+					"damage": 8.0,
+					"radius": 9.0,
+					"count": 1,
+					"style": "jade",
+					"healthBelow": 0.7,
+					"amplifier": 1
+				},
+				{
+					"type": "life_drain",
+					"cooldownSeconds": 18.0,
+					"damage": 5.0,
+					"radius": 12.0,
+					"count": 1,
+					"style": "gold",
+					"healthBelow": 0.5,
+					"amplifier": 1
+				},
+				{
+					"type": "summon",
+					"cooldownSeconds": 24.0,
+					"damage": 0.0,
+					"radius": 5.0,
+					"count": 3,
+					"style": "",
+					"healthBelow": 0.6,
+					"amplifier": 1
+				},
+				{
+					"type": "enrage",
+					"cooldownSeconds": 1.0,
+					"damage": 0.0,
+					"radius": 1.0,
+					"count": 1,
+					"style": "",
+					"healthBelow": 0.3,
+					"amplifier": 2
+				}
+			],
+			"rewards": {
+				"goldMin": 18,
+				"goldMax": 28,
+				"xp": 380,
+				"lootTable": "guildy:chests/ruin/treasure",
+				"lootRolls": 3,
+				"items": [
+					{
+						"item": "minecraft:experience_bottle",
+						"min": 16,
+						"max": 28,
+						"chance": 1.0
+					},
+					{
+						"item": "minecraft:diamond",
+						"min": 2,
+						"max": 4,
+						"chance": 0.75
+					},
+					{
+						"item": "minecraft:emerald",
+						"min": 6,
+						"max": 12,
+						"chance": 0.75
+					},
+					{
+						"item": "minecraft:totem_of_undying",
+						"min": 1,
+						"max": 1,
+						"chance": 0.3
+					},
+					{
+						"item": "minecraft:enchanted_golden_apple",
+						"min": 1,
+						"max": 1,
+						"chance": 0.05
+					}
+				],
+				"uniqueSource": "",
+				"scrollSource": ""
+			},
+			"guards": {
+				"count": -1,
+				"name": "&6Guerrier jaguar",
+				"types": {
+					"minecraft:vindicator": 4,
+					"minecraft:bogged": 2,
+					"minecraft:evoker": 1
+				},
+				"healthMultiplier": 1.8,
+				"damageMultiplier": 1.3,
+				"equipment": {
+					"head": "minecraft:golden_helmet"
+				},
+				"effects": []
 			}
 		}
 	},
@@ -1114,6 +1665,7 @@
 		"bastion_de_givre",
 		"autel_infernal",
 		"citadelle_des_ames",
-		"temple_maya"
+		"temple_maya",
+		"grand_temple_maya"
 	]
 }

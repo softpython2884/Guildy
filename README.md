@@ -37,9 +37,11 @@ ou à héberger pour les joueurs.
   de guilde X / 14.
 - **Parchemins de sort** : 12 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel…)
   avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture.
-- **Ruines et boss** : 7 ruines (5 dans l'Overworld, 2 dans le Nether), chacune gardée par un boss avec sa barre de vie,
+- **Ruines et boss** : 8 ruines (6 dans l'Overworld, dont le Grand Temple du Jaguar céleste et sa balise visible de
+  loin, 2 dans le Nether), gardées par des gardiens de salle et un boss avec sa barre de vie,
   son escorte et ses attaques, éveillé par un **rituel de sang** (parchemin d'incantation), plus dur à chaque retour
-  (**menace**) et qui **ressuscite enragé** si on l'abat trop vite ; localisées par le cartographe de la guilde.
+  (**menace**), plus fort à plusieurs, qui **ressuscite enragé** si on l'abat trop vite, et sa version **maudite** en 3
+  phases ; localisées par le cartographe de la guilde.
 - **Tout est configurable** : fichiers JSON5 commentés en français, rechargeables à chaud ; permissions LuckPerms.
 
 ---
@@ -540,7 +542,7 @@ chance de la prochaine visite, **aperçu de tous les échanges** de chaque palie
 |---|---|---|---|
 | **I - Halte marchande** | construit (niv. 2) | 5 à 7 | toutes les pousses (cerisier, palétuvier, chêne pâle…), graines, colorants, fleurs, canne à sucre, cactus, bambou, cacao, lianes, nénuphars, baies lumineuses… |
 | **II - Comptoir prospère** | niv. 3, 150 or + 16 émeraudes | 6 à 8 | boules de slime, rayons de miel, coquilles de nautile, éclats d'améthyste, glace bleue, disques, étiquettes, selles, cornichons de mer… |
-| **III - Grand carrefour** | niv. 5, 400 or + 2 blocs de diamant | 7 à 9 | « trades de fou » : livres Raccommodage, Solidité III, Efficacité V, Fortune III, Toucher de soie, Butin III, Protection IV, totem d'immortalité, pomme dorée enchantée, modèle de forge (amélioration en netherite), cœur de la mer, trident, carapaces de shulker, parfois des **élytres** (chères) et une **arme unique** (360 or, voir § 11) |
+| **III - Grand carrefour** | niv. 5, 400 or + 2 blocs de diamant | 7 à 9 | « trades de fou » : livres Raccommodage, Solidité III, Efficacité V, Fortune III, Toucher de soie, Butin III, Protection IV, totem d'immortalité, pomme dorée enchantée, modèle de forge (amélioration en netherite), cœur de la mer, trident, carapaces de shulker, parfois des **élytres** (chères) ; jamais d'arme unique (elles se gagnent en combattant, § 11) |
 
 Un Carrefour de palier III tire surtout dans sa table, mais aussi dans celles des paliers inférieurs. Il faut le droit
 de dépenser le trésor (officier par défaut) pour l'améliorer ; impossible en créatif. Tout se règle dans `trade.json5`.
@@ -574,7 +576,6 @@ réparent comme leur objet de base.
 | Récompense de quête | 1 % | Rares et Épiques |
 | Quête légendaire | 35 % | Épiques, Légendaires, rarement Mythiques |
 | Expédition d'un villageois | 2 % | Rares et Épiques (très rarement les Bottes de Zéphyr) |
-| Carrefour commercial palier III | une offre « Arme unique » de temps en temps, **360 or** (40 blocs d'or) | Épiques et Légendaires |
 
 L'arme d'un boss tombe à sa mort, **brille** et ne disparaît jamais (insensible au feu, à la lave et aux explosions).
 Le premier joueur qui obtient une arme **Légendaire** ou **Mythique** est **annoncé à tout le serveur** (« ✦ Steve a obtenu
@@ -582,7 +583,8 @@ Le premier joueur qui obtient une arme **Légendaire** ou **Mythique** est **ann
 
 **Vraiment uniques.** Chaque arme unique porte un **numéro de série** : le serveur tient le registre de tous les
 exemplaires. Par défaut, **une guilde ne reçoit jamais une arme qu'elle possède déjà** : si votre guilde détient
-Foudrelame, aucun boss, quête, expédition, gardien de ruine ni marchand ne vous la redonnera (une autre guilde, si). Une
+Foudrelame, aucun boss, quête, expédition ni gardien de ruine ne vous la redonnera (une autre guilde, si). Les armes
+uniques ne s'achètent pas : il faut se battre pour les collectionner. Une
 arme appartient à la guilde du joueur qui la porte (inventaire ou coffre de l'Ender) : donnée à un membre d'une autre
 guilde, elle change de camp. Si toutes les armes possibles d'un butin sont déjà chez vous, vous recevez un **parchemin de
 sort** à la place. Une arme **détruite** (lave, feu, cactus, vide, disparue au sol, cassée) peut de nouveau tomber. Les
@@ -685,7 +687,8 @@ modifié. Les bienfaits vont au lanceur, aux membres de sa guilde et à ses vill
 **Où les trouver** : surtout sur les **boss des ruines** (60 %, 75 % dans le Nether, 1 ou 2 parchemins), plus rarement sur
 les boss des hordes (8 %, 30 % pendant une nuit de sang), en récompense de quête (5 %) ou de contrat légendaire (50 %), au
 retour des expéditions (3 %), chez le marchand du Carrefour commercial (palier II ; palier III pour les plus rares), et
-l'**alchimiste** de votre guilde en écrit parfois (surtout des Rappels). Ils se rangent avec les livres enchantés.
+l'**alchimiste** de votre guilde en écrit parfois (surtout des Rappels) ; les gardiens maudits en donnent plusieurs, dont un
+garanti. Ils se rangent avec les livres enchantés.
 Le pack de ressources facultatif leur donne des textures animées (comme aux armes uniques).
 
 #### Le grimoire
@@ -724,10 +727,23 @@ s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines o
 | **Tour du Mage déchu** | forêts, jungles, forêts anciennes | 2 | Archimage déchu (évocateur, 260 PV) + vindicateurs et vex |
 | **Ziggourat des sables** | désert, badlands | 2 | Pharaon des sables (zombie momifié en or, 300 PV) + momies |
 | **Bastion de givre** | plaines et taïgas enneigées, pics de glace, bosquets | 3 | Roi de givre (vagabond, 380 PV) + vagabonds |
+| **Grand Temple du Jaguar céleste** | jungles (rare : une par carré de 5 à 7 000 blocs) | 5 | Le Jaguar céleste (ravageur géant, 760 PV : charges, lances de soleil, anneaux de feu solaire et de jade, onde de choc dorée) + guerriers jaguars (vindicateurs à la hache, Embourbés, évocateur) sous casques d'or |
 | **Temple du Serpent à plumes** | jungles | 3 | Le Serpent à plumes (brise géante, 360 PV, dévie les projectiles : combat au corps à corps) + Embourbés (flèches empoisonnées) et araignées venimeuses |
 | **Autel infernal** | Nether : désolations, forêt carmin | 4 | Seigneur de guerre (piglin barbare, 480 PV) + piglins barbares et cubes de magma |
 | **Citadelle des âmes** | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 | Champion des âmes (squelette wither, 650 PV) + squelettes wither et blazes |
 
+
+**Gardiens de salle** : une ruine dormante n'est pas vide. Dès qu'un joueur en survie approche, ses gardiens prennent leur
+poste dans les couloirs, les antichambres et aux entrées de l'arène : 2 à 6 selon le palier, un de plus par joueur
+supplémentaire et tous les deux niveaux de menace. Ils défendent leur poste sans s'en éloigner. Tant qu'il en reste dans
+la salle du gardien, le parchemin d'incantation refuse de fonctionner : « Des gardiens protègent encore la salle (N) ».
+Tués, ils ne reviennent pas tant que vous restez dans les parages ; si tout le monde s'éloigne une minute, les survivants
+repartent et d'autres vous attendront au prochain passage. Ils disparaissent quand le gardien est vaincu.
+
+**Plus on est, plus il est fort** : à son apparition, le gardien compte les joueurs en survie présents (8 au plus). Par
+joueur au-delà du premier, il gagne +50 % de vie, +15 % de dégâts et des sbires en plus ; la barre de boss l'affiche
+(« — 4 joueurs »). En échange, il rapporte +50 % d'or et d'XP de guilde par joueur en plus, et l'or est partagé : chacun
+a sa pile, que lui seul peut ramasser. Ce renfort se multiplie avec la menace (menace III à 3 joueurs : vie ×2,8).
 
 **Menace** : chaque ruine a un niveau de menace (I, II, III… jusqu'à X). Chaque victoire sur son gardien l'élève : à son
 retour, il a plus de vie (+20 % par niveau), frappe plus fort, porte plus d'armure, arrive avec plus de sbires, enchaîne
@@ -743,8 +759,31 @@ un éclair et une onde de choc : **Enragé**, à pleine vie, plus grand, plus ra
 vaincre sous cette forme rapporte un butin exceptionnel (+50 % d'or et d'XP, tirages de butin, d'arme unique et de
 parchemin en plus) et tout le serveur l'apprend. Il ne ressuscite qu'une fois par combat.
 
+#### Le parchemin d'incantation maudit
+Un rouleau noir qui suinte un sang violacé. Il se lit comme le parchemin d'incantation (clic droit maintenu 2,5 s, à moins
+de 16 blocs du gardien endormi d'une ruine dormante, et seulement quand aucun gardien de salle ne tient l'arène) et lance
+un **rituel maudit** de 10 s : un pentagramme inversé s'embrase, des âmes hurlent, le sang des présents s'écoule (**prix
+du sang : 3 ❤ par joueur**, jamais en dessous de 2 ❤). Le gardien surgit alors **Maudit** (barre violette) : vie ×3,
+dégâts ×2, plus d'armure, plus grand, capacités plus rapides, escorte maudite ; la menace et le renfort de groupe
+s'ajoutent. Il ne ressuscite pas : il a **trois phases**.
+- À 66 % puis à 33 % de sa vie, il devient invulnérable et s'élève, un pentagramme géant s'embrase sous lui, des chaînes
+  d'âmes vous lient, une onde de choc vous repousse, des sbires sortent de terre, puis il revient plus fort.
+- **Phase II** : des pentagrammes au sol boivent votre vie et le soignent (sortez-en !), des chaînes d'âmes vous attirent
+  vers lui, des météores noirs tombent.
+- **Phase III** : ondes de ténèbres, cages de foudre (sortez du cercle), nova de sang (éloignez-vous), ombres de lui-même,
+  aura maudite. Chaque attaque est annoncée par un cercle rouge.
+- **Victoire** : or et XP ×3, butin multiplié, jusqu'à 2 armes uniques, un parchemin de sort garanti, 35 % de chance d'un
+  grimoire, et tout le serveur apprend que « la malédiction est brisée » ; la menace de la ruine monte de 2 niveaux. Si
+  tout le monde part ou meurt, il se dissipe et la ruine se rendort (le parchemin est perdu).
+- **Où le trouver** : marchand du Carrefour commercial (palier III, 250 or, parfois), gardiens vaincus sous leur forme
+  Enragé (15 %), contrats légendaires (10 %).
+
+**Sanctuaires** : une balise dans une ruine et sa pyramide sont protégées : on ne peut ni les casser, ni les faire
+exploser, ni les déplacer au piston (« Une force ancienne protège ce sanctuaire »). Le reste de la ruine se casse
+normalement. La balise du Grand Temple du Jaguar céleste se voit de très loin.
+
 Les ruines n'apparaissent que dans les chunks **pas encore générés** : il faut explorer de nouvelles zones.
-Aperçus des sept ruines : [`tools/ruins/previews/`](tools/ruins/previews/). Pour tester : `/place structure guildy:ruin/<id>`
+Aperçus des huit ruines (le grand temple a aussi une planche de coupes) : [`tools/ruins/previews/`](tools/ruins/previews/). Pour tester : `/place structure guildy:ruin/<id>`
 (dans le Nether pour les deux dernières), `/locate structure #guildy:ruins`.
 
 **Ajouter vos propres ruines** : construisez-la en créatif, marquez la case du boss, celles des sbires et l'entrée par des
@@ -822,6 +861,9 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
 | `/guild admin ruin ability <type> [style]` | Jouer un effet de capacité de boss (test visuel) |
 | `/guild admin ruin threat <niveau>` | Niveau de menace de la ruine la plus proche (appliqué au prochain réveil) |
+| `/guild admin ruin guards` · `ruin guards clear` | Gardiens de salle de la ruine la plus proche : les poster maintenant / les renvoyer |
+| `/guild admin ruin incantation <joueur> [nombre] cursed` · `ruin awaken cursed` | Parchemins maudits ; réveiller le gardien maudit de la ruine la plus proche (sans rituel) |
+| `/guild admin ruin cursed phase` · `ruin cursed attack <attaque>` | Phase suivante tout de suite ; lancer une attaque maudite (pentagrams, chains, meteors, darkness, cage, nova, clones) |
 | `/guild admin ruin incantation <joueur> [nombre]` | Donner des parchemins d'incantation (`awaken` réveille toujours le gardien sans rituel) |
 
 ---
@@ -845,7 +887,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
-| `ruins.json5` | Ruines : menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
+| `ruins.json5` | Ruines : gardiens de salle (`guards`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
 | `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
@@ -923,6 +965,8 @@ Formules par défaut (modifiables) :
 - Armes uniques : une arme rangée dans une boîte de Shulker garde son dernier détenteur connu ; `/clear`, la poubelle du
   mode créatif ou un monstre qui disparaît avec l'arme ne sont pas détectés (`/guild admin unique free`).
 - Le trident unique reste une image plate en main ; lancé, il garde le modèle 3D vanilla.
+- Ruines : le nombre de gardiens de salle et de joueurs pris en compte est fixé à leur apparition ; une balise posée par un
+  joueur dans une ruine devient elle aussi protégée ; un redémarrage pendant un combat maudit fait perdre le parchemin.
 - Deux groupes d'une même catégorie (deux salles, ou une salle et des coffres hors salle) ne s'échangent rien ; les
   coffres posés dans une salle après sa création n'y entrent qu'avec Shift + clic dans le menu des salles.
 - Un panneau de construction arraché par une explosion/un piston peut tomber en objet (la construction est

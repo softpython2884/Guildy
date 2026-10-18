@@ -768,7 +768,6 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Récompense de quête</td><td class="num">1 %</td><td>Rares et Épiques</td></tr>
 						<tr><td>Contrat légendaire</td><td class="num">35 %</td><td>Épiques, Légendaires, rarement une Mythique</td></tr>
 						<tr><td>Expédition d'un villageois</td><td class="num">2 %</td><td>Rares et Épiques, très rarement les Bottes de Zéphyr</td></tr>
-						<tr><td>Carrefour commercial, palier III</td><td class="num">parfois</td><td>Une offre « Arme unique » à 360 or : Épique ou Légendaire</td></tr>
 					</tbody>
 				</table></div>
 				<p>L'arme d'un boss tombe au sol, brille et ne disparaît jamais : ni le feu, ni la lave, ni les explosions ne la détruisent. Le premier joueur qui obtient une arme Légendaire ou Mythique est annoncé à tout le serveur.</p>
@@ -860,6 +859,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Tour du Mage déchu</td><td>Forêts, jungles</td><td class="num">2</td><td>Archimage déchu (évocateur), vindicateurs et vex</td></tr>
 						<tr><td>Ziggourat des sables</td><td>Désert, badlands</td><td class="num">2</td><td>Pharaon des sables et ses momies</td></tr>
 						<tr><td>Bastion de givre</td><td>Biomes enneigés</td><td class="num">3</td><td>Roi de givre et ses vagabonds</td></tr>
+						<tr><td>Grand Temple du Jaguar céleste</td><td>Jungles (rare)</td><td class="num">5</td><td>Le Jaguar céleste (ravageur géant), guerriers jaguars ; sa balise se voit de très loin</td></tr>
 						<tr><td>Temple du Serpent à plumes</td><td>Jungles</td><td class="num">3</td><td>Le Serpent à plumes (brise géante qui dévie les flèches), Embourbés et araignées venimeuses</td></tr>
 						<tr><td>Autel infernal</td><td>Nether : désolations, forêt carmin</td><td class="num">4</td><td>Seigneur de guerre (piglin barbare), piglins barbares et cubes de magma</td></tr>
 						<tr><td>Citadelle des âmes</td><td>Nether : vallée des âmes, deltas de basalte, forêt biscornue</td><td class="num">5</td><td>Champion des âmes, squelettes wither et blazes</td></tr>
@@ -870,6 +870,14 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>Pas trop vite !</h3><p>Tant que la barre affiche « Résurrection possible », un gardien abattu se relève : 5 s d'invulnérabilité dans une spirale d'âmes, de lumière et d'éclairs, puis il revient <strong>Enragé</strong>, à pleine vie, plus grand et plus fort.</p></div>
 					<div class="card"><h3>Victoire légendaire</h3><p>Le vaincre sous sa forme enragée rapporte +50 % d'or et d'XP et des tirages de butin en plus. Tout le serveur l'apprend.</p></div>
 				</div>
+				<div class="cards">
+					<div class="card"><h3>Gardiens de salle</h3><p>Approchez d'une ruine : des gardiens prennent leur poste. Éliminez ceux de la salle avant de lire le parchemin d'incantation (« Des gardiens protègent encore la salle »).</p></div>
+					<div class="card"><h3>À plusieurs</h3><p>Le gardien compte les joueurs présents : +50 % de vie et +15 % de dégâts par joueur en plus (barre « — N joueurs »), mais +50 % d'or et d'XP par joueur, et chacun reçoit sa part d'or.</p></div>
+					<div class="card"><h3>Sanctuaires</h3><p>Les balises des ruines et leur pyramide sont indestructibles.</p></div>
+				</div>
+				<h3 id="maudit">Le parchemin d'incantation maudit</h3>
+				<p>Un rituel maudit de 10 s (3 ❤ par joueur) fait surgir le gardien <strong>Maudit</strong> : vie ×3, dégâts ×2, barre violette, et <strong>trois phases</strong>. À 66 % puis 33 % de vie, il s'élève, un pentagramme géant s'embrase, des chaînes d'âmes vous lient, puis il revient plus fort. Phase II : pentagrammes au sol qui boivent votre vie (sortez-en !), chaînes d'âmes, météores noirs. Phase III : ténèbres, cages de foudre, nova de sang, ombres, aura maudite. Chaque attaque est annoncée par un cercle rouge.</p>
+				<p class="hint">Victoire : or et XP ×3, jusqu'à 2 armes uniques, un parchemin garanti, 35 % de grimoire, menace +2. On le trouve chez le marchand du Carrefour (palier III, 250 or, parfois), sur les gardiens Enragés (15 %) et dans les contrats légendaires (10 %).</p>
 				<h3>Les trouver avec le cartographe</h3>
 				<ol>
 					<li>Au niveau 5, débloquez et construisez l'<a href="#constructions">Atelier du cartographe</a>.</li>
@@ -989,7 +997,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.7.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.8.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1016,6 +1024,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin scroll list</button> · <button class="cmd" type="button">/guild admin scroll give &lt;joueur&gt; &lt;id&gt; [nombre]</button> · <button class="cmd" type="button">/guild admin scroll grimoire &lt;joueur&gt; [ids]</button></td><td>Lister les parchemins, en donner, donner un grimoire</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin unique registry [id]</button> · <button class="cmd" type="button">/guild admin unique free &lt;id&gt; [guilde]</button></td><td>Registre des armes uniques, marquer une arme perdue</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin ruin threat &lt;niveau&gt;</button></td><td>Niveau de menace de la ruine la plus proche</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin ruin guards [clear]</button></td><td>Poster / renvoyer les gardiens de salle</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin ruin awaken cursed</button> · <button class="cmd" type="button">/guild admin ruin cursed phase</button> · <button class="cmd" type="button">/guild admin ruin cursed attack &lt;attaque&gt;</button></td><td>Gardien maudit : réveil, phase suivante, attaque</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin ruin incantation &lt;joueur&gt; [nombre]</button></td><td>Donner des parchemins d'incantation</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin ruin list|info|awaken|reset</button></td><td>Ruines : liste, la plus proche, réveiller ou rendormir son gardien</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin ruin locate &lt;id&gt;</button> · <button class="cmd" type="button">/guild admin ruin map &lt;joueur&gt; &lt;id&gt;</button> · <button class="cmd" type="button">/guild admin ruin research &lt;guilde&gt; finish</button></td><td>Localiser une ruine, donner une carte ou une boussole, terminer une recherche</td></tr>
