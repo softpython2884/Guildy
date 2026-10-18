@@ -5,7 +5,8 @@
 	"mixins": [
 		"HealOrHarmMobEffectFightMixin",
 		"LivingEntityFightMixin",
-		"RegenerationMobEffectFightMixin"
+		"RegenerationMobEffectFightMixin",
+		"UsedTotemTriggerFightMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

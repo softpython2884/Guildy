@@ -94,9 +94,10 @@ public final class RuinConfig implements Validatable {
 
 	@Comment({
 			"Bilan du combat : a la victoire (et en plus court sur un echec), chaque participant recoit dans le chat les titres du",
-			"combat (meilleurs degats au gardien, aux gardiens de salle, aux sbires, soins, absorption, degats encaisses, coup fatal)",
-			"et sa propre ligne, avec le detail par joueur (survol des noms, menu [Voir le detail], /guild bilan). Compte depuis",
-			"l'apparition des gardiens de salle ; projectiles, sorts et animaux comptent pour leur proprietaire ; creatif ignore"
+			"combat (meilleurs degats au gardien, aux gardiens de salle, aux sbires, soins, absorption, degats encaisses, totems",
+			"d'immortalite consommes, coup fatal) et sa propre ligne, avec le detail par joueur (survol des noms, menu [Voir le",
+			"detail], /guild bilan). Compte depuis l'apparition des gardiens de salle ; projectiles, sorts et animaux comptent pour",
+			"leur proprietaire ; creatif ignore"
 	})
 	public FightStatsSettings stats = new FightStatsSettings();
 

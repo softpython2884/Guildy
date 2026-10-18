@@ -29,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * <li>damage dealt to the monsters of the fight (health and absorption actually lost, measured around
  * {@code LivingEntity.actuallyHurt}: armour, resistance and overkill already taken into account), credited to the player
  * behind the hit (projectiles, Guildy spell damage, pets and summoned guardians count for their owner) and their kills;</li>
- * <li>damage taken in the arena (except from players), deaths there;</li>
+ * <li>damage taken in the arena (except from players), deaths there and the totems of undying that saved them there;</li>
  * <li>health given back to other players while a healer context is open ({@link FightHealing}: Guildy spells, instant health
  * potions thrown, regeneration given), never above their missing health, and absorption given (Égide, potions);</li>
  * <li>spells cast and seconds spent in the arena.</li>
@@ -242,6 +242,23 @@ public final class FightTracker {
 			}
 			return;
 		}
+	}
+
+	/**
+	 * A totem of undying (or any other death protection item, either hand) just saved {@code player} from death
+	 * ({@code UsedTotemTrigger.trigger}, called by {@code LivingEntity.checkTotemDeathProtection} only when one is consumed).
+	 */
+	public static void totemUsed(ServerPlayer player) {
+		if (SESSIONS.isEmpty()) {
+			return;
+		}
+		Safe.run("fight.totem", () -> {
+			FightSession session = countable(player) ? sessionOf(player) : null;
+			FightTally tally = session == null ? null : tally(session, player);
+			if (tally != null) {
+				tally.addTotem();
+			}
+		});
 	}
 
 	/** The guardian of {@code session} was killed by {@code source}: kill and final blow for the player behind it. */

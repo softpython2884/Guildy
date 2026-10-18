@@ -22,8 +22,9 @@ import java.util.UUID;
 
 /**
  * Delivery of the fight summaries: the chat version (titles with the best players, the reader's own line, hover text with
- * every number of a player, a clickable "[Voir le détail]" opening {@link FightStatsMenu}) and the last summary of each
- * player, kept {@code stats.keepMinutes} for {@code /guild bilan} (bounded, pruned every minute).
+ * every number of a player, a clickable "[Voir le détail]" opening {@link FightStatsMenu}; the totems of undying used show
+ * on the fight line, the reader's line and next to the best damage on the guardian) and the last summary of each player,
+ * kept {@code stats.keepMinutes} for {@code /guild bilan} (bounded, pruned every minute).
  */
 public final class FightReports {
 	/** Command run by the "[Voir le détail]" button. */
@@ -96,22 +97,20 @@ public final class FightReports {
 		boolean victory = h.outcome() == FightReport.Outcome.VICTORY;
 		List<Component> lines = new ArrayList<>();
 		lines.add(Lang.get(victory ? "fight.report.header" : "fight.report.header.failure", h.place()));
-		lines.add(Lang.get("fight.report.info", h.boss(), threat(h), FightRules.clock(h.fightTicks()), report.entries().size()));
+		MutableComponent info = Lang.get("fight.report.info", h.boss(), threat(h), FightRules.clock(h.fightTicks()), report.entries().size());
+		if (report.totems() > 0) {
+			info.append(counted("fight.report.info.totems", report.totems()));
+		}
+		lines.add(info);
 		if (!victory && h.bossHealthLeft() >= 0) {
 			lines.add(Lang.get("fight.report.failure.health", FightRules.percent(h.bossHealthLeft())));
 		}
 		if (victory && (h.guardsPosted() > 0 || h.escortKilled() > 0)) {
 			lines.add(Lang.get("fight.report.kills", h.guardsKilled(), h.guardsPosted(), h.escortKilled()));
 		}
-		List<FightReport.Title> titles = report.titles(cfg.categoryList());
-		// The short form (failure) keeps the first title only.
-		int shown = 0;
-		for (FightReport.Title title : titles) {
-			if (!victory && shown >= 1) {
-				break;
-			}
+		// The short form (failure) keeps the first title (and "Increvable").
+		for (FightReport.Title title : FightReport.chatTitles(report.titles(cfg.categoryList()), h.outcome())) {
 			lines.add(titleLine(title, h));
-			shown++;
 		}
 		lines.add(ownLine(report, viewer, cfg));
 		MutableComponent detail = Lang.get("fight.report.detail").withStyle(style -> style
@@ -146,8 +145,15 @@ public final class FightReports {
 		}
 		if (title.category() == FightCategory.FINAL_BLOW) {
 			line.append(Lang.get("fight.value.final_blow", h.boss()));
+		} else if (title.category() == FightCategory.TOTEMS) {
+			line.append(counted("fight.value.totems", (int) title.value()));
 		} else {
 			line.append(Lang.get("fight.value." + title.category().id, FightRules.number(title.value())));
+		}
+		// The best damage on the guardian, and the totems it cost.
+		int totems = title.category() == FightCategory.GUARDIAN ? FightReport.totems(holders) : 0;
+		if (totems > 0) {
+			line.append(counted("fight.report.with_totems", totems));
 		}
 		return line;
 	}
@@ -175,6 +181,9 @@ public final class FightReports {
 		MutableComponent line = Lang.get("fight.report.you", report.rank(viewer), report.entries().size(), FightRules.number(t.damage(FightKind.BOSS)),
 				FightRules.number(t.damage(FightKind.GUARD) + t.damage(FightKind.ESCORT)), FightRules.number(t.healing() + t.shielding()),
 				FightRules.number(t.taken()));
+		if (t.totems() > 0) {
+			line.append(counted("fight.report.you.totems", t.totems()));
+		}
 		Component hover = hover(own);
 		return line.withStyle(style -> style.withHoverEvent(new HoverEvent.ShowText(hover)));
 	}
@@ -189,9 +198,17 @@ public final class FightReports {
 			lines.add(Lang.get("fight.stat.final_blow"));
 		}
 		lines.add(Lang.get("fight.stat.taken", FightRules.number(t.taken()), t.deaths()));
+		if (t.totems() > 0) {
+			lines.add(Lang.get("fight.stat.totems", t.totems()));
+		}
 		lines.add(Lang.get("fight.stat.healing", FightRules.number(t.healing()), FightRules.number(t.shielding())));
 		lines.add(Lang.get("fight.stat.misc", t.spells(), FightRules.clock(t.seconds() * 20L)));
 		return lines;
+	}
+
+	/** A count in its sentence: {@code key + ".one"} for one, {@code key} for more ("1 totem", "40 totems"). */
+	static MutableComponent counted(String key, int count) {
+		return Lang.get(count == 1 ? key + ".one" : key, count);
 	}
 
 	/** Every minute: the expired summaries are forgotten. */

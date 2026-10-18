@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * "Bilan du combat" menu: the fight on top (place, guardian, threat, outcome, durations, room guards and escort killed),
- * then one player head per listed participant, best damage to the guardian first, with the titles they hold and all their
+ * "Bilan du combat" menu: the fight on top (place, guardian, threat, outcome, durations, room guards and escort killed,
+ * totems of undying used), then one player head per listed participant, best damage to the guardian first, with the titles they hold and all their
  * numbers in the lore. Read-only (SGUI: nothing can be taken).
  */
 public final class FightStatsMenu {
@@ -57,6 +57,9 @@ public final class FightStatsMenu {
 			lore.add(Lang.get("fight.report.failure.health", FightRules.percent(h.bossHealthLeft())));
 		}
 		lore.add(Lang.get("fight.menu.kills", h.guardsKilled(), h.guardsPosted(), h.escortKilled()));
+		if (report.totems() > 0) {
+			lore.add(Lang.get("fight.stat.totems", report.totems()));
+		}
 		lore.add(Lang.get("fight.menu.players", report.entries().size()));
 		if (report.entries().size() > MAX_HEADS) {
 			lore.add(Lang.get("fight.menu.more", report.entries().size() - MAX_HEADS));

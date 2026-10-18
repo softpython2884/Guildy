@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * The "Bilan du combat" of a finished fight (pure, immutable once built): where and against whom, how it ended, how long
  * it took, and every participant's statistics (copies), sorted by damage to the guardian. {@link #titles} gives the best
- * player of each category, ties sharing the title.
+ * player of each category, ties sharing the title; {@link #totems} the totems of undying the team went through.
  */
 public final class FightReport {
 	private static final AtomicLong IDS = new AtomicLong();
@@ -117,8 +117,40 @@ public final class FightReport {
 		return 0;
 	}
 
+	/** Totems of undying used by the listed participants, all together. */
+	public int totems() {
+		return totems(entries);
+	}
+
+	/** Totems of undying used by these players, all together (the holders of a title...). */
+	public static int totems(List<Entry> players) {
+		int total = 0;
+		for (Entry entry : players) {
+			total += entry.tally().totems();
+		}
+		return total;
+	}
+
 	public List<Title> titles(List<FightCategory> categories) {
 		return titles(entries, categories);
+	}
+
+	/**
+	 * The titles written in the chat: all of them after a victory; the short form of a failure keeps the first one, plus
+	 * "Increvable" when it was earned (the totems spent on a lost fight are worth mentioning).
+	 */
+	public static List<Title> chatTitles(List<Title> titles, Outcome outcome) {
+		if (outcome == Outcome.VICTORY || titles.size() <= 1) {
+			return titles;
+		}
+		List<Title> shown = new ArrayList<>();
+		shown.add(titles.getFirst());
+		for (int i = 1; i < titles.size(); i++) {
+			if (titles.get(i).category() == FightCategory.TOTEMS) {
+				shown.add(titles.get(i));
+			}
+		}
+		return shown;
 	}
 
 	/** Titles a player holds, in the order of {@code categories}. */

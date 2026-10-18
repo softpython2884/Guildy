@@ -2,8 +2,8 @@ package dev.guildy.stats;
 
 /**
  * Statistics of one player in one fight (pure, no Minecraft class): damage dealt and kills by kind of monster, final blow
- * on the guardian, damage taken, deaths, healing and absorption given to other players, spells cast, seconds spent in the
- * arena. Every amount is in health points; invalid amounts (negative, NaN, infinite) are ignored and a single event never
+ * on the guardian, damage taken, deaths, totems of undying that saved them, healing and absorption given to other players,
+ * spells cast, seconds spent in the arena. Every amount is in health points; invalid amounts (negative, NaN, infinite) are ignored and a single event never
  * adds more than {@link #MAX_EVENT}.
  */
 public final class FightTally {
@@ -14,6 +14,7 @@ public final class FightTally {
 	private final int[] kills = new int[FightKind.values().length];
 	private double taken;
 	private int deaths;
+	private int totems;
 	private double healing;
 	private double shielding;
 	private int spells;
@@ -38,6 +39,11 @@ public final class FightTally {
 
 	public void addDeath() {
 		deaths++;
+	}
+
+	/** A totem of undying (any death protection item) saved the player. */
+	public void addTotem() {
+		totems++;
 	}
 
 	public void addHealing(double amount) {
@@ -94,6 +100,10 @@ public final class FightTally {
 		return deaths;
 	}
 
+	public int totems() {
+		return totems;
+	}
+
 	public double healing() {
 		return healing;
 	}
@@ -114,9 +124,12 @@ public final class FightTally {
 		return finalBlow;
 	}
 
-	/** Took part beyond being there: at least {@code min} points dealt, healed, shielded or taken, a kill or the final blow. */
+	/**
+	 * Took part beyond being there: at least {@code min} points dealt, healed, shielded or taken, a kill, the final blow or a
+	 * totem used.
+	 */
 	public boolean qualifies(double min) {
-		if (finalBlow || kills() > 0) {
+		if (finalBlow || kills() > 0 || totems > 0) {
 			return true;
 		}
 		double threshold = Math.max(0, min);
@@ -130,6 +143,7 @@ public final class FightTally {
 		System.arraycopy(kills, 0, copy.kills, 0, kills.length);
 		copy.taken = taken;
 		copy.deaths = deaths;
+		copy.totems = totems;
 		copy.healing = healing;
 		copy.shielding = shielding;
 		copy.spells = spells;
