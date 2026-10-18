@@ -123,6 +123,7 @@ final class ChainStormSpell extends SpellEffect {
 		fx.burst(ParticleTypes.ELECTRIC_SPARK, to, 24, 0.4, 0.35);
 		fx.dot(Fx.flash(ctx.spell.color), to);
 		fx.ring(Fx.dust(ctx.spell.color, 1.2F), target.position().add(0, 0.1, 0), 1.2, 12, age * 0.4);
+		curse(fx, target.position(), 1.2);
 		if (bolts < MAX_BOLTS) {
 			bolts++;
 			visualBolt(level, target.position());

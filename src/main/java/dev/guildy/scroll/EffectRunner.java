@@ -117,6 +117,9 @@ final class EffectRunner {
 				if (!ok) {
 					Guildy.LOGGER.warn("[scrolls] spell effect {} stopped after an error", effect.getClass().getSimpleName());
 					effect.finish();
+				} else if (effect.ctx.cursed()) {
+					// Cast from a cursed grimoire: its dark layer over the spell's own animation (same particle share).
+					Safe.run("scroll.effect.cursed", () -> CursedSpellFx.overlay(effect, fx));
 				}
 				effect.age++;
 				left -= fx.used();

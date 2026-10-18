@@ -73,6 +73,29 @@ final class GrimoireLang {
 		m.put("grimoire.admin.list", "&8- {0} &8[&7grimoire&8] &8· &7{1} pages, {2} s, recharge {3} s");
 		m.put("grimoire.admin.list.hover", "&7Coût en faim : {0}\n&7Puissance : ×{1}\n&7Butin : {2}\n&7Carrefour : palier {3}, {4} or\n"
 				+ "&eCliquez pour préparer la commande");
+		cursed(m);
 		Lang.addDefaults(m);
+	}
+
+	/** The cursed grimoire's own texts ("grimoire.cursed." + the grimoire key they replace, and its own keys). */
+	private static void cursed(Map<String, String> m) {
+		m.put("grimoire.cursed.item.name", "&4&lGrimoire maudit &8— {0} &7({1}/{2})");
+		m.put("grimoire.cursed.item.name_empty", "&4&lGrimoire maudit &8(vierge)");
+		m.put("grimoire.cursed.item.header", "&8☠ Grimoire maudit · {0}/{1} pages");
+		m.put("grimoire.cursed.item.page_selected", "&c▶ {0}. {1} &8· &6{2} faim &8· &c{3} ❤");
+		m.put("grimoire.cursed.item.page", "&8   {0}. {1} &8· &7{2} faim &8· &4{3} ❤");
+		m.put("grimoire.cursed.item.cost", "&6Coût : &e{0} &6faim &8+ &c{1} ❤ de sang &8(jamais sous {2} ❤)");
+		m.put("grimoire.cursed.item.curse", "&5☠ Malédiction : &dsorts bien plus puissants\n&8(dégâts, durées, portées, nombre de cibles…)");
+		m.put("grimoire.cursed.cast", "&4☠ &f{0} &4! &8(−{1} faim, −{2} ❤)");
+		m.put("grimoire.cursed.page.turned", "{0} &8· &6{1} faim &8· &c{2} ❤");
+		m.put("grimoire.cursed.fail.disabled", "&cLe grimoire maudit est désactivé sur ce serveur.");
+		m.put("grimoire.cursed.fail.cooldown", "&cGrimoire maudit en recharge : &f{0} s");
+		m.put("grimoire.cursed.fail.blood", "&4Le grimoire réclame &c{0} ❤&4 de sang : il faut garder au moins &c{1} ❤&4.");
+		m.put("grimoire.cursed.fail.blood_now", "&4Votre sang est trop faible pour achever le sort.");
+		m.put("grimoire.cursed.menu.title", "&4Grimoire maudit");
+		m.put("grimoire.cursed.admin.give", "&aGrimoire maudit donné à &e{0}&a.");
+		m.put("grimoire.cursed.admin.list", "&8- {0} &8[&4grimoire maudit&8] &8· &7{1} pages, recharge {2} s");
+		m.put("grimoire.cursed.admin.list.hover", "&7Faim : {0}\n&7Sang : {1} (jamais sous {2} PV)\n&7Puissance : dégâts/durées ×{3}, portées ×{4},"
+				+ " nombres ×{5}, niveaux +{6}\n&7Butin (gardiens maudits) : {7}\n&eCliquez pour préparer la commande");
 	}
 }

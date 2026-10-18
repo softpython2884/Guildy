@@ -30,7 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * {@code /guild admin scroll list | give <player> <id> [count] | grimoire <player> [ids]} (the admin node is already
+ * {@code /guild admin scroll list | give <player> <id> [count] | grimoire <player> [cursed] [ids]} (the admin node is already
  * permission-gated, like the unique weapon commands) and {@code /guild grimoire} (pages menu of the grimoire in hand).
  * {@code give} also takes the ruins' summoning scrolls: {@code incantation} and {@code incantation_maudit}.
  */
@@ -54,9 +54,13 @@ final class ScrollCommands {
 												.executes(ctx -> give(ctx, IntegerArgumentType.getInteger(ctx, "count")))))))
 				.then(Commands.literal("grimoire")
 						.then(Commands.argument("player", EntityArgument.player())
-								.executes(ctx -> giveGrimoire(ctx, ""))
+								.executes(ctx -> giveGrimoire(ctx, "", false))
+								.then(Commands.literal(CURSED)
+										.executes(ctx -> giveGrimoire(ctx, "", true))
+										.then(Commands.argument("spells", StringArgumentType.greedyString()).suggests(IDS)
+												.executes(ctx -> giveGrimoire(ctx, StringArgumentType.getString(ctx, "spells"), true))))
 								.then(Commands.argument("spells", StringArgumentType.greedyString()).suggests(IDS)
-										.executes(ctx -> giveGrimoire(ctx, StringArgumentType.getString(ctx, "spells"))))))));
+										.executes(ctx -> giveGrimoire(ctx, StringArgumentType.getString(ctx, "spells"), false)))))));
 		GuildCommand.addSubcommands((root, context) -> root.then(Commands.literal("grimoire").executes(ctx -> {
 			ServerPlayer player = GuildCommand.player(ctx);
 			Safe.run("scroll.grimoire.command", () -> {
@@ -71,8 +75,11 @@ final class ScrollCommands {
 		})));
 	}
 
-	/** {@code grimoire <player> [ids]}: a grimoire, with up to four pages already written (ids separated by spaces or commas). */
-	private static int giveGrimoire(CommandContext<CommandSourceStack> ctx, String spells) throws CommandSyntaxException {
+	/**
+	 * {@code grimoire <player> [cursed] [ids]}: a grimoire (or a cursed grimoire), with up to four pages already written (ids
+	 * separated by spaces or commas).
+	 */
+	private static int giveGrimoire(CommandContext<CommandSourceStack> ctx, String spells, boolean cursed) throws CommandSyntaxException {
 		ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
 		GrimoireRules.Pages pages = GrimoireRules.Pages.EMPTY;
 		for (String raw : spells.split("[\\s,]+")) {
@@ -87,15 +94,20 @@ final class ScrollCommands {
 			pages = GrimoireRules.fuse(pages, id).pages();
 		}
 		GrimoireRules.Pages written = pages;
-		ItemStack stack = Safe.get("scroll.admin.grimoire", () -> GrimoireItems.create(written), ItemStack.EMPTY);
+		ItemStack stack = Safe.get("scroll.admin.grimoire", () -> GrimoireItems.create(written, cursed), ItemStack.EMPTY);
 		if (stack.isEmpty()) {
-			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("grimoire.admin.unknown", ScrollModule.config().grimoire.item)));
+			ScrollConfig cfg = ScrollModule.config();
+			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("grimoire.admin.unknown", cursed ? cfg.cursedGrimoire.item : cfg.grimoire.item)));
 			return 0;
 		}
 		ItemUtil.giveOrDrop(target, stack);
-		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("grimoire.admin.give", target.getName().getString())), true);
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get(GrimoireItems.key("grimoire.admin.give", cursed), target.getName().getString())),
+				true);
 		return 1;
 	}
+
+	/** Literal of the admin command giving a cursed grimoire. */
+	static final String CURSED = "cursed";
 
 	private static List<String> ids() {
 		List<String> ids = new ArrayList<>();
@@ -229,6 +241,8 @@ final class ScrollCommands {
 		String channel = Spell.number(shortest) + (longest > shortest ? "-" + Spell.number(longest) : "");
 		Component grimoireLine = TextUtil.lang("grimoire.admin.list", grimoireName, GrimoireRules.PAGES, channel, Spell.number(g.cooldownSeconds));
 		source.sendSuccess(() -> grimoireLine, false);
+		Component cursedLine = cursedGrimoireLine(cfg, source);
+		source.sendSuccess(() -> cursedLine, false);
 		List<String> tables = new ArrayList<>();
 		for (Map.Entry<String, ScrollConfig.DropTable> entry : cfg.drops.entrySet()) {
 			tables.add(entry.getKey() + " " + percent(entry.getValue().chance) + " %");
@@ -236,6 +250,32 @@ final class ScrollCommands {
 		source.sendSuccess(() -> Lang.get("scroll.admin.list.tables", String.join(", ", tables)), false);
 		source.sendSuccess(() -> Lang.get("scroll.admin.list.effects", EffectRunner.count()), false);
 		return cfg.usable().size();
+	}
+
+	/** The cursed grimoire in the list: costs, power, ruins whose cursed guardian drops it; click = the give command. */
+	private static Component cursedGrimoireLine(ScrollConfig cfg, CommandSourceStack source) {
+		ScrollConfig.CursedGrimoire c = cfg.cursedGrimoire;
+		List<String> food = new ArrayList<>();
+		for (Map.Entry<String, Integer> entry : c.foodCost.entrySet()) {
+			food.add(entry.getKey().toLowerCase(Locale.ROOT) + " " + entry.getValue());
+		}
+		List<String> blood = new ArrayList<>();
+		for (Map.Entry<String, Integer> entry : c.bloodCost.entrySet()) {
+			blood.add(entry.getKey().toLowerCase(Locale.ROOT) + " " + entry.getValue());
+		}
+		List<String> ruins = new ArrayList<>();
+		for (Map.Entry<String, Double> entry : c.ruinDrops.entrySet()) {
+			if (entry.getValue() > 0) {
+				ruins.add(entry.getKey() + " " + percent(entry.getValue()) + " %");
+			}
+		}
+		Component hover = Lang.get("grimoire.cursed.admin.list.hover", String.join(", ", food), String.join(", ", blood), Spell.number(c.minHealth),
+				Spell.number(c.powerMultiplier), Spell.number(c.radiusMultiplier), Spell.number(c.countMultiplier), c.levelBonus,
+				ruins.isEmpty() ? Lang.raw("scroll.admin.list.no_drop") : String.join(", ", ruins));
+		MutableComponent name = GrimoireItems.name(GrimoireRules.Pages.EMPTY, true).copy().withStyle(style -> style
+				.withClickEvent(new ClickEvent.SuggestCommand("/guild admin scroll grimoire " + playerName(source) + " " + CURSED))
+				.withHoverEvent(new HoverEvent.ShowText(hover)));
+		return TextUtil.lang("grimoire.cursed.admin.list", name, GrimoireRules.PAGES, Spell.number(c.cooldownSeconds));
 	}
 
 	/** "ruin_boss 4,3 %, boss 0,6 %" (chance that one roll of the source gives this scroll). */

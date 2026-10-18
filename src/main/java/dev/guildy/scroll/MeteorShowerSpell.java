@@ -10,8 +10,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Pluie de météores: a red runic circle marks the area around the aimed point, then burning meteors fall one after the other
@@ -22,6 +25,8 @@ final class MeteorShowerSpell extends SpellEffect {
 	private static final int FLIGHT = 16;
 	private static final int INTERVAL = 4;
 	private static final int EMBERS = 24;
+	/** Meteors landed per caster since the server started (statistics, tests). */
+	private static final Map<UUID, Integer> IMPACTS = new HashMap<>();
 
 	private final Vec3 center;
 	private final Vec3 from;
@@ -69,6 +74,16 @@ final class MeteorShowerSpell extends SpellEffect {
 		this.damage = ctx.p("damage");
 		this.impactRadius = ctx.p("impactRadius");
 		this.fireSeconds = (float) ctx.p("fireSeconds");
+	}
+
+	/** Meteors landed for this caster since the server started. */
+	static int impacts(UUID caster) {
+		return IMPACTS.getOrDefault(caster, 0);
+	}
+
+	/** Server stop. */
+	static void clearImpacts() {
+		IMPACTS.clear();
 	}
 
 	@Override
@@ -158,6 +173,8 @@ final class MeteorShowerSpell extends SpellEffect {
 		}
 		fx.arc(ParticleTypes.FLAME, p.add(0, 0.2, 0), impactRadius * 0.5, 0, Math.PI * 2, 20, true);
 		fx.arc(Fx.fade(0xFF6A00, 0x2A0A00, 1.6F), p.add(0, 0.25, 0), impactRadius, 0, Math.PI * 2, 24, true);
+		curse(fx, p, impactRadius);
+		IMPACTS.merge(owner, 1, Integer::sum);
 		sound(p, SoundEvents.GENERIC_EXPLODE, 2.2F, 0.75F + random.nextFloat() * 0.35F);
 		sound(p, SoundEvents.FIRECHARGE_USE, 1.5F, 0.5F);
 		for (LivingEntity target : SpellTargets.hostiles(ctx, level, p, impactRadius + 0.6, 16)) {

@@ -893,6 +893,101 @@ def grimoire(spell=None):
 	return Sprite(frames, anim(4))
 
 
+# ---------------------------------------------------------------------------------------------------------- cursed grimoire
+# Same select as the grimoire (custom_model_data string 0 = selected scroll id), fallback = the dormant cursed tome.
+
+GRIMOIRE_MAUDIT = [
+	"OOOOOOOOOOOOO...",
+	"OBbccdYdccbBOO..",
+	"ObXkkkkkkkXbOPO.",
+	"OckKKKKKKKcCOpkO",
+	"OckKKKKKKKcCOPkO",
+	"OckKKKKKKKcCOrkO",
+	"ObkKKKKKKKcbOLlO",
+	"OckKKKKKKKcllHLO",
+	"OckKKKKKKKcdOldO",
+	"OckKKKKKKKcCOpkO",
+	"OcXcccccccXCOPkO",
+	"OLlLlLlLlLlLOlLO",
+	"OBbkkkdkkkddOPkO",
+	"OOOOOOOOOOOOOpkO",
+	".OPpPrPpPRPpPpkO",
+	"..OkkkkkkRkkkkkO",
+]
+
+GRIMOIRE_MAUDIT_PALETTE = {"O": "#050208", "c": "#553070", "C": "#3a1d52", "k": "#24112f", "K": "#0c0514",
+						   "B": "#f2ead6", "b": "#c4b590", "d": "#7e7056", "X": "#4b2f78", "Y": "#5a0a14",
+						   "L": "#a8a2b6", "l": "#5d5768", "H": "#6a0a16", "P": "#cbbd98", "p": "#94845f",
+						   "R": "#9e0a1e", "r": "#6e0814"}
+
+# Inverted pentagram of the cover panel (7 x 7, like the star of the cursed incantation scroll).
+CURSED_SIGIL = [".#...#.", ".##.##.", "..###..", ".#.#.#.", "#######", "...#...", "...#..."]
+# Heartbeat of the blood eye (top stud) and of the padlock's eye, one color per frame (a double beat, then rest).
+CURSED_BEAT = ["#ff2a3a", "#c8142a", "#ff4a50", "#c8142a", "#8e0c18", "#5a0a14", "#5a0a14", "#8e0c18"]
+
+
+def grimoire_maudit(spell=None):
+	"""
+	Cursed tome: black-violet leather, bone corners, obsidian studs, an eye-shaped bone stud at the top, an iron chain wrapped
+	around the book to a padlock whose keyhole is a blood eye, aged pages stained with blood and a blood ribbon. Dormant
+	(fallback): the inverted pentagram of the panel in dried blood, eyes closed. With a spell: the pentagram glows in the
+	colors of its scroll (palette cycling) over a halo of its color, the eyes beat like a heart, a glint runs along the chain
+	and a drop of blood falls from the ribbon.
+	"""
+	sigil = [(3 + x, 3 + y) for y, line in enumerate(CURSED_SIGIL) for x, ch in enumerate(line) if ch == "#"]
+	if spell is None:
+		g = paint(GRIMOIRE_MAUDIT, GRIMOIRE_MAUDIT_PALETTE)
+		put(g, sigil, "#6a0c18")
+		put(g, [(6, 7)], "#8e1020")
+		return Sprite([g])
+	palette = GRIMOIRE_GLOW.get(spell, SCROLL_RUNES[spell][1])
+	mark = set(sigil)
+	halo = [(x, y) for x in range(3, 10) for y in range(3, 10) if (x, y) not in mark
+			and any((x + dx, y + dy) in mark for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+	chain = cells(GRIMOIRE_MAUDIT, "Ll")
+	chain = [p for p in chain if p[1] == 11]
+	frames = []
+	for f in range(8):
+		g = paint(GRIMOIRE_MAUDIT, GRIMOIRE_MAUDIT_PALETTE)
+		glow = palette[(f // 2 + 2) % 4]
+		for x, y in halo:
+			g[y][x] = mix(mix(g[y][x], glow, 0.3), "#5a0010", 0.15)
+		for i, p in enumerate(sorted(sigil, key=lambda q: (q[0] + q[1], q[0]))):
+			put(g, [p], palette[(i + f // 2) % 4])
+		beat = CURSED_BEAT[f]
+		put(g, [(6, 1)], beat)
+		g[7][13] = mix(rgba(beat), palette[(f // 2) % 4], 0.35)
+		gleam(g, chain, 2 * f, ["#f4f0ff", "#c8c2d6"])
+		if f in (5, 6):
+			put(g, [(9, 15)], "#d81a30")
+		frames.append(g)
+	return Sprite(frames, anim(3))
+
+
+def grimoire_maudit_sprites():
+	"""Texture name -> Sprite of the cursed grimoire: the dormant tome and one texture per spell scroll."""
+	sprites = {"grimoire_maudit": grimoire_maudit()}
+	for spell in GRIMOIRE_SIGILS:
+		sprites["grimoire_maudit_" + spell] = grimoire_maudit(spell)
+	return sprites
+
+
+def grimoire_maudit_model():
+	"""guildy:grimoire_maudit: one model per spell, selected by the string 0 of minecraft:custom_model_data."""
+	model_file("grimoire_maudit", "minecraft:item/generated")
+	cases = []
+	for spell in GRIMOIRE_SIGILS:
+		model_file("grimoire_maudit_" + spell, "minecraft:item/generated")
+		cases.append({"when": spell, "model": ref("grimoire_maudit_" + spell)})
+	item_file("grimoire_maudit", {
+		"type": "minecraft:select",
+		"property": "minecraft:custom_model_data",
+		"index": 0,
+		"cases": cases,
+		"fallback": ref("grimoire_maudit"),
+	})
+
+
 # ---------------------------------------------------------------------------------------------------------- incantation scroll
 
 def parchemin_incantation():
@@ -1276,6 +1371,7 @@ def all_sprites():
 	sprites["grimoire"] = grimoire()
 	for spell in GRIMOIRE_SIGILS:
 		sprites["grimoire_" + spell] = grimoire(spell)
+	sprites.update(grimoire_maudit_sprites())
 	return sprites
 
 
@@ -1506,6 +1602,7 @@ def main():
 	simple_model("parchemin_incantation", "minecraft:item/generated")
 	simple_model("parchemin_incantation_maudit", "minecraft:item/generated")
 	grimoire_model()
+	grimoire_maudit_model()
 	remove_stale()
 	pack_icon(sprites)
 	preview_sheet(os.path.join(PREVIEWS, "textures.png"), sprites)

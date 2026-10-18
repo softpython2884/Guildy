@@ -137,9 +137,14 @@ public final class ScrollItems {
 
 	/** The spell description with the values of a cast of this power (grimoire). */
 	static String spellText(ScrollConfig.ScrollDef def, double power) {
+		return spellText(def, SpellPower.of(power));
+	}
+
+	/** The spell description with the values of a cast of this power (grimoire, cursed grimoire). */
+	static String spellText(ScrollConfig.ScrollDef def, SpellPower power) {
 		String text = Lang.raw(def.spell().langKey() + ".lore");
 		for (Spell.Param param : def.spell().params()) {
-			text = text.replace("{" + param.name() + "}", param.format(param.powered(def.param(param.name()), power)));
+			text = text.replace("{" + param.name() + "}", param.format(power.apply(param, def.param(param.name()))));
 		}
 		return text;
 	}

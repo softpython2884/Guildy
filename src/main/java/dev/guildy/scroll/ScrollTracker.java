@@ -48,6 +48,7 @@ final class ScrollTracker {
 			EffectRunner.clear();
 			ScrollCasting.clear();
 			GuardiansSpell.clearAll();
+			MeteorShowerSpell.clearImpacts();
 		});
 		Lifecycle.RELOADED.add(ScrollItems::clearSignatures);
 	}
