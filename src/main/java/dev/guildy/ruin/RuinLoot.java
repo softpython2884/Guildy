@@ -128,7 +128,7 @@ final class RuinLoot {
 		int dropped = 0;
 		for (int i = 0; i < shares.length; i++) {
 			UUID owner = recipients.size() > 1 ? recipients.get(i) : null;
-			for (ItemStack part : split(new ItemStack(Items.GOLD_INGOT, shares[i]))) {
+			for (ItemStack part : goldStacks(shares[i])) {
 				ItemEntity entity = boss.spawnAtLocation(level, part);
 				if (entity != null) {
 					entity.setUnlimitedLifetime();
@@ -203,6 +203,19 @@ final class RuinLoot {
 			}
 		}
 		RuinIndex.markDirty();
+	}
+
+	/** One share of gold: ingots up to a stack, beyond that gold blocks plus the remaining ingots (fewer piles to pick up). */
+	private static List<ItemStack> goldStacks(int amount) {
+		ItemStack ingots = new ItemStack(Items.GOLD_INGOT, amount);
+		if (amount <= ingots.getMaxStackSize()) {
+			return split(ingots);
+		}
+		List<ItemStack> parts = split(new ItemStack(Items.GOLD_BLOCK, amount / 9));
+		if (amount % 9 > 0) {
+			parts.add(new ItemStack(Items.GOLD_INGOT, amount % 9));
+		}
+		return parts;
 	}
 
 	private static List<ItemStack> split(ItemStack stack) {
