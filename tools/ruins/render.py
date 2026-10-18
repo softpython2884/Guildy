@@ -124,6 +124,33 @@ def render_ruin(ruin, detail=False, out=None):
 	return path
 
 
+def render_monument(monument, out=None, unit=20):
+	"""
+	Preview of a monument (a small template placed by the mod, front facing north): the four corner views (the two
+	northern ones show its face), a cut through its axis and the plan of the ground layer -> previews/<id>.png.
+	"""
+	t = monument.assembled()
+	g = monument.ground
+	sx, sy, sz = t.size
+	cx = sx // 2
+	panels = [
+		(R.render_iso(t, unit, monument.terrain, g, rotation=1), "Vue nord-est (de face)"),
+		(R.render_iso(t, unit, monument.terrain, g, rotation=2), "Vue nord-ouest (de face)"),
+		(R.render_iso(t, unit, monument.terrain, g, rotation=0), "Vue sud-est (de dos)"),
+		(R.render_iso(t, unit, monument.terrain, g, rotation=3), "Vue sud-ouest"),
+		(R.render_iso(t, unit, monument.terrain, g, rotation=1, hide=lambda x, y, z: x < cx), "Coupe dans l'axe (moitie ouest retiree)"),
+		(R.render_plan(t, g + 1, unit // 2 + 4, below=g + 1, terrain=monument.terrain, ground=g), "Plan (sol et socle)"),
+	]
+	img = R.sheet(panels, 2)
+	full = R.Image.new("RGB", (img.width, img.height + 34), (236, 233, 226))
+	full.paste(img, (0, 34))
+	R.label(full, f"{monument.title}  ({monument.id}, {sx}x{sy}x{sz}, face au nord)", 22, (10, 6), (20, 20, 20))
+	os.makedirs(PREVIEWS, exist_ok=True)
+	path = out or os.path.join(PREVIEWS, monument.id + ".png")
+	R.save_png(full, path)
+	return path
+
+
 def main():
 	sys.stdout.reconfigure(encoding="utf-8")
 	ap = argparse.ArgumentParser()
@@ -142,7 +169,10 @@ def main():
 		print(path)
 		return
 	import ruins
-	for ruin_id in args.ids or ruins.IDS:
+	for ruin_id in args.ids or ruins.IDS + ruins.MONUMENTS:
+		if ruin_id in ruins.MONUMENTS:
+			print(render_monument(ruins.load_monument(ruin_id), args.out))
+			continue
 		ruin = ruins.load(ruin_id)
 		print(render_ruin(ruin, args.detail, args.out))
 

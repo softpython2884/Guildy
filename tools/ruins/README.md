@@ -32,6 +32,30 @@ galerie des eaux et la salle des offrandes), la voie du roi (escalier en colima�
 le temple du sommet, tombeau du roi, descente de l'âme) et la voie des eaux (tunnel du cénote, sortie par le sentier
 taillé dans sa paroi). Ensemble de structures à part, beaucoup plus rare que les autres ruines (voir plus bas).
 
+### Les statues du jaguar de pierre (monument)
+
+Le grand temple ne se trouve pas avec une carte ordinaire : la recherche « La légende du Jaguar céleste » de l'Atelier
+du cartographe donne une **carte des statues**, et le mod pose lui-même, entre l'atelier et le temple, une lignée de
+statues tournées chacune vers la suivante. Ce n'est pas une ruine : pas de génération du monde, pas de boss, pas de
+coffre. Le script `ruins/statue_jaguar.py` écrit un seul gabarit, `structure/ruin/statue_jaguar.nbt` (15 × 15 × 15),
+et son aperçu `previews/statue_jaguar.png`.
+
+- Un jaguar assis taillé dans le tuf, peint d'ocre et de rosettes noires (la peinture est partie par endroits), sur un
+  socle maya : dallage ancien aux bords déchiquetés et petite chaussée vers l'avant, assise avec une marche tout autour,
+  frise de glyphes (tuf ciselé, incrustations de jade, peinture rouge) avec un masque de jade au milieu de chaque face,
+  corniche en surplomb. Le jaguar : pattes avant au bord du socle, poitrail sous un collier de jade et son pendentif,
+  hanches repliées, queue enroulée sur le côté, grosse tête avancée, museau blanc, gueule rouge ouverte aux crocs
+  blancs, **yeux de jade lumineux** (froglights verdoyantes) au fond des orbites sous de lourds sourcils, oreilles
+  courtes (l'une est cassée). Mousse, lianes, fougères, deux pierres d'offrande avec des bougies vertes.
+- **Face au nord** dans le gabarit : le mod le tourne vers sa cible (quart de tour le plus proche). Couche 0 = fondation
+  enterrée, couche 1 = dallage au niveau du sol naturel ; le mod comble sous l'emprise jusqu'au vrai sol.
+- Contrat d'un monument (`check.py`, `check_monument`) : au plus 16 × 16 × 24, aucun marqueur, aucun coffre / pot /
+  spawner ni bloc à données, aucune entité, au moins deux yeux lumineux du côté nord, rien qui flotte, pas d'air sous le
+  sol, audit de l'eau. Vérifier un fichier : `python tools/ruins/check.py statue.nbt --monument --ground 1`.
+- Pour la voir en jeu : `/place template guildy:ruin/statue_jaguar` (sans fondation ni rotation), ou
+  `/guild admin ruin statues <joueur>` (vraie lignée de statues vers le grand temple le plus proche, posées quand on
+  approche) et `/guild admin ruin statues list`.
+
 ## Tester en jeu
 
 ```
@@ -182,10 +206,10 @@ et `.nbt`, puis reconvertie et comparée à l'originale.
 
 | Fichier | Rôle |
 |---|---|
-| `build_all.py` | construit les huit ruines (+ variantes importées), écrit les ressources du mod, vérifie, dessine |
-| `ruins/<id>.py` | une ruine par script (lancer seul : construit et dessine cette ruine) |
-| `render.py` | aperçus PNG (`python tools/ruins/render.py <id>` ou `--nbt fichier.nbt`) ; planche de coupes pour les ruines qui déclarent des `sections` |
-| `check.py` | vérification du contrat sur les gabarits de `src/main/resources` (ou un fichier `.nbt` donné, `--big` / `--grand` pour les limites des repères), audit de l'eau compris |
+| `build_all.py` | construit les huit ruines (+ variantes importées) et les monuments (statue du jaguar), écrit les ressources du mod, vérifie, dessine (`python tools/ruins/build_all.py statue_jaguar` : la statue seule) |
+| `ruins/<id>.py` | une ruine (ou un monument : `statue_jaguar.py`) par script (lancer seul : construit et dessine) |
+| `render.py` | aperçus PNG (`python tools/ruins/render.py <id>` ou `--nbt fichier.nbt`) ; planche de coupes pour les ruines qui déclarent des `sections` ; quatre vues, une coupe et le plan pour un monument |
+| `check.py` | vérification du contrat sur les gabarits de `src/main/resources` (ou un fichier `.nbt` donné, `--big` / `--grand` pour les limites des repères, `--monument` pour une statue), audit de l'eau compris |
 | `import_schematic.py`, `test_import.py` | convertisseur de schématiques et son test |
 | `gen_block_data.py` | régénère `data/blocks.json` (blocs / propriétés) et `data/colors.json` (couleurs des aperçus) pour une autre version de Minecraft, à partir du rapport du générateur de données et du jar client |
 | `ruinlib/` | NBT, gabarits, états de blocs, formats, techniques de construction (murs à relief, contreforts, arcs, voûtes, toits, flèches, dômes, matériaux patinés), ruine (dégâts, effondrement sans bloc flottant, gravats), végétation, rendu, écoulement de l'eau et de la lave selon les règles du jeu (`water.py` ; son test : `python -m ruinlib.water` depuis `tools/ruins`) |
@@ -205,7 +229,8 @@ bibliothèque standard.
   zone d'exclusion : jamais à moins de 10 chunks d'un emplacement de `ruins_overworld` (pas de chevauchement avec une
   autre ruine, environ 60 % des emplacements restent valables). Avec la rareté des jungles, il faut compter de l'ordre
   d'un grand temple par carré de 5 à 7 000 blocs de côté (selon la part de jungle du monde).
-  Il fait partie du tag `#guildy:ruins/overworld` (cartes, `/locate`). Son beacon est un vrai beacon vanilla au sommet
+  Il fait partie du tag `#guildy:ruins/overworld` (`/locate`), mais la recherche de surface de l'atelier l'ignore : seule
+  la légende du Jaguar céleste (carte des statues) y mène. Son beacon est un vrai beacon vanilla au sommet
   (base de fer de 4 niveaux 9 × 9 → 3 × 3 cachée dans la couronne de la crête, verre jaune au-dessus, ciel libre) : le
   module des ruines protège le beacon et sa base. Une bande d'air explicite (14 blocs au-dessus du sol, rayon ~66)
   dégage les collines de la jungle sur la place ; la place est pavée presque partout, si bien que les arbres de la

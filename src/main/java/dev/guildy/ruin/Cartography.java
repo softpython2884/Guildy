@@ -21,6 +21,7 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -63,6 +64,18 @@ public final class Cartography {
 	}
 
 	public static Locator locator = Cartography::vanillaLocate;
+
+	/** Finds the grand temple of a legend research or of the admin command (replaceable for tests). */
+	@FunctionalInterface
+	public interface TempleLocator {
+		/**
+		 * @param claim add a reference to the start (the next legend skips it, like the other searches); false (admin): the
+		 *              nearest temple, the indexed ones as a fallback
+		 */
+		@Nullable RuinRecord locate(ServerLevel level, BlockPos origin, @Nullable Guild guild, boolean claim);
+	}
+
+	public static TempleLocator templeLocator = Cartography::vanillaTempleLocate;
 
 	/** Guild id → villager id → last tick it worked at the atelier. */
 	private static final Map<UUID, Map<UUID, Long>> WORKERS = new HashMap<>();
@@ -112,32 +125,54 @@ public final class Cartography {
 
 	/** Starts a research (cost taken from the player and the treasury). @return the error, or null on success */
 	public static @Nullable Component start(ServerPlayer player, Guild guild, boolean nether) {
+		return begin(player, guild, nether, false);
+	}
+
+	/**
+	 * Starts "La legende du Jaguar celeste": a statue trail to the nearest grand temple (guild level, its own cost and
+	 * duration, see {@code cartography.statues}). @return the error, or null on success
+	 */
+	public static @Nullable Component startLegend(ServerPlayer player, Guild guild) {
+		return begin(player, guild, false, true);
+	}
+
+	private static @Nullable Component begin(ServerPlayer player, Guild guild, boolean nether, boolean legend) {
 		if (!guild.isMember(player.getUUID())) {
 			return Lang.get("error.no_guild");
 		}
 		if (atelier(guild) == null) {
 			return Lang.get("ruin.research.no_atelier");
 		}
+		StatueSettings statues = settings().statues;
+		if (legend) {
+			String refusal = StatueRules.legendRefusal(statues.enabled, guild.level, statues.minGuildLevel);
+			if (refusal != null) {
+				return Lang.get(refusal, statues.minGuildLevel, guild.level);
+			}
+		}
 		GuildRuinData data = RuinIndex.guild(guild.id);
 		if (data.research != null) {
 			return Lang.get("ruin.research.busy");
 		}
 		RuinConfig.CartographySettings cfg = settings();
-		Map<String, Integer> cost = nether ? cfg.netherCost : cfg.overworldCost;
+		Map<String, Integer> cost = legend ? statues.cost : nether ? cfg.netherCost : cfg.overworldCost;
+		int goldCost = legend ? statues.goldCost : cfg.goldCost;
 		if (!cost.isEmpty() && player.isCreative()) {
 			return Lang.get("ruin.research.creative");
 		}
-		if (cfg.goldCost > 0 && !guild.can(player.getUUID(), GuildPermission.TREASURY)) {
+		if (goldCost > 0 && !guild.can(player.getUUID(), GuildPermission.TREASURY)) {
 			return Lang.get("error.no_permission");
 		}
-		for (Map.Entry<String, Integer> entry : cost.entrySet()) {
-			Item item = ItemUtil.item(entry.getKey());
-			if (item != null && ItemUtil.count(player, item) < entry.getValue()) {
-				return Lang.get("ruin.research.missing", entry.getValue(), ItemUtil.name(item).getString());
-			}
+		Map.Entry<String, Integer> missing = StatueRules.missing(cost, id -> {
+			Item item = ItemUtil.item(id);
+			return item == null ? Integer.MAX_VALUE : ItemUtil.count(player, item);
+		});
+		if (missing != null) {
+			Item item = ItemUtil.item(missing.getKey());
+			return Lang.get("ruin.research.missing", missing.getValue(), item == null ? missing.getKey() : ItemUtil.name(item).getString());
 		}
-		if (cfg.goldCost > 0 && guild.treasury < cfg.goldCost) {
-			return Lang.get("error.not_enough_treasury", cfg.goldCost);
+		if (goldCost > 0 && guild.treasury < goldCost) {
+			return Lang.get("error.not_enough_treasury", goldCost);
 		}
 		// Pay: items first (all checked above), then the treasury (items given back if it fails).
 		List<ItemStack> paid = new ArrayList<>();
@@ -152,22 +187,25 @@ public final class Cartography {
 			}
 			paid.add(new ItemStack(item, entry.getValue()));
 		}
-		if (cfg.goldCost > 0 && !GuildManager.takeTreasury(guild, cfg.goldCost)) {
+		if (goldCost > 0 && !GuildManager.takeTreasury(guild, goldCost)) {
 			refund(player, paid);
-			return Lang.get("error.not_enough_treasury", cfg.goldCost);
+			return Lang.get("error.not_enough_treasury", goldCost);
 		}
 		Research research = new Research();
 		research.nether = nether;
-		research.required = Math.max(1, Upgrades.workSeconds(guild, (int) Math.round(cfg.researchMinutes * 60)));
+		research.legend = legend;
+		double minutes = legend ? statues.researchMinutes : cfg.researchMinutes;
+		research.required = Math.max(1, Upgrades.workSeconds(guild, (int) Math.round(minutes * 60)));
 		research.startedBy = player.getUUID();
 		research.startedByName = player.getName().getString();
 		research.startedAt = System.currentTimeMillis();
 		research.paidItems = paid;
-		research.paidGold = cfg.goldCost;
+		research.paidGold = goldCost;
 		data.research = research;
 		RuinIndex.markDirty();
 		StructureManager.requestSignRefresh(guild);
-		Msg.guild(guild, nether ? "ruin.research.started.nether" : "ruin.research.started", player.getName().getString());
+		Msg.guild(guild, legend ? "ruin.research.started.legend" : nether ? "ruin.research.started.nether" : "ruin.research.started",
+				player.getName().getString());
 		if (cartographers(guild) == 0) {
 			Msg.send(player, "ruin.research.no_cartographer");
 		}
@@ -217,6 +255,9 @@ public final class Cartography {
 			RuinIndex.markDirty();
 			return Lang.get("ruin.research.lost");
 		}
+		if (research.legend) {
+			return claimLegend(player, guild, data, research, ruin);
+		}
 		ItemStack item = RuinItems.forRuin(server, ruin);
 		if (item.isEmpty()) {
 			return Lang.get("ruin.research.lost");
@@ -237,6 +278,45 @@ public final class Cartography {
 		Msg.guild(guild, ruin.isNether() ? "ruin.research.claimed.nether" : "ruin.research.claimed", player.getName().getString(),
 				Lang.colorize(Encounters.def(ruin).name), target.getX(), target.getZ());
 		return null;
+	}
+
+	/**
+	 * "Récupérer" of a legend research: the statue map of its trail (planned again if it was forgotten), the incantation
+	 * scrolls; the temple stays unknown to the guild (no coordinates anywhere) until its members defeat its guardian.
+	 */
+	private static @Nullable Component claimLegend(ServerPlayer player, Guild guild, GuildRuinData data, Research research, RuinRecord temple) {
+		var dimension = RuinItems.dimension(temple);
+		ServerLevel level = dimension == null ? null : player.level().getServer().getLevel(dimension);
+		if (level == null) {
+			return Lang.get("ruin.research.lost");
+		}
+		StatueTrail trail = Statues.trail(research.trailId);
+		if (trail == null) {
+			trail = Statues.createTrail(level, legendOrigin(guild), temple, guild);
+			if (trail == null) {
+				return Lang.get("ruin.research.lost");
+			}
+			research.trailId = trail.id;
+		}
+		ItemStack item = RuinItems.statueMap(level, trail);
+		data.research = null;
+		RuinIndex.markDirty();
+		StructureManager.requestSignRefresh(guild);
+		ItemUtil.giveOrDrop(player, item);
+		int incantations = settings().incantationsPerResearch;
+		if (incantations > 0) {
+			IncantationItems.give(player, incantations);
+			Msg.send(player, "ruin.research.incantation", incantations);
+		}
+		Msg.sound(player, SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, 1.0F, 1.0F);
+		Msg.guild(guild, "ruin.research.claimed.legend", player.getName().getString(), trail.statues.size());
+		return null;
+	}
+
+	/** Where a legend trail of the guild starts: its atelier, else its heart. */
+	static BlockPos legendOrigin(Guild guild) {
+		BuiltStructure atelier = atelier(guild);
+		return atelier != null ? atelier.origin : guild.heart != null ? guild.heart : BlockPos.ZERO;
 	}
 
 	/**
@@ -311,9 +391,12 @@ public final class Cartography {
 		research.progress = research.required;
 		RuinRecord ruin = null;
 		ServerLevel claimLevel = GuildyServer.claimLevel();
-		BuiltStructure atelier = atelier(guild);
-		BlockPos origin = atelier != null ? atelier.origin : guild.heart != null ? guild.heart : BlockPos.ZERO;
+		BlockPos origin = legendOrigin(guild);
 		ServerLevel level = research.nether ? server.getLevel(Level.NETHER) : claimLevel != null ? claimLevel : server.overworld();
+		if (research.legend) {
+			completeLegend(level, guild, research, origin);
+			return;
+		}
 		if (level != null) {
 			BlockPos from = research.nether ? new BlockPos(origin.getX() / 8, 64, origin.getZ() / 8) : origin;
 			try {
@@ -335,15 +418,92 @@ public final class Cartography {
 		StructureManager.requestSignRefresh(guild);
 	}
 
+	/** Legend research done: the nearest grand temple not yet referenced, then its statue trail from the atelier. */
+	private static void completeLegend(@Nullable ServerLevel level, Guild guild, Research research, BlockPos origin) {
+		RuinRecord temple = null;
+		StatueTrail trail = null;
+		if (level != null) {
+			try {
+				temple = templeLocator.locate(level, origin, guild, true);
+				if (temple != null) {
+					trail = Statues.createTrail(level, origin, temple, guild);
+				}
+			} catch (Exception e) {
+				Guildy.LOGGER.error("[ruins] legend research failed for guild {}", guild.name, e);
+			}
+		}
+		if (temple == null || trail == null) {
+			research.status = Research.Status.FAILED;
+			Msg.guild(guild, "ruin.research.failed.legend");
+		} else {
+			research.status = Research.Status.READY;
+			research.ruinKey = temple.key;
+			research.trailId = trail.id;
+			Msg.guild(guild, "ruin.research.ready.legend");
+			Msg.guildSound(guild, SoundEvents.VILLAGER_WORK_CARTOGRAPHER, 1.0F, 1.0F);
+		}
+		RuinIndex.markDirty();
+		StructureManager.requestSignRefresh(guild);
+	}
+
 	/** Nearest ruin of the dimension's tag not yet referenced by a map (vanilla explorer-map search). */
 	static @Nullable RuinRecord vanillaLocate(ServerLevel level, BlockPos origin, boolean nether, Guild guild) {
-		TagKey<Structure> tag = nether ? RuinIndex.TAG_NETHER : RuinIndex.TAG_OVERWORLD;
-		Registry<Structure> registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-		Optional<HolderSet.Named<Structure>> set = registry.get(tag);
-		if (set.isEmpty() || set.get().size() == 0) {
+		HolderSet<Structure> set = nether ? tagSet(level, RuinIndex.TAG_NETHER) : surfaceStructures(level);
+		if (set == null || set.size() == 0) {
 			return null;
 		}
-		return locate(level, set.get(), origin, settings().searchRadius, true);
+		return locate(level, set, origin, settings().searchRadius, true);
+	}
+
+	private static @Nullable HolderSet<Structure> tagSet(ServerLevel level, TagKey<Structure> tag) {
+		Registry<Structure> registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+		Optional<HolderSet.Named<Structure>> set = registry.get(tag);
+		return set.isEmpty() ? null : set.get();
+	}
+
+	/**
+	 * The ruins the surface research looks for: the overworld ruin tag, without the grand temple while the legend is enabled
+	 * (only the statues lead to it). Public for the GameTests.
+	 */
+	public static @Nullable HolderSet<Structure> surfaceStructures(ServerLevel level) {
+		HolderSet<Structure> set = tagSet(level, RuinIndex.TAG_OVERWORLD);
+		StatueSettings statues = settings().statues;
+		if (set == null || !statues.enabled) {
+			return set;
+		}
+		List<Holder<Structure>> kept = new ArrayList<>();
+		boolean removed = false;
+		for (Holder<Structure> holder : set) {
+			boolean temple = holder.unwrapKey().map(key -> key.identifier().toString().equals(statues.templeStructure)).orElse(false);
+			if (temple) {
+				removed = true;
+			} else {
+				kept.add(holder);
+			}
+		}
+		return removed ? HolderSet.direct(kept) : set;
+	}
+
+	/**
+	 * The grand temple of the structure {@code cartography.statues.templeStructure} nearest to the origin (vanilla structure
+	 * search, a referenced start skipped when {@code claim}); without {@code claim}, the nearest indexed one as a fallback.
+	 */
+	static @Nullable RuinRecord vanillaTempleLocate(ServerLevel level, BlockPos origin, @Nullable Guild guild, boolean claim) {
+		StatueSettings statues = settings().statues;
+		Identifier id = Identifier.tryParse(statues.templeStructure);
+		if (id == null) {
+			return null;
+		}
+		Registry<Structure> registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+		Optional<Holder.Reference<Structure>> holder = registry.get(id);
+		RuinRecord found = null;
+		if (holder.isPresent() && !level.getChunkSource().getGeneratorState().getPlacementsForStructure(holder.get()).isEmpty()) {
+			found = locate(level, HolderSet.direct(holder.get()), origin, statues.searchRadius, claim);
+		}
+		if (found == null && !claim) {
+			found = RuinIndex.nearest(level.dimension(), origin.getX(), origin.getZ(), RuinRules.ruinIdOf(id.getPath()));
+		}
+		return found;
 	}
 
 	/**

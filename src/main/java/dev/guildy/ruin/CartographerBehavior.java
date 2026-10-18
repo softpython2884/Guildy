@@ -43,7 +43,7 @@ final class CartographerBehavior implements StructureBehavior {
 			} else if (research.status == Research.Status.RUNNING) {
 				status = Lang.get("ruin.sign.progress", RuinRules.percent(research.progress, research.required));
 			} else if (research.status == Research.Status.READY) {
-				status = Lang.get(research.nether ? "ruin.sign.ready.nether" : "ruin.sign.ready");
+				status = Lang.get(research.legend ? "ruin.sign.ready.legend" : research.nether ? "ruin.sign.ready.nether" : "ruin.sign.ready");
 			} else {
 				status = Lang.get("ruin.sign.failed");
 			}
