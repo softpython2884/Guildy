@@ -24,6 +24,7 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -181,16 +182,28 @@ public class VitalityGameTests {
 		BlockPos cell = ground.offset(-8, 1, -6);
 		cage(level, cell);
 		worker.teleportTo(cell.getX() + 0.5, cell.getY(), cell.getZ() + 0.5);
-		setTask(recruit, Task.FARMER);
 
-		helper.succeedWhen(() -> {
-			double dist = Math.min(worker.distanceToSqr(Vec3.atBottomCenterOf(foot)), worker.distanceToSqr(Vec3.atBottomCenterOf(head)));
-			helper.assertTrue(dist <= 3.0 * 3.0, "waiting for the worker to be brought next to the bed (at " + worker.blockPosition() + ")");
-			Optional<GlobalPos> home = worker.getBrain().getMemory(MemoryModuleType.HOME);
-			helper.assertTrue(home.isPresent() && (home.get().pos().equals(head) || home.get().pos().equals(foot)), "the free bed became its bed");
-			helper.assertTrue(worker.isAlive(), "alive");
-			GuildManager.disband(guild);
-		});
+		// The bed's point of interest is registered a little after the block is set: start the work once it exists (a bed
+		// placed long before, as in a real base), otherwise the first shelter search only finds the heart.
+		helper.startSequence()
+				.thenWaitUntil(() -> helper.assertTrue(level.getPoiManager().existsAtPosition(PoiTypes.HOME, head)
+						|| level.getPoiManager().existsAtPosition(PoiTypes.HOME, foot), "waiting for the bed's point of interest"))
+				.thenExecute(() -> {
+					try {
+						setTask(recruit, Task.FARMER);
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				})
+				.thenWaitUntil(() -> {
+					double dist = Math.min(worker.distanceToSqr(Vec3.atBottomCenterOf(foot)), worker.distanceToSqr(Vec3.atBottomCenterOf(head)));
+					helper.assertTrue(dist <= 3.0 * 3.0, "waiting for the worker to be brought next to the bed (at " + worker.blockPosition() + ")");
+					Optional<GlobalPos> home = worker.getBrain().getMemory(MemoryModuleType.HOME);
+					helper.assertTrue(home.isPresent() && (home.get().pos().equals(head) || home.get().pos().equals(foot)), "the free bed became its bed");
+					helper.assertTrue(worker.isAlive(), "alive");
+				})
+				.thenExecute(() -> GuildManager.disband(guild))
+				.thenSucceed();
 	}
 
 	@GameTest(maxTicks = 600)

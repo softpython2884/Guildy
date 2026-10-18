@@ -362,7 +362,7 @@ schématiques) : `tools/ruins/`.
     de `ServerExplosion.calculateExplodedPositions` et `PistonStructureResolver.resolve`. 8e ruine `grand_temple_maya`
     (112 × 104 × 116, deux pièces, balise sur base de fer à ~83 blocs, structure set `ruins_landmark` espacement 56 avec
     exclusion de 10 chunks autour de `ruins_overworld` ; emprise max 116 = 8 chunks de référence + marge d'adaptation de 12)
-    : ravageur ×1,6 (`RavagerRuinMixin` annule la casse des feuilles), styles `solar` / `gold`. Raiders des ruines
+    : ocelot ×5 (chat noir `all_black` en maudit, décision 54), styles `solar` / `gold`. Raiders des ruines
     `setCanJoinRaid(false)` ; `RuinFx.play` pendant `tick` mis en file.
 51. **Gardiens maudits** : `CursedItems` (kind `ruin_summon_cursed`), même chemin que le parchemin normal (`Incantations` +
     mixin), refus `CURSED_DISABLED` / `GUARDED` ; `CursedRitual` étend `Ritual`. `Encounters.awaken(..., cursed)` crée
@@ -388,6 +388,16 @@ schématiques) : `tools/ruins/`.
     `HealOrHarmMobEffect.applyInstantaneousEffect` = propriétaire de la potion, tick de régénération = donneur), surplus et
     soi-même exclus. Chat 30 ticks après la victoire, forme courte en cas d'échec, `/guild bilan [detail]` ; rien n'est
     sauvegardé. Hordes non couvertes (pont `WaveFightStats` à faire).
+
+54. **Donjons à thème, Jaguar céleste, forme finale maudite, eau des ruines** : ruins.json5 v2 (`RuinMigration` pur : ne
+    remplace que les valeurs encore aux défauts 1.8) ; morts-vivants dans les temples mayas (bogged, parched, zombies) ;
+    `BossDef.variant` / `cursedForm` ; `Felines` (IA de chasse remplaçant celle de l'ocelot / du chat, accesseur
+    `MobTargetSelectorAccessor`, interactions refusées, comptés comme monstres pour les sorts, pouvoirs et protections) ;
+    `JaguarAbilities` (bond, griffes, traque, rugissement, esprits) ; `cursed.finalForm` (`CursedRules.risesAgain` /
+    `diesForGood`, récompenses maudites à la mort définitive seulement, sans le bonus « ressuscité »), `Resurrection` aux
+    couleurs maudites. Structures des ruines en `liquid_settings: ignore_waterlogging` (sinon l'eau du monde noie les blocs
+    noyables posés sous la nappe) ; audit `tools/ruins/ruinlib/water.py` dans check.py ; pots avec `LootTable`
+    `guildy:pots/ruin`. `/guild admin scroll give` accepte `incantation` / `incantation_maudit`.
 
 ## Notes API Minecraft 26.3
 

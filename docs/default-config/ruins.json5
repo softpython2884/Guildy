@@ -4,10 +4,11 @@
 // Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou
 // boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>
 // | incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle).
+// Les parchemins d'incantation se donnent aussi avec /guild admin scroll give <joueur> incantation|incantation_maudit [nombre].
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 1,
+	"configVersion": 2,
 
 	// Boss des ruines actifs (false = plus aucun boss ne se reveille ; les cartes restent possibles)
 	"bossesEnabled": true,
@@ -449,6 +450,22 @@
 			"particleBudget": 1200
 		},
 
+		// Forme finale : abattu a la fin de la phase 3, le gardien maudit se releve toujours une derniere fois, enrage (meme
+		// animation que la resurrection, aux couleurs de la malediction ; taille, vitesse, degats, sbires et onde de choc de
+		// 'resurrection'), quelle que soit la duree du combat. Les recompenses maudites tombent a sa mort definitive
+		"finalForm": {
+
+			// Le gardien maudit se releve une derniere fois a la fin de la phase 3 (false = il meurt a la fin de la phase 3)
+			"enabled": true,
+
+			// Part de sa vie maximale rendue a la forme finale (0.1 a 1)
+			"healthRatio": 0.5,
+
+			// Ajouter aussi le bonus de butin d'un gardien ressuscite (section 'resurrection' : or, XP, tirages en plus). false par
+			// defaut : la forme finale fait partie du combat maudit, ses recompenses sont deja celles de la malediction
+			"risenRewards": false
+		},
+
 		// Recompenses d'une victoire sur un gardien maudit (en plus des bonus de la menace)
 		"rewards": {
 
@@ -596,8 +613,10 @@
 	// mapDecoration (icone de la carte, vide = celle de 'cartography'), fastKillSeconds (resurrection : -1 = formule de
 	// 'resurrection', 0 = ce gardien ne ressuscite jamais, sinon la fenetre en secondes).
 	// boss : entity, name (codes couleur &), health, damage, armor, armorToughness, speed (0 = vitesse vanilla),
-	// knockbackResistance (0 a 1), scale (taille, 1 = normale), followRange, equipment {emplacement: objet} (mainhand,
-	// offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents).
+	// knockbackResistance (0 a 1), scale (taille, 1 = normale, 8 au plus), followRange, equipment {emplacement: objet} (mainhand,
+	// offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents), variant (variante vanilla d'un chat,
+	// ex. minecraft:all_black ; vide = celle du jeu), cursedForm {entity, variant, name} (forme maudite : autre entite,
+	// variante et nom ; vide = le meme gardien). Un ocelot ou un chat devient un fauve hostile qui chasse les joueurs.
 	// minions (escorte) : types {entite: poids}, base + perExtraPlayer par joueur present au-dela du premier, max ;
 	// maxAlive (plafond avec les invocations), healthMultiplier, damageMultiplier, equipment, effects.
 	// abilities [{type, cooldownSeconds, damage, radius, count, style, healthBelow (0 a 1 : seulement sous ce ratio de vie),
@@ -605,6 +624,11 @@
 	// style fire, soul, frost ou jade = poison et souffle), blink (se teleporte derriere un joueur et frappe ; style wind =
 	// bourrasque), volley (salve : style arrow, spectral, fireball ou wind = lames de vent), life_drain (draine la vie des
 	// joueurs proches), enrage (une fois sous healthBelow : Force + Vitesse de niveau amplifier, recharges reduites de moitie).
+	// Capacites de fauve : pounce (bond sur un joueur, onde de choc de rayon radius a l'atterrissage), claw_sweep (coup de
+	// griffes en arc devant lui, portee radius, count griffures), stalk (invisible et rapide, trahi par ses empreintes, puis
+	// embuscade : degats damage a moins de radius blocs), roar (rugissement en cone de longueur radius : Lenteur de niveau
+	// amplifier et Faiblesse), spirit_jaguars (count esprits jaguars temporaires, morsure damage, a moins de radius blocs) ;
+	// styles gold (Lenteur), jade (Poison), solar (brule) ; violet et noir sous la forme maudite.
 	// rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +
 	// lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource
 	// (vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).
@@ -637,7 +661,13 @@
 					"mainhand": "minecraft:iron_sword",
 					"chest": "minecraft:chainmail_chestplate"
 				},
-				"effects": []
+				"effects": [],
+				"variant": "",
+				"cursedForm": {
+					"entity": "",
+					"variant": "",
+					"name": ""
+				}
 			},
 			"minions": {
 				"types": {
@@ -757,7 +787,13 @@
 						"effect": "minecraft:slow_falling",
 						"amplifier": 0
 					}
-				]
+				],
+				"variant": "",
+				"cursedForm": {
+					"entity": "",
+					"variant": "",
+					"name": ""
+				}
 			},
 			"minions": {
 				"types": {
@@ -888,11 +924,18 @@
 					"legs": "minecraft:golden_leggings",
 					"feet": "minecraft:golden_boots"
 				},
-				"effects": []
+				"effects": [],
+				"variant": "",
+				"cursedForm": {
+					"entity": "",
+					"variant": "",
+					"name": ""
+				}
 			},
 			"minions": {
 				"types": {
-					"minecraft:husk": 1
+					"minecraft:husk": 3,
+					"minecraft:parched": 2
 				},
 				"base": 4,
 				"perExtraPlayer": 2,
@@ -1004,7 +1047,13 @@
 					"head": "minecraft:diamond_helmet",
 					"chest": "minecraft:diamond_chestplate"
 				},
-				"effects": []
+				"effects": [],
+				"variant": "",
+				"cursedForm": {
+					"entity": "",
+					"variant": "",
+					"name": ""
+				}
 			},
 			"minions": {
 				"types": {
@@ -1136,7 +1185,13 @@
 						"effect": "minecraft:fire_resistance",
 						"amplifier": 0
 					}
-				]
+				],
+				"variant": "",
+				"cursedForm": {
+					"entity": "",
+					"variant": "",
+					"name": ""
+				}
 			},
 			"minions": {
 				"types": {
@@ -1265,7 +1320,13 @@
 					"head": "minecraft:netherite_helmet",
 					"chest": "minecraft:netherite_chestplate"
 				},
-				"effects": []
+				"effects": [],
+				"variant": "",
+				"cursedForm": {
+					"entity": "",
+					"variant": "",
+					"name": ""
+				}
 			},
 			"minions": {
 				"types": {
@@ -1410,11 +1471,18 @@
 				"scale": 2.0,
 				"followRange": 32.0,
 				"equipment": {},
-				"effects": []
+				"effects": [],
+				"variant": "",
+				"cursedForm": {
+					"entity": "",
+					"variant": "",
+					"name": ""
+				}
 			},
 			"minions": {
 				"types": {
 					"minecraft:bogged": 3,
+					"minecraft:parched": 2,
 					"minecraft:cave_spider": 2
 				},
 				"base": 4,
@@ -1510,10 +1578,17 @@
 			"guards": {
 				"count": -1,
 				"name": "&2Gardien du temple",
-				"types": {},
+				"types": {
+					"minecraft:bogged": 3,
+					"minecraft:parched": 2,
+					"minecraft:zombie": 2,
+					"minecraft:cave_spider": 1
+				},
 				"healthMultiplier": 1.5,
 				"damageMultiplier": 1.2,
-				"equipment": {},
+				"equipment": {
+					"head": "minecraft:turtle_helmet"
+				},
 				"effects": []
 			}
 		},
@@ -1528,15 +1603,15 @@
 			"mapDecoration": "minecraft:red_x",
 			"fastKillSeconds": -1.0,
 			"boss": {
-				"entity": "minecraft:ravager",
+				"entity": "minecraft:ocelot",
 				"name": "&6&lLe Jaguar céleste",
 				"health": 760.0,
 				"damage": 18.0,
 				"armor": 16.0,
 				"armorToughness": 6.0,
-				"speed": 0.0,
+				"speed": 0.26,
 				"knockbackResistance": 1.0,
-				"scale": 1.6,
+				"scale": 5.0,
 				"followRange": 32.0,
 				"equipment": {},
 				"effects": [
@@ -1544,13 +1619,19 @@
 						"effect": "minecraft:fire_resistance",
 						"amplifier": 0
 					}
-				]
+				],
+				"variant": "",
+				"cursedForm": {
+					"entity": "minecraft:cat",
+					"variant": "minecraft:all_black",
+					"name": "&5&lLe Jaguar d'obsidienne"
+				}
 			},
 			"minions": {
 				"types": {
-					"minecraft:vindicator": 3,
-					"minecraft:bogged": 2,
-					"minecraft:evoker": 1
+					"minecraft:bogged": 3,
+					"minecraft:parched": 2,
+					"minecraft:cave_spider": 2
 				},
 				"base": 4,
 				"perExtraPlayer": 2,
@@ -1565,73 +1646,73 @@
 			},
 			"abilities": [
 				{
-					"type": "ground_slam",
-					"cooldownSeconds": 11.0,
-					"damage": 11.0,
-					"radius": 7.0,
+					"type": "claw_sweep",
+					"cooldownSeconds": 7.0,
+					"damage": 14.0,
+					"radius": 5.0,
+					"count": 3,
+					"style": "jade",
+					"healthBelow": 1.0,
+					"amplifier": 1
+				},
+				{
+					"type": "pounce",
+					"cooldownSeconds": 12.0,
+					"damage": 15.0,
+					"radius": 5.0,
 					"count": 1,
 					"style": "gold",
 					"healthBelow": 1.0,
 					"amplifier": 1
 				},
 				{
-					"type": "fire_ring",
-					"cooldownSeconds": 13.0,
-					"damage": 9.0,
-					"radius": 8.0,
+					"type": "roar",
+					"cooldownSeconds": 16.0,
+					"damage": 4.0,
+					"radius": 10.0,
 					"count": 1,
 					"style": "solar",
-					"healthBelow": 1.0,
+					"healthBelow": 0.9,
 					"amplifier": 1
 				},
 				{
-					"type": "volley",
-					"cooldownSeconds": 10.0,
-					"damage": 6.0,
-					"radius": 4.0,
-					"count": 6,
-					"style": "solar",
-					"healthBelow": 1.0,
-					"amplifier": 1
-				},
-				{
-					"type": "blink",
-					"cooldownSeconds": 12.0,
-					"damage": 12.0,
-					"radius": 4.0,
+					"type": "stalk",
+					"cooldownSeconds": 20.0,
+					"damage": 20.0,
+					"radius": 3.0,
 					"count": 1,
-					"style": "solar",
+					"style": "gold",
 					"healthBelow": 0.85,
 					"amplifier": 1
 				},
 				{
-					"type": "fire_ring",
-					"cooldownSeconds": 16.0,
-					"damage": 8.0,
-					"radius": 9.0,
-					"count": 1,
+					"type": "spirit_jaguars",
+					"cooldownSeconds": 26.0,
+					"damage": 7.0,
+					"radius": 5.0,
+					"count": 3,
 					"style": "jade",
 					"healthBelow": 0.7,
 					"amplifier": 1
 				},
 				{
-					"type": "life_drain",
-					"cooldownSeconds": 18.0,
-					"damage": 5.0,
-					"radius": 12.0,
+					"type": "fire_ring",
+					"cooldownSeconds": 16.0,
+					"damage": 9.0,
+					"radius": 8.0,
 					"count": 1,
-					"style": "gold",
-					"healthBelow": 0.5,
+					"style": "solar",
+					"healthBelow": 0.6,
 					"amplifier": 1
 				},
 				{
 					"type": "summon",
-					"cooldownSeconds": 24.0,
+					"cooldownSeconds": 26.0,
 					"damage": 0.0,
 					"radius": 5.0,
 					"count": 3,
 					"style": "",
-					"healthBelow": 0.6,
+					"healthBelow": 0.5,
 					"amplifier": 1
 				},
 				{
@@ -1690,9 +1771,10 @@
 				"count": -1,
 				"name": "&6Guerrier jaguar",
 				"types": {
-					"minecraft:vindicator": 4,
-					"minecraft:bogged": 2,
-					"minecraft:evoker": 1
+					"minecraft:bogged": 3,
+					"minecraft:parched": 3,
+					"minecraft:zombie": 2,
+					"minecraft:cave_spider": 1
 				},
 				"healthMultiplier": 1.8,
 				"damageMultiplier": 1.3,

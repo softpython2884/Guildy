@@ -721,16 +721,16 @@ l'Atelier du cartographe, dans les coffres des ruines (6 à 30 % selon le coffre
 Carrefour commercial (palier II, 24 or). Vaincu, il laisse de l'or, des trésors, souvent
 un **parchemin de sort**, parfois une **arme unique**, et rapporte de l'XP aux guildes des joueurs qui ont combattu ;
 tout le serveur l'apprend. Le gardien revient **7 jours de jeu** plus tard. Si tout le monde s'éloigne, le combat
-s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines ont leur propre butin.
+s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines ont leur propre butin, et chaque pot en cache un objet (rarement un parchemin de Rappel).
 
 | Ruine | Où | Palier | Gardien |
 |---|---|---|---|
 | **Crypte oubliée** | plaines, forêts, prairies, taïga | 1 | Seigneur des Cryptes (squelette wither, 220 PV) + squelettes et zombies |
 | **Tour du Mage déchu** | forêts, jungles, forêts anciennes | 2 | Archimage déchu (évocateur, 260 PV) + vindicateurs et vex |
-| **Ziggourat des sables** | désert, badlands | 2 | Pharaon des sables (zombie momifié en or, 300 PV) + momies |
+| **Ziggourat des sables** | désert, badlands | 2 | Pharaon des sables (zombie momifié en or, 300 PV) + momies et squelettes desséchés (flèches de faiblesse) |
 | **Bastion de givre** | plaines et taïgas enneigées, pics de glace, bosquets | 3 | Roi de givre (vagabond, 380 PV) + vagabonds |
-| **Grand Temple du Jaguar céleste** | jungles (rare : une par carré de 5 à 7 000 blocs) | 5 | Le Jaguar céleste (ravageur géant, 760 PV : charges, lances de soleil, anneaux de feu solaire et de jade, onde de choc dorée) + guerriers jaguars (vindicateurs à la hache, Embourbés, évocateur) sous casques d'or |
-| **Temple du Serpent à plumes** | jungles | 3 | Le Serpent à plumes (brise géante, 360 PV, dévie les projectiles : combat au corps à corps) + Embourbés (flèches empoisonnées) et araignées venimeuses |
+| **Grand Temple du Jaguar céleste** | jungles (rare : une par carré de 5 à 7 000 blocs) | 5 | Le Jaguar céleste (ocelot géant, 760 PV, chasseur infatigable : bond et onde de choc, coup de griffes venimeux, traque invisible trahie par ses empreintes, rugissement qui ralentit et affaiblit, esprits jaguars, anneau solaire) + Embourbés, squelettes desséchés et araignées venimeuses ; sentinelles : guerriers jaguars morts-vivants sous casques d'or. Maudit : le Jaguar d'obsidienne, chat noir géant |
+| **Temple du Serpent à plumes** | jungles | 3 | Le Serpent à plumes (brise géante, 360 PV, dévie les projectiles : combat au corps à corps) + Embourbés (flèches empoisonnées), squelettes desséchés et araignées venimeuses ; sentinelles : morts-vivants sous casques de jade |
 | **Autel infernal** | Nether : désolations, forêt carmin | 4 | Seigneur de guerre (piglin barbare, 480 PV) + piglins barbares et cubes de magma |
 | **Citadelle des âmes** | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 | Champion des âmes (squelette wither, 650 PV) + squelettes wither et blazes |
 
@@ -777,7 +777,9 @@ de 16 blocs du gardien endormi d'une ruine dormante, et seulement quand aucun ga
 un **rituel maudit** de 10 s : un pentagramme inversé s'embrase, des âmes hurlent, le sang des présents s'écoule (**prix
 du sang : 3 ❤ par joueur**, jamais en dessous de 2 ❤). Le gardien surgit alors **Maudit** (barre violette) : vie ×3,
 dégâts ×2, plus d'armure, plus grand, capacités plus rapides, escorte maudite ; la menace et le renfort de groupe
-s'ajoutent. Il ne ressuscite pas : il a **trois phases**.
+s'ajoutent. Il a **trois phases**, puis une **forme finale** : abattu à la fin de la phase III, il se relève toujours
+une dernière fois, enragé (50 % de vie, plus grand, plus rapide, plus fort), aux couleurs de la malédiction ; le butin
+maudit ne tombe qu'à sa mort définitive.
 - À 66 % puis à 33 % de sa vie, il devient invulnérable et s'élève, un pentagramme géant s'embrase sous lui, des chaînes
   d'âmes vous lient, une onde de choc vous repousse, des sbires sortent de terre, puis il revient plus fort.
 - **Phase II** : des pentagrammes au sol boivent votre vie et le soignent (sortez-en !), des chaînes d'âmes vous attirent
@@ -869,7 +871,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
 | `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme (un doublon est signalé) |
 | `/guild admin unique registry [id]` · `unique free <id> [guilde]` | Registre des exemplaires (numéros, détenteurs, doublons) ; marquer une arme comme perdue pour qu'elle puisse retomber |
-| `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` · `scroll grimoire <joueur> [ids]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins, donner un grimoire (avec des pages déjà écrites si des ids sont donnés) |
+| `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` · `scroll grimoire <joueur> [ids]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins, donner un grimoire (avec des pages déjà écrites si des ids sont donnés) ; `scroll give <joueur> incantation\|incantation_maudit [nombre]` donne aussi les parchemins d'incantation |
 | `/guild admin ruin list` · `info` · `awaken` · `reset` | Ruines : liste, ruine la plus proche, réveiller / rendormir son gardien |
 | `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
 | `/guild admin ruin ability <type> [style]` | Jouer un effet de capacité de boss (test visuel) |
@@ -978,7 +980,8 @@ Formules par défaut (modifiables) :
 - Armes uniques : une arme rangée dans une boîte de Shulker garde son dernier détenteur connu ; `/clear`, la poubelle du
   mode créatif ou un monstre qui disparaît avec l'arme ne sont pas détectés (`/guild admin unique free`).
 - Le trident unique reste une image plate en main ; lancé, il garde le modèle 3D vanilla.
-- Ruines : le nombre de gardiens de salle et de joueurs pris en compte est fixé à leur apparition ; une balise posée par un
+- Ruines : l'eau du monde n'entre plus dans les ruines générées à partir de la 1.8.2 (celles déjà générées gardent leurs
+  blocs) ; le nombre de gardiens de salle et de joueurs pris en compte est fixé à leur apparition ; une balise posée par un
   joueur dans une ruine devient elle aussi protégée ; un redémarrage pendant un combat maudit fait perdre le parchemin.
 - Deux groupes d'une même catégorie (deux salles, ou une salle et des coffres hors salle) ne s'échangent rien ; les
   coffres posés dans une salle après sa création n'y entrent qu'avec Shift + clic dans le menu des salles.

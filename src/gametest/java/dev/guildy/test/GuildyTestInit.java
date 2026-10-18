@@ -20,7 +20,7 @@ public class GuildyTestInit implements ModInitializer {
 	public void onInitialize() {
 		ServerLifecycleEvents.SERVER_STARTING.register(server -> {
 			Path dir = GuildStorage.dir(server);
-			for (String file : new String[]{"guilds.json", "guilds.json.bak", "events.json", "uniques.json", "uniques.json.bak"}) {
+			for (String file : new String[]{"guilds.json", "guilds.json.bak", "events.json", "uniques.json", "uniques.json.bak", "ruins.json", "ruins.json.bak"}) {
 				try {
 					Files.deleteIfExists(dir.resolve(file));
 				} catch (IOException e) {
