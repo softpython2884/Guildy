@@ -32,7 +32,21 @@ public enum UniquePower {
 	/** Thrown trident hits call lightning, chained to the nearby monsters. */
 	TIDE_CALL("tide_call", false),
 	/** Each kill heals the wielder. */
-	SOUL_HARVEST("soul_harvest", false);
+	SOUL_HARVEST("soul_harvest", false),
+	/** Spear, right click (charge): the wielder pounces forward; the landing claws the monsters around. */
+	JAGUAR_POUNCE("jaguar_pounce", true),
+	/** Helmet: the monsters that hit the wearer are frozen; the wearer never freezes. */
+	FROST_CROWN("frost_crown", false),
+	/** Shield: a blocked monster attack is sent back to its author and drains its life to the wielder. */
+	SOUL_AEGIS("soul_aegis", false),
+	/** Mace, right click: leap into the sky; the landing or the next smash attack bursts into a sun. */
+	SOLAR_LEAP("solar_leap", true),
+	/** Sword: each hit seals the monster; the last seal opens a cursed pentagram that bursts and spreads. */
+	PACT_SEAL("pact_seal", false),
+	/** Axe, right click: a magma rift runs along the ground, erupting under the monsters. */
+	INFERNAL_RIFT("infernal_rift", true),
+	/** Chestplate: below a health threshold, a jade gale repels and poisons the monsters around and heals the wearer. */
+	JADE_GALE("jade_gale", false);
 
 	public final String id;
 	/** Triggered by a right click (cooldown shown on the item by the vanilla cooldown overlay). */

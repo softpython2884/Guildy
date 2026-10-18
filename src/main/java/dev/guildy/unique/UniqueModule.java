@@ -66,14 +66,19 @@ public final class UniqueModule {
 		return roll(source, random, UniqueDrops.Recipient.NONE);
 	}
 
-	/** {@link UniqueDrops.RecipientRoller}: a unique of the source's table the recipient may receive, or a fallback scroll. */
+	/**
+	 * {@link UniqueDrops.RecipientRoller}: a unique of the source's table the recipient may receive, or a fallback scroll. A
+	 * source may carry a context ({@code ruin_boss@grand_temple_maya,cursed}, see {@link UniqueDrops#withContext}): the
+	 * favourite weapons of that context weigh more ({@link UniqueConfig#effectiveTable}); the registry, the announcement and
+	 * the fallback scroll use the plain source.
+	 */
 	static ItemStack roll(String source, RandomGenerator random, UniqueDrops.Recipient recipient) {
 		UniqueConfig cfg = config();
-		UniqueConfig.DropTable table = cfg.table(source);
+		UniqueConfig.DropTable table = cfg.effectiveTable(source);
 		if (!cfg.dropsEnabled || table == null) {
 			return ItemStack.EMPTY;
 		}
-		return rollWith(cfg, table, source, random, recipient, cfg.mode(), cfg.fallbackToScroll);
+		return rollWith(cfg, table, UniqueConfig.baseSource(source), random, recipient, cfg.mode(), cfg.fallbackToScroll);
 	}
 
 	/**
@@ -126,12 +131,12 @@ public final class UniqueModule {
 		if (server == null) {
 			return ItemStack.EMPTY;
 		}
-		String key = source.trim().toLowerCase(Locale.ROOT);
+		String key = UniqueConfig.baseSource(source);
 		Set<String> excluded = UniqueRegistry.excluded(cfg.mode(), recipient);
 		UniqueConfig.UniqueDef def;
 		UniqueConfig.DropTable table = null;
 		if (id == null || id.isBlank() || "random".equals(id)) {
-			table = cfg.table(key);
+			table = cfg.effectiveTable(source);
 			if (!cfg.dropsEnabled || table == null) {
 				return ItemStack.EMPTY;
 			}

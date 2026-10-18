@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "guildy:item/couronne_du_roi_de_givre"
+  }
+}

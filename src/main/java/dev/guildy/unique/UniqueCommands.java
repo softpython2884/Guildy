@@ -292,6 +292,12 @@ final class UniqueCommands {
 				parts.add(entry.getKey() + " " + percent(chance) + " %");
 			}
 		}
+		for (Map.Entry<String, Map<String, Double>> entry : cfg.favorites.entrySet()) {
+			if (entry.getValue().getOrDefault(id, 0.0) > 0) {
+				double chance = UniqueRolls.probability(cfg.effectiveTable(entry.getKey()), id, key -> cfg.item(key) != null);
+				parts.add(entry.getKey() + " " + percent(chance) + " %");
+			}
+		}
 		return parts.isEmpty() ? Lang.raw("unique.admin.list.no_drop") : String.join(", ", parts);
 	}
 

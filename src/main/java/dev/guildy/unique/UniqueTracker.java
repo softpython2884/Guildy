@@ -53,12 +53,16 @@ final class UniqueTracker {
 			scan(handler.getPlayer());
 			DoubleJump.onLeave(handler.getPlayer());
 			PowerUtil.forget(handler.getPlayer().getUUID());
+			Leaps.forget(handler.getPlayer().getUUID());
 			SCANNED_MENUS.remove(handler.getPlayer().getUUID());
 		}));
 		Lifecycle.STOPPING.add(server -> {
 			DoubleJump.clear();
 			PowerUtil.clear();
 			MiningPowers.clear();
+			Leaps.clear();
+			CursePowers.clear();
+			UniqueFx.clear();
 			UniqueDamage.clear();
 			SCANNED_MENUS.clear();
 		});
