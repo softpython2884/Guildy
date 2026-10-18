@@ -1,8 +1,9 @@
 // Guildy - parchemins de sort : objets a usage unique qui lancent un sort tres puissant (clic droit maintenu).
 // Ils tombent des boss des ruines (surtout), des boss des hordes, des quetes, des expeditions des villageois et se
 // vendent parfois au Carrefour commercial. Les sorts ne blessent que les monstres et ne modifient aucun bloc.
-// Le grimoire (section grimoire) relie jusqu'a 4 parchemins et relance leurs sorts contre de la nourriture.
-// Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre] | grimoire <joueur> [ids].
+// Le grimoire (section grimoire) relie jusqu'a 4 parchemins et relance leurs sorts contre de la nourriture ; le grimoire
+// maudit (section cursedGrimoire) fait de meme avec des sorts bien plus puissants, contre plus de faim et un peu de sang.
+// Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre] | grimoire <joueur> [cursed] [ids].
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
@@ -125,6 +126,101 @@
 
 		// Texture du pack de ressources (vide = apparence vanilla ; suit le reglage customModels d'uniques.json5)
 		"model": "grimoire"
+	},
+
+	// Grimoire maudit : memes regles que le grimoire (4 pages reliees depuis des parchemins, clic droit = lancer, accroupi +
+	// clic droit = page suivante, accroupi + F = les pages ; incantation de la section grimoire) mais ses sorts sont bien
+	// plus puissants : plus de degats, de duree, de portee, de cibles, de meteores... Prix : plus de faim, un peu de sang
+	// (points de vie, jamais en dessous de minHealth : sinon le sort est refuse) et une recharge plus longue. Creatif : gratuit.
+	// Il ne tombe que du gardien MAUDIT des ruines de ruinDrops (l'Archimage dechu de la Tour du Mage par defaut).
+	"cursedGrimoire": {
+
+		// Grimoire maudit actif (false = il ne lance plus rien et ne tombe plus ; ses pages sont conservees)
+		"enabled": true,
+
+		// Objet vanilla de base (simple, sans utilisation propre ; livre enchante par defaut)
+		"item": "minecraft:enchanted_book",
+
+		// Brillance
+		"glint": true,
+
+		// Multiplicateur des degats, soins et durees des sorts (0.1 a 5 ; 1 = comme le parchemin)
+		"powerMultiplier": 1.75,
+
+		// Multiplicateur des portees et des rayons (0.1 a 3)
+		"radiusMultiplier": 1.35,
+
+		// Multiplicateur des nombres : meteores, monstres foudroyes, ondes, golems, allies rappeles (0.1 a 5, arrondi)
+		"countMultiplier": 1.5,
+
+		// Niveaux d'effet en plus : Lenteur, Absorption, Resistance, Regeneration (0 a 3)
+		"levelBonus": 1,
+
+		// Reglages par sort (id du sort, voir spell des parchemins) : {parametre: multiplicateur} remplace le multiplicateur
+		// general de ce parametre (niveaux : multiplies puis arrondis ; 0.1 a 5). Bornes : les nombres et les niveaux ne
+		// depassent jamais le maximum du parametre, les portees et forces 1.5 fois ce maximum, les degats et durees 5 fois
+		"spells": {
+			"meteor_shower": {
+				"count": 2.5,
+				"radius": 1.6,
+				"impactRadius": 1.3
+			},
+			"chain_storm": {
+				"count": 2.5,
+				"chainRadius": 1.5
+			},
+			"solar_nova": {
+				"knockback": 1.3
+			},
+			"singularity": {
+				"radius": 1.6,
+				"pullStrength": 1.4
+			},
+			"aegis": {
+				"push": 1.3
+			},
+			"revelation": {
+				"radius": 1.25
+			},
+			"earthquake": {
+				"waves": 1.67,
+				"lift": 1.3
+			},
+			"arcane_ray": {
+				"width": 1.5
+			}
+		},
+
+		// Recharge entre deux sorts (secondes, 0.05 a 600) : propre au grimoire maudit, un peu plus longue que celle du grimoire
+		"cooldownSeconds": 5.0,
+
+		// Cout d'un sort en points de faim (0 a 20) selon la rarete du parchemin (saturation d'abord, refus si la faim est plus basse)
+		"foodCost": {
+			"RARE": 4,
+			"EPIC": 7,
+			"LEGENDARY": 9,
+			"MYTHIC": 12
+		},
+
+		// Prix du sang : points de vie pris a chaque sort selon la rarete (0 a 20 ; 2 = 1 coeur)
+		"bloodCost": {
+			"RARE": 1,
+			"EPIC": 1,
+			"LEGENDARY": 2,
+			"MYTHIC": 2
+		},
+
+		// Vie minimale apres le prix du sang (points de vie, 1 a 19) : en dessous, le sort est refuse
+		"minHealth": 6.0,
+
+		// Chance (0 a 1) que le gardien MAUDIT d'une ruine (id de ruins.json5) laisse un grimoire maudit vierge a sa mort
+		// definitive (forme finale). Aucune autre source : ni les gardiens normaux, ni les quetes, ni le Carrefour
+		"ruinDrops": {
+			"tour_du_mage": 0.1
+		},
+
+		// Texture du pack de ressources (vide = apparence vanilla ; suit le reglage customModels d'uniques.json5)
+		"model": "grimoire_maudit"
 	},
 
 	// Tables de butin par source : chance (0 a 1) qu'un parchemin tombe, min/max (nombre de parchemins), puis tirage

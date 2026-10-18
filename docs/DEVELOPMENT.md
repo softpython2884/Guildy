@@ -80,7 +80,8 @@ villager/     VillagerManager (arrivées, candidats, départs), TaskEngine + *Ta
 upgrade/      UpgradeTree/UpgradeRules/UpgradeMath/UpgradeEffects (purs, testés), Upgrades (bonus lus par les autres
               modules), UpgradeService (déblocage atomique), UpgradeMenu, UpgradeBuffs, UpgradeConfig
 unique/       UniqueItems (fabrique), UniqueRolls (tables de butin), UniquePowers + Combat/Lightning/MiningPowers,
-              DoubleJump, UniqueTracker (annonces), UniqueVisuals + PolymerBridge (modèles), UniqueConfig
+              DoubleJump, UniqueTracker (annonces), UniqueVisuals + PolymerBridge (modèles), UniqueConfig ; armes des
+              ruines : Leaps, JaguarPowers, SolarPowers, DefensePowers, CursePowers, InfernalPowers, UniqueFx
 scroll/       ScrollModule (implémente ScrollDrops), ScrollConfig, objets (custom_data kind `scroll`), sorts animés,
               EffectRunner (effets par tick, budget de particules), TargetRules (pur), scroll/mixin (fin d'incantation)
 ruin/         RuinModule, RuinIndex + RuinStore (ruins.json), MarkerCapture + ruin/mixin (marqueurs DATA à la génération),
@@ -407,6 +408,32 @@ schématiques) : `tools/ruins/`.
     si une meilleure destination a de la place ; clé de groupe `room:filter:<clé>`. `ChestScan` (chunks revendiqués chargés,
     4 chunks / 32 conteneurs par tick, aperçu non sauvegardé, `apply` revérifie chaque conteneur, budget
     `maxFilterChests`) ; commandes `/guild stockage …` (`StorageCommands`).
+
+56. **Grimoire maudit** (section `cursedGrimoire` de scrolls.json5) : grimoire `custom_data` `cursed: true` (même kind,
+    pages, mixins, menu, rangement), recharge `guildy:grimoire_maudit`, `item_model` `guildy:grimoire_maudit` si pack
+    garanti. `SpellPower` (pur) : lectures via `SpellContext.p` ; cœurs/secondes × `powerMultiplier`, blocs ×
+    `radiusMultiplier`, nombres × `countMultiplier`, niveaux + `levelBonus`, surcharges par sort ; bornes (nombres ≤ max,
+    portées ≤ 1,5 × max, cœurs/secondes ≤ 5 × max) ; `SpellPower.of(p)` = ancien `powerMultiplier`.
+    `CursedGrimoireRules` : sang par rareté (`setHealth`), refus sous `minHealth` ; `ruinDrops` seulement sur le gardien
+    maudit (`CursedEncounter.bonusDrops`). `CursedSpellFx` : couche de particules (incantation, lancement, effets,
+    `SpellEffect.curse`) dans le budget partagé.
+57. **Légende du Jaguar céleste et statues** : `Cartography.surfaceStructures` retire `cartography.statues.templeStructure` ;
+    `Research.legend` (trailId) via `Cartography.templeLocator` puis `Statues.createTrail` ; `StatueRules.waypoints` (pur ;
+    terre ferme via `ChunkGenerator.getBaseHeight` OCEAN_FLOOR_WG contre WORLD_SURFACE_WG) ; réutilisation (même temple =
+    rejoint la chaîne, sinon nouvelle route) ; `StatueRecord` / `StatueTrail` dans ruins.json ; pose au CHUNK_LOAD +
+    balayage toutes les 2 s, une par tick, zone chargée (`getChunkNow`), MOTION_BLOCKING_NO_LEAVES, `groundBlocks`, jamais
+    dans un claim (+1 chunk), seconde recherche à 2 × `siteRadius` puis FAILED ; `placeInWorld` pivot au centre,
+    IGNORE_WATERLOGGING, fondations ; `StatueTemplate` (yeux = lumière ≥ 12) ; carte `statue_map` (`StatueRules.mapView`) ;
+    `StatueGuide` tous les 10 ticks ; protection par `Sanctuaries` ; outil : classe `Monument` + `check_monument`.
+58. **Armes des ruines** (uniques.json5 format 4) : 7 uniques (21 en tout), ajoutées une fois (définitions + entrées
+    `ruin_boss` / `nether_ruin_boss` / `legendary_quest` si absentes). `favorites` (`source@contexte` → poids ajoutés) ;
+    `RuinLoot` passe `UniqueDrops.withContext(source, ruinId, "cursed")` ; `UniqueConfig.effectiveTable`. `Leaps` (envol
+    puis atterrissage, 10 ticks au sol, pas de dégâts de chute via ALLOW_DAMAGE). Lance 26.3 : le pouvoir démarre la charge
+    (`startUsingItem` + son KINETIC_WEAPON). `DefensePowers` sur AFTER_DAMAGE du joueur (Égide si `blocked`, plastron
+    sous le seuil). Sceaux en mémoire bornée (256). Faille 1 bloc/tick suivant le sol. Dégâts `indirectMagic` +
+    invulnérabilité remise à zéro. `UniqueDef.banner` → BASE_COLOR + BANNER_PATTERNS. Pack : lance = définition des lances
+    vanilla (`select display_context`, `spear_in_hand` 32×32), bouclier : icône des menus seulement. `/guild version`
+    (`FabricLoader` + `SharedConstants.getCurrentVersion()`).
 
 ## Notes API Minecraft 26.3
 

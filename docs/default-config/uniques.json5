@@ -6,7 +6,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 3,
+	"configVersion": 4,
 
 	// Butin : les armes uniques tombent des boss, des quetes, des expeditions et se vendent au Carrefour (false = plus aucune)
 	"dropsEnabled": true,
@@ -115,7 +115,14 @@
 				"arc_du_phenix": 4.0,
 				"marteau_du_seisme": 4.0,
 				"trident_du_leviathan": 1.0,
-				"faux_des_ames": 1.0
+				"faux_des_ames": 1.0,
+				"lance_du_jaguar_celeste": 1.0,
+				"couronne_du_roi_de_givre": 1.0,
+				"egide_des_ames": 1.0,
+				"masse_du_zenith": 1.0,
+				"hache_du_seigneur_de_guerre": 1.0,
+				"plastron_du_serpent": 1.0,
+				"lame_du_pacte": 0.5
 			}
 		},
 		"expedition": {
@@ -145,7 +152,12 @@
 				"arc_du_phenix": 4.0,
 				"marteau_du_seisme": 4.0,
 				"trident_du_leviathan": 2.0,
-				"faux_des_ames": 1.0
+				"faux_des_ames": 1.0,
+				"couronne_du_roi_de_givre": 3.0,
+				"plastron_du_serpent": 3.0,
+				"masse_du_zenith": 2.0,
+				"lance_du_jaguar_celeste": 2.0,
+				"lame_du_pacte": 0.5
 			}
 		},
 		"nether_ruin_boss": {
@@ -159,7 +171,10 @@
 				"pioche_du_titan": 4.0,
 				"bottes_de_zephyr": 4.0,
 				"marteau_du_seisme": 4.0,
-				"trident_du_leviathan": 2.0
+				"trident_du_leviathan": 2.0,
+				"hache_du_seigneur_de_guerre": 4.0,
+				"egide_des_ames": 3.0,
+				"lame_du_pacte": 1.0
 			}
 		},
 		"trade": {
@@ -177,6 +192,37 @@
 				"arc_du_phenix": 3.0,
 				"marteau_du_seisme": 3.0
 			}
+		}
+	},
+
+	// Armes favorites de certains gardiens : poids AJOUTES a la table de la source quand le butin vient de ce contexte.
+	// Cle "source@contexte" : contexte = id d'une ruine de ruins.json5 (son gardien) ou "cursed" (tout gardien maudit).
+	// Exemple : "ruin_boss@grand_temple_maya": {"lance_du_jaguar_celeste": 25} = le gardien du Grand Temple tire bien
+	// plus souvent la Lance du Jaguar celeste (la chance de la table ne change pas, seul le choix de l'arme change).
+	"favorites": {
+		"ruin_boss@grand_temple_maya": {
+			"lance_du_jaguar_celeste": 25.0
+		},
+		"ruin_boss@bastion_de_givre": {
+			"couronne_du_roi_de_givre": 25.0
+		},
+		"ruin_boss@temple_maya": {
+			"plastron_du_serpent": 25.0
+		},
+		"ruin_boss@ziggourat_des_sables": {
+			"masse_du_zenith": 25.0
+		},
+		"nether_ruin_boss@citadelle_des_ames": {
+			"egide_des_ames": 25.0
+		},
+		"nether_ruin_boss@autel_infernal": {
+			"hache_du_seigneur_de_guerre": 25.0
+		},
+		"ruin_boss@cursed": {
+			"lame_du_pacte": 30.0
+		},
+		"nether_ruin_boss@cursed": {
+			"lame_du_pacte": 30.0
 		}
 	},
 
@@ -307,6 +353,108 @@
 			// Points de vie rendus par monstre tue, duree (secondes) de la Vitesse I accordee
 			"heal": 3.0,
 			"speedSeconds": 3
+		},
+
+		// Lance du Jaguar celeste (jaguar_pounce) - clic droit (charge) : bond du jaguar, griffes a l'atterrissage
+		"jaguarPounce": {
+			"cooldownSeconds": 10.0,
+
+			// Elan du bond vers l'avant et vers le haut (blocs par tick)
+			"leap": 1.1,
+			"lift": 0.5,
+
+			// Rayon des griffes a l'atterrissage, degats, nombre maximum de monstres, duree (secondes) et niveau de la lenteur
+			"radius": 3.5,
+			"damage": 8.0,
+			"maxTargets": 8,
+			"slowSeconds": 3,
+			"slowLevel": 2
+		},
+
+		// Couronne du Roi de givre (frost_crown) - gele les monstres qui frappent le porteur, qui ne gele jamais
+		"frostCrown": {
+			"cooldownSeconds": 3.0,
+
+			// Degats de froid a l'attaquant, duree (secondes) et niveau de la lenteur, distance maximum d'un tireur
+			"damage": 3.0,
+			"freezeSeconds": 4,
+			"slowLevel": 4,
+			"range": 24.0,
+
+			// Rayon de la vague de froid autour du porteur (lenteur I pour les autres monstres)
+			"chillRadius": 3.0
+		},
+
+		// Egide des Ames (soul_aegis) - un coup de monstre pare au bouclier lui revient et soigne le porteur
+		"soulAegis": {
+			"cooldownSeconds": 1.5,
+
+			// Part des degats bloques renvoyee (1 = 100 %), minimum et maximum renvoyes, soin du porteur, distance d'un tireur
+			"reflectRatio": 1.0,
+			"reflectMin": 3.0,
+			"reflectMax": 30.0,
+			"heal": 3.0,
+			"range": 24.0
+		},
+
+		// Masse du Zenith (solar_leap) - clic droit : saut vers le ciel, un soleil eclate a l'impact
+		"solarLeap": {
+			"cooldownSeconds": 14.0,
+
+			// Elan vertical et vers l'avant du saut (blocs par tick)
+			"upward": 1.2,
+			"forward": 0.35,
+
+			// Rayon du soleil, degats de feu, multiplicateur contre les morts-vivants, duree d'embrasement (secondes)
+			"radius": 5.0,
+			"damage": 8.0,
+			"undeadMultiplier": 2.0,
+			"fireSeconds": 5
+		},
+
+		// Lame du Pacte (pact_seal) - chaque coup scelle le monstre, le dernier sceau ouvre un pentagramme qui eclate
+		"pactSeal": {
+
+			// Delai minimum entre deux pactes (secondes)
+			"cooldownSeconds": 2.0,
+
+			// Sceaux necessaires, duree d'un sceau sans nouveau coup (secondes), degats et duree du fletrissement (secondes)
+			"seals": 3,
+			"sealSeconds": 8,
+			"damage": 12.0,
+			"witherSeconds": 4,
+
+			// Rayon de propagation (un sceau pour chaque monstre proche)
+			"spreadRadius": 4.0
+		},
+
+		// Hache du Seigneur de guerre (infernal_rift) - clic droit : une faille de magma file droit devant
+		"infernalRift": {
+			"cooldownSeconds": 12.0,
+
+			// Longueur de la faille (blocs), largeur touchee, degats de feu, embrasement (secondes), projection vers le haut
+			"length": 12,
+			"width": 1.4,
+			"damage": 7.0,
+			"fireSeconds": 4,
+			"lift": 0.5
+		},
+
+		// Plastron du Serpent a plumes (jade_gale) - sous un seuil de vie, souffle de jade qui repousse les monstres
+		"jadeGale": {
+			"cooldownSeconds": 30.0,
+
+			// Seuil de vie qui declenche le souffle (0.4 = 40 %), rayon, force de la poussee
+			"healthThreshold": 0.4,
+			"radius": 5.0,
+			"push": 1.4,
+
+			// Poison des monstres et regeneration du porteur : durees (secondes) et niveaux ; chute lente du porteur (secondes)
+			"poisonSeconds": 5,
+			"poisonLevel": 2,
+			"regenSeconds": 5,
+			"regenLevel": 2,
+			"slowFallingSeconds": 4
 		}
 	},
 
@@ -316,8 +464,10 @@
 	// guildy:moisson, guildy:marque ; niveaux au-dela du maximum vanilla permis), attributes [{attribute, amount, operation
 	// (add_value, add_multiplied_base, add_multiplied_total), slot (mainhand, offhand, feet, head, armor...)}] ajoutes aux
 	// attributs de l'objet de base, glint (brillance), unbreakable (incassable), power (storm_call, frost_nova, blink_strike,
-	// tree_feller, excavate, vein_miner, double_jump, shockwave, phoenix_arrows, tide_call, soul_harvest ou vide), model
-	// (texture du pack de ressources, vide = apparence vanilla), color (couleur RGB du cuir teint, -1 = aucune).
+	// tree_feller, excavate, vein_miner, double_jump, shockwave, phoenix_arrows, tide_call, soul_harvest, jaguar_pounce,
+	// frost_crown, soul_aegis, solar_leap, pact_seal, infernal_rift, jade_gale ou vide), model (texture du pack de
+	// ressources, vide = apparence vanilla), color (couleur RGB du cuir teint, -1 = aucune), banner (bouclier : base = couleur
+	// de fond, patterns [{pattern: minecraft:skull..., color}] = motifs de banniere vanilla, visibles sans pack).
 	// Les objets deja obtenus suivent le pouvoir et le modele de la config ; nom, description et enchantements restent
 	// ceux de leur creation.
 	"items": [
@@ -718,6 +868,281 @@
 			"power": "",
 			"model": "coutelas_du_contrebandier",
 			"color": -1
+		},
+		{
+			"id": "lance_du_jaguar_celeste",
+			"item": "minecraft:netherite_spear",
+			"name": "Lance du Jaguar céleste",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Taillée dans un croc du Jaguar céleste,",
+				"elle bondit avant même que la main ne frappe."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 6,
+				"guildy:marque": 2,
+				"minecraft:looting": 3,
+				"minecraft:unbreaking": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				},
+				{
+					"attribute": "minecraft:movement_speed",
+					"amount": 0.1,
+					"operation": "add_multiplied_base",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "jaguar_pounce",
+			"model": "lance_du_jaguar_celeste",
+			"color": -1
+		},
+		{
+			"id": "couronne_du_roi_de_givre",
+			"item": "minecraft:diamond_helmet",
+			"name": "Couronne du Roi de givre",
+			"rarity": "EPIC",
+			"lore": [
+				"Le Roi de givre la portait sur son trône de glace ;",
+				"le froid lui obéit encore."
+			],
+			"enchantments": {
+				"minecraft:protection": 5,
+				"minecraft:respiration": 3,
+				"minecraft:aqua_affinity": 1,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:max_health",
+					"amount": 4.0,
+					"operation": "add_value",
+					"slot": "head"
+				},
+				{
+					"attribute": "minecraft:burning_time",
+					"amount": -0.5,
+					"operation": "add_multiplied_base",
+					"slot": "head"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "frost_crown",
+			"model": "couronne_du_roi_de_givre",
+			"color": -1
+		},
+		{
+			"id": "egide_des_ames",
+			"item": "minecraft:shield",
+			"name": "Égide des Âmes",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Forgée dans la Citadelle des âmes,",
+				"elle rend chaque coup à celui qui l'a porté."
+			],
+			"enchantments": {
+				"minecraft:thorns": 3,
+				"minecraft:unbreaking": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "hand"
+				},
+				{
+					"attribute": "minecraft:knockback_resistance",
+					"amount": 0.25,
+					"operation": "add_value",
+					"slot": "hand"
+				},
+				{
+					"attribute": "minecraft:max_health",
+					"amount": 4.0,
+					"operation": "add_value",
+					"slot": "hand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "soul_aegis",
+			"model": "egide_des_ames",
+			"color": -1,
+			"banner": {
+				"base": "black",
+				"patterns": [
+					{
+						"pattern": "minecraft:flow",
+						"color": "cyan"
+					},
+					{
+						"pattern": "minecraft:skull",
+						"color": "light_blue"
+					},
+					{
+						"pattern": "minecraft:gradient",
+						"color": "black"
+					},
+					{
+						"pattern": "minecraft:border",
+						"color": "cyan"
+					}
+				]
+			}
+		},
+		{
+			"id": "masse_du_zenith",
+			"item": "minecraft:mace",
+			"name": "Masse du Zénith",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Les prêtres de la ziggourat y ont enfermé",
+				"le dernier rayon d'un soleil mourant."
+			],
+			"enchantments": {
+				"minecraft:density": 4,
+				"minecraft:smite": 6,
+				"minecraft:fire_aspect": 3,
+				"guildy:brasier": 2,
+				"minecraft:unbreaking": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "solar_leap",
+			"model": "masse_du_zenith",
+			"color": -1
+		},
+		{
+			"id": "lame_du_pacte",
+			"item": "minecraft:netherite_sword",
+			"name": "Lame du Pacte",
+			"rarity": "MYTHIC",
+			"lore": [
+				"Scellée dans le sang d'un rituel maudit,",
+				"elle réclame les âmes qu'on lui a promises."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 7,
+				"guildy:vampirisme": 2,
+				"guildy:echo": 2,
+				"minecraft:sweeping_edge": 4,
+				"minecraft:looting": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 3.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				},
+				{
+					"attribute": "minecraft:attack_speed",
+					"amount": 0.2,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "pact_seal",
+			"model": "lame_du_pacte",
+			"color": -1
+		},
+		{
+			"id": "hache_du_seigneur_de_guerre",
+			"item": "minecraft:netherite_axe",
+			"name": "Hache du Seigneur de guerre",
+			"rarity": "EPIC",
+			"lore": [
+				"Arrachée au Seigneur de guerre de l'Autel infernal,",
+				"elle fend la roche jusqu'au magma."
+			],
+			"enchantments": {
+				"minecraft:sharpness": 5,
+				"guildy:brasier": 2,
+				"minecraft:fire_aspect": 2,
+				"minecraft:efficiency": 5,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "mainhand"
+				},
+				{
+					"attribute": "minecraft:attack_knockback",
+					"amount": 0.5,
+					"operation": "add_value",
+					"slot": "mainhand"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "infernal_rift",
+			"model": "hache_du_seigneur_de_guerre",
+			"color": -1
+		},
+		{
+			"id": "plastron_du_serpent",
+			"item": "minecraft:leather_chestplate",
+			"name": "Plastron du Serpent à plumes",
+			"rarity": "EPIC",
+			"lore": [
+				"Tressé de plumes de jade par les prêtres du temple,",
+				"le souffle du Serpent veille sur qui le porte."
+			],
+			"enchantments": {
+				"minecraft:protection": 5,
+				"minecraft:projectile_protection": 4,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 5.0,
+					"operation": "add_value",
+					"slot": "chest"
+				},
+				{
+					"attribute": "minecraft:armor_toughness",
+					"amount": 3.0,
+					"operation": "add_value",
+					"slot": "chest"
+				},
+				{
+					"attribute": "minecraft:knockback_resistance",
+					"amount": 0.1,
+					"operation": "add_value",
+					"slot": "chest"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "jade_gale",
+			"model": "plastron_du_serpent",
+			"color": 3120746
 		}
 	]
 }

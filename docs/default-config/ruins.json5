@@ -3,7 +3,8 @@
 // des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.
 // Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou
 // boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>
-// | incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle).
+// | incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle)
+// | statues <joueur> | statues list (chemin de statues du grand temple, voir cartography.statues).
 // Les parchemins d'incantation se donnent aussi avec /guild admin scroll give <joueur> incantation|incantation_maudit [nombre].
 {
 
@@ -589,7 +590,119 @@
 		"mapDecoration": "minecraft:red_x",
 
 		// Parchemins d'incantation donnes avec chaque carte / boussole d'une recherche reussie (0 = aucun)
-		"incantationsPerResearch": 1
+		"incantationsPerResearch": 1,
+
+		// La legende du Jaguar celeste : le grand temple ne se trouve plus avec une carte ordinaire. Cette recherche donne une
+		// carte des statues : des jaguars de pierre poses par le mod entre l'atelier et le temple, chacun tourne vers le
+		// suivant ; qui s'approche d'une statue voit son regard montrer la suite du chemin. Admin : /guild admin ruin statues
+		// <joueur> (carte des statues du grand temple le plus proche) | statues list
+		"statues": {
+
+			// Recherche 'La legende du Jaguar celeste' : elle localise le grand temple le plus proche et donne une carte des statues
+			// de jaguar qui menent au temple. Le grand temple n'est alors plus propose par la recherche de surface normale
+			// (false = plus de legende, le grand temple redevient une ruine de surface comme les autres pour les recherches)
+			"enabled": true,
+
+			// Structure du grand temple que la legende localise
+			"templeStructure": "guildy:ruin/grand_temple_maya",
+
+			// Gabarit des statues (pose par le mod au plus pres des points du chemin, face vers la statue suivante)
+			"template": "guildy:ruin/statue_jaguar",
+
+			// Couche du gabarit posee au niveau du sol (les couches en dessous sont des fondations enterrees)
+			"groundLayer": 1,
+
+			// Niveau de guilde minimal pour lancer la recherche de la legende
+			"minGuildLevel": 7,
+
+			// Cout de la recherche : objets pris dans l'inventaire du joueur {objet: nombre} (refuse en creatif)
+			"cost": {
+				"minecraft:paper": 16,
+				"minecraft:compass": 1,
+				"minecraft:emerald": 8
+			},
+
+			// Or du tresor de guilde ajoute au cout (0 = aucun ; permission Tresor requise sinon)
+			"goldCost": 40,
+
+			// Minutes de travail d'un cartographe pour la recherche de la legende
+			"researchMinutes": 16.0,
+
+			// Rayon de recherche du temple (en cases de la grille de placement du grand temple, comme searchRadius)
+			"searchRadius": 64,
+
+			// Nombre de statues du chemin (au minimum : davantage si l'ecart depasse maxSpacing, moins si le temple est proche)
+			"count": 4,
+
+			// Nombre maximal de statues d'un chemin
+			"maxCount": 8,
+
+			// Ecart minimal entre deux statues (blocs)
+			"minSpacing": 64,
+
+			// Ecart maximal entre deux statues (blocs, 0 = pas de limite : toujours 'count' statues)
+			"maxSpacing": 800,
+
+			// La derniere statue se dresse entre lastDistanceMin et lastDistanceMax blocs du temple (en vue de sa balise)
+			"lastDistanceMin": 150,
+			"lastDistanceMax": 250,
+
+			// Decalage lateral maximal des statues (blocs, jamais la derniere) : le chemin n'est pas une ligne droite
+			"lateralJitter": 32,
+
+			// Rayon (blocs) autour du point prevu ou chercher un emplacement assez plat de blocs naturels, hors de l'eau et hors de
+			// tout territoire de guilde (sinon une deuxieme recherche deux fois plus loin, puis la statue est abandonnee)
+			"siteRadius": 20,
+
+			// Denivele maximal (blocs) du sol sous la statue (les fondations comblent le reste)
+			"maxSlope": 3,
+
+			// Une statue existante a moins de ce rayon (blocs) d'un point prevu est reutilisee par le nouveau chemin
+			"reuseRadius": 96,
+
+			// Blocs naturels sur lesquels une statue peut etre posee (id ou #tag) : jamais sur une construction
+			"groundBlocks": [
+				"#minecraft:substrate_overworld",
+				"#minecraft:base_stone_overworld",
+				"#minecraft:sand",
+				"#minecraft:terracotta",
+				"minecraft:gravel",
+				"minecraft:clay",
+				"minecraft:sandstone",
+				"minecraft:red_sandstone",
+				"minecraft:calcite",
+				"minecraft:snow_block",
+				"minecraft:packed_ice"
+			],
+
+			// Bloc des fondations posees sous la statue jusqu'au sol
+			"foundationBlock": "minecraft:mossy_cobblestone",
+
+			// Statues protegees comme les sanctuaires (ni cassees, ni explosees, ni deplacees au piston)
+			"protect": true,
+
+			// Rayon (blocs) autour d'une statue : un joueur qui s'en approche voit son regard (particules, son) et recoit l'indice
+			"guideRadius": 12,
+
+			// Duree (secondes, 1 a 9) de la trainee de particules vers la statue suivante (ou le temple)
+			"guideSeconds": 6.0,
+
+			// Delai (secondes) avant qu'une statue guide de nouveau le meme joueur
+			"guideCooldownSeconds": 45,
+
+			// Longueur (blocs) de la trainee de particules
+			"trailLength": 40,
+
+			// Zoom des cartes des statues : le plus petit qui montre l'atelier et toutes les statues, entre mapMinZoom et mapMaxZoom (0 a 4)
+			"mapMinZoom": 2,
+			"mapMaxZoom": 4,
+
+			// Icone des statues sur la carte (type de decoration vanilla)
+			"mapDecoration": "minecraft:banner_lime",
+
+			// Icone de la derniere statue (celle qui voit le temple)
+			"lastMapDecoration": "minecraft:banner_yellow"
+		}
 	},
 
 	// Boss generique des ruines inconnues de ce fichier (ajoutees par un autre pack de donnees)

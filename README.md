@@ -31,17 +31,20 @@ ou à héberger pour les joueurs.
   (qui peut transformer toute une zone en champs), garde avec parcours de ronde, **forgeron**, **alchimiste**,
   **cartographe**, expéditions (exploration, Nether), zones de travail par fanions et leurs autorisations, missions.
 - **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
-- **Armes uniques** : 14 armes et outils à pouvoirs (foudre, givre, téléportation, double saut, minage 3×3…),
+- **Armes uniques** : 21 armes et outils à pouvoirs (foudre, givre, téléportation, double saut, minage 3×3, bond du
+  jaguar, faille infernale…),
   10 enchantements inédits, textures animées facultatives.
 - **Armes uniques vraiment uniques** : numéro de série, une guilde ne reçoit jamais une arme qu'elle a déjà, collection
-  de guilde X / 14.
+  de guilde X / 21.
 - **Parchemins de sort** : 12 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel…)
-  avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture.
+  avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture
+  (et sa version **maudite**, bien plus puissante, sur l'Archimage déchu maudit).
 - **Ruines et boss** : 8 ruines (6 dans l'Overworld, dont le Grand Temple du Jaguar céleste et sa balise visible de
   loin, 2 dans le Nether), gardées par des gardiens de salle et un boss avec sa barre de vie,
   son escorte et ses attaques, éveillé par un **rituel de sang** (parchemin d'incantation), plus dur à chaque retour
   (**menace**), plus fort à plusieurs, qui **ressuscite enragé** si on l'abat trop vite, et sa version **maudite** en 3
-  phases ; localisées par le cartographe de la guilde.
+  phases ; localisées par le cartographe de la guilde, sauf le grand temple, qu'on rejoint en suivant une piste de
+  **statues de jaguars**.
 - **Tout est configurable** : fichiers JSON5 commentés en français, rechargeables à chaud ; permissions LuckPerms.
 
 ---
@@ -611,8 +614,8 @@ sort** à la place. Une arme **détruite** (lave, feu, cactus, vide, disparue au
 admins peuvent passer à « un seul exemplaire sur tout le serveur » (`uniqueness: "server"`) ou retirer la limite
 (`"none"`). Les armes déjà en circulation reçoivent leur numéro dès qu'un joueur les porte.
 
-**Collection.** Le bouton « Armes uniques » du menu de guilde (ou `/guild uniques`) montre les 14 armes : celles déjà
-obtenues avec leur détenteur actuel, les autres en « ??? » avec leur rareté et où les trouver. Le compteur indique X / 14,
+**Collection.** Le bouton « Armes uniques » du menu de guilde (ou `/guild uniques`) montre les 21 armes : celles déjà
+obtenues avec leur détenteur actuel, les autres en « ??? » avec leur rareté et où les trouver. Le compteur indique X / 21,
 et tout le serveur est prévenu quand une guilde les a toutes réunies.
 
 | Arme | Rareté | Base | Pouvoir |
@@ -631,6 +634,19 @@ et tout le serveur est prévenu quand une guilde les a toutes réunies.
 | **Trident du Léviathan** | Mythique | trident (Empalement V, Loyauté III, Foudroiement III, Écho II) | **Colère des abysses** : lancé, il foudroie sa cible et l'éclair rebondit sur 3 monstres |
 | **Faux des Âmes** | Mythique | houe en netherite devenue faux (+8 dégâts, Vampirisme III, Moisson III) | **Moisson des âmes** : chaque monstre tué rend 1,5 ❤ et donne de la vitesse |
 | **Coutelas du Contrebandier** | Rare | épée en fer (Butin III, Écho I, chance +1) | aucun |
+| **Lance du Jaguar céleste** | Légendaire | lance en netherite (Tranchant VI, Marque du chasseur II) | **Bond du jaguar** : clic droit (la charge de la lance), vous bondissez ; à l'atterrissage, les griffes lacèrent les monstres à 3,5 blocs (4 ❤, Lenteur II), pas de dégâts de chute, recharge 10 s |
+| **Couronne du Roi de givre** | Épique | casque en diamant (Protection V, Respiration III, +2 ❤ max, brûle deux fois moins longtemps) | **Couronne de givre** : le monstre qui vous frappe est pris dans la glace (Lenteur IV 4 s, 1,5 ❤ de froid), les monstres proches ralentissent ; vous ne gelez jamais, recharge 3 s |
+| **Égide des Âmes** | Légendaire | bouclier incassable aux motifs de bannière (Épines III, armure +2, +2 ❤ max) | **Rempart des âmes** : un coup de monstre paré revient à son auteur (100 % des dégâts bloqués, 1,5 ❤ au moins) et vous rend 1,5 ❤, recharge 1,5 s |
+| **Masse du Zénith** | Légendaire | masse (Densité IV **et** Châtiment VI, Aura de feu III, Brasier II) | **Ascension solaire** : clic droit, vous jaillissez vers le ciel (sans dégâts de chute) ; à l'atterrissage ou au coup écrasant, un soleil éclate (4 ❤ de feu à 5 blocs, ×2 contre les morts-vivants), recharge 14 s |
+| **Lame du Pacte** | Mythique | épée en netherite (Tranchant VII, Vampirisme II, Écho II, Affilage IV) | **Sceau du pacte** : chaque coup scelle le monstre ; au 3e sceau, un pentagramme maudit éclate (6 ❤, Flétrissement II) et la malédiction gagne les monstres à 4 blocs, recharge 2 s |
+| **Hache du Seigneur de guerre** | Épique | hache en netherite (Tranchant V, Brasier II, Aura de feu II, Efficacité V) | **Faille infernale** : clic droit, une faille de magma file au sol sur 12 blocs et embrase les monstres qu'elle traverse (3,5 ❤ de feu), recharge 12 s |
+| **Plastron du Serpent à plumes** | Épique | plastron en cuir jade (+5 armure, +3 robustesse ; Protection V, Protection contre les projectiles IV) | **Souffle de jade** : sous 40 % de vie, les monstres à 5 blocs sont repoussés et empoisonnés ; vous régénérez et planez comme une plume, recharge 30 s |
+
+**Armes des ruines.** Sept armes tombent surtout des **gardiens des ruines**, et chaque gardien a sa **favorite**, tirée
+bien plus souvent (`favorites` dans `uniques.json5`) : Lance du Jaguar céleste (Grand Temple du Jaguar céleste), Plastron
+du Serpent à plumes (Temple du Serpent à plumes), Couronne du Roi de givre (Bastion de givre), Masse du Zénith (Ziggourat
+des sables), Égide des Âmes (Citadelle des âmes), Hache du Seigneur de guerre (Autel infernal). La **Lame du Pacte** est la
+favorite des **gardiens maudits**. On les trouve aussi, rarement, dans une quête légendaire ; elles ne se vendent jamais.
 
 Les pouvoirs ne touchent **que les monstres** (jamais les joueurs, villageois, animaux ou familiers) et ont tous une
 recharge (affichée sur l'objet comme celle d'une perle de l'Ender pour les pouvoirs au clic droit). La foudre est
@@ -726,6 +742,20 @@ Un livre ancien qui **relie jusqu'à 4 parchemins** et relance leurs sorts sans 
   sort raté ne coûte rien).
 - **Où le trouver** : boss des ruines (8 %, 12 % dans le Nether), contrats légendaires (4 %), parfois chez le marchand
   du Carrefour commercial (palier III, 400 or).
+
+#### Le grimoire maudit
+Un tome noir et violet aux coins d'os, ceint d'une chaîne et d'un cadenas dont l'œil de sang bat comme un cœur. Il se
+manie exactement comme le grimoire (4 pages reliées depuis des parchemins, clic droit pour lancer, accroupi + clic droit
+pour changer de page, accroupi + F ou `/guild grimoire` pour les pages), mais **ses sorts sont bien plus puissants** :
+dégâts, soins et durées ×1,75, portées ×1,35, plus de cibles, effets d'un niveau de plus. Avec lui, la **Pluie de
+météores** fait tomber **25 météores** au lieu de 10 sur une zone bien plus large, la **Tempête de foudre** frappe **20
+monstres** avec des bonds de 15 blocs, la **Singularité** aspire à **16 blocs**, le **Séisme** lance 5 ondes et les
+**Gardiens** sont 3. Chaque sort se lance dans un pentagramme de sang, au milieu des âmes et des ténèbres.
+- **Son prix** : plus de faim (Rare 4, Épique 7, Légendaire 9, Mythique 12) et **un peu de sang** (½ ❤ pour les sorts
+  rares et épiques, 1 ❤ pour les légendaires et mythiques). Il ne vous laisse jamais sous **3 ❤** : en dessous, le sort
+  ne part pas. Recharge 5 s. Gratuit en créatif.
+- **Où le trouver** : uniquement sur l'**Archimage déchu maudit** (Tour du Mage déchu, réveillé avec un parchemin
+  d'incantation maudit), à sa mort définitive : **10 %**. Aucun autre gardien, aucune quête, jamais vendu.
 
 ### 13. Ruines et boss
 Des ruines oubliées parsèment l'**Overworld** et le **Nether**. Au cœur de chacune dort un **gardien**. Entrer dans la
@@ -833,6 +863,16 @@ croix (surface) ou une **boussole** qui pointe vers la ruine dans le Nether (coo
 recherche mène à une ruine différente. Le menu de l'atelier liste les ruines connues de la guilde et leur état
 (dormante, réveillée, vaincue — de retour dans N jours).
 
+**La légende du Jaguar céleste.** Le Grand Temple du Jaguar céleste ne se trouve pas avec une carte ordinaire :
+« Chercher une ruine » ne le propose jamais. À l'Atelier (guilde niveau 7), lancez **« La légende du Jaguar céleste »**
+(16 papiers, 1 boussole, 8 émeraudes, 40 or du trésor, environ 16 minutes de travail). Vous recevez une **carte des
+statues** : des jaguars de pierre jalonnent le chemin entre votre atelier et le temple, mais aucune carte ne montre le
+temple lui-même. Approchez-vous d'une statue : ses yeux de jade s'illuminent, une traînée dorée file vers la statue
+suivante et le chat murmure « Le regard du jaguar de pierre se tourne vers le nord-est… le chemin continue. » La dernière
+statue se dresse en vue de la balise du temple : « Au loin, la lumière du Jaguar céleste perce la canopée. » Les statues
+apparaissent quand on explore leur région, sur un sol naturel, jamais dans un territoire de guilde ; elles sont protégées
+comme les sanctuaires. Aperçu : [`tools/ruins/previews/statue_jaguar.png`](tools/ruins/previews/statue_jaguar.png).
+
 ### Rôles
 **Chef**, **Officier**, **Membre**. Par défaut les membres construisent et interagissent ; les officiers
 invitent, excluent, gèrent le territoire, le trésor, les villageois, les constructions, la bannière et les
@@ -855,6 +895,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild leave` · `kick <membre>` · `promote` · `demote` · `transfer <membre>` | Membres |
 | `/guild disband` | Dissoudre (chef, confirmation) |
 | `/guild info [guilde]` · `list` · `help` | Informations |
+| `/guild version` | Version de Guildy et de Minecraft (aussi depuis la console) |
 | `/guild deposit [all\|montant]` · `withdraw <montant>` | Trésor |
 | `/guild banner` · `banner adopt` | Menu Bannière / adopter la bannière tenue en main |
 | `/guild flag` · `flag buy` | Récupérer le drapeau fondateur / acheter un drapeau d'extension |
@@ -892,10 +933,11 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
 | `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme (un doublon est signalé) |
 | `/guild admin unique registry [id]` · `unique free <id> [guilde]` | Registre des exemplaires (numéros, détenteurs, doublons) ; marquer une arme comme perdue pour qu'elle puisse retomber |
-| `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` · `scroll grimoire <joueur> [ids]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins, donner un grimoire (avec des pages déjà écrites si des ids sont donnés) ; `scroll give <joueur> incantation\|incantation_maudit [nombre]` donne aussi les parchemins d'incantation |
+| `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` · `scroll grimoire <joueur> [cursed] [ids]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins, donner un grimoire (avec des pages déjà écrites si des ids sont donnés ; `cursed` = grimoire maudit) ; `scroll give <joueur> incantation\|incantation_maudit [nombre]` donne aussi les parchemins d'incantation |
 | `/guild admin ruin list` · `info` · `awaken` · `reset` | Ruines : liste, ruine la plus proche, réveiller / rendormir son gardien |
 | `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
 | `/guild admin ruin ability <type> [style]` | Jouer un effet de capacité de boss (test visuel) |
+| `/guild admin ruin statues <joueur>` · `ruin statues list` | Carte des statues du grand temple le plus proche ; statues en attente / posées / abandonnées |
 | `/guild admin ruin threat <niveau>` | Niveau de menace de la ruine la plus proche (appliqué au prochain réveil) |
 | `/guild admin ruin guards` · `ruin guards clear` | Gardiens de salle de la ruine la plus proche : les poster maintenant / les renvoyer |
 | `/guild admin ruin incantation <joueur> [nombre] cursed` · `ruin awaken cursed` | Parchemins maudits ; réveiller le gardien maudit de la ruine la plus proche (sans rituel) |
@@ -923,9 +965,13 @@ analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
-| `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
-| `ruins.json5` | Ruines : bilan du combat (`stats`), sentinelles (`guards`, annonce à l'écran désactivée), rituel scellé (`summon.sealSeconds`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
-| `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
+| `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit
+(`cursedGrimoire` : multiplicateurs de puissance / portée / nombre, niveaux en plus, surcharges par sort, faim, sang,
+vie minimale, recharge, chance par ruine maudite), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
+| `ruins.json5` | Ruines : bilan du combat (`stats`), sentinelles (`guards`, annonce à l'écran désactivée), rituel scellé (`summon.sealSeconds`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) et légende du Jaguar céleste
+(`cartography.statues` : niveau, coûts, nombre et espacement des statues, distance de la dernière au temple, sol,
+guidage, carte) |
+| `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), armes favorites des gardiens (`favorites`), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
 Une copie des fichiers par défaut (commentés) se trouve dans [`docs/default-config/`](docs/default-config/).
@@ -1001,7 +1047,12 @@ Formules par défaut (modifiables) :
 - Les livres enchantés de l'alchimiste ne comptent pas pour les quêtes « Enchanter ».
 - Armes uniques : une arme rangée dans une boîte de Shulker garde son dernier détenteur connu ; `/clear`, la poubelle du
   mode créatif ou un monstre qui disparaît avec l'arme ne sont pas détectés (`/guild admin unique free`).
-- Le trident unique reste une image plate en main ; lancé, il garde le modèle 3D vanilla.
+- Le trident unique reste une image plate en main ; lancé, il garde le modèle 3D vanilla. Portés, la Couronne du Roi
+  de givre et le Plastron du Serpent à plumes gardent l'apparence vanilla ; l'Égide des Âmes n'a sa texture que dans
+  les menus. Pendant la recharge de la Lance du Jaguar céleste, sa charge est bloquée. Les sceaux de la Lame du Pacte
+  sont perdus au redémarrage ; le Souffle de jade n'empoisonne pas les morts-vivants.
+- Statues du Jaguar céleste : une statue regarde la direction cardinale la plus proche de la suivante (la traînée de
+  lumière, elle, est exacte) ; la carte marque les points prévus (la statue peut être 20 à 40 blocs à côté).
 - Ruines : l'eau du monde n'entre plus dans les ruines générées à partir de la 1.8.2 (celles déjà générées gardent leurs
   blocs) ; le nombre de gardiens de salle et de joueurs pris en compte est fixé à leur apparition ; une balise posée par un
   joueur dans une ruine devient elle aussi protégée ; un redémarrage pendant un combat maudit fait perdre le parchemin.
