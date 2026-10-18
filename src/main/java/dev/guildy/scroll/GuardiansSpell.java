@@ -109,6 +109,19 @@ final class GuardiansSpell extends SpellEffect {
 		return entity.entityTags().contains(SpellTargets.TAG_GUARDIAN);
 	}
 
+	/** The caster of a summoned guardian still bound to its spell, or null (fight statistics: its hits are theirs). */
+	static @Nullable UUID summoner(Entity entity) {
+		if (!isGuardian(entity) || !ALIVE.contains(entity.getUUID())) {
+			return null;
+		}
+		for (GuardiansSpell spell : EffectRunner.all(GuardiansSpell.class)) {
+			if (spell.golems.contains(entity.getUUID())) {
+				return spell.owner;
+			}
+		}
+		return null;
+	}
+
 	/** ServerEntityEvents.ALLOW_LOAD: a guardian no running spell owns (restart, chunk reloaded later) never comes back. */
 	static boolean allowLoad(Entity entity) {
 		return !isGuardian(entity) || ALIVE.contains(entity.getUUID());
