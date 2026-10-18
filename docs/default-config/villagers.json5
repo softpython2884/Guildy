@@ -4,7 +4,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 6,
+	"configVersion": 7,
 
 	// Arrivees de nouveaux villageois
 	"arrivals": {
@@ -12,8 +12,12 @@
 		// Nombre maximum de villageois au niveau 1 de la guilde
 		"baseMaxVillagers": 2,
 
-		// Villageois supplementaires autorises par niveau de guilde
+		// Villageois supplementaires autorises par niveau de guilde, jusqu'au niveau 10
 		"maxVillagersPerLevel": 1,
+
+		// Au-dela du niveau 10 : villageois supplementaires par niveau (0.1 = un tous les 10 niveaux). 0 par defaut : les
+		// places suivantes viennent des paliers de niveau (config.json5, levels.rewards.villagerSlotEvery)
+		"maxVillagersPerLevelAbove10": 0.0,
 
 		// Chance (0 a 1) qu'un villageois se presente chaque matin (si les conditions sont reunies)
 		"arrivalChance": 0.6,
@@ -1032,8 +1036,13 @@
 		// Degats par coup au niveau 1 de la guilde
 		"damage": 4.0,
 
-		// Degats supplementaires par niveau de guilde
+		// Degats supplementaires par niveau de guilde, jusqu'au niveau 10
 		"damagePerLevel": 0.5,
+
+		// Au-dela du niveau 10 : degats supplementaires par niveau, au plus maxDamageAbove10 pour ces niveaux (0 = sans
+		// plafond). Par defaut : 8.5 au niveau 10, 13 a partir du niveau 100 (avant l'equipement et l'arbre d'evolution)
+		"damagePerLevelAbove10": 0.05,
+		"maxDamageAbove10": 4.5,
 
 		// Delai (ticks, 20 = 1 seconde) entre deux coups
 		"attackCooldownTicks": 20,
@@ -1243,6 +1252,39 @@
 				"piercing": 2,
 				"multishot": 0,
 				"armor": "minecraft:diamond"
+			},
+			{
+				"level": 20,
+				"sword": "minecraft:netherite_sword",
+				"sharpness": 3,
+				"ranged": "minecraft:crossbow",
+				"power": 0,
+				"quickCharge": 3,
+				"piercing": 3,
+				"multishot": 0,
+				"armor": "minecraft:diamond"
+			},
+			{
+				"level": 30,
+				"sword": "minecraft:netherite_sword",
+				"sharpness": 4,
+				"ranged": "minecraft:crossbow",
+				"power": 0,
+				"quickCharge": 3,
+				"piercing": 4,
+				"multishot": 0,
+				"armor": "minecraft:netherite"
+			},
+			{
+				"level": 50,
+				"sword": "minecraft:netherite_sword",
+				"sharpness": 5,
+				"ranged": "minecraft:crossbow",
+				"power": 0,
+				"quickCharge": 3,
+				"piercing": 4,
+				"multishot": 1,
+				"armor": "minecraft:netherite"
 			}
 		],
 
@@ -1257,8 +1299,11 @@
 	// regeneration lente hors combat. Affichee dans le menu des villageois.
 	"vitality": {
 
-		// Points de vie max ajoutes par niveau de guilde au-dessus du niveau 1 (tous les villageois ; 2 points = 1 coeur, un villageois en a 20)
+		// Points de vie max ajoutes par niveau de guilde au-dessus du niveau 1, jusqu'au niveau 10 (tous les villageois ; 2 points = 1 coeur, un villageois en a 20)
 		"healthPerLevel": 4.0,
+
+		// Au-dela du niveau 10 : points de vie max ajoutes par niveau (par defaut : +36 au niveau 10, +81 au niveau 100 ; maxBonus plafonne le tout)
+		"healthPerLevelAbove10": 0.5,
 
 		// Gardes : le bonus par niveau est multiplie par cette valeur
 		"guardMultiplier": 1.5,

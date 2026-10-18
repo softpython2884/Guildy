@@ -9,7 +9,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 2,
+	"configVersion": 3,
 
 	// Boss des ruines actifs (false = plus aucun boss ne se reveille ; les cartes restent possibles)
 	"bossesEnabled": true,
@@ -519,9 +519,10 @@
 	},
 
 	// Bilan du combat : a la victoire (et en plus court sur un echec), chaque participant recoit dans le chat les titres du
-	// combat (meilleurs degats au gardien, aux gardiens de salle, aux sbires, soins, absorption, degats encaisses, coup fatal)
-	// et sa propre ligne, avec le detail par joueur (survol des noms, menu [Voir le detail], /guild bilan). Compte depuis
-	// l'apparition des gardiens de salle ; projectiles, sorts et animaux comptent pour leur proprietaire ; creatif ignore
+	// combat (meilleurs degats au gardien, aux gardiens de salle, aux sbires, soins, absorption, degats encaisses, totems
+	// d'immortalite consommes, coup fatal) et sa propre ligne, avec le detail par joueur (survol des noms, menu [Voir le
+	// detail], /guild bilan). Compte depuis l'apparition des gardiens de salle ; projectiles, sorts et animaux comptent pour
+	// leur proprietaire ; creatif ignore
 	"stats": {
 
 		// Bilan du combat actif (false = rien n'est suivi ni envoye)
@@ -529,8 +530,9 @@
 
 		// Titres du chat, dans cet ordre : guardian (Fleau du gardien : degats au gardien), guards (Briseur de gardes : degats
 		// aux gardiens de salle), escort (Chasseur de sbires : degats a l'escorte), healing (Ange gardien : soins donnes aux
-		// autres joueurs), shield (Protecteur : absorption donnee), tank (Rempart : degats encaisses), final_blow (Coup fatal),
-		// kills (Moissonneur : monstres tues), spells (Arcaniste : sorts lances). Le menu du detail montre toujours tout
+		// autres joueurs), shield (Protecteur : absorption donnee), tank (Rempart : degats encaisses), totems (Increvable :
+		// totems d'immortalite consommes), final_blow (Coup fatal), kills (Moissonneur : monstres tues), spells (Arcaniste :
+		// sorts lances). Le menu du detail montre toujours tout
 		"categories": [
 			"guardian",
 			"guards",
@@ -538,6 +540,7 @@
 			"healing",
 			"shield",
 			"tank",
+			"totems",
 			"final_blow"
 		],
 
@@ -552,7 +555,10 @@
 		"onFailure": true,
 
 		// Joueurs suivis au maximum par combat (2 a 64)
-		"maxPlayers": 32
+		"maxPlayers": 32,
+
+		// Version de cette section (geree automatiquement, ne pas modifier)
+		"version": 2
 	},
 
 	// Recherches de l'Atelier du cartographe
@@ -742,7 +748,9 @@
 	// embuscade : degats damage a moins de radius blocs), roar (rugissement en cone de longueur radius : Lenteur de niveau
 	// amplifier et Faiblesse), spirit_jaguars (count esprits jaguars temporaires, morsure damage, a moins de radius blocs) ;
 	// styles gold (Lenteur), jade (Poison), solar (brule) ; violet et noir sous la forme maudite.
-	// rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +
+	// rewards : goldMin/goldMax (lingots), goldPerEscort (lingots en plus par sbire de l'escorte tue pendant le combat, au plus
+	// escortGoldMax ; avant les bonus de menace, de groupe, de resurrection et de malediction), xp (XP de guilde partagee
+	// entre les guildes des participants), lootTable +
 	// lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource
 	// (vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).
 	// guards (gardiens de salle) : count (-1 = 'guards.countByTier' du palier, 0 = aucun), name (nom affiche en les visant,
@@ -841,8 +849,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 4,
-				"goldMax": 8,
+				"goldMin": 15,
+				"goldMax": 25,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 80,
 				"lootTable": "guildy:chests/ruin/rare",
 				"lootRolls": 1,
@@ -975,8 +985,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 6,
-				"goldMax": 10,
+				"goldMin": 20,
+				"goldMax": 32,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 120,
 				"lootTable": "guildy:chests/ruin/rare",
 				"lootRolls": 2,
@@ -1102,8 +1114,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 6,
-				"goldMax": 10,
+				"goldMin": 20,
+				"goldMax": 32,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 120,
 				"lootTable": "guildy:chests/ruin/rare",
 				"lootRolls": 2,
@@ -1236,8 +1250,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 8,
-				"goldMax": 14,
+				"goldMin": 28,
+				"goldMax": 42,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 160,
 				"lootTable": "guildy:chests/ruin/treasure",
 				"lootRolls": 1,
@@ -1373,8 +1389,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 10,
-				"goldMax": 18,
+				"goldMin": 36,
+				"goldMax": 56,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 220,
 				"lootTable": "guildy:chests/ruin/nether_treasure",
 				"lootRolls": 1,
@@ -1528,8 +1546,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 14,
-				"goldMax": 24,
+				"goldMin": 50,
+				"goldMax": 75,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 300,
 				"lootTable": "guildy:chests/ruin/nether_treasure",
 				"lootRolls": 2,
@@ -1660,8 +1680,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 8,
-				"goldMax": 14,
+				"goldMin": 28,
+				"goldMax": 42,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 160,
 				"lootTable": "guildy:chests/ruin/treasure",
 				"lootRolls": 1,
@@ -1840,8 +1862,10 @@
 				}
 			],
 			"rewards": {
-				"goldMin": 18,
-				"goldMax": 28,
+				"goldMin": 60,
+				"goldMax": 90,
+				"goldPerEscort": 1,
+				"escortGoldMax": 12,
 				"xp": 380,
 				"lootTable": "guildy:chests/ruin/treasure",
 				"lootRolls": 3,

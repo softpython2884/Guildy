@@ -79,6 +79,8 @@ villager/     VillagerManager (arrivées, candidats, départs), TaskEngine + *Ta
               (pur), StorageDefaults, StorageLabels, StorageGui), DepthLoot (pur), VillagerGui, ZoneGui, VillagerConfig
 upgrade/      UpgradeTree/UpgradeRules/UpgradeMath/UpgradeEffects (purs, testés), Upgrades (bonus lus par les autres
               modules), UpgradeService (déblocage atomique), UpgradeMenu, UpgradeBuffs, UpgradeConfig
+level/        LevelCurve, LevelScaling, LevelRewardRules (purs, testés), LevelUps (montées de niveau, récompenses,
+              annonces), LevelLang
 unique/       UniqueItems (fabrique), UniqueRolls (tables de butin), UniquePowers + Combat/Lightning/MiningPowers,
               DoubleJump, UniqueTracker (annonces), UniqueVisuals + PolymerBridge (modèles), UniqueConfig ; armes des
               ruines : Leaps, JaguarPowers, SolarPowers, DefensePowers, CursePowers, InfernalPowers, UniqueFx
@@ -434,6 +436,38 @@ schématiques) : `tools/ruins/`.
     invulnérabilité remise à zéro. `UniqueDef.banner` → BASE_COLOR + BANNER_PATTERNS. Pack : lance = définition des lances
     vanilla (`select display_context`, `spear_in_hand` 32×32), bouclier : icône des menus seulement. `/guild version`
     (`FabricLoader` + `SharedConstants.getCurrentVersion()`).
+
+59. **Niveaux au-delà de 10** (`level/`, section `levels` de config.json5 v3) : `LevelCurve` (pur) = seuils explicites
+    (index 0 = niveau 2) puis XP par niveau `xpStepBase + xpStepGrowth × (N − dernier niveau listé)`, en `long`,
+    `maxLevel` 10 à 500 (migration : une liste plus longue relève `maxLevel`). `LevelScaling` (pur) : jusqu'au niveau
+    10 chaque formule garde son `perLevel`, au-delà un taux `...Above10` plafonné (`max...Above10`, 0 = sans plafond) :
+    difficulté des hordes (+0,05, ≤ 4,5), cœur (+5, ≤ 600), chunks (+1, ≤ 190), dégâts des gardes (+0,05, ≤ 4,5), vie
+    des villageois (+0,5, `maxBonus`), places de villageois (0 : paliers) ; quêtes : niveau de calcul
+    `LevelScaling.softLevel` (10 + 0,2 × (N − 10), ≤ 30) pour quantités et récompenses, éligibilité au vrai niveau
+    (`EconomyBalanceTest` jusqu'au niveau 30). `GuildManager.addXp` → `LevelUps` : une annonce pour tous les niveaux
+    gagnés, puis `LEVEL_UP` par niveau ; `LevelRewardRules` (pur) : or par niveau, paliers (or + `Guild.freeFlags`) payés
+    une fois (`Guild.rewardedLevel`, `setlevel` ne paie rien), places de villageois calculées depuis le niveau, rangs
+    (`levels.ranks`), annonce serveur aux non-membres. Drapeau offert = prix 0 dans `ClaimService.buyExtensionFlag`
+    (CLAIM, `extensionFlagsBought` inchangé). Équipement des gardes : paliers 20 / 30 / 50 (villagers.json5 v7).
+60. **Équilibrage 1.10 : or des gardiens, sorts offensifs** : ruins.json5 v3 (`RuinMigration` : plage d'or migrée par
+    paire si les deux bornes sont aux défauts 1.9, `OLD_GOLD`) ; or ×3 environ par palier (`RuinDefaults.GOLD_MIN/MAX`
+    15-25 … 50-75, Jaguar 60-90), `rewards.goldPerEscort` / `escortGoldMax` (1 par sbire tué, 12 au plus, avant les
+    multiplicateurs : `RuinRules.baseGold`) ; pas d'or des sentinelles (reviennent après `resetSeconds` sans joueur :
+    boucle) ; une part de plus d'une pile tombe en blocs d'or + le reste en lingots (`RuinLoot.goldStacks`). Sorts :
+    dégâts `guildy:arcane` + `guildy:sort_brasier|sort_foudre|sort_givre` dans `#minecraft:bypasses_armor` (procs des
+    uniques à part) ; `SpellTargets.hurt` remet les frames d'invulnérabilité et `lastHurt` (accesseur
+    `LivingEntityAccessor`) à leur valeur d'avant le coup ; `hostiles` à la distance de la hitbox ; météores visés
+    (`MeteorRules` pur : 2 sur 3 sur un monstre, le moins visé puis le plus proche, sauf ceux déjà condamnés par les
+    météores en vol ; suivi jusqu'à 2 ticks de l'impact). Dégâts ×1,6 à ×2,3 ; scrolls.json5 format 3
+    (`ScrollConfig.migrateDamage` : dégâts encore à l'ancien défaut du sort, `OLD_DAMAGE`).
+61. **Totems dans le bilan** : mixin HEAD de `UsedTotemTrigger.trigger` (`stats.mixin.UsedTotemTriggerFightMixin`),
+    appelé par `LivingEntity.checkTotemDeathProtection` seulement quand un objet `DEATH_PROTECTION` est consommé (main ou
+    seconde main, après les `ALLOW_DEATH` de Fabric : une mort annulée ne consomme rien) → `FightTracker.totemUsed`
+    (session de l'arène, créatif / spectateur ignorés) → `FightTally.totems` (suffit pour figurer au bilan). Titre
+    `FightCategory.TOTEMS` (*Increvable*, compté en unités) après `tank` dans `stats.categories` ; `stats.version` 2 : une
+    liste encore égale aux défauts 1.8.1 (`FightStatsSettings.V1_CATEGORIES`) reçoit le titre. Chat : total de l'équipe sur
+    la ligne d'info, « (avec N totems) » après *Fléau du gardien*, ligne du lecteur, survol / lore et en-tête du menu (si
+    > 0) ; forme courte = premier titre + *Increvable* (`FightReport.chatTitles`) ; singulier / pluriel : clé `….one`.
 
 ## Notes API Minecraft 26.3
 

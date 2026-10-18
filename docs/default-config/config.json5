@@ -4,7 +4,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 2,
+	"configVersion": 3,
 
 	// Regles des guildes
 	"guilds": {
@@ -53,8 +53,13 @@
 		// Nombre maximum de chunks au niveau 1
 		"baseMaxChunks": 12,
 
-		// Chunks supplementaires autorises par niveau de guilde
+		// Chunks supplementaires autorises par niveau de guilde, jusqu'au niveau 10
 		"maxChunksPerLevel": 6,
+
+		// Au-dela du niveau 10 : chunks supplementaires par niveau, au plus maxChunksAbove10 en tout pour ces niveaux
+		// (0 = sans plafond). Par defaut : 66 chunks au niveau 10, 156 au niveau 100, 256 au plus
+		"maxChunksPerLevelAbove10": 1,
+		"maxChunksAbove10": 190,
 
 		// Prix (or, paye par le tresor) du premier drapeau d'extension
 		"extensionFlagBasePrice": 8,
@@ -110,7 +115,11 @@
 	// Niveaux de guilde (XP gagnee via vagues et quetes)
 	"levels": {
 
-		// XP totale requise pour atteindre chaque niveau (index 0 = niveau 2, etc.). Niveau max = taille + 1
+		// Niveau maximum des guildes (10 a 500)
+		"maxLevel": 100,
+
+		// XP totale requise pour atteindre chaque niveau de la liste (index 0 = niveau 2, etc.) ;
+		// les niveaux suivants, jusqu'a maxLevel, suivent la formule xpStepBase / xpStepGrowth
 		"xpThresholds": [
 			100,
 			250,
@@ -121,6 +130,90 @@
 			1900,
 			2500,
 			3200
+		],
+
+		// Au-dela de la liste : XP pour passer du niveau N-1 au niveau N = xpStepBase + xpStepGrowth x (N - dernier niveau
+		// de la liste). Par defaut (liste jusqu'au niveau 10) : 1340 XP pour le niveau 11, 2600 pour le 20, 6800 pour le 50,
+		// 13800 pour le 100 ; XP totale : 3200 au niveau 10, 22900 au 20, 166000 au 50, 684500 au 100
+		"xpStepBase": 1200,
+		"xpStepGrowth": 140,
+
+		// Recompenses des niveaux gagnes au-dela du niveau 10
+		"rewards": {
+
+			// Activer les recompenses des niveaux au-dela du niveau 10 (or, paliers, drapeaux, places de villageois)
+			"enabled": true,
+
+			// Or verse au tresor a chaque niveau gagne au-dela du niveau 10 = min(goldMax, goldBase + goldPerLevel x (niveau - 10))
+			"goldBase": 20,
+			"goldPerLevel": 1.0,
+			"goldMax": 120,
+
+			// Paliers : tous les 'milestoneEvery' niveaux au-dela du niveau 10 (5 = niveaux 15, 20, 25...) ; 0 = aucun palier
+			"milestoneEvery": 5,
+
+			// Or verse au tresor en plus a chaque palier
+			"milestoneGold": 100,
+
+			// Drapeaux d'extension offerts a chaque palier (pris gratuitement dans le menu Territoire ou avec /guild flag buy)
+			"milestoneFlags": 1,
+
+			// Annoncer les paliers (et les nouveaux rangs) a tout le serveur
+			"announceMilestones": true,
+
+			// Places de villageois en plus : une tous les 'villagerSlotEvery' niveaux au-dela du niveau 10 (10 = niveaux 20, 30...),
+			// au plus maxVillagerSlots en tout (0 = aucune)
+			"villagerSlotEvery": 10,
+			"maxVillagerSlots": 10
+		},
+
+		// Rangs de guilde : le rang dont 'level' est le plus haut niveau atteint s'affiche dans /guild info, le menu
+		// principal et l'annonce de niveau (name : nom affiche, codes couleur &)
+		"ranks": [
+			{
+				"level": 1,
+				"name": "&7Novice"
+			},
+			{
+				"level": 10,
+				"name": "&6Bronze"
+			},
+			{
+				"level": 20,
+				"name": "&fArgent"
+			},
+			{
+				"level": 30,
+				"name": "&eOr"
+			},
+			{
+				"level": 40,
+				"name": "&3Platine"
+			},
+			{
+				"level": 50,
+				"name": "&bDiamant"
+			},
+			{
+				"level": 75,
+				"name": "&aÉmeraude"
+			},
+			{
+				"level": 100,
+				"name": "&d&lLégendaire"
+			},
+			{
+				"level": 150,
+				"name": "&5&lMythique"
+			},
+			{
+				"level": 250,
+				"name": "&c&lImmortelle"
+			},
+			{
+				"level": 400,
+				"name": "&6&lDivine"
+			}
 		]
 	},
 

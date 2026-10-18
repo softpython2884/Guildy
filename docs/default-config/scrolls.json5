@@ -7,7 +7,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 2,
+	"configVersion": 3,
 
 	// Parchemins actifs (false = ils ne lancent plus rien, ils ne sont pas consommes)
 	"enabled": true,
@@ -383,7 +383,7 @@
 				"range": 40.0,
 				"radius": 6.0,
 				"count": 10.0,
-				"damage": 12.0,
+				"damage": 28.0,
 				"impactRadius": 3.0,
 				"fireSeconds": 4.0
 			},
@@ -408,7 +408,7 @@
 			"params": {
 				"range": 24.0,
 				"count": 8.0,
-				"damage": 14.0,
+				"damage": 24.0,
 				"chainRadius": 10.0,
 				"stunSeconds": 2.0
 			},
@@ -434,7 +434,7 @@
 				"range": 24.0,
 				"radius": 7.0,
 				"duration": 8.0,
-				"damage": 4.0,
+				"damage": 7.0,
 				"slowLevel": 4.0
 			},
 			"item": "minecraft:guster_banner_pattern",
@@ -457,7 +457,7 @@
 			"spell": "solar_nova",
 			"params": {
 				"radius": 10.0,
-				"damage": 20.0,
+				"damage": 34.0,
 				"fireSeconds": 6.0,
 				"undeadMultiplier": 1.5,
 				"knockback": 1.2
@@ -485,7 +485,7 @@
 				"radius": 10.0,
 				"pullSeconds": 3.0,
 				"pullStrength": 0.35,
-				"damage": 26.0
+				"damage": 48.0
 			},
 			"item": "minecraft:flow_banner_pattern",
 			"glint": true,
@@ -511,7 +511,7 @@
 				"absorptionLevel": 3.0,
 				"resistanceLevel": 2.0,
 				"push": 0.8,
-				"damage": 2.0
+				"damage": 4.0
 			},
 			"item": "minecraft:field_masoned_banner_pattern",
 			"glint": true,
@@ -625,7 +625,7 @@
 			"params": {
 				"radius": 10.0,
 				"waves": 3.0,
-				"damage": 10.0,
+				"damage": 16.0,
 				"lift": 0.6,
 				"slowSeconds": 4.0
 			},
@@ -650,7 +650,7 @@
 			"params": {
 				"length": 32.0,
 				"duration": 3.0,
-				"damage": 5.0,
+				"damage": 8.0,
 				"width": 0.9
 			},
 			"item": "minecraft:flow_banner_pattern",

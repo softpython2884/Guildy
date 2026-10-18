@@ -46,8 +46,9 @@
 		"maxDaysBetweenHordes": 3
 	},
 
-	// Difficulte D = base + perNight * nuit + perLevel * (niveau - 1) + perExtraPlayer * (membres presents - 1),
-	// bornee a [base, max]. 'nuit' = palier de la guilde (+1 par victoire, recule apres une defaite).
+	// Difficulte D = base + perNight * nuit + bonus du niveau + perExtraPlayer * (membres presents - 1), bornee a [base, max].
+	// Bonus du niveau = perLevel * (niveau - 1) jusqu'au niveau 10, puis perLevelAbove10 par niveau (au plus maxAbove10).
+	// 'nuit' = palier de la guilde (+1 par victoire, recule apres une defaite).
 	"difficulty": {
 
 		// Difficulte de base (minimum)
@@ -56,8 +57,14 @@
 		// Difficulte ajoutee par palier de nuit
 		"perNight": 0.5,
 
-		// Difficulte ajoutee par niveau de guilde au-dela du niveau 1
+		// Difficulte ajoutee par niveau de guilde au-dela du niveau 1, jusqu'au niveau 10
 		"perLevel": 0.5,
+
+		// Au-dela du niveau 10 : difficulte ajoutee par niveau, au plus maxAbove10 pour ces niveaux (0 = sans plafond).
+		// Par defaut le niveau ajoute 4.5 au niveau 10, 5 au niveau 20, 7 au niveau 60 et 9 a partir du niveau 100 :
+		// la nuit (palier) et les membres presents comptent toujours (une defaite fait encore baisser la difficulte)
+		"perLevelAbove10": 0.05,
+		"maxAbove10": 4.5,
 
 		// Difficulte ajoutee par membre present supplementaire (au demarrage)
 		"perExtraPlayer": 0.75,
@@ -233,9 +240,14 @@
 	// Coeur de la base : points d'integrite et degats subis chaque seconde
 	"heart": {
 
-		// Integrite du coeur = baseIntegrity + integrityPerLevel * (niveau - 1)
+		// Integrite du coeur = baseIntegrity + integrityPerLevel * (niveau - 1), jusqu'au niveau 10
 		"baseIntegrity": 150,
 		"integrityPerLevel": 30,
+
+		// Au-dela du niveau 10 : integrite ajoutee par niveau, au plus maxIntegrityAbove10 pour ces niveaux (0 = sans plafond).
+		// Par defaut : 420 au niveau 10, 870 au niveau 100, 1020 au plus (avant l'arbre d'evolution)
+		"integrityPerLevelAbove10": 5,
+		"maxIntegrityAbove10": 600,
 
 		// Les monstres a moins de 'radius' blocs (horizontalement) et 'verticalRange' blocs (verticalement) du coeur l'endommagent
 		"radius": 3.0,

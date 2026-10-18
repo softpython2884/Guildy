@@ -9,7 +9,8 @@
 //   NIGHT_HUNT tuer des monstres la nuit (entite, vide = tout monstre), BIOME entrer dans un biome (biome ou #tag),
 //   COLLECTION livrer un assortiment : collection = {min, max, items: [{item, name, amountMin, amountMax, amountPerLevel}]}
 //   (entre min et max objets differents tires parmi items, chacun avec sa propre progression).
-// Valeurs a l'echelle du niveau de guilde : valeur = aleatoire(min..max) + perLevel x (niveau - 1).
+// Valeurs a l'echelle du niveau de guilde : valeur = aleatoire(min..max) + perLevel x (niveau - 1) ; au-dela du niveau 10,
+// le niveau de calcul monte plus lentement (voir levelScalingAbove10 / maxScalingLevel).
 // rewardItems : [{item, count, chance (0..1)}] ; flagChance / treasureMapChance : chance (0..1) d'obtenir
 // un drapeau d'extension / une carte au tresor. durationDays : duree en jours de jeu (1 jour = 20 minutes).
 // weight : poids relatif du tirage ; minLevel / maxLevel (0 = sans maximum) : niveaux de guilde concernes ;
@@ -34,6 +35,13 @@
 	// Chance (0..1) qu'une quete ordinaire rapporte aussi une arme unique, tiree au moment de recuperer la recompense
 	// (module des armes uniques ; rien si aucune n'est disponible)
 	"uniqueChance": 0.03,
+
+	// Niveaux de guilde au-dela de 10 : quantites et recompenses (perLevel) calculees avec le niveau
+	// 10 + (niveau - 10) x levelScalingAbove10, au plus maxScalingLevel. Par defaut : niveau de calcul 12 au niveau 20,
+	// 18 au niveau 50, 28 au niveau 100, 30 au plus (les quetes restent faisables, l'or des livraisons reste sous le prix
+	// boutique). minLevel / maxLevel des modeles utilisent toujours le vrai niveau
+	"levelScalingAbove10": 0.2,
+	"maxScalingLevel": 30,
 
 	// Contrats legendaires : une quete plus dure et plus longue, recompensee par une arme unique en plus de l'or et de l'XP
 	"legendary": {

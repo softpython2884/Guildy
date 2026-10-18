@@ -331,7 +331,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<div class="cards">
 					<div class="card"><h3>Le cœur</h3><p>Le drapeau fondateur planté. Indestructible, il porte le nom de la guilde. Les hordes cherchent à l'atteindre.</p></div>
 					<div class="card"><h3>Drapeau d'extension</h3><p>8 or le premier, puis +4 or à chaque achat (64 max). Planté dans un chunk voisin (par un côté, pas en diagonale), il l'ajoute au territoire.</p></div>
-					<div class="card"><h3>Limite de chunks</h3><p>12 au niveau 1, puis +6 par niveau de guilde (et plus avec l'arbre d'évolution).</p></div>
+					<div class="card"><h3>Limite de chunks</h3><p>12 au niveau 1, puis +6 par niveau de guilde jusqu'au niveau 10, +1 par niveau ensuite (256 au plus ; et plus avec l'arbre d'évolution).</p></div>
 					<div class="card"><h3>Sur les cartes</h3><p>Tenez une carte qui couvre une base : le cœur y apparaît comme une bannière, avec le nom de la guilde.</p></div>
 				</div>
 				<h3>Le drapeau se crée au métier à tisser</h3>
@@ -358,7 +358,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				</div>
 				<div class="note good"><p><strong>Trêve :</strong> après 2 défaites d'affilée (hordes ou raids), votre base est épargnée pendant 3 nuits : ni horde, ni raid de pillards. Une victoire remet le compte à zéro. Le menu <button class="cmd" type="button">/guild waves</button> affiche les nuits de trêve restantes.</p></div>
 				<h3>Le cœur</h3>
-				<p>Il a <strong>150 points</strong> d'intégrité, plus 30 par niveau de guilde, visibles dans la barre rouge en haut de l'écran. Chaque seconde, un monstre à moins de 3 blocs lui retire 1 point, une élite 3, un boss 8. Une deuxième barre montre la progression de la horde.</p>
+				<p>Il a <strong>150 points</strong> d'intégrité, plus 30 par niveau de guilde (5 par niveau après le niveau 10), visibles dans la barre rouge en haut de l'écran. Chaque seconde, un monstre à moins de 3 blocs lui retire 1 point, une élite 3, un boss 8. Une deuxième barre montre la progression de la horde.</p>
 				<h3>Les thèmes</h3>
 				<div class="table-wrap"><table>
 					<thead><tr><th>Thème</th><th>Monstres</th><th class="num">À partir du palier</th></tr></thead>
@@ -561,7 +561,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<li>Un premier groupe arrive environ une minute après la construction, puis d'autres certains matins (6 chances sur 10) : <strong>1 à 3 candidats</strong> à la fois, dans la limite des places et des lits libres.</li>
 					<li>Cliquez sur [Accepter] dans le chat, ou utilisez <button class="cmd" type="button">/guild villagers accept</button>. Le candidat repart au bout de 10 minutes sans réponse.</li>
 				</ol>
-				<p>Limite : 2 villageois au niveau 1, +1 par niveau (et plus avec l'arbre d'évolution). Seuls les membres peuvent commercer avec eux.</p>
+				<p>Limite : 2 villageois au niveau 1, +1 par niveau jusqu'au niveau 10, puis +1 tous les 10 niveaux (et plus avec l'arbre d'évolution). Seuls les membres peuvent commercer avec eux.</p>
 				<p>Pour gérer un villageois : <button class="cmd" type="button">/guild villagers</button>, ou <strong>accroupi + clic droit</strong> dessus.</p>
 				<h3>Tâches</h3>
 				<div class="table-wrap"><table>
@@ -641,11 +641,14 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td class="num">7-8</td><td>diamant</td><td>arbalète Charge rapide, Perforation I</td><td>fer</td></tr>
 						<tr><td class="num">9</td><td>diamant Tranchant II</td><td>arbalète Charge rapide II, Perforation II</td><td>diamant</td></tr>
 						<tr><td class="num">10</td><td>netherite Tranchant II</td><td>arbalète Charge rapide III, Perforation II</td><td>diamant</td></tr>
+						<tr><td class="num">20</td><td>netherite Tranchant III</td><td>arbalète Perforation III</td><td>diamant</td></tr>
+						<tr><td class="num">30</td><td>netherite Tranchant IV</td><td>arbalète Perforation IV</td><td>netherite</td></tr>
+						<tr><td class="num">50</td><td>netherite Tranchant V</td><td>arbalète Perforation IV, Tir multiple</td><td>netherite</td></tr>
 					</tbody>
 				</table></div>
 				<h3 id="vie">Vie, nuit et refuge</h3>
 				<div class="cards">
-					<div class="card"><h3>Plus de vie</h3><p>Chaque villageois gagne 2 cœurs par niveau de guilde (les gardes encore plus) et se soigne lentement hors combat. Sa vie s'affiche dans le menu.</p></div>
+					<div class="card"><h3>Plus de vie</h3><p>Chaque villageois gagne 2 cœurs par niveau de guilde jusqu'au niveau 10, puis ¼ de cœur par niveau (les gardes encore plus) et se soigne lentement hors combat. Sa vie s'affiche dans le menu.</p></div>
 					<div class="card"><h3>Retour avant la nuit</h3><p>En fin de journée, les travailleurs posent leurs outils et rentrent en courant à leur lit (sinon un lit libre du territoire, le bureau d'accueil ou le cœur).</p></div>
 					<div class="card"><h3>Mis à l'abri</h3><p>À la tombée de la nuit, ou dès qu'une horde arrive, un travailleur encore dehors est téléporté près de son lit. Les gardes, eux, restent dehors.</p></div>
 				</div>
@@ -832,20 +835,21 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<div class="table-wrap"><table>
 					<thead><tr><th>Parchemin</th><th>Rareté</th><th>Effet</th></tr></thead>
 					<tbody>
-						<tr><td>Pluie de météores</td><td><span class="pill gold">Légendaire</span></td><td>10 météores autour du point visé, 6 ❤ par impact, monstres embrasés</td></tr>
-						<tr><td>Tempête de foudre</td><td><span class="pill void">Épique</span></td><td>Foudre en chaîne sur 8 monstres, 7 ❤ chacun, étourdis 2 s</td></tr>
-						<tr><td>Blizzard</td><td><span class="pill void">Épique</span></td><td>Tempête de 8 s : Lenteur IV, gel, 2 ❤ de froid par seconde</td></tr>
-						<tr><td>Nova solaire</td><td><span class="pill gold">Légendaire</span></td><td>Sphère de feu jusqu'à 10 blocs : 10 ❤ (plus sur les morts-vivants)</td></tr>
-						<tr><td>Singularité</td><td><span class="pill red">Mythique</span></td><td>Trou noir qui aspire tout à 10 blocs pendant 3 s, puis implose (13 ❤)</td></tr>
+						<tr><td>Pluie de météores</td><td><span class="pill gold">Légendaire</span></td><td>10 météores autour du point visé (la plupart suivent un monstre), 14 ❤ par impact, monstres embrasés</td></tr>
+						<tr><td>Tempête de foudre</td><td><span class="pill void">Épique</span></td><td>Foudre en chaîne sur 8 monstres, 12 ❤ chacun, étourdis 2 s</td></tr>
+						<tr><td>Blizzard</td><td><span class="pill void">Épique</span></td><td>Tempête de 8 s : Lenteur IV, gel, 3,5 ❤ de froid par seconde</td></tr>
+						<tr><td>Nova solaire</td><td><span class="pill gold">Légendaire</span></td><td>Sphère de feu jusqu'à 10 blocs : 17 ❤ (plus sur les morts-vivants)</td></tr>
+						<tr><td>Singularité</td><td><span class="pill red">Mythique</span></td><td>Trou noir qui aspire tout à 10 blocs pendant 3 s, puis implose (24 ❤)</td></tr>
 						<tr><td>Égide</td><td><span class="pill void">Épique</span></td><td>Dôme de 12 s : absorption et résistance aux alliés, monstres et projectiles repoussés</td></tr>
 						<tr><td>Rappel</td><td><span class="pill sky">Rare</span></td><td>4 s d'incantation, puis retour au foyer de la guilde avec les membres proches</td></tr>
 						<tr><td>Gardiens</td><td><span class="pill gold">Légendaire</span></td><td>2 golems de fer vous escortent 60 s</td></tr>
 						<tr><td>Bénédiction</td><td><span class="pill sky">Rare</span></td><td>Soin de 8 ❤ et régénération pour vous, vos membres et vos villageois</td></tr>
 						<tr><td>Révélation</td><td><span class="pill sky">Rare</span></td><td>Les monstres à 64 blocs brillent 30 s, même à travers les murs</td></tr>
-						<tr><td>Séisme</td><td><span class="pill void">Épique</span></td><td>3 ondes de choc, monstres projetés en l'air</td></tr>
-						<tr><td>Rayon arcanique</td><td><span class="pill gold">Légendaire</span></td><td>Rayon de 32 blocs pendant 3 s qui suit votre visée</td></tr>
+						<tr><td>Séisme</td><td><span class="pill void">Épique</span></td><td>3 ondes de choc de 8 ❤, monstres projetés en l'air</td></tr>
+						<tr><td>Rayon arcanique</td><td><span class="pill gold">Légendaire</span></td><td>Rayon de 32 blocs pendant 3 s qui suit votre visée, 4 ❤ par contact</td></tr>
 					</tbody>
 				</table></div>
+				<div class="note good"><p><strong>Magie contre armure :</strong> les sorts ignorent l'armure des monstres, même celle des gardiens en netherite. Une Pluie de météores sur un gardien : ses sbires tombent d'abord, puis les météores le poursuivent lui. Gardez-la pour le gros combat !</p></div>
 				<p>Les sorts ne touchent que les monstres : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est modifié. On trouve les parchemins surtout sur les <a href="#ruines">boss des ruines</a>, plus rarement sur les boss des hordes (bien plus pendant une nuit de sang), en récompense de quête ou de contrat légendaire, au retour des expéditions, chez le marchand du Carrefour commercial, et votre <a href="#artisans">alchimiste</a> en écrit parfois (surtout des Rappels).</p>
 							<h3 id="grimoire">Le grimoire</h3>
 				<p>Un livre ancien qui <strong>relie jusqu'à 4 parchemins</strong> et relance leurs sorts sans les consommer.</p>
@@ -862,7 +866,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="ruines">
 				<div class="eyebrow">Aventure</div>
 				<h2>Ruines et boss</h2>
-				<p>Des ruines oubliées parsèment l'<strong>Overworld</strong> et le <strong>Nether</strong>, chacune gardée par un boss. Entrer ne suffit pas : lisez un <strong>parchemin d'incantation</strong> à moins de 16 blocs de l'endroit où il dort. Cercle runique au sol, filets de sang qui s'échappent de tous les joueurs présents au rythme d'un cœur qui s'emballe, colonne d'énergie, sol qui tremble… puis le gardien et son escorte surgissent dans un éclair (ondes de choc, anneaux de feu ou de givre, téléportations, salves, vol de vie, rage quand il faiblit). <strong>Prix du sang</strong> : chaque joueur présent perd 2 ❤ (jamais en dessous de 2 ❤). Si tout le monde s'en va, le rituel se brise et le parchemin est rendu. Vaincu, il laisse de l'or, des trésors, souvent un <a href="#parchemins">parchemin</a>, parfois une <a href="#uniques">arme unique</a>, et rapporte de l'XP aux guildes des joueurs qui ont combattu. Il revient 7 jours de jeu plus tard. Si tout le monde s'éloigne, il se rendort avec toute sa vie.</p>
+				<p>Des ruines oubliées parsèment l'<strong>Overworld</strong> et le <strong>Nether</strong>, chacune gardée par un boss. Entrer ne suffit pas : lisez un <strong>parchemin d'incantation</strong> à moins de 16 blocs de l'endroit où il dort. Cercle runique au sol, filets de sang qui s'échappent de tous les joueurs présents au rythme d'un cœur qui s'emballe, colonne d'énergie, sol qui tremble… puis le gardien et son escorte surgissent dans un éclair (ondes de choc, anneaux de feu ou de givre, téléportations, salves, vol de vie, rage quand il faiblit). <strong>Prix du sang</strong> : chaque joueur présent perd 2 ❤ (jamais en dessous de 2 ❤). Si tout le monde s'en va, le rituel se brise et le parchemin est rendu. Vaincu, il laisse de l'or (15 à 25 lingots en palier 1, jusqu'à 60 à 90 pour le Jaguar céleste, +1 par sbire tué), des trésors, souvent un <a href="#parchemins">parchemin</a>, parfois une <a href="#uniques">arme unique</a>, et rapporte de l'XP aux guildes des joueurs qui ont combattu. Il revient 7 jours de jeu plus tard. Si tout le monde s'éloigne, il se rendort avec toute sa vie.</p>
 				<div class="table-wrap"><table>
 					<thead><tr><th>Ruine</th><th>Où</th><th class="num">Palier</th><th>Gardien</th></tr></thead>
 					<tbody>
@@ -886,7 +890,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>À plusieurs</h3><p>Le gardien compte les joueurs présents : +50 % de vie et +15 % de dégâts par joueur en plus (barre « — N joueurs »), mais +50 % d'or et d'XP par joueur, et chacun reçoit sa part d'or.</p></div>
 					<div class="card"><h3>Sanctuaires</h3><p>Les balises des ruines et leur pyramide sont indestructibles.</p></div>
 				</div>
-				<div class="note"><p><strong>Bilan du combat :</strong> après chaque boss de ruine, chacun reçoit le bilan : qui a le plus frappé le gardien, les sentinelles et les sbires, qui a le mieux soigné l'équipe (Bénédiction, potions jetées), qui a encaissé le plus, qui a porté le coup fatal. Survolez un nom pour ses statistiques, cliquez [Voir le détail] ou tapez <button class="cmd" type="button">/guild bilan</button> pour le revoir.</p></div>
+				<div class="note"><p><strong>Bilan du combat :</strong> après chaque boss de ruine, chacun reçoit le bilan : qui a le plus frappé le gardien, les sentinelles et les sbires, qui a le mieux soigné l'équipe (Bénédiction, potions jetées), qui a encaissé le plus, qui a grillé le plus de totems d'immortalité (<em>Increvable</em> — et oui, le meilleur dégât affiche « avec 40 totems » s'il en a fallu autant), qui a porté le coup fatal. Survolez un nom pour ses statistiques, cliquez [Voir le détail] ou tapez <button class="cmd" type="button">/guild bilan</button> pour le revoir.</p></div>
 				<h3 id="maudit">Le parchemin d'incantation maudit</h3>
 				<p>Un rituel maudit de 10 s (3 ❤ par joueur) fait surgir le gardien <strong>Maudit</strong> : vie ×3, dégâts ×2, barre violette, et <strong>trois phases</strong>. À 66 % puis 33 % de vie, il s'élève, un pentagramme géant s'embrase, des chaînes d'âmes vous lient, puis il revient plus fort. Phase II : pentagrammes au sol qui boivent votre vie (sortez-en !), chaînes d'âmes, météores noirs. Phase III : ténèbres, cages de foudre, nova de sang, ombres, aura maudite. Abattu, il se relève toujours une dernière fois, enragé : sa <strong>forme finale</strong>. Chaque attaque est annoncée par un cercle rouge.</p>
 				<p class="hint">Victoire : or et XP ×3, jusqu'à 2 armes uniques, un parchemin garanti, 35 % de grimoire, menace +2. On le trouve chez le marchand du Carrefour (palier III, 250 or, parfois), sur les gardiens Enragés (15 %) et dans les contrats légendaires (10 %).</p>
@@ -932,12 +936,17 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="niveaux">
 				<div class="eyebrow">Progression</div>
 				<h2>Niveaux de guilde</h2>
-				<p>La guilde gagne de l'XP avec les hordes gagnées et les quêtes. Chaque niveau donne 6 chunks de plus et 1 place de villageois en plus, et débloque des quêtes, des articles de boutique et des évolutions.</p>
+				<p>La guilde gagne de l'XP avec les hordes gagnées, les quêtes et les gardiens des ruines, jusqu'au <strong>niveau 100</strong>. Jusqu'au niveau 10, chaque niveau donne 6 chunks de plus et 1 place de villageois en plus, et débloque des quêtes, des articles de boutique et des évolutions. Ensuite, la progression ralentit : chaque niveau coûte 140 XP de plus que le précédent.</p>
 				<div class="table-wrap"><table>
 					<thead><tr><th>Niveau</th><th class="num">2</th><th class="num">3</th><th class="num">4</th><th class="num">5</th><th class="num">6</th><th class="num">7</th><th class="num">8</th><th class="num">9</th><th class="num">10</th></tr></thead>
 					<tbody><tr><td>XP totale</td><td class="num">100</td><td class="num">250</td><td class="num">450</td><td class="num">700</td><td class="num">1 000</td><td class="num">1 400</td><td class="num">1 900</td><td class="num">2 500</td><td class="num">3 200</td></tr></tbody>
 				</table></div>
-				<p class="hint">À noter : le niveau 2 débloque le bureau d'accueil (villageois), le niveau 5 les dernières évolutions de chaque branche.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Niveau</th><th class="num">15</th><th class="num">20</th><th class="num">30</th><th class="num">50</th><th class="num">75</th><th class="num">100</th></tr></thead>
+					<tbody><tr><td>XP totale</td><td class="num">11 300</td><td class="num">22 900</td><td class="num">56 600</td><td class="num">166 000</td><td class="num">381 500</td><td class="num">684 500</td></tr></tbody>
+				</table></div>
+				<div class="note good"><p><strong>Après le niveau 10 :</strong> chaque niveau rapporte de l'or au trésor (21 or au niveau 11, puis +1 par niveau). Tous les 5 niveaux, un <strong>palier</strong> offre +100 or et un drapeau d'extension gratuit (menu Territoire, « Prendre un drapeau offert »), et tous les 10 niveaux une place de villageois. Votre <strong>rang</strong> (Bronze au niveau 10, Argent, Or, Platine, Diamant au 50, Émeraude, Légendaire au 100) s'affiche dans <button class="cmd" type="button">/guild info</button> et le menu principal, avec une barre de progression.</p></div>
+				<p class="hint">À noter : le niveau 2 débloque le bureau d'accueil (villageois), le niveau 5 les dernières évolutions de chaque branche. Après le niveau 10, les hordes, le cœur, le territoire et les gardes continuent de grandir, plus lentement.</p>
 			</section>
 
 			<!-- ================================================================ COMMANDS -->
@@ -961,7 +970,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td><button class="cmd" type="button">/guild version</button></td><td>Version de Guildy et de Minecraft</td></tr>
 						<tr><td><button class="cmd" type="button">/guild deposit</button> · <button class="cmd" type="button">/guild withdraw &lt;montant&gt;</button></td><td>Déposer tout son or au trésor, retirer (officier)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild banner</button> · <button class="cmd" type="button">/guild banner adopt</button></td><td>Menu bannière, adopter la bannière tenue en main</td></tr>
-						<tr><td><button class="cmd" type="button">/guild flag</button> · <button class="cmd" type="button">/guild flag buy</button></td><td>Drapeau fondateur, acheter un drapeau d'extension</td></tr>
+						<tr><td><button class="cmd" type="button">/guild flag</button> · <button class="cmd" type="button">/guild flag buy</button></td><td>Drapeau fondateur, acheter un drapeau d'extension (ou prendre un drapeau offert)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild claim</button> · <button class="cmd" type="button">/guild unclaim</button> · <button class="cmd" type="button">/guild show</button></td><td>Ajouter ou rendre le chunk actuel, voir les limites</td></tr>
 						<tr><td><button class="cmd" type="button">/guild sethome</button> · <button class="cmd" type="button">/guild home</button></td><td>Point de retour de la guilde</td></tr>
 						<tr><td><button class="cmd" type="button">/guild waves</button></td><td>Hordes : état, prochaine nuit, statistiques, règles</td></tr>
@@ -1012,7 +1021,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.9.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.10.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1022,6 +1031,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin info &lt;guilde&gt;</button> · <button class="cmd" type="button">/guild admin disband &lt;guilde&gt;</button></td><td>Voir ou dissoudre une guilde</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin forcejoin &lt;joueur&gt; &lt;guilde&gt;</button></td><td>Mettre un joueur dans une guilde</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin setlevel|addxp|addgold &lt;guilde&gt; &lt;valeur&gt;</button></td><td>Niveau, XP et trésor</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin levels</button></td><td>Courbe des niveaux (XP et rangs)</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin giveflag &lt;joueur&gt; extension [n]</button></td><td>Donner des drapeaux d'extension</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin tp &lt;guilde&gt;</button></td><td>Aller au cœur d'une guilde</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin wave start|stop|status &lt;guilde&gt;</button></td><td>Lancer une horde de test (même de jour), l'arrêter, son état</td></tr>
@@ -1073,7 +1083,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.9.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.10.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

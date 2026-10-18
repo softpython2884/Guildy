@@ -15,7 +15,8 @@ ou à héberger pour les joueurs.
 
 ## Fonctionnalités
 
-- **Guildes** : chef, officiers et membres, invitations, trésor en lingots d'or, point de retour.
+- **Guildes** : chef, officiers et membres, invitations, trésor en lingots d'or, point de retour, **niveaux jusqu'à
+  100** (réglable jusqu'à 500) avec rangs, paliers et récompenses.
 - **Territoire** : drapeau fondateur (le cœur de la base) et drapeaux d'extension par chunk, protections (explosions,
   feu, pistons, fluides), limites affichées en particules, bannière tissée au métier à tisser et visible sur les cartes.
 - **Hordes nocturnes** : 7 thèmes (morts-vivants, arachnides, illageois, Nether, End, boss, élites), difficulté
@@ -76,6 +77,35 @@ et [fabric-permissions-api](https://github.com/lucko/fabric-permissions-api) (co
 `/guild` (ou `/gld`) ouvre le **menu principal** : tout se fait depuis là, sans connaître les commandes.
 Sans guilde, le menu propose de **créer une guilde** (seul, c'est une guilde valide) ou d'accepter une invitation.
 À la création, vous recevez le **drapeau fondateur** (une bannière aux couleurs de la guilde).
+
+#### Niveaux de guilde : jusqu'au niveau 100
+La guilde gagne de l'XP en **repoussant les hordes**, en **terminant des quêtes** et en **abattant les gardiens des
+ruines**. Les 10 premiers niveaux vont vite ; ensuite chaque niveau demande un peu plus d'XP que le précédent
+(+140 XP à chaque niveau) : le niveau 20 se gagne en une à deux semaines de jeu régulier, le niveau 50 est un objectif
+de long terme et le niveau 100 (maximum par défaut, réglable jusqu'à 500) une affaire de plusieurs mois.
+
+| Niveau | 10 | 15 | 20 | 30 | 50 | 75 | 100 |
+|---|---|---|---|---|---|---|---|
+| XP totale | 3 200 | 11 300 | 22 900 | 56 600 | 166 000 | 381 500 | 684 500 |
+| XP pour ce niveau | 700 | 1 900 | 2 600 | 4 000 | 6 800 | 10 300 | 13 800 |
+
+- **À chaque niveau au-delà du 10** : de l'or versé au trésor (21 or au niveau 11, +1 par niveau, 120 au plus).
+- **Paliers** (niveaux 15, 20, 25, 30…) : **+100 or** et **un drapeau d'extension offert** (à prendre gratuitement dans
+  le menu Territoire, bouton « Prendre un drapeau offert », ou avec `/guild flag buy` ; il ne fait pas monter le prix des
+  drapeaux achetés). Tous les 10 niveaux (20, 30, 40…) : **+1 place de villageois** (10 au plus). Chaque palier est
+  annoncé à tout le serveur.
+- **Rangs** (dans `/guild info`, le menu principal et l'annonce de niveau) : Novice (1), **Bronze** (10), **Argent**
+  (20), **Or** (30), **Platine** (40), **Diamant** (50), **Émeraude** (75), **Légendaire** (100), puis Mythique (150),
+  Immortelle (250) et Divine (400) si le serveur monte plus haut.
+- `/guild info` et le menu principal affichent « Niveau N/max », le rang, une barre de progression et le prochain palier.
+
+**Ce qui continue de grandir après le niveau 10** (plus lentement, et avec un plafond, pour que le jeu reste équilibré) :
+territoire +1 chunk par niveau (66 au niveau 10, 156 au niveau 100, 256 au plus) ; cœur +5 points d'intégrité par
+niveau (420 au niveau 10, 870 au niveau 100, 1 020 au plus) ; hordes : +0,05 de difficulté par niveau (+4,5 au plus :
+la nuit et les membres présents comptent toujours, une défaite fait encore baisser la horde) ; gardes : +0,05 dégât par
+niveau et un meilleur équipement de base aux niveaux 20, 30 et 50 ; villageois : +0,5 PV par niveau ; quêtes :
+quantités et récompenses montent plus lentement (niveau de calcul 12 au niveau 20, 18 au niveau 50, 28 au niveau 100).
+Les déblocages (constructions, boutique, quêtes, carrefour, expéditions, forgeron, alchimiste…) restent aux niveaux 1 à 10.
 
 ### 2. Fonder la base
 **Plantez le drapeau fondateur** (clic droit sur un bloc) : il devient le **cœur** de la base et la guilde
@@ -184,7 +214,8 @@ les constructions et les bannières décoratives. Les niveaux de guilde débloqu
 Avec un **bureau d'accueil** et un **lit libre** dans le territoire, des villageois se présentent certains matins, parfois
 **plusieurs à la fois** (1 à 3, dans la limite des places et des lits libres) : **[Accepter] / [Refuser]** dans le chat
 pour chacun (ou dans le menu : clic gauche = accepter, clic droit = refuser ; `/guild villagers accept <nom>`).
-Nombre maximum : 2 + 1 par niveau de guilde.
+Nombre maximum : 2 + 1 par niveau de guilde jusqu'au niveau 10, puis +1 tous les 10 niveaux (paliers, 10 de plus au
+maximum).
 Menu « Villageois » (`/guild villagers`, ou accroupi + clic droit sur un villageois) : la liste montre la tâche, la zone,
 le statut et ce que chacun transporte ; le menu d'un villageois règle sa tâche, sa **zone de travail** et sa mission,
 permet de l'**appeler** à côté de soi (« Appeler ici », depuis le territoire ou une zone de la guilde, où que soit le
@@ -336,10 +367,13 @@ retire, « Vider » efface la liste. Les objectifs d'une zone s'ajoutent à ceux
 | 7-8 | diamant (Tranchant I au niv. 8) | arbalète Charge rapide, Perforation I | fer |
 | 9 | diamant Tranchant II | arbalète Charge rapide II, Perforation II | diamant |
 | 10 | netherite Tranchant II | arbalète Charge rapide III, Perforation II | diamant |
+| 20 | netherite Tranchant III | arbalète Charge rapide III, Perforation III | diamant |
+| 30 | netherite Tranchant IV | arbalète Charge rapide III, Perforation IV | netherite |
+| 50 | netherite Tranchant V | arbalète Charge rapide III, Perforation IV, Tir multiple | netherite |
 
 #### Vie, nuit et refuge
 - **Plus de vie avec le niveau** : chaque villageois de la guilde gagne +4 PV (2 cœurs) par niveau de guilde au-delà du
-  premier, les gardes encore plus (×1,5 + 10 PV) ; hors combat, ils se soignent lentement. La vie s'affiche dans le menu.
+  premier jusqu'au niveau 10, puis +0,5 PV par niveau, les gardes encore plus (×1,5 + 10 PV) ; hors combat, ils se soignent lentement. La vie s'affiche dans le menu.
 - **Retour avant la nuit** : en fin de journée (heure 11000), les travailleurs posent leurs outils et rentrent **en
   courant** à leur lit (sans lit : un lit libre du territoire, sinon le bureau d'accueil ou le cœur). À la tombée de la
   nuit, ou dès qu'une horde arrive, un travailleur encore dehors est **mis à l'abri** près de son lit (téléporté).
@@ -703,22 +737,24 @@ part dans un grand spectacle de particules visible de loin. Le parchemin n'est c
 monstre à portée, incantation interrompue ou recharge en cours : il reste intact ; jamais consommé en créatif).
 Chaque parchemin a une **recharge partagée** avec son groupe (Attaque, Soutien, Rappel, Invocation).
 Les sorts ne touchent que les **monstres** : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est
-modifié. Les bienfaits vont au lanceur, aux membres de sa guilde et à ses villageois.
+modifié. Les bienfaits vont au lanceur, aux membres de sa guilde et à ses villageois. Les dégâts des sorts **ignorent
+l'armure** (comme la magie des potions vanilla) : un gardien en netherite les prend en plein (la Résistance de sa rage
+les réduit encore). Les deux tiers des météores d'une Pluie **suivent un monstre** de la zone pendant leur chute.
 
 | Parchemin | Rareté | Effet (réglages par défaut, `scrolls.json5`) |
 |---|---|---|
-| **Pluie de météores** | Légendaire | 10 météores autour du point visé, 6 ❤ par impact, monstres embrasés |
-| **Tempête de foudre** | Épique | foudre en chaîne sur 8 monstres, 7 ❤ chacun, étourdis 2 s |
-| **Blizzard** | Épique | tempête de 8 s sur 7 blocs : Lenteur IV, gel, 2 ❤ de froid par seconde |
-| **Nova solaire** | Légendaire | sphère de feu jusqu'à 10 blocs : 10 ❤ (×1,5 sur les morts-vivants), monstres repoussés |
-| **Singularité** | Mythique | trou noir de 3 s qui aspire tout à 10 blocs, puis implose (13 ❤) |
-| **Égide** | Épique | dôme de 6 blocs pendant 12 s : Absorption III et Résistance II aux alliés, monstres et projectiles repoussés |
+| **Pluie de météores** | Légendaire | 10 météores autour du point visé (7 suivent un monstre : l'escorte d'abord, puis le gardien), **14 ❤** par impact, monstres embrasés |
+| **Tempête de foudre** | Épique | foudre en chaîne sur 8 monstres, **12 ❤** chacun, étourdis 2 s |
+| **Blizzard** | Épique | tempête de 8 s sur 7 blocs : Lenteur IV, gel, **3,5 ❤** de froid par seconde |
+| **Nova solaire** | Légendaire | sphère de feu jusqu'à 10 blocs : **17 ❤** (×1,5 sur les morts-vivants), monstres repoussés |
+| **Singularité** | Mythique | trou noir de 3 s qui aspire tout à 10 blocs, puis implose (**24 ❤**) |
+| **Égide** | Épique | dôme de 6 blocs pendant 12 s : Absorption III et Résistance II aux alliés, monstres et projectiles repoussés, 2 ❤ par seconde aux monstres du dôme |
 | **Rappel** | Rare | 4 s d'incantation, puis retour au foyer de la guilde (ou au cœur) avec les membres à 6 blocs |
 | **Gardiens** | Légendaire | 2 golems de fer vous escortent 60 s |
 | **Bénédiction** | Rare | soin de 8 ❤, Régénération II, effets néfastes retirés (vous, vos membres, vos villageois) |
 | **Révélation** | Rare | les monstres à 64 blocs brillent 30 s (visibles à travers les murs) |
-| **Séisme** | Épique | 3 ondes de choc jusqu'à 10 blocs, 5 ❤ chacune, monstres projetés en l'air |
-| **Rayon arcanique** | Légendaire | rayon de 32 blocs pendant 3 s qui suit votre visée |
+| **Séisme** | Épique | 3 ondes de choc jusqu'à 10 blocs, **8 ❤** chacune, monstres projetés en l'air |
+| **Rayon arcanique** | Légendaire | rayon de 32 blocs pendant 3 s qui suit votre visée, **4 ❤** par contact, cinq fois par seconde |
 
 **Où les trouver** : surtout sur les **boss des ruines** (60 %, 75 % dans le Nether, 1 ou 2 parchemins), plus rarement sur
 les boss des hordes (8 %, 30 % pendant une nuit de sang), en récompense de quête (5 %) ou de contrat légendaire (50 %), au
@@ -768,7 +804,9 @@ joueur présent perd 2 ❤ pendant le rituel (jamais en dessous de 2 ❤). Si to
 déconnecte, le rituel se brise et le parchemin est rendu. Le parchemin ne fonctionne que dans une ruine dormante (ni dans
 une ruine vaincue, ni si le gardien est déjà éveillé). **Parchemins d'incantation** : un avec chaque carte ou boussole de
 l'Atelier du cartographe, dans les coffres des ruines (6 à 30 % selon le coffre), et parfois chez le marchand du
-Carrefour commercial (palier II, 24 or). Vaincu, il laisse de l'or, des trésors, souvent
+Carrefour commercial (palier II, 24 or). Vaincu, il laisse **de l'or** (de 15 à 25 lingots pour une ruine de palier
+1 jusqu'à 60 à 90 pour le Jaguar céleste, plus **1 lingot par sbire de l'escorte tué** pendant le combat, 12 au plus ;
+au-delà d'une pile, la part de chacun tombe en blocs d'or), des trésors, souvent
 un **parchemin de sort**, parfois une **arme unique**, et rapporte de l'XP aux guildes des joueurs qui ont combattu ;
 tout le serveur l'apprend. Le gardien revient **7 jours de jeu** plus tard. Si tout le monde s'éloigne, le combat
 s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines ont leur propre butin, et chaque pot en cache un objet (rarement un parchemin de Rappel).
@@ -793,14 +831,21 @@ reste dans la salle fait apparaître le cercle… qui se fissure et vole en écl
 l'entité… »), le parchemin est conservé. Tuées, elles ne reviennent pas tant que vous restez dans les parages ; si tout le
 monde s'éloigne une minute, les survivantes repartent et d'autres vous attendront au prochain passage.
 
+**Or des gardiens** (lingots, avant les bonus de menace +15 % par niveau, de groupe +50 % par joueur en plus, de
+résurrection +50 % et de malédiction ×3) : Crypte oubliée 15-25 ; Tour du Mage déchu et Ziggourat des sables 20-32 ;
+Bastion de givre et Temple du Serpent à plumes 28-42 ; Autel infernal 36-56 ; Citadelle des âmes 50-75 ; Grand Temple du
+Jaguar céleste 60-90. Les sentinelles ne donnent pas d'or (elles reviennent quand tout le monde s'est éloigné).
+
 **Bilan du combat** : à la fin d'un combat de ruine, chaque participant reçoit son bilan dans le chat : durée, ruine,
-menace, gardien maudit ou ressuscité, puis les titres du combat — *Fléau du gardien* (dégâts au gardien), *Briseur de
-gardes* (sentinelles), *Chasseur de sbires* (escorte), *Ange gardien* (soins donnés aux autres), *Protecteur* (absorption
-donnée), *Rempart* (dégâts encaissés), *Coup fatal* — et sa propre ligne. Survolez un nom pour voir tous ses chiffres ;
-**[Voir le détail]** ouvre une tête par joueur. Tout compte dès l'apparition des sentinelles ; flèches, sorts, armes
-uniques, animaux et golems invoqués comptent pour leur propriétaire ; le surplus de soin ne compte pas (soins comptés :
-sorts Guildy, potions jetées de soin, de régénération ou d'absorption). `/guild bilan` (ou `/guild bilan detail`)
-rouvre le dernier bilan pendant 30 min. En cas d'échec : bilan court.
+menace, gardien maudit ou ressuscité, totems d'immortalité utilisés par l'équipe, puis les titres du combat — *Fléau du
+gardien* (dégâts au gardien, « avec N totems » s'il en a fallu), *Briseur de gardes* (sentinelles), *Chasseur de sbires*
+(escorte), *Ange gardien* (soins donnés aux autres), *Protecteur* (absorption donnée), *Rempart* (dégâts encaissés),
+*Increvable* (le plus de totems d'immortalité consommés), *Coup fatal* — et sa propre ligne. Survolez un nom pour voir
+tous ses chiffres ; **[Voir le détail]** ouvre une tête par joueur. Tout compte dès l'apparition des sentinelles ;
+flèches, sorts, armes uniques, animaux et golems invoqués comptent pour leur propriétaire ; le surplus de soin ne compte
+pas (soins comptés : sorts Guildy, potions jetées de soin, de régénération ou d'absorption) ; un totem compte quand il
+vous sauve dans l'arène (main ou seconde main). `/guild bilan` (ou `/guild bilan detail`) rouvre le dernier bilan
+pendant 30 min. En cas d'échec : bilan court (le premier titre, *Increvable* et les totems).
 
 **Plus on est, plus il est fort** : à son apparition, le gardien compte les joueurs en survie présents (8 au plus). Par
 joueur au-delà du premier, il gagne +50 % de vie, +15 % de dégâts et des sbires en plus ; la barre de boss l'affiche
@@ -898,7 +943,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild version` | Version de Guildy et de Minecraft (aussi depuis la console) |
 | `/guild deposit [all\|montant]` · `withdraw <montant>` | Trésor |
 | `/guild banner` · `banner adopt` | Menu Bannière / adopter la bannière tenue en main |
-| `/guild flag` · `flag buy` | Récupérer le drapeau fondateur / acheter un drapeau d'extension |
+| `/guild flag` · `flag buy` | Récupérer le drapeau fondateur / acheter un drapeau d'extension (prend d'abord un drapeau offert par un palier de niveau) |
 | `/guild claim` · `unclaim` · `show` | Territoire |
 | `/guild sethome` · `home` | Point de retour de la guilde |
 | `/guild waves` | Hordes : état, prochaine nuit, statistiques, règles |
@@ -921,7 +966,8 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin reload` · `save` | Recharger toute la config / sauvegarder les données |
 | `/guild admin bypass` | Ignorer les protections de territoire |
 | `/guild admin info\|disband <guilde>` · `forcejoin <joueur> <guilde>` | Gestion des guildes |
-| `/guild admin setlevel\|addxp\|addgold <guilde> <valeur>` | Progression et trésor |
+| `/guild admin setlevel\|addxp\|addgold <guilde> <valeur>` | Progression et trésor (`setlevel` jusqu'au niveau max, sans récompenses ; `addxp` donne les récompenses des niveaux gagnés) |
+| `/guild admin levels` | Courbe des niveaux : XP totale, XP du niveau et rang aux niveaux clés |
 | `/guild admin giveflag <joueur> extension [n]` · `giveflag <joueur> founding <guilde>` · `tp <guilde>` | Drapeaux, téléport au cœur |
 | `/guild admin wave start\|stop\|status <guilde>` · `wave setnight <guilde> <n>` · `wave truce <guilde> <nuits>` · `wave schedule <guilde> <nuits>` | Hordes (start = horde de test immédiate ; truce = nuits de trêve restantes, 0 = fin ; schedule = prochaine horde dans N nuits, 0 = cette nuit) |
 | `/guild admin structure unlock <guilde> <id>` · `structure check <guilde>` | Constructions |
@@ -953,10 +999,11 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 
 | Fichier | Contenu |
 |---|---|
-| `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, seuils d'XP des niveaux, bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles |
-| `waves.json5` | Horaires, jours entre deux hordes (1 à 3), formule de difficulté, taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, trêve après plusieurs défaites, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
+| `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, niveaux (`levels` : niveau max, seuils et formule d'XP, récompenses, paliers, rangs ; chunks au-delà du
+niveau 10), bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles |
+| `waves.json5` | Horaires, jours entre deux hordes (1 à 3), formule de difficulté (et part du niveau au-delà de 10 : `perLevelAbove10`, `maxAbove10`), taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, trêve après plusieurs défaites, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
-| `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
+| `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), niveau de calcul au-delà de 10 (`levelScalingAbove10`, `maxScalingLevel`), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite, forgeron (`blacksmith`) et alchimiste (`alchemist`), travaux des champs
 (`farmer.fieldWork`, `farmer.irrigation`), re-rangement (`sorter.tidy`, portée, réservations), rangement par colonnes (`storage.defaultChestLayout`), coffres filtrés et
@@ -1066,6 +1113,15 @@ Formules par défaut (modifiables) :
 - Le double saut des Bottes de Zéphyr repose sur l'autorisation de vol vanilla (rendue à l'atterrissage) : un anticheat
   externe pourrait le signaler. Une arme unique déjà obtenue garde le nom, la description et les enchantements de sa
   création (son pouvoir et son modèle suivent la config).
+
+- Niveaux : les formules adoucies commencent au niveau 10 (constante) ; `/guild admin setlevel` ne donne pas les
+  récompenses de niveau ; un niveau baissé puis regagné ne repaie rien ; baisser `levels.maxLevel` sous le niveau d'une
+  guilde ne la fait pas redescendre. Les gardes reçoivent les paliers d'équipement 20 / 30 / 50 seulement si la table
+  `guardGear.levels` d'un ancien villagers.json5 était restée celle par défaut.
+- Les sorts ignorent l'armure de tous les monstres, pas seulement des gardiens ; une Pluie de météores au grimoire maudit
+  peut retirer ~800 PV à un gardien seul (réglable : `params.damage`, `cursedGrimoire.powerMultiplier`). Un tiers des
+  météores tombe toujours au hasard ; sur un monstre volant, le météore qui le suit explose en l'air.
+- Bilan du combat : un totem ne compte que dans l'arène d'un combat de ruine en cours (pas pendant les hordes).
 
 ---
 
