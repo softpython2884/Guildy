@@ -104,6 +104,8 @@ final class CommandLang {
 		m.put("guild.list.next", "&e[Suivante »]");
 		m.put("guild.list.page.hover", "&7Changer de page");
 
+		m.put("guild.version", "&6Guildy &e{0} &7(Minecraft {1})");
+
 		// help
 		m.put("guild.help.header", "&6&l━━━━━ &e&lGuildy : comment jouer &6&l━━━━━");
 		m.put("guild.help.lines", "&e1. &fCréez une guilde, ou rejoignez-en une sur invitation.\n"

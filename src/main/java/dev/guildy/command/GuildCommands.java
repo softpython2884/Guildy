@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import dev.guildy.Guildy;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
 import dev.guildy.core.Safe;
@@ -12,6 +13,8 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildRole;
 import dev.guildy.gui.GuildMenus;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -81,6 +84,13 @@ public final class GuildCommands {
 			GuildChat.help(player);
 			return true;
 		})));
+		// Works from the console too: the version of the mod and of the game.
+		root.then(Commands.literal("version").executes(ctx -> {
+			String version = FabricLoader.getInstance().getModContainer(Guildy.MOD_ID)
+					.map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("?");
+			ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("guild.version", version, SharedConstants.getCurrentVersion().name())), false);
+			return 1;
+		}));
 
 		root.then(Commands.literal("create")
 				.then(Commands.argument("name", StringArgumentType.greedyString())
