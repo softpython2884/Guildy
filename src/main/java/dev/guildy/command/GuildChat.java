@@ -7,6 +7,8 @@ import dev.guildy.core.Msg;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildRole;
+import dev.guildy.level.LevelRewardRules;
+import dev.guildy.level.LevelUps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
@@ -48,7 +50,7 @@ public final class GuildChat {
 	 */
 	public static void info(Consumer<Component> out, Guild guild, boolean full) {
 		out.accept(Lang.get("guild.info.header", guild.name));
-		out.accept(Lang.get("guild.info.level", guild.level, xpText(guild)));
+		levelLines(out, guild, full);
 		UUID leader = guild.leaderId();
 		if (leader != null) {
 			out.accept(Lang.get("guild.info.leader", GuildActions.memberName(guild, leader)));
@@ -68,6 +70,32 @@ public final class GuildChat {
 		out.accept(Lang.get("guild.info.waves", guild.waves.night, guild.waves.victories, guild.waves.defeats));
 		if (guild.createdAt > 0) {
 			out.accept(Lang.get("guild.info.created", DATE.format(Instant.ofEpochMilli(guild.createdAt))));
+		}
+	}
+
+	/** Level N / max with the XP, rank, progress bar inside the level, next milestone and (members) free flags. */
+	private static void levelLines(Consumer<Component> out, Guild guild, boolean full) {
+		GuildyConfig config = GuildyServer.config();
+		int max = config.maxLevel();
+		out.accept(Lang.get("guild.info.level_of", guild.level, max, xpText(guild)));
+		String rank = LevelUps.rankName(guild.level);
+		if (rank != null) {
+			out.accept(Lang.get("guild.info.rank", rank));
+		}
+		if (guild.level < max) {
+			long[] progress = GuildRules.levelProgress(guild.xp, config.xpForLevel(guild.level), config.xpForLevel(guild.level + 1), false);
+			out.accept(Lang.get("guild.info.bar", GuildRules.progressBar(progress[0], progress[1], 20, "&a", "&8", '|'),
+					GuildRules.percent(progress[0], progress[1]), progress[0], progress[1]));
+			if (config.levels.rewards.enabled) {
+				int next = LevelRewardRules.nextMilestone(config.levels.rewards, guild.level, max);
+				if (next > 0) {
+					String preview = LevelUps.milestonePreview(config, next);
+					out.accept(Lang.get("guild.info.milestone", next, preview.isEmpty() ? "-" : preview));
+				}
+			}
+		}
+		if (full && guild.freeFlags > 0) {
+			out.accept(Lang.get("guild.info.free_flags", guild.freeFlags));
 		}
 	}
 

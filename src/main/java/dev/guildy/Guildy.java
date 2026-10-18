@@ -15,6 +15,7 @@ import dev.guildy.core.Scheduler;
 import dev.guildy.data.GuildManager;
 import dev.guildy.event.EventModule;
 import dev.guildy.gui.GuildMenus;
+import dev.guildy.level.LevelLang;
 import dev.guildy.quest.QuestModule;
 import dev.guildy.scroll.ScrollModule;
 import dev.guildy.ruin.RuinModule;
@@ -46,6 +47,7 @@ public final class Guildy implements ModInitializer {
 		ConfigHandle<GuildyConfig> config = ConfigManager.register("config.json5", GuildyConfig.class, GuildyConfig::new);
 		GuildyServer.setConfigHandle(config);
 		CoreLang.register();
+		LevelLang.register();
 
 		// Feature modules register their configs, lang defaults, events, commands and hooks here.
 		ClaimModule.init();

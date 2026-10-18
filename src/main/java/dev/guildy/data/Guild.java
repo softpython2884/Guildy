@@ -49,6 +49,10 @@ public final class Guild {
 
 	public BannerDesign banner = new BannerDesign();
 	public int extensionFlagsBought;
+	/** Highest level whose one-shot level rewards were granted (see {@code LevelRewardRules.between}). */
+	public int rewardedLevel;
+	/** Free extension flags earned with level milestones, taken from the territory menu (or /guild flag buy). */
+	public int freeFlags;
 
 	public GuildWaveData waves = new GuildWaveData();
 	public GuildStructureData structures = new GuildStructureData();
@@ -221,6 +225,9 @@ public final class Guild {
 		}
 		if (treasury < 0) {
 			treasury = 0;
+		}
+		if (freeFlags < 0) {
+			freeFlags = 0;
 		}
 	}
 }

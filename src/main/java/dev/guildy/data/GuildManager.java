@@ -3,13 +3,11 @@ package dev.guildy.data;
 import dev.guildy.Guildy;
 import dev.guildy.config.GuildyConfig;
 import dev.guildy.core.GuildyServer;
-import dev.guildy.core.Lang;
-import dev.guildy.core.Msg;
+import dev.guildy.level.LevelUps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
@@ -199,19 +197,23 @@ public final class GuildManager {
 
 	// ================================================================ progression & treasury
 
-	/** Adds guild XP, handles level-ups (announced to online members). */
+	/**
+	 * Adds guild XP and handles level-ups: one announcement for all the levels gained, level rewards, then
+	 * {@link GuildEvents#LEVEL_UP} once per level (see {@link LevelUps}).
+	 */
 	public static void addXp(Guild guild, long amount) {
 		if (amount <= 0) {
 			return;
 		}
 		GuildyConfig config = GuildyServer.config();
-		guild.xp += amount;
-		while (guild.level < config.maxLevel() && guild.xp >= config.xpForLevel(guild.level + 1)) {
+		guild.xp = guild.xp > Long.MAX_VALUE - amount ? Long.MAX_VALUE : guild.xp + amount;
+		int before = guild.level;
+		int max = config.maxLevel();
+		while (guild.level < max && guild.xp >= config.xpForLevel(guild.level + 1)) {
 			guild.level++;
-			Msg.guild(guild, "guild.levelup", guild.level);
-			Msg.guildTitle(guild, Lang.get("guild.levelup.title"), Lang.get("guild.levelup.subtitle", guild.level));
-			Msg.guildSound(guild, SoundEvents.PLAYER_LEVELUP, 1.0f, 1.0f);
-			GuildEvents.fire2(GuildEvents.LEVEL_UP, guild, guild.level);
+		}
+		if (guild.level > before) {
+			LevelUps.levelsGained(guild, before, guild.level);
 		}
 		markDirty();
 	}
