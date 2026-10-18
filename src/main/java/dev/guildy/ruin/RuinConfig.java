@@ -26,11 +26,17 @@ import java.util.function.Predicate;
 		"des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.",
 		"Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou",
 		"boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>",
-		"| incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle)."
+		"| incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle).",
+		"Les parchemins d'incantation se donnent aussi avec /guild admin scroll give <joueur> incantation|incantation_maudit [nombre]."
 })
 public final class RuinConfig implements Validatable {
-	public static final int CURRENT_VERSION = 1;
-	public static final Set<String> ABILITIES = Set.of("summon", "ground_slam", "fire_ring", "blink", "volley", "life_drain", "enrage");
+	/**
+	 * 2 = Guildy 1.8.2: themed escorts and room guards (no raiders in the Mayan temples), the celestial jaguar becomes a giant
+	 * ocelot (a black cat when cursed); entries still on the 1.8 defaults are migrated by {@link RuinMigration}.
+	 */
+	public static final int CURRENT_VERSION = 2;
+	public static final Set<String> ABILITIES = Set.of("summon", "ground_slam", "fire_ring", "blink", "volley", "life_drain", "enrage", "pounce",
+			"claw_sweep", "stalk", "roar", "spirit_jaguars");
 	public static final Set<String> STYLES = Set.of("", "fire", "soul", "frost", "sand", "arrow", "spectral", "fireball", "jade", "wind",
 			"solar", "gold");
 	public static final Set<String> BAR_COLORS = Set.of("PINK", "BLUE", "RED", "GREEN", "YELLOW", "PURPLE", "WHITE");
@@ -38,6 +44,8 @@ public final class RuinConfig implements Validatable {
 	/** Base item of the incantation scroll (a banner pattern: no crafting recipe, never bought by villagers). */
 	public static final String DEFAULT_INCANTATION_ITEM = "minecraft:skull_banner_pattern";
 	private static final String FALLBACK_ENTITY = "minecraft:zombie";
+	/** Largest guardian scale (vanilla caps the attribute at 16; a giant ocelot needs about 5). */
+	public static final double MAX_SCALE = 8.0;
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int configVersion = 0;
@@ -106,8 +114,10 @@ public final class RuinConfig implements Validatable {
 			"mapDecoration (icone de la carte, vide = celle de 'cartography'), fastKillSeconds (resurrection : -1 = formule de",
 			"'resurrection', 0 = ce gardien ne ressuscite jamais, sinon la fenetre en secondes).",
 			"boss : entity, name (codes couleur &), health, damage, armor, armorToughness, speed (0 = vitesse vanilla),",
-			"knockbackResistance (0 a 1), scale (taille, 1 = normale), followRange, equipment {emplacement: objet} (mainhand,",
-			"offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents).",
+			"knockbackResistance (0 a 1), scale (taille, 1 = normale, 8 au plus), followRange, equipment {emplacement: objet} (mainhand,",
+			"offhand, head, chest, legs, feet), effects [{effect, amplifier}] (permanents), variant (variante vanilla d'un chat,",
+			"ex. minecraft:all_black ; vide = celle du jeu), cursedForm {entity, variant, name} (forme maudite : autre entite,",
+			"variante et nom ; vide = le meme gardien). Un ocelot ou un chat devient un fauve hostile qui chasse les joueurs.",
 			"minions (escorte) : types {entite: poids}, base + perExtraPlayer par joueur present au-dela du premier, max ;",
 			"maxAlive (plafond avec les invocations), healthMultiplier, damageMultiplier, equipment, effects.",
 			"abilities [{type, cooldownSeconds, damage, radius, count, style, healthBelow (0 a 1 : seulement sous ce ratio de vie),",
@@ -115,6 +125,11 @@ public final class RuinConfig implements Validatable {
 			"style fire, soul, frost ou jade = poison et souffle), blink (se teleporte derriere un joueur et frappe ; style wind =",
 			"bourrasque), volley (salve : style arrow, spectral, fireball ou wind = lames de vent), life_drain (draine la vie des",
 			"joueurs proches), enrage (une fois sous healthBelow : Force + Vitesse de niveau amplifier, recharges reduites de moitie).",
+			"Capacites de fauve : pounce (bond sur un joueur, onde de choc de rayon radius a l'atterrissage), claw_sweep (coup de",
+			"griffes en arc devant lui, portee radius, count griffures), stalk (invisible et rapide, trahi par ses empreintes, puis",
+			"embuscade : degats damage a moins de radius blocs), roar (rugissement en cone de longueur radius : Lenteur de niveau",
+			"amplifier et Faiblesse), spirit_jaguars (count esprits jaguars temporaires, morsure damage, a moins de radius blocs) ;",
+			"styles gold (Lenteur), jade (Poison), solar (brule) ; violet et noir sous la forme maudite.",
 			"rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +",
 			"lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource",
 			"(vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).",
@@ -132,6 +147,8 @@ public final class RuinConfig implements Validatable {
 
 	/** Generic guardians built on demand (cleared by {@link #rebuild}). */
 	private transient Map<String, RuinDef> genericCache = new LinkedHashMap<>();
+	/** Values migrated by the last {@link #rebuild} ("ruin.field", logged once). */
+	private transient List<String> migrations = new ArrayList<>();
 
 	// ================================================================== sections
 
@@ -388,6 +405,30 @@ public final class RuinConfig implements Validatable {
 			com.google.gson.Gson gson = new com.google.gson.Gson();
 			return gson.fromJson(gson.toJson(this), RuinDef.class);
 		}
+
+		/**
+		 * The definition of the cursed guardian: this one when {@code boss.cursedForm} is empty, else a copy whose guardian
+		 * takes the entity, variant and name of its cursed form (an entity of its own drops the normal variant).
+		 */
+		public RuinDef cursedForm() {
+			CursedFormDef form = boss == null ? null : boss.cursedForm;
+			if (form == null || form.isEmpty()) {
+				return this;
+			}
+			RuinDef copy = copy();
+			if (form.entity != null && !form.entity.isBlank()) {
+				copy.boss.entity = form.entity;
+				copy.boss.variant = "";
+			}
+			if (form.variant != null && !form.variant.isBlank()) {
+				copy.boss.variant = form.variant;
+			}
+			if (form.name != null && !form.name.isBlank()) {
+				copy.boss.name = form.name;
+			}
+			copy.boss.cursedForm = new CursedFormDef();
+			return copy;
+		}
 	}
 
 	public static final class BossDef {
@@ -403,8 +444,33 @@ public final class RuinConfig implements Validatable {
 		public double followRange = 32;
 		public Map<String, String> equipment = new LinkedHashMap<>();
 		public List<EffectDef> effects = new ArrayList<>();
+		/** Vanilla variant (cats: minecraft:all_black...), "" = the game's choice. */
+		public String variant = "";
+		/** The cursed form of this guardian (empty fields = the same guardian). */
+		public CursedFormDef cursedForm = new CursedFormDef();
 
 		public BossDef() {
+		}
+	}
+
+	/** Another entity, variant and name for the cursed guardian ("" = those of the normal one). */
+	public static final class CursedFormDef {
+		public String entity = "";
+		public String variant = "";
+		public String name = "";
+
+		public CursedFormDef() {
+		}
+
+		public CursedFormDef(String entity, String variant, String name) {
+			this.entity = entity;
+			this.variant = variant;
+			this.name = name;
+		}
+
+		/** Nothing set: the cursed guardian is the normal one. */
+		public boolean isEmpty() {
+			return (entity == null || entity.isBlank()) && (variant == null || variant.isBlank()) && (name == null || name.isBlank());
 		}
 	}
 
@@ -545,13 +611,23 @@ public final class RuinConfig implements Validatable {
 		for (String warning : rebuild(RuinRegistries::entityExists, RuinRegistries::itemExists, RuinRegistries::effectExists)) {
 			Guildy.LOGGER.warn("[ruins.json5] {}", warning);
 		}
+		if (!migrations.isEmpty()) {
+			Guildy.LOGGER.info("[ruins.json5] new defaults applied to the values left on the older ones: {}", String.join(", ", migrations));
+		}
+	}
+
+	/** Values migrated by the last {@link #rebuild} (tests). */
+	public List<String> migrations() {
+		return migrations == null ? List.of() : List.copyOf(migrations);
 	}
 
 	/** Clamps every value and fixes broken entries (pure). @return the problems found */
 	public List<String> rebuild(Predicate<String> entityExists, Predicate<String> itemExists, Predicate<String> effectExists) {
 		List<String> warnings = new ArrayList<>();
+		int fromVersion = configVersion;
 		configVersion = CURRENT_VERSION;
 		genericCache = new LinkedHashMap<>();
+		migrations = new ArrayList<>();
 		if (encounter == null) {
 			encounter = new EncounterSettings();
 		}
@@ -665,6 +741,8 @@ public final class RuinConfig implements Validatable {
 		if (knownDefaults == null) {
 			knownDefaults = new ArrayList<>();
 		}
+		// Entries still on the defaults of an older version get the new ones (before the new default ruins are added).
+		migrations.addAll(RuinMigration.migrate(ruins, fromVersion));
 		mergeNewDefaults(ruins, knownDefaults);
 		Map<String, RuinDef> fixed = new LinkedHashMap<>();
 		for (Map.Entry<String, RuinDef> entry : ruins.entrySet()) {
@@ -767,10 +845,22 @@ public final class RuinConfig implements Validatable {
 		b.armorToughness = clamp(b.armorToughness, 0, 20);
 		b.speed = clamp(b.speed, 0, 2);
 		b.knockbackResistance = clamp(b.knockbackResistance, 0, 1);
-		b.scale = clamp(b.scale, 0.5, 4);
+		b.scale = clamp(b.scale, 0.5, MAX_SCALE);
 		b.followRange = clamp(b.followRange, 8, 64);
 		b.equipment = fixEquipment(b.equipment, itemExists, where + ".boss", warnings);
 		b.effects = fixEffects(b.effects, effectExists, where + ".boss", warnings);
+		b.variant = normalize(b.variant);
+		if (b.cursedForm == null) {
+			b.cursedForm = new CursedFormDef();
+		}
+		CursedFormDef form = b.cursedForm;
+		form.entity = normalize(form.entity);
+		if (!form.entity.isEmpty() && !entityExists.test(form.entity)) {
+			warnings.add(where + ".boss.cursedForm: unknown entity '" + form.entity + "': the normal guardian is used");
+			form.entity = "";
+		}
+		form.variant = normalize(form.variant);
+		form.name = form.name == null ? "" : form.name.trim();
 
 		if (def.minions == null) {
 			def.minions = new MinionDef();

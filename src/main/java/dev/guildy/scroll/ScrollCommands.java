@@ -10,6 +10,8 @@ import dev.guildy.core.ItemUtil;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
 import dev.guildy.core.Safe;
+import dev.guildy.ruin.CursedItems;
+import dev.guildy.ruin.IncantationItems;
 import dev.guildy.structure.TextUtil;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -30,10 +32,13 @@ import java.util.Map;
 /**
  * {@code /guild admin scroll list | give <player> <id> [count] | grimoire <player> [ids]} (the admin node is already
  * permission-gated, like the unique weapon commands) and {@code /guild grimoire} (pages menu of the grimoire in hand).
+ * {@code give} also takes the ruins' summoning scrolls: {@code incantation} and {@code incantation_maudit}.
  */
 final class ScrollCommands {
 	private static final SuggestionProvider<CommandSourceStack> IDS = (ctx, builder) ->
 			SharedSuggestionProvider.suggest(Safe.get("suggest.scrolls", ScrollCommands::ids, List.of()), builder);
+	private static final SuggestionProvider<CommandSourceStack> GIVE_IDS = (ctx, builder) ->
+			SharedSuggestionProvider.suggest(Safe.get("suggest.scrolls", ScrollCommands::giveIds, List.of()), builder);
 
 	private ScrollCommands() {
 	}
@@ -43,7 +48,7 @@ final class ScrollCommands {
 				.then(Commands.literal("list").executes(ScrollCommands::list))
 				.then(Commands.literal("give")
 						.then(Commands.argument("player", EntityArgument.player())
-								.then(Commands.argument("id", StringArgumentType.word()).suggests(IDS)
+								.then(Commands.argument("id", StringArgumentType.word()).suggests(GIVE_IDS)
 										.executes(ctx -> give(ctx, 1))
 										.then(Commands.argument("count", IntegerArgumentType.integer(1, 64))
 												.executes(ctx -> give(ctx, IntegerArgumentType.getInteger(ctx, "count")))))))
@@ -100,9 +105,43 @@ final class ScrollCommands {
 		return ids;
 	}
 
+	/** What {@code give} takes: the spell scrolls and the two incantation scrolls of the ruins. */
+	static List<String> giveIds() {
+		List<String> ids = ids();
+		ids.add(INCANTATION);
+		ids.add(INCANTATION_CURSED);
+		return ids;
+	}
+
+	/** The summoning scrolls of the ruins (reserved ids, also given by {@code /guild admin ruin incantation}). */
+	static final String INCANTATION = "incantation";
+	static final String INCANTATION_CURSED = "incantation_maudit";
+
+	/** An incantation scroll (normal or cursed) of the ruins, {@code count} of them in full stacks; empty for another id. */
+	static List<ItemStack> incantations(String id, int count) {
+		return switch (id) {
+			case INCANTATION -> IncantationItems.stacks(count);
+			case INCANTATION_CURSED -> CursedItems.stacks(count);
+			default -> List.of();
+		};
+	}
+
 	private static int give(CommandContext<CommandSourceStack> ctx, int count) throws CommandSyntaxException {
 		ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
 		String id = StringArgumentType.getString(ctx, "id").toLowerCase(Locale.ROOT);
+		if (id.equals(INCANTATION) || id.equals(INCANTATION_CURSED)) {
+			List<ItemStack> stacks = Safe.get("scroll.admin.give.incantation", () -> incantations(id, count), List.of());
+			if (stacks.isEmpty()) {
+				ctx.getSource().sendFailure(Msg.prefixed(Lang.get("scroll.admin.unknown", id)));
+				return 0;
+			}
+			Component name = id.equals(INCANTATION) ? IncantationItems.name() : CursedItems.name();
+			for (ItemStack stack : stacks) {
+				ItemUtil.giveOrDrop(target, stack);
+			}
+			ctx.getSource().sendSuccess(() -> Msg.prefixed(TextUtil.lang("scroll.admin.give", name, count, target.getName().getString())), true);
+			return count;
+		}
 		ScrollConfig.ScrollDef def = ScrollModule.config().scroll(id);
 		if (def == null) {
 			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("scroll.admin.unknown", id)));
@@ -148,6 +187,17 @@ final class ScrollCommands {
 					.withClickEvent(new ClickEvent.SuggestCommand("/guild admin scroll give " + playerName(source) + " " + def.id + " 1"))
 					.withHoverEvent(new HoverEvent.ShowText(hover)));
 			Component line = TextUtil.lang("scroll.admin.list.entry", name, def.id, ScrollItems.rarityName(def.rarity()), spell);
+			source.sendSuccess(() -> line, false);
+		}
+		// The summoning scrolls of the ruins.
+		for (String id : List.of(INCANTATION, INCANTATION_CURSED)) {
+			boolean cursed = id.equals(INCANTATION_CURSED);
+			Component hover = Lang.get(cursed ? "scroll.admin.list.incantation_cursed.hover" : "scroll.admin.list.incantation.hover");
+			MutableComponent name = (cursed ? CursedItems.name() : IncantationItems.name()).copy().withStyle(style -> style
+					.withClickEvent(new ClickEvent.SuggestCommand("/guild admin scroll give " + playerName(source) + " " + id + " 1"))
+					.withHoverEvent(new HoverEvent.ShowText(hover)));
+			Component line = TextUtil.lang("scroll.admin.list.incantation", name, id,
+					Lang.raw(cursed ? "scroll.admin.list.incantation_cursed.kind" : "scroll.admin.list.incantation.kind"));
 			source.sendSuccess(() -> line, false);
 		}
 		ScrollConfig.Grimoire g = cfg.grimoire;

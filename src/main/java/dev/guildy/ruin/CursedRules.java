@@ -110,6 +110,27 @@ public final class CursedRules {
 		return phase >= LAST_PHASE;
 	}
 
+	/**
+	 * A cursed guardian killed in {@code phase} rises again into its final form: always once, at the end of the last phase
+	 * (however fast it was beaten: no fast-kill window), never during a phase transition, never a second time.
+	 */
+	public static boolean risesAgain(boolean finalFormEnabled, int phase, boolean alreadyRisen, boolean transitioning) {
+		return finalFormEnabled && phase >= LAST_PHASE && !alreadyRisen && !transitioning;
+	}
+
+	/** A cursed guardian dies for good: in the last phase, once its final form is over (or without a final form). */
+	public static boolean diesForGood(boolean finalFormEnabled, int phase, boolean alreadyRisen) {
+		return diesIn(phase) && (alreadyRisen || !finalFormEnabled);
+	}
+
+	/**
+	 * The reward bonus of a risen guardian applies: a normal guardian that rose (killed too fast), a cursed one only when
+	 * {@code cursed.finalForm.risenRewards} (its final form is part of the cursed fight: no double count by default).
+	 */
+	public static boolean risenBonus(boolean cursed, boolean risen, boolean risenRewards) {
+		return risen && (!cursed || risenRewards);
+	}
+
 	// ================================================================== transitions
 
 	/** Height of the guardian above its anchor during a transition: rises smoothly, hovers, slams down at {@link #SLAM}. */

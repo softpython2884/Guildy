@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
- * A ravager of the ruins (the celestial jaguar, an escort mob or a guard) never breaks the leaves of the ruin it charges
+ * A ravager of the ruins (a guardian, an escort mob or a guard: the celestial jaguar of older ruins.json5 files) never breaks the leaves of the ruin it charges
  * through (vanilla ravagers destroy the leaves they bump into when mobGriefing is on); other ravagers are untouched.
  */
 @Mixin(Ravager.class)

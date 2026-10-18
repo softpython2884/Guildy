@@ -2,6 +2,7 @@ package dev.guildy.scroll;
 
 import dev.guildy.Guildy;
 import dev.guildy.data.Guild;
+import dev.guildy.ruin.RoomGuards;
 import dev.guildy.villager.VillagerManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -66,7 +67,9 @@ final class SpellTargets {
 		boolean guildVillager = guild != null && entity instanceof AbstractVillager && guild.villagers.members.containsKey(entity.getUUID());
 		boolean villager = entity instanceof AbstractVillager || entity.entityTags().contains(VillagerManager.TAG_VILLAGER);
 		boolean owned = entity instanceof OwnableEntity ownable && ownable.getOwnerReference() != null;
-		return new TargetRules.Facts(alive, entity instanceof Enemy, player, entity == caster, member, guildVillager, villager, owned,
+		// The mobs of the ruins are monsters, even the giant jaguar (an ocelot, not an Enemy in vanilla).
+		boolean monster = entity instanceof Enemy || RoomGuards.isRuinMob(entity);
+		return new TargetRules.Facts(alive, monster, player, entity == caster, member, guildVillager, villager, owned,
 				entity.entityTags().contains(TAG_GUARDIAN));
 	}
 

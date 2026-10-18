@@ -48,7 +48,8 @@ final class CursedRitual extends Ritual {
 	private boolean fog;
 
 	CursedRitual(ServerLevel level, RuinRecord ruin, RuinDef def, BlockPos marker, ServerPlayer caster, ItemStack refund, RuinConfig cfg) {
-		super(level, ruin, def, marker, caster, refund, cfg, cfg.cursed.ritual.ritualSeconds);
+		// The ritual already names the cursed form (the celestial jaguar's: Le Jaguar d'obsidienne).
+		super(level, ruin, def.cursedForm(), marker, caster, refund, cfg, cfg.cursed.ritual.ritualSeconds);
 		bar.setName(Lang.get("ruin.cursed.ritual.bar", Lang.colorize(def.boss.name)));
 		bar.setColor(BossEvent.BossBarColor.PURPLE);
 		bar.setOverlay(BossEvent.BossBarOverlay.NOTCHED_6);

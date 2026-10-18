@@ -44,8 +44,10 @@ import java.util.random.RandomGenerator;
  * The curse of one running fight ({@link Encounter#cursed}): the guardian's multipliers (permanent attribute modifiers
  * {@code guildy:ruin_cursed_*}, on top of the threat level), its three phases (a hit never skips a phase: the guardian keeps
  * the health of the next threshold and the {@link CursedTransition} starts, invulnerable; a death outside the last phase is
- * refused the same way), its attacks ({@link Pentagrams}, {@link CursedAttacks}) scheduled by phase, its aura, and the
- * texts of its awakening, failure and victory. Runtime only, like the fight itself. Ticked by {@link CursedFights}.
+ * refused the same way), its final form (killed at the end of the last phase, it always rises once more, enraged: the
+ * resurrection of {@link Encounters} in the colours of the curse, then it dies for good and only then drops the cursed
+ * rewards), its attacks ({@link Pentagrams}, {@link CursedAttacks}) scheduled by phase, its aura, and the texts of its
+ * awakening, failure and victory. Runtime only, like the fight itself. Ticked by {@link CursedFights}.
  */
 final class CursedEncounter {
 	private static final Identifier HEALTH = id("ruin_cursed_health");
@@ -195,13 +197,20 @@ final class CursedEncounter {
 		return list;
 	}
 
-	/** Boss bar title: "Gardien Maudit — Menace II — Phase II — 3 joueurs — 540/720 ❤" (or the transition). */
+	/**
+	 * Boss bar title: "Gardien Maudit — Menace II — Phase II — 3 joueurs — 540/720 ❤" (or the transition, the rising, the
+	 * final form).
+	 */
 	Component barName(Encounter encounter, float health, float max) {
 		String name = Lang.colorize(encounter.def.boss.name);
 		if (transition != null) {
 			return Lang.get("ruin.cursed.bar.transition", name, CursedRules.roman(transition.toPhase));
 		}
-		String title = Lang.raw("ruin.cursed.bar", name, Encounters.threatLabel(encounter.threat), CursedRules.roman(phase));
+		if (encounter.rising != null) {
+			return Lang.get("ruin.cursed.bar.rising", name);
+		}
+		String title = encounter.risen ? Lang.raw("ruin.cursed.bar.final", name, Encounters.threatLabel(encounter.threat))
+				: Lang.raw("ruin.cursed.bar", name, Encounters.threatLabel(encounter.threat), CursedRules.roman(phase));
 		if (encounter.party.group()) {
 			title = Lang.raw("ruin.bar.group", title, encounter.party.players());
 		}
@@ -306,11 +315,29 @@ final class CursedEncounter {
 
 	// ================================================================== tick
 
+	/** The final form starts to rise ({@link Encounters}): the running attacks stop, nothing strikes while it rises. */
+	void beforeRising(Mob boss) {
+		running.clear();
+	}
+
+	/** The final form is back: its attacks resume shortly after (those of the last phase, still unlocked). */
+	void afterRising() {
+		long now = Scheduler.ticks();
+		nextAttackTick = now + 40;
+		for (Attack attack : CursedRules.unlocked(phase)) {
+			readyAt.put(attack, Math.min(readyAt.getOrDefault(attack, now + 60), now + 60));
+		}
+	}
+
 	/** One tick of the fight: transition, attacks, clones, aura, the next attack. */
 	void tick(ServerLevel level, Encounter encounter, Mob boss, List<ServerPlayer> present, RitualFx fx, RuinConfig cfg) {
 		CursedSettings settings = cfg.cursed;
 		CursedAttacks.Context ctx = new CursedAttacks.Context(level, encounter, this, boss, targets(level, boss, present, cfg), fx, settings, random);
 		CursedClones.tick(ctx);
+		if (encounter.rising != null) {
+			// Rising into its final form: the resurrection is drawn by Encounters, no attack, no aura.
+			return;
+		}
 		CursedTransition current = transition;
 		if (current != null) {
 			boolean done = Safe.get("ruin.cursed.transition", () -> current.tick(level, encounter, boss, present, fx, settings), true);
@@ -434,6 +461,12 @@ final class CursedEncounter {
 			CursedFx.helix(ctx.fx, RitualFx.dust(CursedFx.PURPLE, 1.2F), feet, width * 0.9 + 0.4, age + 8, height + 0.6, 16);
 			ctx.fx.burst(RitualFx.fade(CursedFx.VOID, CursedFx.BLOOD, 1.3F), feet.x, feet.y + height * 0.5, feet.z, 2, width * 0.5, height * 0.3, width * 0.5, 0.0);
 		}
+		if (ctx.encounter.risen && now % 3 == 0) {
+			// The final form: blood embers and ink rising from it.
+			ctx.fx.burst(RitualFx.fade(CursedFx.BLOOD_BRIGHT, CursedFx.VOID, 1.4F), feet.x, feet.y + height * 0.6, feet.z, 2, width * 0.5, height * 0.3,
+					width * 0.5, 0.0);
+			ctx.fx.move(ParticleTypes.SQUID_INK, feet.x, feet.y + height, feet.z, 0, 0.05, 0);
+		}
 		if (now % 4 == 0) {
 			double spin = now * 0.05;
 			ctx.fx.polygram(RitualFx.dust(CursedFx.BLOOD_BRIGHT, 0.9F), feet.add(0, 0.08, 0), width + 1.0, 5, 2, spin, 1.0, 2.2);
@@ -466,7 +499,8 @@ final class CursedEncounter {
 		Component subtitle = Lang.get("ruin.cursed.awaken.subtitle", bossName);
 		for (ServerPlayer player : present) {
 			Msg.title(player, title, subtitle, 10, 70, 20);
-			Msg.send(player, "ruin.cursed.awaken.chat", bossName, ruinName, IncantationItems.number(stats.health()), IncantationItems.number(stats.damage()));
+			Msg.send(player, settings().finalForm.enabled ? "ruin.cursed.awaken.intro" : "ruin.cursed.awaken.chat", bossName, ruinName,
+					IncantationItems.number(stats.health()), IncantationItems.number(stats.damage()));
 			GroupScaling.Party party = encounter.party;
 			if (party.group()) {
 				Msg.send(player, "ruin.awaken.group", party.players(), GroupScaling.percent(party.health()), GroupScaling.percent(party.damage()));

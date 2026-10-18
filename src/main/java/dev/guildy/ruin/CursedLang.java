@@ -20,6 +20,7 @@ final class CursedLang {
 		m.put("ruin.cursed.item.story", "&7Un rouleau noir qui suinte un sang violacé.\n&7Lu au cœur d'une &fruine&7 dont le gardien dort,\n&7il l'éveille &5maudit&7 : bien plus fort, bien plus fou.");
 		m.put("ruin.cursed.item.curse", "&5Malédiction : &dvie ×{0}&5, &ddégâts ×{1}&5, &d3 phases");
 		m.put("ruin.cursed.item.curse.attacks", "&8(pentagrammes, chaînes d'âmes, météores, foudre…)");
+		m.put("ruin.cursed.item.final", "&4Abattu, il se relève toujours une dernière fois, enragé.");
 		m.put("ruin.cursed.item.price", "&4Prix du sang : &c{0} ❤ &4par joueur présent");
 		m.put("ruin.cursed.item.price.min", "&8(jamais en dessous de {0} ❤)");
 		m.put("ruin.cursed.item.price.none", "&7Aucun prix du sang sur ce serveur.");
@@ -48,6 +49,16 @@ final class CursedLang {
 		m.put("ruin.cursed.awaken.title", "&5&l☠ {0} &5&l☠");
 		m.put("ruin.cursed.awaken.subtitle", "{0} &5&lMaudit &ds'éveille…");
 		m.put("ruin.cursed.awaken.chat", "&5☠ {0} &5&lMaudit&7 surgit de la malédiction (&f{1}&7) : &dvie ×{2}&7, &ddégâts ×{3}&7, &d3 phases&7. Il ne ressuscite pas : chaque phase le rend plus fort.");
+		m.put("ruin.cursed.awaken.intro", "&5☠ {0} &5&lMaudit&7 surgit de la malédiction (&f{1}&7) : &dvie ×{2}&7, &ddégâts ×{3}&7, &d3 phases&7, puis une &4forme finale&7 : abattu, il se relève toujours une dernière fois, enragé.");
+		m.put("ruin.cursed.bar.rising", "&5&l☠ {0} &5&lMaudit &drefuse de mourir… &5&l☠");
+		m.put("ruin.cursed.bar.final", "{0} &5&lMaudit &4&lEnragé &8— {1} &8— &4Forme finale");
+		m.put("ruin.cursed.risen.name", "{0} &5&lMaudit &4&lEnragé");
+		m.put("ruin.cursed.risen.title", "&5&l☠ La malédiction le relève ! ☠");
+		m.put("ruin.cursed.risen.subtitle", "{0} &drefuse de mourir…");
+		m.put("ruin.cursed.risen.chat", "&5☠ {0} &5&lMaudit&7 refuse de mourir : la malédiction le relève une dernière fois, &4enragé&7. Abattez sa &4forme finale&7 pour briser la malédiction !");
+		m.put("ruin.cursed.risen.back.title", "&4&lFORME FINALE !");
+		m.put("ruin.cursed.risen.back.subtitle", "{0} &5&lMaudit &crevient, fou de rage");
+		m.put("ruin.cursed.risen.back.chat", "&4&l☠ {0} &5&lMaudit&c est revenu pour un dernier assaut : plus grand, plus rapide, plus fort. &dLe butin maudit tombera à sa mort définitive.");
 		m.put("ruin.cursed.phase.title.2", "&5&lPHASE II");
 		m.put("ruin.cursed.phase.subtitle.2", "{0} &dpuise dans la malédiction…");
 		m.put("ruin.cursed.phase.title.3", "&4&lPHASE III");

@@ -10,6 +10,7 @@ import dev.guildy.ruin.RuinConfig.AbilityDef;
 import dev.guildy.ruin.RuinConfig.RuinDef;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -22,6 +23,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -47,7 +49,8 @@ import java.util.UUID;
  * Ruin fights: awakening (at the climax of an incantation ritual, see {@link Incantations}, or in the "proximity" mode when
  * a survival player approaches the guardian), boss bar, arena leash, abilities, reset when nobody is around, cancellation
  * when the guardian is unloaded, rewards on its death. The ruin's threat level ("Menace") makes the guardian stronger at
- * each return; a guardian killed too fast refuses to die once and rises again, enraged ({@link Resurrection}). Runs once
+ * each return; a guardian killed too fast refuses to die once and rises again, enraged ({@link Resurrection}), and a cursed
+ * one always rises once at the end of its last phase (its final form, in the colours of the curse). Runs once
  * per second (the animations, the resurrection and the aura of a risen guardian every tick); every loop is bounded by the
  * players online and the running fights.
  */
@@ -91,6 +94,10 @@ public final class Encounters {
 		// Restart / unload safety: ruin mobs are never kept without their fight; leftovers are refused at load.
 		ServerEntityEvents.ALLOW_LOAD.register((entity, level, reason, fromDisk) -> Safe.get("ruin.load", () -> allowLoad(entity), true));
 		ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> Safe.run("ruin.load", () -> onEntityLoad(entity)));
+		// The mobs of the ruins (guardians, escorts, room guards) are never fed, tamed, leashed, sheared or renamed: a giant
+		// jaguar is no pet.
+		UseEntityCallback.EVENT.register((player, level, hand, entity, hit) ->
+				!level.isClientSide() && RoomGuards.isRuinMob(entity) ? InteractionResult.FAIL : InteractionResult.PASS);
 	}
 
 	// ================================================================== queries
@@ -394,7 +401,9 @@ public final class Encounters {
 		if (forced && ruin.state == RuinState.CLEARED) {
 			ruin.state = RuinState.DORMANT;
 		}
-		RuinDef def = forcedDef != null ? forcedDef : def(ruin);
+		RuinDef normal = forcedDef != null ? forcedDef : def(ruin);
+		// Cursed: its own entity, variant and name when it has a cursed form (the celestial jaguar: a giant black cat).
+		RuinDef def = cursed ? normal.cursedForm() : normal;
 		RuinConfig cfg = RuinModule.config();
 		BlockPos spawn = spawnPoint(level, ruin, def);
 		if (spawn == null) {
@@ -408,7 +417,7 @@ public final class Encounters {
 		bar.setDarkenScreen(cfg.encounter.darkenSky);
 		int threat = threatLevel(ruin);
 		ThreatRules.Scaling scaling = ThreatRules.scaling(cfg.escalation, threat);
-		// A cursed guardian never rises again: its phases replace the resurrection.
+		// No fast-kill window for a cursed guardian: it always rises once, at the end of its last phase (its final form).
 		long window = cursed ? 0 : ThreatRules.windowTicks(fastKillSeconds(def, threat));
 		Encounter encounter = new Encounter(ruin, def, level.dimension(), spawn, bar, Scheduler.ticks(), cfg.encounter.firstAbilitySeconds, scaling,
 				cfg.escalation.enabled ? cfg.escalation.enragePerLevel : 0, cfg.escalation.maxEnrageThreshold, window);
@@ -850,6 +859,7 @@ public final class Encounters {
 		BY_MOB.clear();
 		HINTS.clear();
 		RuinFx.clear();
+		Felines.clear();
 	}
 
 	// ================================================================== events
@@ -872,6 +882,11 @@ public final class Encounters {
 		Encounter encounter = BY_MOB.get(entity.getUUID());
 		if (encounter != null && entity.getUUID().equals(encounter.boss) && source.getEntity() instanceof ServerPlayer player) {
 			encounter.addParticipant(player);
+		}
+		if (encounter != null && entity.getUUID().equals(encounter.boss) && entity instanceof Mob boss && boss.isSilent() && Felines.isFeline(boss)
+				&& entity.level() instanceof ServerLevel level) {
+			// The silent giant cat growls instead of meowing.
+			Felines.growl(level, boss);
 		}
 		if (encounter != null && encounter.cursed != null && entity.getUUID().equals(encounter.boss) && entity instanceof Mob boss
 				&& entity.level() instanceof ServerLevel level) {
@@ -943,6 +958,9 @@ public final class Encounters {
 
 	private static void victoryEffects(ServerLevel level, Mob boss) {
 		Vec3 at = boss.position();
+		if (Felines.isFeline(boss)) {
+			Felines.deathCry(level, boss);
+		}
 		RuinFx.sound(level, at, SoundEvents.WITHER_DEATH, 0.6F, 1.2F);
 		RuinFx.burst(level, ParticleTypes.TOTEM_OF_UNDYING, at.add(0, 1, 0), 60, 0.6, 0.4);
 		RuinFx.play(level, (lvl, age) -> {
@@ -991,7 +1009,8 @@ public final class Encounters {
 
 	/**
 	 * ALLOW_DEATH: a guardian killed less than its fast-kill window after it appeared, and not risen yet, refuses to die
-	 * (nothing dropped, no kill counted) and starts to rise. /kill and the void still kill it.
+	 * (nothing dropped, no kill counted) and starts to rise; a cursed guardian killed at the end of its last phase always
+	 * rises once (its final form), whatever the time. /kill and the void still kill it.
 	 */
 	private static boolean allowDeath(LivingEntity entity, DamageSource source) {
 		Encounter encounter = BY_MOB.get(entity.getUUID());
@@ -1006,12 +1025,19 @@ public final class Encounters {
 		if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			return true;
 		}
-		if (encounter.cursed != null) {
-			// Cursed: no resurrection, a death outside the last phase starts the next one instead.
-			return encounter.cursed.allowDeath(level, encounter, boss);
-		}
 		RuinConfig cfg = RuinModule.config();
 		long alive = Scheduler.ticks() - encounter.startedTick;
+		if (encounter.cursed != null) {
+			// Cursed: a death outside the last phase starts the next one; at the end of the last phase it always rises
+			// once more into its final form (however fast it was beaten), then dies for good.
+			if (CursedRules.risesAgain(cfg.cursed.finalForm.enabled && cfg.bossesEnabled, encounter.cursed.phase, encounter.risen,
+					encounter.cursed.invulnerable())) {
+				boss.setHealth(1.0F);
+				startRising(level, encounter, boss, source, alive, cfg);
+				return false;
+			}
+			return encounter.cursed.allowDeath(level, encounter, boss);
+		}
 		if (!ThreatRules.resurrects(cfg.resurrection.enabled && cfg.bossesEnabled, encounter.risen, alive, encounter.fastKillTicks)) {
 			return true;
 		}
@@ -1031,20 +1057,31 @@ public final class Encounters {
 		if (source.getEntity() instanceof ServerPlayer killer) {
 			encounter.addParticipant(killer);
 		}
-		Resurrection rising = new Resurrection(level, boss, encounter, cfg.resurrection);
+		boolean cursed = encounter.cursed != null;
+		if (cursed) {
+			// Its final form: the cursed attacks stop (the rising is never a trap), stalking or not it is seen again.
+			encounter.cursed.beforeRising(boss);
+		}
+		Resurrection rising = new Resurrection(level, boss, encounter, cfg.resurrection, cursed,
+				cursed ? cfg.cursed.finalForm.healthRatio : cfg.resurrection.healthRatio);
 		encounter.rising = rising;
 		RitualFx fx = new RitualFx(level, rising.anchor, Math.max(400, cfg.resurrection.particleBudget), cfg.summon.viewDistance);
 		Safe.run("ruin.rising.begin", () -> rising.begin(level, boss, fx));
 		fx.flush();
-		encounter.bar.setColor(BossEvent.BossBarColor.RED);
+		encounter.bar.setColor(cursed ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
 		encounter.bar.setName(barName(encounter, boss.getHealth(), boss.getMaxHealth()));
 		encounter.bar.setProgress(0.0F);
 		String bossName = Lang.colorize(encounter.def.boss.name);
 		for (ServerPlayer player : present(level, encounter.ruin, cfg.encounter.presenceMargin)) {
-			Msg.title(player, Lang.get("ruin.risen.title"), Lang.get("ruin.risen.subtitle", bossName), 5, 80, 15);
-			Msg.send(player, "ruin.risen.chat", bossName, ThreatRules.clock((alive + 19) / 20), ThreatRules.clock(encounter.fastKillTicks / 20));
+			if (cursed) {
+				Msg.title(player, Lang.get("ruin.cursed.risen.title"), Lang.get("ruin.cursed.risen.subtitle", bossName), 5, 80, 15);
+				Msg.send(player, "ruin.cursed.risen.chat", bossName);
+			} else {
+				Msg.title(player, Lang.get("ruin.risen.title"), Lang.get("ruin.risen.subtitle", bossName), 5, 80, 15);
+				Msg.send(player, "ruin.risen.chat", bossName, ThreatRules.clock((alive + 19) / 20), ThreatRules.clock(encounter.fastKillTicks / 20));
+			}
 		}
-		Guildy.LOGGER.debug("[ruins] the guardian of {} was killed in {} ticks: it rises again", encounter.ruin.key, alive);
+		Guildy.LOGGER.debug("[ruins] the guardian of {} was killed in {} ticks: it rises again{}", encounter.ruin.key, alive, cursed ? " (cursed final form)" : "");
 	}
 
 	/** Every tick: the resurrections running and the aura of the risen guardians. */
@@ -1080,7 +1117,10 @@ public final class Encounters {
 		}
 		Resurrection rising = encounter.rising;
 		if (rising == null) {
-			aura(level, boss);
+			if (encounter.cursed == null) {
+				// (The final form of a cursed guardian wears the cursed aura, see CursedEncounter.)
+				aura(level, boss);
+			}
 			return;
 		}
 		RuinConfig cfg = RuinModule.config();
@@ -1110,21 +1150,25 @@ public final class Encounters {
 		encounter.risenScale = rising.scale;
 		encounter.risenSpeed = r.speedBonus;
 		rising.release(boss);
+		boolean cursed = encounter.cursed != null;
 		BossFactory.applyRisen(boss, encounter.risenScale, encounter.risenSpeed, encounter.risenDamage);
-		boss.setHealth((float) Math.max(1.0, boss.getMaxHealth() * r.healthRatio));
+		boss.setHealth((float) Math.max(1.0, boss.getMaxHealth() * rising.healthRatio));
 		int amplifier = Math.min(4, (encounter.enrage == null ? 0 : encounter.enrage.amplifier) + 1);
 		boss.addEffect(new MobEffectInstance(MobEffects.STRENGTH, MobEffectInstance.INFINITE_DURATION, amplifier, false, true));
 		boss.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 160, 1, false, true));
 		boss.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
 		String bossName = Lang.colorize(encounter.def.boss.name);
-		boss.setCustomName(Lang.get("ruin.risen.name", bossName));
+		boss.setCustomName(Lang.get(cursed ? "ruin.cursed.risen.name" : "ruin.risen.name", bossName));
 		boss.setCustomNameVisible(true);
 		long now = Scheduler.ticks();
 		for (int i = 0; i < encounter.readyAt.length; i++) {
 			encounter.readyAt[i] = Math.min(encounter.readyAt[i], now + 40 + i * 20L);
 		}
 		encounter.nextAbilityTick = now + 30;
-		encounter.bar.setColor(BossEvent.BossBarColor.RED);
+		if (cursed) {
+			encounter.cursed.afterRising();
+		}
+		encounter.bar.setColor(cursed ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
 		encounter.bar.setName(barName(encounter, boss.getHealth(), boss.getMaxHealth()));
 		encounter.bar.setProgress(Mth.clamp(boss.getHealth() / Math.max(1.0F, boss.getMaxHealth()), 0.0F, 1.0F));
 		RitualFx fx = new RitualFx(level, rising.anchor, Math.max(800, r.particleBudget), cfg.summon.viewDistance);
@@ -1134,8 +1178,9 @@ public final class Encounters {
 		List<ServerPlayer> present = present(level, encounter.ruin, cfg.encounter.presenceMargin);
 		ServerPlayer nearest = null;
 		for (ServerPlayer player : present) {
-			Msg.title(player, Lang.get("ruin.risen.back.title"), Lang.get("ruin.risen.back.subtitle", bossName), 0, 60, 20);
-			Msg.send(player, "ruin.risen.back.chat", bossName);
+			String key = cursed ? "ruin.cursed.risen.back" : "ruin.risen.back";
+			Msg.title(player, Lang.get(key + ".title"), Lang.get(key + ".subtitle", bossName), 0, 60, 20);
+			Msg.send(player, key + ".chat", bossName);
 			if (BossAbilities.valid(player, level) && (nearest == null || player.distanceToSqr(boss) < nearest.distanceToSqr(boss))) {
 				nearest = player;
 			}

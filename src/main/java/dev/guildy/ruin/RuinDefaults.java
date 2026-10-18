@@ -16,7 +16,10 @@ import java.util.Map;
 /**
  * Default guardians of the eight ruins (tier 1 to 5) and the generic tier-based guardian of unknown ruins.
  * Balance: modest gold (never gold blocks), vanilla rare items through the ruin loot tables, a rare unique weapon and
- * spell scroll; the escort grows with the number of players. Each ruin has its room guards (themed names, types).
+ * spell scroll; the escort grows with the number of players. Each ruin has its room guards (themed names, types): the
+ * crypt's skeletons and zombies, the mage tower's illagers, the ziggurat's husks and parched, the frost bastion's strays,
+ * the infernal altar's piglin brutes, the soul citadel's wither skeletons, and the undead of the two Mayan temples (bogged,
+ * parched, zombies on guard, cave spiders: never a raider), under jade-green or golden helmets.
  */
 final class RuinDefaults {
 	private RuinDefaults() {
@@ -86,7 +89,8 @@ final class RuinDefaults {
 		def.boss.equipment.put("legs", "minecraft:golden_leggings");
 		def.boss.equipment.put("feet", "minecraft:golden_boots");
 		def.minions = minions(4, 2, 10, 14, 1.4, 1.1);
-		def.minions.types.put("minecraft:husk", 1);
+		// Mummies and parched archers (weakness arrows) of the desert.
+		def.minions.types.putAll(zigguratEscort());
 		def.abilities = new ArrayList<>(List.of(
 				ability("ground_slam", 11, 7, 6, 1, "sand", 1.0),
 				ability("summon", 18, 0, 4, 3, "", 1.0),
@@ -172,14 +176,14 @@ final class RuinDefaults {
 	/**
 	 * Jungle temple (structure guildy:ruin/temple_maya): a giant breeze whose natural attack is the wind charge (it deflects
 	 * arrows and other projectiles, as in vanilla: a melee fight), jade wind rings that poison, wind blades and gusts;
-	 * bogged skeletons (poison arrows) and cave spiders. Same rewards as the other tier-3 ruin, emeralds for the jungle.
+	 * the temple's undead: bogged (poison arrows) and parched (weakness arrows) skeletons, cave spiders; zombies too on guard,
+	 * under jade-green helmets (turtle shells). Same rewards as the other tier-3 ruin, emeralds for the jungle.
 	 */
 	private static RuinDef featheredSerpentTemple() {
 		RuinDef def = ruin("Temple du Serpent à plumes", 3, "GREEN", "minecraft:red_x");
 		def.boss = boss("minecraft:breeze", "&2&lLe Serpent à plumes", 360, 10, 8, 3, 0, 0.8, 2.0);
 		def.minions = minions(4, 2, 10, 14, 1.4, 1.1);
-		def.minions.types.put("minecraft:bogged", 3);
-		def.minions.types.put("minecraft:cave_spider", 2);
+		def.minions.types.putAll(serpentEscort());
 		def.abilities = new ArrayList<>(List.of(
 				ability("volley", 9, 6, 4, 5, "wind", 1.0),
 				ability("fire_ring", 13, 7, 7, 1, "jade", 1.0),
@@ -191,49 +195,104 @@ final class RuinDefaults {
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
 		def.rewards.items.add(new ItemDrop("minecraft:emerald", 3, 8, 0.6));
 		def.guards.name = "&2Gardien du temple";
+		def.guards.types.putAll(serpentGuards());
+		def.guards.equipment.put("head", JADE_HELMET);
 		return def;
 	}
 
 	/**
-	 * Second jungle temple, the huge one (structure guildy:ruin/grand_temple_maya, indoor arena under a beacon): a giant
-	 * ravager. A robust indoor tier-5 fight: a heavy charging beast (a jaguar) that never digs (its leaf breaking is
-	 * cancelled for ruin mobs), never flies nor teleports on its own, never shoots (no projectile to cheese from afar),
-	 * climbs stairs (step height 1) and stays in its arena (leash). Solar, gold and jade abilities; jaguar warriors on guard
-	 * (vindicators with their axes, bogged archers, an evoker) under golden helmets; rewards above the soul citadel.
+	 * Second jungle temple, the huge one (structure guildy:ruin/grand_temple_maya, indoor arena under a beacon): the
+	 * celestial jaguar, a giant spotted ocelot (x5: 3 blocks wide, 3.5 high, like the old giant ravager) turned into a
+	 * relentless hunter ({@link Felines}: it sprints after the players, never flees, cannot be fed, tamed or leashed), fast
+	 * but on foot (step height 1, never flies nor teleports), no projectile; its jaguar attacks ({@link JaguarAbilities}):
+	 * pounce, claw sweep, stalk, roar, spirit jaguars, plus the sun ring. Its cursed form is a giant black cat, "Le Jaguar
+	 * d'obsidienne". The temple's undead on guard and as escort: bogged, parched, zombies on guard, cave spiders, under
+	 * golden helmets; rewards above the soul citadel.
 	 */
 	private static RuinDef celestialJaguarTemple() {
 		RuinDef def = ruin("Grand Temple du Jaguar céleste", 5, "YELLOW", "minecraft:red_x");
 		def.activationRadius = 24;
 		def.leashRadius = 22;
-		def.boss = boss("minecraft:ravager", "&6&lLe Jaguar céleste", 760, 18, 16, 6, 0, 1.0, 1.6);
-		def.boss.effects.add(new EffectDef("minecraft:fire_resistance", 0));
+		def.boss = jaguar();
 		def.minions = minions(4, 2, 10, 14, 1.5, 1.2);
-		def.minions.types.put("minecraft:vindicator", 3);
-		def.minions.types.put("minecraft:bogged", 2);
-		def.minions.types.put("minecraft:evoker", 1);
-		def.minions.equipment.put("head", "minecraft:golden_helmet");
-		def.abilities = new ArrayList<>(List.of(
-				ability("ground_slam", 11, 11, 7, 1, "gold", 1.0),
-				ability("fire_ring", 13, 9, 8, 1, "solar", 1.0),
-				ability("volley", 10, 6, 4, 6, "solar", 1.0),
-				ability("blink", 12, 12, 4, 1, "solar", 0.85),
-				ability("fire_ring", 16, 8, 9, 1, "jade", 0.7),
-				ability("life_drain", 18, 5, 12, 1, "gold", 0.5),
-				ability("summon", 24, 0, 5, 3, "", 0.6),
-				enrage(0.3, 2)));
+		def.minions.types.putAll(jaguarEscort());
+		def.minions.equipment.put("head", GOLD_HELMET);
+		def.abilities = jaguarAbilities();
 		def.rewards = rewards(18, 28, 380, "guildy:chests/ruin/treasure", 3);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 16, 28, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 2, 4, 0.75));
 		def.rewards.items.add(new ItemDrop("minecraft:emerald", 6, 12, 0.75));
 		def.rewards.items.add(new ItemDrop("minecraft:totem_of_undying", 1, 1, 0.3));
 		def.rewards.items.add(new ItemDrop("minecraft:enchanted_golden_apple", 1, 1, 0.05));
-		guards(def, "&6Guerrier jaguar", "minecraft:vindicator", 4);
-		def.guards.types.put("minecraft:bogged", 2);
-		def.guards.types.put("minecraft:evoker", 1);
-		def.guards.equipment.put("head", "minecraft:golden_helmet");
+		def.guards.name = "&6Guerrier jaguar";
+		def.guards.types.putAll(jaguarGuards());
+		def.guards.equipment.put("head", GOLD_HELMET);
 		def.guards.healthMultiplier = 1.8;
 		def.guards.damageMultiplier = 1.3;
 		return def;
+	}
+
+	// ------------------------------------------------------------------ themed escorts and guards (1.8.2)
+
+	/** Jade-green helmet of the feathered serpent's undead (a turtle shell: no jade item in the game). */
+	static final String JADE_HELMET = "minecraft:turtle_helmet";
+	static final String GOLD_HELMET = "minecraft:golden_helmet";
+
+	static Map<String, Integer> zigguratEscort() {
+		return weights("minecraft:husk", 3, "minecraft:parched", 2);
+	}
+
+	static Map<String, Integer> serpentEscort() {
+		return weights("minecraft:bogged", 3, "minecraft:parched", 2, "minecraft:cave_spider", 2);
+	}
+
+	static Map<String, Integer> serpentGuards() {
+		return weights("minecraft:bogged", 3, "minecraft:parched", 2, "minecraft:zombie", 2, "minecraft:cave_spider", 1);
+	}
+
+	static Map<String, Integer> jaguarEscort() {
+		return weights("minecraft:bogged", 3, "minecraft:parched", 2, "minecraft:cave_spider", 2);
+	}
+
+	static Map<String, Integer> jaguarGuards() {
+		return weights("minecraft:bogged", 3, "minecraft:parched", 3, "minecraft:zombie", 2, "minecraft:cave_spider", 1);
+	}
+
+	/** The celestial jaguar: a giant spotted ocelot, a giant black cat when cursed. */
+	static BossDef jaguar() {
+		BossDef boss = boss("minecraft:ocelot", "&6&lLe Jaguar céleste", 760, 18, 16, 6, JAGUAR_SPEED, 1.0, JAGUAR_SCALE);
+		boss.effects.add(new EffectDef("minecraft:fire_resistance", 0));
+		boss.cursedForm = jaguarCursedForm();
+		return boss;
+	}
+
+	static final double JAGUAR_SCALE = 5.0;
+	/** x1.33 when it sprints: a little slower than a sprinting player, much faster once enraged. */
+	static final double JAGUAR_SPEED = 0.26;
+
+	static RuinConfig.CursedFormDef jaguarCursedForm() {
+		return new RuinConfig.CursedFormDef("minecraft:cat", "minecraft:all_black", "&5&lLe Jaguar d'obsidienne");
+	}
+
+	/** Claws, pounce, roar, stalk and spirits; the sun ring and the temple's undead when it weakens. */
+	static List<AbilityDef> jaguarAbilities() {
+		return new ArrayList<>(List.of(
+				ability("claw_sweep", 7, 14, 5, 3, "jade", 1.0),
+				ability("pounce", 12, 15, 5, 1, "gold", 1.0),
+				ability("roar", 16, 4, 10, 1, "solar", 0.9),
+				ability("stalk", 20, 20, 3, 1, "gold", 0.85),
+				ability("spirit_jaguars", 26, 7, 5, 3, "jade", 0.7),
+				ability("fire_ring", 16, 9, 8, 1, "solar", 0.6),
+				ability("summon", 26, 0, 5, 3, "", 0.5),
+				enrage(0.3, 2)));
+	}
+
+	private static Map<String, Integer> weights(Object... entityWeight) {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		for (int i = 0; i + 1 < entityWeight.length; i += 2) {
+			map.put((String) entityWeight[i], (Integer) entityWeight[i + 1]);
+		}
+		return map;
 	}
 
 	/**
@@ -288,7 +347,7 @@ final class RuinDefaults {
 		return def;
 	}
 
-	private static BossDef boss(String entity, String name, double health, double damage, double armor, double toughness, double speed,
+	static BossDef boss(String entity, String name, double health, double damage, double armor, double toughness, double speed,
 			double knockback, double scale) {
 		BossDef boss = new BossDef();
 		boss.entity = entity;
@@ -315,7 +374,7 @@ final class RuinDefaults {
 		return minions;
 	}
 
-	private static AbilityDef ability(String type, double cooldown, double damage, double radius, int count, String style, double healthBelow) {
+	static AbilityDef ability(String type, double cooldown, double damage, double radius, int count, String style, double healthBelow) {
 		AbilityDef ability = new AbilityDef();
 		ability.type = type;
 		ability.cooldownSeconds = cooldown;
@@ -327,7 +386,7 @@ final class RuinDefaults {
 		return ability;
 	}
 
-	private static AbilityDef enrage(double healthBelow, int amplifier) {
+	static AbilityDef enrage(double healthBelow, int amplifier) {
 		AbilityDef ability = ability("enrage", 1, 0, 1, 1, "", healthBelow);
 		ability.amplifier = amplifier;
 		return ability;
