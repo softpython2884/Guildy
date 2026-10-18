@@ -1,5 +1,7 @@
 package dev.guildy.villager;
 
+import dev.guildy.level.LevelScaling;
+
 /**
  * Pure health rules of the guild villagers (no Minecraft classes, unit tested): extra max health from the guild level,
  * what happens to the current health when the maximum changes, and the out-of-combat delay of the slow regeneration.
@@ -10,12 +12,19 @@ final class VitalityRules {
 	private VitalityRules() {
 	}
 
-	/**
-	 * Extra max health of a guild villager: {@code perLevel} per guild level above 1; guards get that bonus times
-	 * {@code guardMultiplier}, plus a flat {@code guardBonus}. Never negative, at most {@code max}.
-	 */
+	/** {@link #bonusHealth(int, boolean, double, double, double, double, double)} with the same rate at every level. */
 	static double bonusHealth(int guildLevel, boolean guard, double perLevel, double guardMultiplier, double guardBonus, double max) {
-		double fromLevel = positive(perLevel) * Math.max(0, guildLevel - 1);
+		return bonusHealth(guildLevel, guard, perLevel, perLevel, guardMultiplier, guardBonus, max);
+	}
+
+	/**
+	 * Extra max health of a guild villager: {@code perLevel} per guild level above 1 up to level 10, then
+	 * {@code perLevelAbove10} per level; guards get that bonus times {@code guardMultiplier}, plus a flat
+	 * {@code guardBonus}. Never negative, at most {@code max}.
+	 */
+	static double bonusHealth(int guildLevel, boolean guard, double perLevel, double perLevelAbove10, double guardMultiplier,
+			double guardBonus, double max) {
+		double fromLevel = LevelScaling.bonus(guildLevel, perLevel, perLevelAbove10, 0);
 		double bonus = guard ? fromLevel * positive(guardMultiplier) + positive(guardBonus) : fromLevel;
 		return Math.min(bonus, positive(max));
 	}

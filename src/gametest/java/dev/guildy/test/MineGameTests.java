@@ -9,6 +9,7 @@ import dev.guildy.villager.MineState;
 import dev.guildy.villager.StorageChest;
 import dev.guildy.villager.Task;
 import dev.guildy.villager.VillagerConfig;
+import dev.guildy.villager.VillagerManager;
 import dev.guildy.villager.VillagerModule;
 import dev.guildy.villager.VillagerRecord;
 import dev.guildy.villager.WorkZone;
@@ -488,7 +489,7 @@ public class MineGameTests {
 		ServerPlayer leader = TestSupport.player(helper, top);
 		Guild guild = TestSupport.foundGuild(helper, leader, top, prefix);
 		// Room for every miner (villagers allowed per guild level).
-		while (VillagerModule.config().maxVillagers(guild.level) < miners) {
+		while (VillagerManager.maxVillagers(guild) < miners && guild.level < 500) {
 			guild.level++;
 		}
 		List<VillagerRecord> records = new ArrayList<>();

@@ -55,7 +55,7 @@ class GuardGearConfigTest {
 		assertEquals("minecraft:netherite_sword", top.sword);
 		assertEquals("minecraft:diamond", top.armor);
 		assertTrue(top.crossbow() && top.piercing > 0);
-		assertEquals(top, gear.forLevel(25), "above the table: its last step");
+		assertEquals(top, gear.forLevel(19), "between two steps: the lower one");
 	}
 
 	@Test

@@ -5,6 +5,8 @@ import dev.guildy.config.Comment;
 import dev.guildy.config.Json5;
 import dev.guildy.config.Validatable;
 import dev.guildy.core.ItemUtil;
+import dev.guildy.level.LevelCurve;
+import dev.guildy.level.LevelScaling;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -29,7 +31,8 @@ import java.util.Set;
 		"  NIGHT_HUNT tuer des monstres la nuit (entite, vide = tout monstre), BIOME entrer dans un biome (biome ou #tag),",
 		"  COLLECTION livrer un assortiment : collection = {min, max, items: [{item, name, amountMin, amountMax, amountPerLevel}]}",
 		"  (entre min et max objets differents tires parmi items, chacun avec sa propre progression).",
-		"Valeurs a l'echelle du niveau de guilde : valeur = aleatoire(min..max) + perLevel x (niveau - 1).",
+		"Valeurs a l'echelle du niveau de guilde : valeur = aleatoire(min..max) + perLevel x (niveau - 1) ; au-dela du niveau 10,",
+		"le niveau de calcul monte plus lentement (voir levelScalingAbove10 / maxScalingLevel).",
 		"rewardItems : [{item, count, chance (0..1)}] ; flagChance / treasureMapChance : chance (0..1) d'obtenir",
 		"un drapeau d'extension / une carte au tresor. durationDays : duree en jours de jeu (1 jour = 20 minutes).",
 		"weight : poids relatif du tirage ; minLevel / maxLevel (0 = sans maximum) : niveaux de guilde concernes ;",
@@ -59,6 +62,15 @@ public final class QuestConfig implements Validatable {
 	@Comment({"Chance (0..1) qu'une quete ordinaire rapporte aussi une arme unique, tiree au moment de recuperer la recompense",
 			"(module des armes uniques ; rien si aucune n'est disponible)"})
 	public double uniqueChance = 0.03;
+
+	@Comment({
+			"Niveaux de guilde au-dela de 10 : quantites et recompenses (perLevel) calculees avec le niveau",
+			"10 + (niveau - 10) x levelScalingAbove10, au plus maxScalingLevel. Par defaut : niveau de calcul 12 au niveau 20,",
+			"18 au niveau 50, 28 au niveau 100, 30 au plus (les quetes restent faisables, l'or des livraisons reste sous le prix",
+			"boutique). minLevel / maxLevel des modeles utilisent toujours le vrai niveau"
+	})
+	public double levelScalingAbove10 = 0.2;
+	public int maxScalingLevel = 30;
 
 	@Comment("Contrats legendaires : une quete plus dure et plus longue, recompensee par une arme unique en plus de l'or et de l'XP")
 	public Legendary legendary = new Legendary();
@@ -135,6 +147,11 @@ public final class QuestConfig implements Validatable {
 		}
 	}
 
+	/** Level used for the amounts and rewards of the quests of a guild level (see {@code levelScalingAbove10}). */
+	public int scalingLevel(int guildLevel) {
+		return LevelScaling.softLevel(guildLevel, levelScalingAbove10, maxScalingLevel);
+	}
+
 	/** Usable templates (validated), by id. */
 	private transient Map<String, QuestTemplate> usable = new LinkedHashMap<>();
 
@@ -148,6 +165,8 @@ public final class QuestConfig implements Validatable {
 		exploreMinDistance = Math.max(32, exploreMinDistance);
 		exploreMaxDistance = Math.max(exploreMinDistance, exploreMaxDistance);
 		exploreRadius = Math.max(4, Math.min(128, exploreRadius));
+		levelScalingAbove10 = Double.isFinite(levelScalingAbove10) ? Math.max(0, Math.min(1, levelScalingAbove10)) : 0.2;
+		maxScalingLevel = Math.max(LevelScaling.CLASSIC_LEVELS, Math.min(LevelCurve.ABSOLUTE_MAX_LEVEL, maxScalingLevel));
 		uniqueChance = clamp01(uniqueChance);
 		if (legendary == null) {
 			legendary = new Legendary();

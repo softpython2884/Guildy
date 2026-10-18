@@ -9,8 +9,10 @@ import dev.guildy.config.Json5;
  */
 @Json5.Section
 public final class VitalityConfig {
-	@Comment("Points de vie max ajoutes par niveau de guilde au-dessus du niveau 1 (tous les villageois ; 2 points = 1 coeur, un villageois en a 20)")
+	@Comment("Points de vie max ajoutes par niveau de guilde au-dessus du niveau 1, jusqu'au niveau 10 (tous les villageois ; 2 points = 1 coeur, un villageois en a 20)")
 	public double healthPerLevel = 4.0;
+	@Comment("Au-dela du niveau 10 : points de vie max ajoutes par niveau (par defaut : +36 au niveau 10, +81 au niveau 100 ; maxBonus plafonne le tout)")
+	public double healthPerLevelAbove10 = 0.5;
 	@Comment("Gardes : le bonus par niveau est multiplie par cette valeur")
 	public double guardMultiplier = 1.5;
 	@Comment("Gardes : points de vie max ajoutes des le niveau 1")
@@ -27,11 +29,12 @@ public final class VitalityConfig {
 
 	/** Extra max health of a villager of a guild of this level (see {@link VitalityRules#bonusHealth}). */
 	public double bonusHealth(int guildLevel, boolean guard) {
-		return VitalityRules.bonusHealth(guildLevel, guard, healthPerLevel, guardMultiplier, guardBonus, maxBonus);
+		return VitalityRules.bonusHealth(guildLevel, guard, healthPerLevel, healthPerLevelAbove10, guardMultiplier, guardBonus, maxBonus);
 	}
 
 	void validate() {
 		healthPerLevel = clamp(healthPerLevel, 0.0, 100.0);
+		healthPerLevelAbove10 = clamp(healthPerLevelAbove10, 0.0, 100.0);
 		guardMultiplier = clamp(guardMultiplier, 0.0, 10.0);
 		guardBonus = clamp(guardBonus, 0.0, 200.0);
 		maxBonus = clamp(maxBonus, 0.0, 1000.0);

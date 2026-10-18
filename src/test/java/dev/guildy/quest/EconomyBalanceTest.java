@@ -27,6 +27,8 @@ class EconomyBalanceTest {
 			"#minecraft:planks", "minecraft:oak_planks",
 			"#minecraft:meat", "minecraft:cooked_beef");
 	private static final QuestGenerator.Legendary LEGENDARY = new QuestConfig().legendary.multipliers();
+	/** Highest level used by the quest formulas (guild levels past 10 scale slower, up to this level). */
+	private static final int MAX_SCALING_LEVEL = new QuestConfig().maxScalingLevel;
 
 	private static Map<String, Double> unitPrices() {
 		Map<String, Double> unitPrice = new HashMap<>();
@@ -65,7 +67,7 @@ class EconomyBalanceTest {
 				continue;
 			}
 			checked++;
-			for (int level = 1; level <= 10; level++) {
+			for (int level = 1; level <= MAX_SCALING_LEVEL; level++) {
 				int amount = minAmount(template.amountMin, template.amountPerLevel, level);
 				int gold = maxGold(template, level);
 				assertTrue(gold < amount * price, template.id + " level " + level + ": reward " + gold + " >= cost " + amount * price);
@@ -93,7 +95,7 @@ class EconomyBalanceTest {
 			assertTrue(template.check().isEmpty(), template.id);
 			List<QuestTemplate.Part> items = template.collection.items;
 			int max = Math.min(template.collection.max, items.size());
-			for (int level = 1; level <= 10; level++) {
+			for (int level = 1; level <= MAX_SCALING_LEVEL; level++) {
 				int gold = maxGold(template, level);
 				for (List<QuestTemplate.Part> subset : subsets(items, template.collection.min, max)) {
 					double cost = 0;
@@ -139,7 +141,7 @@ class EconomyBalanceTest {
 			if (price == null) {
 				continue;
 			}
-			for (int level = 1; level <= 10; level++) {
+			for (int level = 1; level <= MAX_SCALING_LEVEL; level++) {
 				int amount = minAmount(template.amountMin, template.amountPerLevel, level);
 				int gold = maxGold(template, level);
 				assertTrue(gold < amount * price, template.id + " level " + level + ": reward " + gold + " >= value " + amount * price);

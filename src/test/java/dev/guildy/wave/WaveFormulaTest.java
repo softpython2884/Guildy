@@ -128,6 +128,35 @@ class WaveFormulaTest {
 	}
 
 	@Test
+	void heartIntegrityPastLevelTenGrowsSlowlyAndIsCapped() {
+		WaveConfig.HeartSettings h = config().heart;
+		assertEquals(420, WaveFormula.heartIntegrity(h, 10), "unchanged up to level 10");
+		assertEquals(425, WaveFormula.heartIntegrity(h, 11));
+		assertEquals(870, WaveFormula.heartIntegrity(h, 100));
+		assertEquals(1020, WaveFormula.heartIntegrity(h, 500), "capped");
+		h.maxIntegrityAbove10 = 0;
+		assertEquals(420 + 5 * 490, WaveFormula.heartIntegrity(h, 500), "0 = no cap");
+	}
+
+	@Test
+	void levelDifficultyPastTenStaysPlayable() {
+		WaveConfig.DifficultySettings d = config().difficulty;
+		assertEquals(4.5, WaveFormula.levelDifficulty(d, 10), EPS, "unchanged up to level 10");
+		assertEquals(5.0, WaveFormula.levelDifficulty(d, 20), EPS);
+		assertEquals(9.0, WaveFormula.levelDifficulty(d, 100), EPS);
+		assertEquals(9.0, WaveFormula.levelDifficulty(d, 500), EPS, "capped");
+		for (int level = 2; level <= 500; level++) {
+			assertTrue(WaveFormula.levelDifficulty(d, level) >= WaveFormula.levelDifficulty(d, level - 1), "never decreases: " + level);
+		}
+		// A level 100 or 500 guild at night step 0, alone: half of the maximum, so a defeat still lowers the horde.
+		assertEquals(10.0, WaveFormula.difficulty(d, 0, 100, 1), EPS);
+		assertEquals(10.0, WaveFormula.difficulty(d, 0, 500, 1), EPS);
+		assertTrue(WaveFormula.difficulty(d, 10, 500, 1) < d.max, "night step 10: not yet the maximum");
+		assertTrue(WaveFormula.difficulty(d, 8, 500, 1) < WaveFormula.difficulty(d, 10, 500, 1), "the anti-spiral rollback still works");
+		assertEquals(d.max, WaveFormula.difficulty(d, 40, 500, 4), EPS);
+	}
+
+	@Test
 	void rewardsScaleWithKillRatio() {
 		WaveConfig.Rewards r = config().rewards;
 		assertEquals(0.0, WaveFormula.killRatio(0, 0), EPS);

@@ -9,6 +9,7 @@ import dev.guildy.villager.Quarry;
 import dev.guildy.villager.StorageChest;
 import dev.guildy.villager.Task;
 import dev.guildy.villager.VillagerConfig;
+import dev.guildy.villager.VillagerManager;
 import dev.guildy.villager.VillagerModule;
 import dev.guildy.villager.VillagerRecord;
 import dev.guildy.villager.WorkZone;
@@ -227,7 +228,7 @@ public class QuarryGameTests {
 		BlockPos founding = new BlockPos(x0 - 12, top, z0 + 8);
 		ServerPlayer leader = TestSupport.player(helper, founding);
 		Guild guild = TestSupport.foundGuild(helper, leader, founding, prefix);
-		while (VillagerModule.config().maxVillagers(guild.level) < count) {
+		while (VillagerManager.maxVillagers(guild) < count && guild.level < 500) {
 			guild.level++;
 		}
 		for (int i = 0; i < count; i++) {
