@@ -4,6 +4,11 @@ Validates ruin templates against the Guildy ruin contract.
 
   python tools/ruins/check.py                     every ruin in src/main/resources/data/guildy/structure/ruin
   python tools/ruins/check.py file.nbt [--ground N] [--nether] [--big]   one template (e.g. a converted schematic)
+  python tools/ruins/check.py file.nbt --monument --ground 1              a monument (statue placed by the mod)
+
+Monuments (ruins.MONUMENTS, e.g. the jaguar statues of the trail to the grand temple) have their own contract
+(check_monument): no boss, no arena, no marker, no container nor block entity, no entity, at most 16 x 16 x 24, glowing
+eyes on the north face, nothing floating, the water audit.
 
 Rules: valid 26.3 block states, no forbidden block (command blocks, barriers, light, leftover jigsaws...), size
 budget, exactly one guildy:boss DATA marker with free space (3 air above, free cells around, standing on a
@@ -45,6 +50,13 @@ LIMITS = {
 }
 BIG_IDS = {"bastion_de_givre", "temple_maya", "citadelle_des_ames"}
 GRAND_IDS = {"grand_temple_maya"}
+# Monuments (placed by the mod at runtime, no boss): footprint and height limits, light blocks that count as eyes.
+MONUMENT_LIMITS = (16, 24)
+EYE_BLOCKS = ("minecraft:verdant_froglight", "minecraft:ochre_froglight", "minecraft:pearlescent_froglight",
+	"minecraft:sea_lantern", "minecraft:glowstone", "minecraft:shroomlight", "minecraft:redstone_lamp")
+BLOCK_ENTITIES = ("minecraft:chest", "minecraft:trapped_chest", "minecraft:barrel", "minecraft:spawner", "minecraft:decorated_pot", "minecraft:hopper", "minecraft:dropper",
+	"minecraft:dispenser", "minecraft:furnace", "minecraft:blast_furnace", "minecraft:smoker", "minecraft:brewing_stand",
+	"minecraft:shulker_box", "minecraft:trial_spawner", "minecraft:vault", "minecraft:lectern", "minecraft:chiseled_bookshelf")
 CONTAINERS = ("minecraft:chest", "minecraft:trapped_chest", "minecraft:barrel")
 POT_LOOT = ("guildy:pots/ruin", "guildy:pots/ruin_nether")
 ALLOWED_ENTITIES = ("minecraft:item_frame", "minecraft:glow_item_frame", "minecraft:armor_stand")
@@ -494,6 +506,71 @@ def water(t, report, nether=False, ground=0, liquid="ignore_waterlogging", boss=
 				f"sous-sol (escaliers, dalles, chaînes...) et l'eau inonde {drowned} case(s) : mettre ignore_waterlogging")
 
 
+# ------------------------------------------------------------------------------------------- monuments
+
+def monument_ids():
+	"""Ids of the monuments (templates under structure/ruin placed by the mod, not by the worldgen)."""
+	import ruins
+	return set(ruins.MONUMENTS)
+
+
+def check_monument(t, report, ground):
+	"""
+	The contract of a monument (a statue of the trail of the grand temple): placed by the mod on the natural ground, so no
+	boss and no arena, no marker, no container nor any block entity with loot, no entity; the size budget; glowing eyes
+	(light blocks) on its front (north half: the runtime turns the north face toward its target); nothing floating; the
+	water audit; the layers under `ground` stay a foundation (no room under the ground).
+	"""
+	sx, sy, sz = t.size
+	limit, max_height = MONUMENT_LIMITS
+	report.info.append(f"monument {sx} x {sy} x {sz}, sol a la couche {ground}, {len(t.cells)} blocs")
+	if sx > limit or sz > limit:
+		report.errors.append(f"emprise {sx} x {sz} > {limit} x {limit}")
+	if sy > max_height:
+		report.errors.append(f"hauteur {sy} > {max_height}")
+	if ground < 0 or ground >= sy:
+		report.errors.append(f"couche du sol {ground} hors du gabarit")
+	bad = {}
+	for pos, state in t.cells.items():
+		try:
+			B.canon(state)
+		except B.BlockError as e:
+			bad.setdefault(str(e), pos)
+		block_id = state.split("[", 1)[0]
+		if block_id in B.FORBIDDEN:
+			bad.setdefault(f"bloc interdit {block_id}", pos)
+		elif block_id == "minecraft:structure_block":
+			bad.setdefault("marqueur (bloc de structure) : un monument n'a ni boss, ni sbire, ni garde", pos)
+		elif block_id in BLOCK_ENTITIES:
+			bad.setdefault(f"{block_id} : un monument n'a ni coffre, ni pot, ni spawner", pos)
+	for msg, pos in bad.items():
+		report.errors.append(f"{msg} (ex. {pos})")
+	if t.nbt:
+		report.errors.append(f"{len(t.nbt)} bloc(s) avec des donnees (ex. {sorted(t.nbt)[0]})")
+	for e in t.entities:
+		report.errors.append(f"entite {e['nbt'].get('id', '?')} en {e['blockPos']} (aucune entite dans un monument)")
+	eyes = sorted(p for p, s in t.cells.items() if s.split("[", 1)[0] in EYE_BLOCKS)
+	report.info.append(f"yeux lumineux : {len(eyes)} {eyes[:4]}")
+	if len(eyes) < 2:
+		report.errors.append("il faut au moins 2 yeux lumineux (froglight, lanterne marine...)")
+	elif any(z >= sz / 2 for (_, _, z) in eyes):
+		report.warnings.append("des yeux sont dans la moitie sud : la face du monument doit regarder le nord (-z)")
+	under = [p for p, s in t.cells.items() if p[1] < ground and s.startswith(AIR)]
+	if under:
+		report.errors.append(f"{len(under)} case(s) d'air sous le sol (ex. {sorted(under)[:3]}) : les couches enterrees sont une fondation")
+	above = {(x, z) for (x, y, z), s in t.cells.items() if y > ground and is_structural(s) and not s.startswith(AIR)}
+	report.info.append(f"emprise au sol : {len({(x, z) for (x, y, z) in t.cells if y == ground})} case(s), "
+		f"{len(above)} colonne(s) construites au-dessus")
+	floating(t, report, ground)
+	water(t, report, False, ground, "ignore_waterlogging", None)
+
+
+def check_monument_object(monument):
+	report = Report(f"{monument.id} ({monument.title}, monument)")
+	check_monument(monument.assembled(), report, monument.ground)
+	return report
+
+
 # ------------------------------------------------------------------------------------------- ruin files
 
 def check_ruin(ruin):
@@ -529,10 +606,13 @@ def load_resources():
 			t.nbt[(x, y + h, z)] = tag
 		return t, h
 
+	monuments = monument_ids()
 	for rid in sorted(os.listdir(base)):
 		path = os.path.join(base, rid)
 		if rid.endswith(".nbt"):
 			rid = rid[:-4]
+			if rid in monuments:
+				continue
 			out.append((rid, Template.load(path, strict=True), _nether(rid), 0, False))
 			continue
 		if not os.path.isdir(path):
@@ -577,6 +657,7 @@ def main():
 	ap.add_argument("--nether", action="store_true")
 	ap.add_argument("--big", action="store_true")
 	ap.add_argument("--grand", action="store_true", help="limites du grand temple (116 x 116 x 128, arene 25 x 25)")
+	ap.add_argument("--monument", action="store_true", help="contrat d'un monument (statue posee par le mod, sans boss)")
 	args = ap.parse_args()
 	ok = True
 	if args.files:
@@ -589,13 +670,26 @@ def main():
 				print(report.text())
 				ok = False
 				continue
-			check_template(t, report, args.nether, args.ground, "grand" if args.grand else "big" if args.big else "normal")
+			if args.monument:
+				check_monument(t, report, args.ground)
+			else:
+				check_template(t, report, args.nether, args.ground, "grand" if args.grand else "big" if args.big else "normal")
 			print(report.text())
 			ok &= report.ok
 	else:
 		for rid, t, nether, ground, multi in load_resources():
 			report = Report(rid)
 			check_template(t, report, nether, ground, size_class(rid.split("/")[0]), multi, liquid_settings(rid))
+			print(report.text())
+			ok &= report.ok
+		import ruins
+		for mid in sorted(monument_ids()):
+			report = Report(f"{mid} (monument)")
+			path = os.path.join(RESOURCES, "structure", "ruin", mid + ".nbt")
+			if not os.path.exists(path):
+				report.errors.append(f"gabarit absent : {path}")
+			else:
+				check_monument(Template.load(path, strict=True), report, ruins.load_monument(mid).ground)
 			print(report.text())
 			ok &= report.ok
 	sys.exit(0 if ok else 1)

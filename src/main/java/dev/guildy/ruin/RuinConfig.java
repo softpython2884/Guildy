@@ -26,7 +26,8 @@ import java.util.function.Predicate;
 		"des joueurs presents, voir 'summon') ; vaincu, il revient apres 'respawnDays' jours.",
 		"Le villageois Cartographe (construction 'Atelier du cartographe') localise les ruines : carte (Overworld) ou",
 		"boussole (Nether). Commandes admin : /guild admin ruin list | info | awaken | reset | locate <id> | map <joueur> <id>",
-		"| incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle).",
+		"| incantation <joueur> [nombre] | threat <niveau> (menace de la ruine la plus proche) | guards [clear] (gardiens de salle)",
+		"| statues <joueur> | statues list (chemin de statues du grand temple, voir cartography.statues).",
 		"Les parchemins d'incantation se donnent aussi avec /guild admin scroll give <joueur> incantation|incantation_maudit [nombre]."
 })
 public final class RuinConfig implements Validatable {
@@ -367,6 +368,13 @@ public final class RuinConfig implements Validatable {
 		public String mapDecoration = "minecraft:red_x";
 		@Comment("Parchemins d'incantation donnes avec chaque carte / boussole d'une recherche reussie (0 = aucun)")
 		public int incantationsPerResearch = 1;
+		@Comment({
+				"La legende du Jaguar celeste : le grand temple ne se trouve plus avec une carte ordinaire. Cette recherche donne une",
+				"carte des statues : des jaguars de pierre poses par le mod entre l'atelier et le temple, chacun tourne vers le",
+				"suivant ; qui s'approche d'une statue voit son regard montrer la suite du chemin. Admin : /guild admin ruin statues",
+				"<joueur> (carte des statues du grand temple le plus proche) | statues list"
+		})
+		public StatueSettings statues = new StatueSettings();
 	}
 
 	@Json5.Section
@@ -730,6 +738,10 @@ public final class RuinConfig implements Validatable {
 		c.mapZoom = clamp(c.mapZoom, 0, 4);
 		c.mapDecoration = c.mapDecoration == null || c.mapDecoration.isBlank() ? "minecraft:red_x" : c.mapDecoration.trim().toLowerCase(Locale.ROOT);
 		c.incantationsPerResearch = clamp(c.incantationsPerResearch, 0, 16);
+		if (c.statues == null) {
+			c.statues = new StatueSettings();
+		}
+		c.statues.fix(itemExists, warnings);
 		if (generic == null) {
 			generic = new GenericSettings();
 		}

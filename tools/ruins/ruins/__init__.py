@@ -1,5 +1,5 @@
 """
-The eight Guildy ruins. Each module exposes build() -> ruinlib.ruin.Ruin (the procedural variant). Variants
+The eight Guildy ruins (and the monuments the mod places itself, see MONUMENTS). Each module exposes build() -> ruinlib.ruin.Ruin (the procedural variant). Variants
 converted from schematics by import_schematic.py live in tools/ruins/imported/<id>/<variant>/ (template.nbt +
 variant.json) and are added to the ruin's template pool here.
 """
@@ -9,7 +9,14 @@ import os
 
 IDS = ["crypte_oubliee", "tour_du_mage", "ziggourat_des_sables", "bastion_de_givre", "temple_maya", "autel_infernal",
 	"citadelle_des_ames", "grand_temple_maya"]
+# Monuments: templates placed by the mod at runtime (no worldgen, no boss), e.g. the jaguar statues of the trail that
+# leads to the grand temple. Each module exposes build() -> ruinlib.ruin.Monument.
+MONUMENTS = ["statue_jaguar"]
 IMPORTED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "imported")
+
+
+def load_monument(monument_id):
+	return importlib.import_module(f"ruins.{monument_id}").build()
 
 
 def available():

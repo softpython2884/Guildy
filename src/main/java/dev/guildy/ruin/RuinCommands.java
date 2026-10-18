@@ -46,7 +46,8 @@ import java.util.Set;
 
 /**
  * {@code /guild admin ruin list | info | awaken | reset | locate <id> | map <player> <id> | incantation <player> [count] |
- * ability <type> [style] | threat <level> | guards [clear] | research <guild> finish} (the admin node is already permission-gated).
+ * ability <type> [style] | threat <level> | guards [clear] | research <guild> finish | statues <player> | statues list} (the
+ * admin node is already permission-gated).
  * "Nearest" = nearest known ruin in the dimension of the command source. {@code awaken} is instant (no scroll, no ritual).
  */
 final class RuinCommands {
@@ -89,7 +90,75 @@ final class RuinCommands {
 						.then(Commands.literal("clear").executes(ctx -> Safe.get("ruin.admin.guards", () -> clearGuards(ctx), 0))))
 				.then(Commands.literal("research")
 						.then(GuildArgument.guild("guild")
-								.then(Commands.literal("finish").executes(ctx -> Safe.get("ruin.admin.research", () -> finish(ctx), 0)))))));
+								.then(Commands.literal("finish").executes(ctx -> Safe.get("ruin.admin.research", () -> finish(ctx), 0)))))
+				.then(Commands.literal("statues")
+						.then(Commands.literal("list").executes(ctx -> Safe.get("ruin.admin.statues", () -> listStatues(ctx), 0)))
+						.then(Commands.argument("player", EntityArgument.player()).executes(RuinCommands::statueMap)))));
+	}
+
+	/** A statue map for the nearest grand temple from the player (trail from where they stand; no temple is referenced). */
+	private static int statueMap(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+		return Safe.get("ruin.admin.statues.map", () -> {
+			CommandSourceStack source = ctx.getSource();
+			ServerLevel level = target.level();
+			BlockPos origin = target.blockPosition();
+			RuinRecord temple = Cartography.templeLocator.locate(level, origin, dev.guildy.data.GuildManager.of(target), false);
+			if (temple == null) {
+				source.sendFailure(Msg.prefixed(Lang.get("ruin.admin.statues.none", Statues.settings().templeStructure)));
+				return 0;
+			}
+			var dimension = RuinItems.dimension(temple);
+			ServerLevel templeLevel = dimension == null ? null : source.getServer().getLevel(dimension);
+			StatueTrail trail = templeLevel == null ? null : Statues.createTrail(templeLevel, origin, temple, dev.guildy.data.GuildManager.of(target));
+			if (trail == null) {
+				source.sendFailure(Msg.prefixed(Lang.get("ruin.admin.statues.failed")));
+				return 0;
+			}
+			ItemUtil.giveOrDrop(target, RuinItems.statueMap(templeLevel, trail));
+			source.sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.statues.given", trail.statues.size(), trail.id, target.getName().getString())), true);
+			return 1;
+		}, 0);
+	}
+
+	/** Pending, placed and abandoned statues (the most recent first), with a click to teleport. */
+	private static int listStatues(CommandContext<CommandSourceStack> ctx) {
+		CommandSourceStack source = ctx.getSource();
+		List<StatueRecord> statues = new ArrayList<>(Statues.all());
+		int pending = 0;
+		int placed = 0;
+		int failed = 0;
+		for (StatueRecord statue : statues) {
+			switch (statue.status) {
+				case PENDING -> pending++;
+				case PLACED -> placed++;
+				case FAILED -> failed++;
+			}
+		}
+		int p = pending;
+		int d = placed;
+		int f = failed;
+		source.sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.statues.header", p, d, f, Statues.trails().size())), false);
+		statues.sort((a, b) -> Integer.compare(b.id, a.id));
+		int shown = 0;
+		for (StatueRecord statue : statues) {
+			if (shown++ >= LIST_MAX) {
+				int more = statues.size() - LIST_MAX;
+				source.sendSuccess(() -> Lang.get("ruin.admin.statues.more", more), false);
+				break;
+			}
+			int x = statue.posX();
+			int y = statue.isPlaced() ? statue.y : statue.plannedY;
+			int z = statue.posZ();
+			String next = statue.routes.isEmpty() ? "-" : statue.routes.getFirst().next < 0 ? Lang.raw("ruin.admin.statues.next.temple")
+					: "#" + statue.routes.getFirst().next;
+			MutableComponent line = Lang.get("ruin.admin.statues.line", statue.id, Lang.raw("ruin.admin.statues.state." + statue.status.name()
+					.toLowerCase(Locale.ROOT)), x, y, z, next, statue.routes.size(), statue.timesGuided);
+			source.sendSuccess(() -> line.withStyle(style -> style
+					.withClickEvent(new ClickEvent.SuggestCommand("/execute in " + statue.dimension + " run tp @s " + x + " " + (y + 2) + " " + z))
+					.withHoverEvent(new HoverEvent.ShowText(Lang.get("ruin.admin.statues.hover")))), false);
+		}
+		return statues.size();
 	}
 
 	private static List<String> ids() {

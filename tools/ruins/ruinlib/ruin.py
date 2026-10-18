@@ -176,6 +176,36 @@ class Ruin:
 		return out
 
 
+class Monument:
+	"""
+	A decorative structure placed by the mod at runtime (no worldgen, no boss, no loot): one template written to
+	structure/ruin/<id>.nbt. Layers below `ground` are buried foundations; layer `ground` replaces the natural top block
+	(the runtime fills the footprint down to the real ground). The front of the monument faces north (-z): the runtime
+	rotates it toward its target.
+	"""
+
+	def __init__(self, monument_id, title, template, ground, terrain="minecraft:grass_block"):
+		self.id = monument_id
+		self.title = title
+		self.template = template
+		self.ground = ground
+		self.terrain = terrain  # preview only
+		self.dimension = "overworld"
+		self.variants = []  # never part of a template pool
+
+	def assembled(self):
+		return self.template
+
+	def path(self):
+		return os.path.join(RESOURCES, "structure", "ruin", self.id + ".nbt")
+
+	def write(self):
+		path = self.path()
+		os.makedirs(os.path.dirname(path), exist_ok=True)
+		self.template.save(path)
+		return [path]
+
+
 def pool(locations, processors):
 	return {
 		"fallback": "minecraft:empty",

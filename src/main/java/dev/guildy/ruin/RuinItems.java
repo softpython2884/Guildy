@@ -36,8 +36,55 @@ import java.util.Optional;
 public final class RuinItems {
 	public static final String KIND_MAP = "ruin_map";
 	public static final String KIND_COMPASS = "ruin_compass";
+	/** The map of a statue trail (legend research): decorations on the statues only, never on the temple. */
+	public static final String KIND_STATUE_MAP = "statue_map";
 
 	private RuinItems() {
+	}
+
+	/**
+	 * The "Carte des statues" of a trail: an explorer-style map framing the origin and the statues (the smallest zoom that
+	 * shows them all, else the statues off the map are drawn on its edge), a banner on every statue (another colour on the
+	 * last one), never anything on the temple; the lore gives hints, not the temple's position.
+	 */
+	public static ItemStack statueMap(ServerLevel level, StatueTrail trail) {
+		StatueSettings cfg = Statues.settings();
+		List<StatueRecord> statues = Statues.statuesOf(trail);
+		List<StatueRules.Point> points = new ArrayList<>();
+		points.add(new StatueRules.Point(trail.originX, trail.originZ));
+		for (StatueRecord statue : statues) {
+			points.add(new StatueRules.Point(statue.posX(), statue.posZ()));
+		}
+		StatueRules.MapView view = StatueRules.mapView(points, 24, cfg.mapMinZoom, cfg.mapMaxZoom);
+		ItemStack stack = MapItem.create(level, view.centerX(), view.centerZ(), (byte) view.zoom(), true, true);
+		MapItem.renderBiomePreviewMap(level, stack);
+		for (int i = 0; i < statues.size(); i++) {
+			StatueRecord statue = statues.get(i);
+			boolean last = i == statues.size() - 1;
+			MapItemSavedData.addTargetDecoration(stack, new BlockPos(statue.posX(), level.getSeaLevel(), statue.posZ()), "guildy_statue_" + statue.id,
+					decoration(last ? cfg.lastMapDecoration : cfg.mapDecoration));
+		}
+		CompoundTag extra = new CompoundTag();
+		extra.putInt("trail", trail.id);
+		extra.putInt("statues", statues.size());
+		GuildyItems.tag(stack, KIND_STATUE_MAP, extra);
+		List<Component> lore = new ArrayList<>();
+		RuinRecord temple = RuinIndex.get(trail.temple);
+		String templeName = temple == null ? Lang.raw("ruin.item.statue_map.temple") : Lang.colorize(Encounters.def(temple).name);
+		lore.add(Lang.get("ruin.item.statue_map.lore.1"));
+		lore.add(Lang.get("ruin.item.statue_map.lore.2", templeName));
+		lore.add(Lang.get("ruin.item.statue_map.lore.count", statues.size()));
+		if (!statues.isEmpty()) {
+			StatueRecord first = statues.getFirst();
+			double dx = first.posX() - trail.originX;
+			double dz = first.posZ() - trail.originZ;
+			lore.add(Lang.get("ruin.item.statue_map.lore.first", (int) Math.round(Math.hypot(dx, dz) / 10.0) * 10,
+					Lang.raw("ruin.direction." + StatueRules.compass(dx, dz))));
+		}
+		lore.add(Lang.get("ruin.item.statue_map.lore.hint.1"));
+		lore.add(Lang.get("ruin.item.statue_map.lore.hint.2"));
+		lore.add(Lang.get("ruin.item.statue_map.lore.hint.3"));
+		return ItemUtil.named(stack, Lang.get("ruin.item.statue_map.name"), lore);
 	}
 
 	/** Map (ruin in a dimension with a level) or compass (Nether ruin); empty when its dimension is missing. */
