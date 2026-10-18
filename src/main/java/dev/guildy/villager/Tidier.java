@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenCustomHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.phys.Vec3;
@@ -27,8 +28,10 @@ import java.util.UUID;
  * Tidying of the chest groups ({@link StorageGroups}) by the sorters, when the deposits are empty:
  * <ul>
  * <li>an audit reads a whole group (loaded chests of the territory), gives every distinct stack a key in the canonical
- * order ({@link StorageSort}) and computes the perfect layout ({@link StorageLayout#layout}); items of another category
- * that have a chest elsewhere are to be taken out (items without any other destination stay in the group);</li>
+ * order ({@link StorageSort}) and computes the perfect layout ({@link StorageLayout#layout}, by columns or rows inside
+ * each chest: {@link StorageGroups#fill}); items with a better destination elsewhere ({@link StorageRouting}: another
+ * category, a filter chest accepting them, items a filter chest refuses) are to be taken out (items without any other
+ * destination stay in the group);</li>
  * <li>the work found: take misplaced items out (carried, then routed like deposits), reorganise a section within reach of
  * one standing spot in one atomic step ({@link StorageLayout#arrange}), or carry stacks between two sections
  * ({@link StorageLayout#transfers}, a full destination swaps its own extra items into the bag);</li>
@@ -120,7 +123,7 @@ final class Tidier {
 	static void touched(Guild guild, StorageChest chest) {
 		GuildState state = STATES.get(guild.id);
 		if (state != null && !chest.isDeposit() && !chest.isFree()) {
-			state.status.remove(StorageGroups.key(chest.room, Storage.effectiveCategory(chest)));
+			state.status.remove(StorageGroups.keyOf(chest));
 		}
 	}
 
@@ -265,23 +268,10 @@ final class Tidier {
 			}
 		}
 		a.rules = rules(a);
-		// Items of another category with a destination elsewhere leave the group; the others stay in its layout.
-		String fallback = Storage.categories().fallback();
-		boolean fallbackGroup = group.category().equalsIgnoreCase(fallback);
-		Vec3 from = n == 0 ? Vec3.ZERO : Vec3.atCenterOf(a.chests.getFirst().pos);
-		for (int k = 0; k < a.keys.size(); k++) {
-			ItemStack stack = a.keys.get(k);
-			if (Storage.categoryOf(stack).equalsIgnoreCase(group.category())) {
-				continue;
-			}
-			StorageChest destination = Storage.route(level, guild, from, stack, Set.of(), false);
-			if (destination != null && !(fallbackGroup && Storage.isFallback(destination))) {
-				a.out.add(k);
-			}
-		}
+		markOut(level, guild, a);
 		SortedMap<Integer, Long> totals = StorageLayout.totals(a.current, null);
 		totals.keySet().removeAll(a.out);
-		a.target = StorageLayout.layout(sizes, totals, a.rules);
+		a.target = StorageLayout.layout(sizes, totals, a.rules, StorageGroups.fill(guild));
 		a.sections = ChestOrder.sections(a.units, config.reach, config.maxChestsPerStep, a.busy);
 		boolean hasOut = false;
 		for (StorageLayout.Stack[] container : a.current) {
@@ -293,9 +283,63 @@ final class Tidier {
 		return a;
 	}
 
+	/**
+	 * Marks the keys to take out of the group: items with a better destination with room elsewhere
+	 * ({@link StorageRouting}: a filter chest accepting them before the chests of their category, their category before
+	 * the fallback). Items a filter group refuses may go back to a deposit when no other chest takes them; items of
+	 * another category in a category group stay when they have no other destination.
+	 */
+	private static void markOut(ServerLevel level, Guild guild, Audit a) {
+		StorageGroups.Group group = a.group;
+		StorageRouting.Target home;
+		if (group.filter() != null) {
+			home = StorageRouting.Target.filter(group.filter());
+		} else if (group.category().equalsIgnoreCase(Storage.categories().fallback())) {
+			home = StorageRouting.Target.fallback();
+		} else {
+			home = StorageRouting.Target.category(group.category());
+		}
+		int maxTier = group.isFilter() ? StorageRouting.DEPOSIT_TIER : StorageRouting.FALLBACK_TIER;
+		Set<BlockPos> members = new HashSet<>();
+		for (StorageChest chest : group.chests()) {
+			members.add(chest.pos);
+		}
+		// The other chests, to know without reading them whether a better destination could exist at all.
+		List<StorageRouting.Target> others = new ArrayList<>();
+		for (StorageChest chest : guild.villagers.chests) {
+			if (chest.pos != null && !members.contains(chest.pos)) {
+				others.add(Storage.target(chest));
+			}
+		}
+		Vec3 from = a.chests.isEmpty() ? Vec3.ZERO : Vec3.atCenterOf(a.chests.getFirst().pos);
+		for (int k = 0; k < a.keys.size(); k++) {
+			ItemStack stack = a.keys.get(k);
+			String id = Storage.itemId(stack);
+			String category = Storage.categoryOf(stack);
+			int homeTier = StorageRouting.tier(home, id, category);
+			if (homeTier == 0) {
+				continue;
+			}
+			int possible = StorageRouting.NONE;
+			for (StorageRouting.Target other : others) {
+				possible = Math.min(possible, StorageRouting.tier(other, id, category));
+			}
+			if (possible >= homeTier || possible > maxTier) {
+				continue;
+			}
+			StorageChest destination = Storage.route(level, guild, from, stack, Set.of(), maxTier);
+			if (destination != null && Storage.tier(destination, stack) < homeTier) {
+				a.out.add(k);
+			}
+		}
+	}
+
 	private static StorageLayout.Rules rules(Audit a) {
 		// Largest stack of each key in every container of the group, computed once.
 		int[] maxStacks = new int[a.keys.size()];
+		// Kind of each key: the same item (with other components or not) = the same kind.
+		int[] kinds = new int[a.keys.size()];
+		Map<Item, Integer> kindOf = new HashMap<>();
 		for (int key = 0; key < maxStacks.length; key++) {
 			ItemStack stack = a.keys.get(key);
 			int max = stack.getMaxStackSize();
@@ -303,11 +347,17 @@ final class Tidier {
 				max = Math.min(max, container.getMaxStackSize(stack));
 			}
 			maxStacks[key] = Math.max(1, max);
+			kinds[key] = kindOf.computeIfAbsent(stack.getItem(), item -> kindOf.size());
 		}
 		return new StorageLayout.Rules() {
 			@Override
 			public int maxStack(int key) {
 				return maxStacks[key];
+			}
+
+			@Override
+			public int kind(int key) {
+				return kinds[key];
 			}
 
 			@Override
@@ -851,11 +901,14 @@ final class Tidier {
 		return put;
 	}
 
-	/** True when the stack belongs in this group (one of its keys that stays, or an item of its category). */
+	/** True when the stack belongs in this group (one of its keys that stays, an item its filter accepts or of its category). */
 	private static boolean belongs(Audit a, ItemStack stack) {
 		int key = a.key(stack);
 		if (key >= 0) {
 			return !a.out.contains(key);
+		}
+		if (a.group.filter() != null) {
+			return a.group.filter().accepts(Storage.itemId(stack));
 		}
 		return Storage.categoryOf(stack).equalsIgnoreCase(a.group.category());
 	}

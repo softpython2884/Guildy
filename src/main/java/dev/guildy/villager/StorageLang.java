@@ -45,7 +45,7 @@ final class StorageLang {
 		m.put("villager.gui.storage.held.rule", "&8Règle : {0}");
 		m.put("villager.gui.storage.held.chests", "&7Coffres de cette catégorie : &f{0}");
 		m.put("villager.gui.storage.held.none", "&7Prenez un objet en main puis rouvrez ce\n&7menu pour savoir dans quel coffre le\n&7trieur le rangera.");
-		m.put("villager.gui.storage.help.text", "&7Les travailleurs déposent leur récolte dans\n&7les coffres de &bdépôt&7. Le trieur (tâche\n&7« Ranger la base ») range chaque objet dans\n&7un coffre de sa catégorie, sinon dans un\n&7coffre « {0} », sinon il le laisse au dépôt.\n&7Puis il re-range les coffres d'une même\n&7catégorie : piles fusionnées, ordre de\n&7l'inventaire créatif, coffre 1 rempli avant\n&7le coffre 2 (ordre de lecture du mur).\n&7Chaque coffre prend le nom de son rôle\n&7(titre affiché à l'ouverture).");
+		m.put("villager.gui.storage.help.text", "&7Les travailleurs déposent leur récolte dans\n&7les coffres de &bdépôt&7. Le trieur (tâche\n&7« Ranger la base ») range chaque objet dans\n&7un coffre de sa catégorie, sinon dans un\n&7coffre « {0} », sinon il le laisse au dépôt.\n&7Puis il re-range les coffres d'une même\n&7catégorie : piles fusionnées, ordre de\n&7l'inventaire créatif, coffre 1 rempli avant\n&7le coffre 2 (ordre de lecture du mur).\n&7Chaque coffre prend le nom de son rôle\n&7(titre affiché à l'ouverture).\n&dCoffres filtrés&7 : n'acceptent que leur\n&7famille (« diorite ») ou leurs objets, avant\n&7les coffres de catégorie. &f/guild stockage\n&fscan <chunks>&7 les crée d'après le contenu\n&7des coffres autour de vous.");
 		// categories menu
 		m.put("villager.gui.categories.title", "Catégories de rangement");
 		m.put("villager.gui.category.name", "&e&l{0}");

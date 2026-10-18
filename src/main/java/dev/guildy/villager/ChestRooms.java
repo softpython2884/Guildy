@@ -85,7 +85,7 @@ final class ChestRooms {
 	static int roomChestCount(Guild guild) {
 		int count = 0;
 		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.room > 0) {
+			if (chest.room > 0 && chest.role != StorageChest.Role.FILTER) {
 				count++;
 			}
 		}
@@ -338,7 +338,7 @@ final class ChestRooms {
 			Container container = containers.get(i);
 			for (int slot = 0; slot < container.getContainerSize(); slot++) {
 				ItemStack stack = container.getItem(slot);
-				if (stack.isEmpty() || (manual && Storage.categoryOf(stack).equalsIgnoreCase(category))) {
+				if (stack.isEmpty() || (manual && (chest.role == StorageChest.Role.FILTER ? Storage.accepts(chest, stack) : Storage.categoryOf(stack).equalsIgnoreCase(category)))) {
 					continue;
 				}
 				totals.addTo(stack.copyWithCount(1), stack.getCount());

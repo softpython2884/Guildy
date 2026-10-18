@@ -5,6 +5,7 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.CompoundContainer;
@@ -34,7 +35,7 @@ import java.util.function.Predicate;
 
 /**
  * Guild storage: container access (double chests combined), insertion with proper stacking, item categories and
- * routing of items between deposit / category / fallback chests.
+ * routing of items between deposit / filter / category / fallback chests.
  */
 final class Storage {
 	private static @Nullable StorageCategories cachedCategories;
@@ -59,12 +60,17 @@ final class Storage {
 		return ItemClassifier.categoryOf(stack);
 	}
 
+	/** Namespaced id of the item of a stack ("minecraft:diorite"). */
+	static String itemId(ItemStack stack) {
+		return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+	}
+
 	/**
 	 * Category a CATEGORY chest really receives: its category, or the fallback when that category no longer exists
-	 * (removed or renamed in villagers.json5).
+	 * (removed or renamed in villagers.json5). "" for free chests and filter chests.
 	 */
 	static String effectiveCategory(StorageChest chest) {
-		if (chest.isFree()) {
+		if (chest.isFree() || chest.role == StorageChest.Role.FILTER) {
 			return "";
 		}
 		String canonical = categories().canonical(chest.category);
@@ -75,17 +81,72 @@ final class Storage {
 		return chest.role == StorageChest.Role.CATEGORY && effectiveCategory(chest).equalsIgnoreCase(categories().fallback());
 	}
 
-	/** Same kind of destination: both deposit chests, or category chests of the same (effective) category. */
-	static boolean sameDestination(StorageChest a, StorageChest b) {
-		return a.role == b.role && (a.isDeposit() || effectiveCategory(a).equalsIgnoreCase(effectiveCategory(b)));
+	/** True when the filter of a FILTER chest accepts the stack (by item id, components never matter). */
+	static boolean accepts(StorageChest chest, ItemStack stack) {
+		return chest.isFilter() && !stack.isEmpty() && chest.filter.accepts(itemId(stack));
 	}
 
-	/** Display name of a chest role ("Dépôt" or the effective category). */
+	/**
+	 * Same kind of destination: both deposit chests, filter chests of the same filter, or category chests of the same
+	 * (effective) category.
+	 */
+	static boolean sameDestination(StorageChest a, StorageChest b) {
+		if (a.role != b.role) {
+			return false;
+		}
+		if (a.isDeposit()) {
+			return true;
+		}
+		if (a.role == StorageChest.Role.FILTER) {
+			return a.isFilter() && b.isFilter() && a.filter.key().equals(b.filter.key());
+		}
+		return effectiveCategory(a).equalsIgnoreCase(effectiveCategory(b));
+	}
+
+	/** Display name of a chest role ("Dépôt", the filter's name or the effective category). */
 	static String roleName(StorageChest chest) {
 		if (chest.isFree()) {
 			return Lang.raw("villager.storage.role.reserve");
 		}
+		if (chest.isFilter()) {
+			return FilterNames.text(chest.filter);
+		}
 		return chest.isDeposit() ? Lang.raw("villager.storage.role.deposit") : effectiveCategory(chest);
+	}
+
+	/**
+	 * May the chest give this stack to a worker looking for it (crafts, plantations)? Deposit and fallback chests,
+	 * filter chests accepting it, and the chests of its category.
+	 */
+	static boolean gives(StorageChest chest, ItemStack stack) {
+		if (chest.isDeposit() || isFallback(chest)) {
+			return true;
+		}
+		if (chest.role == StorageChest.Role.FILTER) {
+			return accepts(chest, stack);
+		}
+		return !chest.isFree() && effectiveCategory(chest).equalsIgnoreCase(categoryOf(stack));
+	}
+
+	// ------------------------------------------------------------------ routing
+
+	/** The chest as the routing sees it ({@link StorageRouting}). */
+	static StorageRouting.Target target(StorageChest chest) {
+		if (chest.isDeposit()) {
+			return StorageRouting.Target.deposit();
+		}
+		if (chest.isFree() || (chest.role == StorageChest.Role.FILTER && !chest.isFilter())) {
+			return new StorageRouting.Target(StorageRouting.Kind.RESERVE, null, "");
+		}
+		if (chest.isFilter()) {
+			return StorageRouting.Target.filter(chest.filter);
+		}
+		return isFallback(chest) ? StorageRouting.Target.fallback() : StorageRouting.Target.category(effectiveCategory(chest));
+	}
+
+	/** Tier of a chest for a stack ({@link StorageRouting#tier}). */
+	static int tier(StorageChest chest, ItemStack stack) {
+		return StorageRouting.tier(target(chest), itemId(stack), categoryOf(stack));
 	}
 
 	// ------------------------------------------------------------------ containers
@@ -325,8 +386,10 @@ final class Storage {
 	}
 
 	/**
-	 * Destination of a stack for the sorter: a chest of its category, else a fallback ("Divers") chest, else
-	 * (if {@code allowDeposit}) a deposit chest. Only usable chests with free space, not excluded. Nearest first.
+	 * Destination of a stack for the sorter ({@link StorageRouting}): a filter chest accepting it (exact items, then
+	 * material, then type), else a chest of its category, else a fallback ("Divers") chest, else (if
+	 * {@code allowDeposit}) a deposit chest. Only usable chests with free space, not excluded. Nearest first within a
+	 * tier.
 	 */
 	static @Nullable StorageChest route(WorkContext ctx, ItemStack stack, Set<BlockPos> excluded, boolean allowDeposit) {
 		return route(ctx.level, ctx.guild, ctx.villager.position(), stack, excluded, allowDeposit);
@@ -334,41 +397,34 @@ final class Storage {
 
 	/** Same as {@link #route(WorkContext, ItemStack, Set, boolean)}, nearest to {@code from}. */
 	static @Nullable StorageChest route(ServerLevel level, Guild guild, Vec3 from, ItemStack stack, Set<BlockPos> excluded, boolean allowDeposit) {
-		String category = categoryOf(stack);
-		boolean isFallback = category.equalsIgnoreCase(categories().fallback());
-		if (!isFallback) {
-			StorageChest chest = nearestWithSpace(level, guild, from, stack, excluded,
-					c -> c.role == StorageChest.Role.CATEGORY && !c.isFree() && effectiveCategory(c).equalsIgnoreCase(category));
-			if (chest != null) {
-				return chest;
-			}
-		}
-		StorageChest fallback = nearestWithSpace(level, guild, from, stack, excluded, Storage::isFallback);
-		if (fallback != null || !allowDeposit) {
-			return fallback;
-		}
-		return nearestWithSpace(level, guild, from, stack, excluded, StorageChest::isDeposit);
+		return route(level, guild, from, stack, excluded, allowDeposit ? StorageRouting.DEPOSIT_TIER : StorageRouting.FALLBACK_TIER);
 	}
 
-	private static @Nullable StorageChest nearestWithSpace(ServerLevel level, Guild guild, Vec3 from, ItemStack stack, Set<BlockPos> excluded,
-			Predicate<StorageChest> filter) {
-		StorageChest best = null;
-		double bestDist = Double.MAX_VALUE;
+	/** Best usable chest with room for the stack among the tiers up to {@code maxTier}, nearest first, or null. */
+	static @Nullable StorageChest route(ServerLevel level, Guild guild, Vec3 from, ItemStack stack, Set<BlockPos> excluded, int maxTier) {
+		List<StorageChest> chests = new ArrayList<>();
+		List<StorageRouting.Target> targets = new ArrayList<>();
 		for (StorageChest chest : guild.villagers.chests) {
-			if (!filter.test(chest) || excluded.contains(chest.pos) || !usable(level, guild, chest)) {
+			if (chest.pos != null && !excluded.contains(chest.pos)) {
+				chests.add(chest);
+				targets.add(target(chest));
+			}
+		}
+		double[] dist = new double[chests.size()];
+		for (int i = 0; i < dist.length; i++) {
+			dist[i] = from.distanceToSqr(Vec3.atBottomCenterOf(chests.get(i).pos));
+		}
+		for (int index : StorageRouting.candidates(targets, dist, itemId(stack), categoryOf(stack), maxTier)) {
+			StorageChest chest = chests.get(index);
+			if (!usable(level, guild, chest)) {
 				continue;
 			}
 			Container container = container(level, chest.pos);
-			if (container == null || spaceFor(container, stack) <= 0) {
-				continue;
-			}
-			double dist = from.distanceToSqr(Vec3.atBottomCenterOf(chest.pos));
-			if (dist < bestDist) {
-				bestDist = dist;
-				best = chest;
+			if (container != null && spaceFor(container, stack) > 0) {
+				return chest;
 			}
 		}
-		return best;
+		return null;
 	}
 
 	/** True if the stack has a sorted destination (category or fallback chest with room). Memoized per item for one scan. */
