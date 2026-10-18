@@ -60,6 +60,9 @@ final class AtelierMenu {
 		gui.setSlot(4, info(guild, research));
 		if (research == null) {
 			gui.setSlot(11, researchButton(player, guild, false));
+			if (Cartography.settings().statues.enabled) {
+				gui.setSlot(13, legendButton(player, guild));
+			}
 			gui.setSlot(15, researchButton(player, guild, true));
 		} else if (research.status == Research.Status.RUNNING) {
 			gui.setSlot(13, progress(guild, research));
@@ -72,7 +75,8 @@ final class AtelierMenu {
 		} else {
 			boolean ready = research.status == Research.Status.READY;
 			Item icon = ready ? (research.nether ? Items.COMPASS : Items.FILLED_MAP) : Items.PAPER;
-			List<Component> claimLore = new ArrayList<>(GuiUtil.lines(ready ? "ruin.menu.claim.lore" : "ruin.menu.refund.lore"));
+			List<Component> claimLore = new ArrayList<>(GuiUtil.lines(ready ? (research.legend ? "ruin.menu.claim.legend.lore" : "ruin.menu.claim.lore")
+					: "ruin.menu.refund.lore"));
 			int incantations = Cartography.settings().incantationsPerResearch;
 			if (ready && incantations > 0) {
 				claimLore.add(Lang.get("ruin.menu.incantation", incantations));
@@ -136,6 +140,42 @@ final class AtelierMenu {
 		});
 	}
 
+	/** "La legende du Jaguar celeste": the statue trail to the grand temple (guild level, its own cost and duration). */
+	private static GuiElementBuilder legendButton(ServerPlayer player, Guild guild) {
+		StatueSettings cfg = Cartography.settings().statues;
+		List<Component> lore = new ArrayList<>(GuiUtil.lines("ruin.menu.research.legend.lore"));
+		int incantations = Cartography.settings().incantationsPerResearch;
+		if (incantations > 0) {
+			lore.add(Lang.get("ruin.menu.incantation", incantations));
+		}
+		lore.add(Component.empty());
+		boolean level = guild.level >= cfg.minGuildLevel;
+		lore.add(Lang.get(level ? "ruin.menu.research.legend.level.ok" : "ruin.menu.research.legend.level.missing", cfg.minGuildLevel, guild.level));
+		lore.add(Lang.get("ruin.menu.research.cost"));
+		for (Map.Entry<String, Integer> entry : cfg.cost.entrySet()) {
+			Item item = ItemUtil.item(entry.getKey());
+			if (item != null) {
+				boolean has = ItemUtil.count(player, item) >= entry.getValue();
+				lore.add(Lang.get(has ? "ruin.menu.research.cost.ok" : "ruin.menu.research.cost.missing", entry.getValue(),
+						ItemUtil.name(item).getString()));
+			}
+		}
+		if (cfg.goldCost > 0) {
+			lore.add(Lang.get("ruin.menu.research.cost.gold", cfg.goldCost));
+		}
+		lore.add(Lang.get("ruin.menu.research.duration", formatMinutes(cfg.researchMinutes)));
+		lore.add(Component.empty());
+		lore.add(Lang.get(level ? "ruin.menu.research.click" : "ruin.menu.research.legend.locked"));
+		GuiElementBuilder button = GuiUtil.item(level ? Items.VERDANT_FROGLIGHT : Items.MOSSY_STONE_BRICKS, Lang.get("ruin.menu.research.legend"), lore);
+		if (level) {
+			button.glow();
+		}
+		return button.setCallback((i, t, a, g) -> {
+			result(player, Cartography.startLegend(player, guild));
+			open(player, guild);
+		});
+	}
+
 	private static GuiElementBuilder progress(Guild guild, Research research) {
 		int working = Cartography.working(guild);
 		List<Component> lore = new ArrayList<>();
@@ -143,7 +183,7 @@ final class AtelierMenu {
 		int filled = (int) Math.round(Math.max(0, Math.min(1, ratio)) * 20);
 		lore.add(Lang.get("ruin.menu.progress.bar", "&a" + "|".repeat(filled) + "&8" + "|".repeat(20 - filled),
 				RuinRules.percent(research.progress, research.required)));
-		lore.add(Lang.get(research.nether ? "ruin.menu.progress.nether" : "ruin.menu.progress.overworld"));
+		lore.add(Lang.get(research.legend ? "ruin.menu.progress.legend" : research.nether ? "ruin.menu.progress.nether" : "ruin.menu.progress.overworld"));
 		long left = RuinRules.secondsLeft(research.progress, research.required,
 				RuinRules.researchWorkers(working, Cartography.settings().maxCartographers));
 		lore.add(left < 0 ? Lang.get("ruin.menu.progress.paused") : Lang.get("ruin.menu.progress.left", formatSeconds(left)));

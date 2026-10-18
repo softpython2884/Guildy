@@ -47,6 +47,8 @@ public class GuildRuinData {
 		}
 
 		public boolean nether;
+		/** "La legende du Jaguar celeste": a statue trail to the grand temple instead of a map of the ruin (false in older saves). */
+		public boolean legend;
 		public Status status = Status.RUNNING;
 		/** Seconds of work done / needed. */
 		public double progress;
@@ -59,6 +61,8 @@ public class GuildRuinData {
 		public int paidGold;
 		/** Result (READY): ruin key. */
 		public String ruinKey = "";
+		/** Result of a legend research (READY): the statue trail (0 = none yet). */
+		public int trailId;
 
 		public Research() {
 		}

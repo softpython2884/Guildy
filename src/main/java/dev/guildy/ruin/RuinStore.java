@@ -39,8 +39,31 @@ final class RuinStore {
 		List<Orphan> orphans = new ArrayList<>();
 		/** Guild id → cartography data. */
 		Map<String, GuildRuinData> guilds = new LinkedHashMap<>();
+		/** Jaguar statues of the trails to the grand temples (absent from older saves). */
+		List<StatueRecord> statues = new ArrayList<>();
+		List<StatueTrail> trails = new ArrayList<>();
+		int nextStatueId = 1;
+		int nextTrailId = 1;
 
 		void fixNulls() {
+			if (statues == null) {
+				statues = new ArrayList<>();
+			}
+			statues.removeIf(s -> s == null || s.id <= 0);
+			for (StatueRecord statue : statues) {
+				statue.fixNulls();
+				nextStatueId = Math.max(nextStatueId, statue.id + 1);
+			}
+			if (trails == null) {
+				trails = new ArrayList<>();
+			}
+			trails.removeIf(t -> t == null || t.id <= 0);
+			for (StatueTrail trail : trails) {
+				trail.fixNulls();
+				nextTrailId = Math.max(nextTrailId, trail.id + 1);
+			}
+			nextStatueId = Math.max(1, nextStatueId);
+			nextTrailId = Math.max(1, nextTrailId);
 			if (ruins == null) {
 				ruins = new ArrayList<>();
 			}
@@ -111,7 +134,11 @@ final class RuinStore {
 	}
 
 	private static Root read(Path file) throws IOException {
-		String text = Files.readString(file, StandardCharsets.UTF_8);
+		return parse(Files.readString(file, StandardCharsets.UTF_8));
+	}
+
+	/** File content → data (nulls fixed). */
+	static Root parse(String text) {
 		JsonObject json = JsonParser.parseString(text).getAsJsonObject();
 		int version = json.has("dataVersion") ? json.get("dataVersion").getAsInt() : 0;
 		if (version > DATA_VERSION) {
@@ -128,14 +155,19 @@ final class RuinStore {
 	static void save(MinecraftServer server, Root root) throws IOException {
 		Path file = path(server);
 		Files.createDirectories(file.getParent());
-		root.dataVersion = DATA_VERSION;
-		String text = gson().toJson(root);
+		String text = toJson(root);
 		Path tmp = file.resolveSibling(FILE + ".tmp");
 		Files.writeString(tmp, text, StandardCharsets.UTF_8);
 		if (Files.exists(file)) {
 			Files.copy(file, file.resolveSibling(FILE + ".bak"), StandardCopyOption.REPLACE_EXISTING);
 		}
 		Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+	}
+
+	/** Data → file content. */
+	static String toJson(Root root) {
+		root.dataVersion = DATA_VERSION;
+		return gson().toJson(root);
 	}
 
 	private static @Nullable Gson cached;

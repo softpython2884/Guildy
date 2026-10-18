@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -69,8 +70,9 @@ public final class RuinIndex {
 		});
 		long now = System.currentTimeMillis();
 		root.orphans.removeIf(o -> now - o.createdAt > ORPHAN_TTL_MS);
+		Statues.reindex();
 		dirty = false;
-		Guildy.LOGGER.info("[ruins] {} known ruin(s) loaded", BY_KEY.size());
+		Guildy.LOGGER.info("[ruins] {} known ruin(s), {} jaguar statue(s) loaded", BY_KEY.size(), root.statues.size());
 	}
 
 	static void save(MinecraftServer server, boolean force) {
@@ -91,7 +93,29 @@ public final class RuinIndex {
 		BY_KEY.clear();
 		MarkerCapture.MARKERS.clear();
 		MarkerCapture.STARTS.clear();
+		Statues.reindex();
 		dirty = false;
+	}
+
+	// ================================================================== statues of the trails to the grand temples
+
+	/** Every statue (mutable: {@link Statues} keeps its indexes in step). */
+	static List<StatueRecord> statues() {
+		return root.statues;
+	}
+
+	static List<StatueTrail> trails() {
+		return root.trails;
+	}
+
+	static int allocateStatueId() {
+		dirty = true;
+		return root.nextStatueId++;
+	}
+
+	static int allocateTrailId() {
+		dirty = true;
+		return root.nextTrailId++;
 	}
 
 	public static void markDirty() {

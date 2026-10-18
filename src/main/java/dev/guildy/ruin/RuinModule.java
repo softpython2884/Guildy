@@ -37,6 +37,7 @@ public final class RuinModule {
 		Incantations.init();
 		RoomGuards.init();
 		Sanctuaries.init();
+		Statues.init();
 		CursedFights.init();
 		Felines.init();
 		RuinCommands.register();

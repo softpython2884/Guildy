@@ -67,10 +67,13 @@ public final class Sanctuaries {
 
 	// ================================================================== queries
 
-	/** A beacon of a known ruin, or a block of its pyramid. */
+	/** A beacon of a known ruin, or a block of its pyramid, or a block of a jaguar statue of the trails ({@link Statues}). */
 	public static boolean isProtected(Level level, BlockPos pos) {
 		if (!(level instanceof ServerLevel server)) {
 			return false;
+		}
+		if (Statues.protects(level, pos)) {
+			return true;
 		}
 		RuinRecord ruin = RuinIndex.containing(level.dimension(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 0);
 		return ruin != null && protects(server, ruin, pos);
@@ -136,6 +139,7 @@ public final class Sanctuaries {
 		if (positions.isEmpty() || !(level instanceof ServerLevel server)) {
 			return;
 		}
+		Statues.filterExplosion(level, positions);
 		int minX = Integer.MAX_VALUE;
 		int minY = Integer.MAX_VALUE;
 		int minZ = Integer.MAX_VALUE;

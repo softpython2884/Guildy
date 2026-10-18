@@ -5,6 +5,8 @@ Builds the ruins and writes everything the mod needs under src/main/resources/da
   worldgen/structure_set/ruins_overworld.json + ruins_nether.json (+ ruins_landmark.json for the grand temple), biome
   tags, structure tags.
 Then validates every template (check.py rules) and renders the previews (tools/ruins/previews/<id>.png).
+Monuments (ruins.MONUMENTS: the jaguar statues of the trail to the grand temple) only write structure/ruin/<id>.nbt
+(the mod places them itself) and are checked with the monument contract.
 
   python tools/ruins/build_all.py [ids...] [--no-render]
 """
@@ -72,9 +74,19 @@ def main():
 	ap.add_argument("ids", nargs="*")
 	ap.add_argument("--no-render", action="store_true")
 	args = ap.parse_args()
-	ids = args.ids or ruins.available()
+	ids = args.ids or ruins.available() + ruins.MONUMENTS
 	built = []
 	failed = False
+	for monument_id in [i for i in ids if i in ruins.MONUMENTS]:
+		# monuments: one template placed by the mod (no worldgen, not part of the structure sets)
+		monument = ruins.load_monument(monument_id)
+		monument.write()
+		report = check.check_monument_object(monument)
+		print(report.text())
+		failed |= not report.ok
+		if not args.no_render:
+			print("  preview:", render.render_monument(monument))
+	ids = [i for i in ids if i not in ruins.MONUMENTS]
 	for ruin_id in ids:
 		ruin = ruins.load(ruin_id)
 		for path in ruin.write():
@@ -87,8 +99,9 @@ def main():
 			for v in ruin.variants[1:] if ruin.variants and not ruin.variants[0].name else ruin.variants:
 				print("  preview:", render.render_variant(ruin, v))
 		built.append(ruin)
-	write_sets([r for r in built] if not args.ids else [ruins.load(i) for i in ruins.available()])
-	print("structure sets and tags written")
+	if ids or not args.ids:
+		write_sets([r for r in built] if not args.ids else [ruins.load(i) for i in ruins.available()])
+		print("structure sets and tags written")
 	if failed:
 		sys.exit(1)
 
