@@ -8,6 +8,7 @@ import dev.guildy.core.Scheduler;
 import dev.guildy.scroll.mixin.LivingEntityAccessor;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.protocol.game.ClientboundHurtAnimationPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Casting a scroll, or the selected page of a grimoire. Right click starts the vanilla channel animation of the item's
@@ -39,7 +41,9 @@ import java.util.UUID;
  * grimoire; a refused start also stops the animation the client predicted). While channeling, a runic circle draws itself
  * under the caster. When the vanilla use completes, {@code ItemStack.finishUsingItem} is intercepted (mixin) and
  * {@link #finish} casts the spell: on success exactly one scroll is consumed (never in creative) and the cooldown of its
- * group starts, or the grimoire costs its food and starts its own cooldown; on failure nothing is spent.
+ * group starts, or the grimoire costs its food and starts its own cooldown; on failure nothing is spent. A cursed grimoire
+ * casts with its amplified {@link SpellPower}, costs more food plus a little health (never below its floor: refused
+ * otherwise), runs its own longer cooldown and adds the cursed layer of {@link CursedSpellFx} to the circle and the cast.
  *
  * <p>When the server completes a use, the vanilla client completes it too and predicts the consumable's effects (one item
  * eaten, the item's use_cooldown): whenever the server does not consume the item, the hand and the cooldowns are sent back.
@@ -102,18 +106,23 @@ public final class ScrollCasting {
 			return InteractionResult.PASS;
 		}
 		ScrollConfig cfg = ScrollModule.config();
+		boolean cursed = grimoire && GrimoireItems.isCursed(stack);
 		if (player.getCooldowns().isOnCooldown(stack)) {
-			double total = grimoire ? cfg.grimoire.cooldownSeconds : def.cooldownSeconds;
+			double total = grimoire ? GrimoireItems.cooldownSeconds(cursed) : def.cooldownSeconds;
 			double left = player.getCooldowns().getCooldownPercent(stack, 0.0F) * total;
-			return refuse(player, grimoire ? "grimoire.fail.cooldown" : "scroll.fail.cooldown",
+			return refuse(player, grimoire ? GrimoireItems.key("grimoire.fail.cooldown", cursed) : "scroll.fail.cooldown",
 					Spell.number(Math.max(0.1, Math.ceil(left * 10) / 10)));
 		}
-		String problem = precheck(player, def);
+		String problem = precheck(player, def, grimoire ? GrimoireItems.power(def, cursed) : SpellPower.NONE);
 		if (problem != null) {
 			return refuse(player, grimoire ? grimoireKey(problem) : problem);
 		}
-		if (grimoire && !affords(player, def)) {
-			return refuse(player, "grimoire.fail.hungry", GrimoireItems.foodCost(def), player.getFoodData().getFoodLevel());
+		if (grimoire && !affords(player, def, cursed)) {
+			return refuse(player, "grimoire.fail.hungry", GrimoireItems.foodCost(def, cursed), player.getFoodData().getFoodLevel());
+		}
+		if (cursed && !bleeds(player, def)) {
+			return refuse(player, "grimoire.cursed.fail.blood", GrimoireItems.hearts(GrimoireItems.bloodCost(def, true)),
+					GrimoireItems.hearts((int) Math.ceil(cfg.cursedGrimoire.minHealth)));
 		}
 		player.startUsingItem(hand);
 		if (!player.isUsingItem()) {
@@ -128,11 +137,17 @@ public final class ScrollCasting {
 		player.level().playSound(null, pos.x, pos.y, pos.z, def.spell().offensive ? SoundEvents.EVOKER_PREPARE_ATTACK : SoundEvents.EVOKER_PREPARE_WOLOLO,
 				SoundSource.PLAYERS, grimoire ? 0.7F : 1.0F, grimoire ? 1.3F : 1.0F);
 		player.level().playSound(null, pos.x, pos.y, pos.z, SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 0.8F);
+		if (cursed) {
+			CursedSpellFx.beginSound(player);
+		}
 		return InteractionResult.CONSUME;
 	}
 
-	/** Conditions shared by the start and the completion. @return lang key of the problem, or null */
-	private static @Nullable String precheck(ServerPlayer player, ScrollConfig.ScrollDef def) {
+	/**
+	 * Conditions shared by the start and the completion, checked with the power of the cast (an amplified range finds its
+	 * target). @return lang key of the problem, or null
+	 */
+	private static @Nullable String precheck(ServerPlayer player, ScrollConfig.ScrollDef def, SpellPower power) {
 		ScrollConfig cfg = ScrollModule.config();
 		if (!cfg.enabled) {
 			return "scroll.fail.disabled";
@@ -146,7 +161,7 @@ public final class ScrollCasting {
 		if (EffectRunner.count() >= cfg.limits.maxEffectsServer) {
 			return "scroll.fail.limit_server";
 		}
-		return Spells.check(new SpellContext(player, def));
+		return Spells.check(new SpellContext(player, def, power));
 	}
 
 	/** The grimoire's own wording of a scroll message when it has one ("scroll.fail.x" -> "grimoire.fail.x"). */
@@ -160,9 +175,15 @@ public final class ScrollCasting {
 		return key;
 	}
 
-	/** Enough food for a grimoire cast of this spell (always in creative). */
-	private static boolean affords(ServerPlayer player, ScrollConfig.ScrollDef def) {
-		return player.hasInfiniteMaterials() || GrimoireRules.canAfford(player.getFoodData().getFoodLevel(), GrimoireItems.foodCost(def));
+	/** Enough food for a grimoire (or cursed grimoire) cast of this spell (always in creative). */
+	private static boolean affords(ServerPlayer player, ScrollConfig.ScrollDef def, boolean cursed) {
+		return player.hasInfiniteMaterials() || GrimoireRules.canAfford(player.getFoodData().getFoodLevel(), GrimoireItems.foodCost(def, cursed));
+	}
+
+	/** Enough health for the blood price of a cursed grimoire cast of this spell (always in creative). */
+	private static boolean bleeds(ServerPlayer player, ScrollConfig.ScrollDef def) {
+		return player.hasInfiniteMaterials() || CursedGrimoireRules.canBleed(player.getHealth(), GrimoireItems.bloodCost(def, true),
+				ScrollModule.config().cursedGrimoire.minHealth);
 	}
 
 	/**
@@ -210,15 +231,20 @@ public final class ScrollCasting {
 			return stack;
 		}
 		ScrollConfig cfg = ScrollModule.config();
-		String problem = precheck(player, def);
-		if (problem == null && grimoire && !cfg.grimoire.enabled) {
-			problem = "grimoire.fail.disabled";
+		boolean cursed = grimoire && GrimoireItems.isCursed(stack);
+		SpellPower power = grimoire ? GrimoireItems.power(def, cursed) : SpellPower.NONE;
+		String problem = precheck(player, def, power);
+		if (problem == null && grimoire && !GrimoireItems.enabled(cursed)) {
+			problem = GrimoireItems.key("grimoire.fail.disabled", cursed);
 		}
-		if (problem == null && grimoire && !affords(player, def)) {
+		if (problem == null && grimoire && !affords(player, def, cursed)) {
 			problem = "grimoire.fail.hungry_now";
 		}
+		if (problem == null && cursed && !bleeds(player, def)) {
+			problem = "grimoire.cursed.fail.blood_now";
+		}
 		if (problem == null) {
-			problem = Spells.cast(new SpellContext(player, def, grimoire ? cfg.grimoire.powerMultiplier : 1.0));
+			problem = Spells.cast(new SpellContext(player, def, power));
 		}
 		if (problem != null) {
 			Msg.actionBar(player, grimoire ? grimoireKey(problem) : problem);
@@ -227,15 +253,25 @@ public final class ScrollCasting {
 			undoPrediction(player, stack, true);
 			return stack;
 		}
-		Identifier group = grimoire ? GrimoireItems.COOLDOWN_GROUP : ScrollItems.cooldownGroup(def);
+		Identifier group = grimoire ? GrimoireItems.cooldownGroup(cursed) : ScrollItems.cooldownGroup(def);
 		if (!player.hasInfiniteMaterials() || cfg.casting.creativeCooldown) {
-			double seconds = grimoire ? cfg.grimoire.cooldownSeconds : def.cooldownSeconds;
+			double seconds = grimoire ? GrimoireItems.cooldownSeconds(cursed) : def.cooldownSeconds;
 			player.getCooldowns().addCooldown(group, (int) Math.max(1, Math.round(seconds * 20)));
 		} else {
 			undoPrediction(player, stack, false);
 		}
 		player.awardStat(Stats.ITEM_USED.get(stack.getItem()));
-		castFlash(player, def.spell(), phase(Scheduler.ticks() - channel.start()));
+		castFlash(player, def.spell(), phase(Scheduler.ticks() - channel.start()), cursed);
+		if (cursed) {
+			int cost = player.hasInfiniteMaterials() ? 0 : GrimoireItems.foodCost(def, true);
+			int blood = player.hasInfiniteMaterials() ? 0 : GrimoireItems.bloodCost(def, true);
+			eat(player, cost);
+			bleed(player, blood);
+			Msg.actionBar(player, cost > 0 || blood > 0 ? "grimoire.cursed.cast" : "scroll.cast", GrimoireItems.spellName(def), cost,
+					GrimoireItems.hearts(blood));
+			undoPrediction(player, stack, true);
+			return stack;
+		}
 		if (grimoire) {
 			int cost = player.hasInfiniteMaterials() ? 0 : GrimoireItems.foodCost(def);
 			eat(player, cost);
@@ -266,6 +302,29 @@ public final class ScrollCasting {
 	}
 
 	/**
+	 * Pays the blood price of a cursed grimoire cast: health taken directly (no armour, no damage event, never below
+	 * {@code cursedGrimoire.minHealth}), the vanilla hurt flash, a few drops of blood.
+	 */
+	private static void bleed(ServerPlayer player, int cost) {
+		if (cost <= 0) {
+			return;
+		}
+		float health = player.getHealth();
+		float after = CursedGrimoireRules.bleed(health, cost, ScrollModule.config().cursedGrimoire.minHealth);
+		if (after >= health) {
+			return;
+		}
+		player.setHealth(after);
+		ClientboundHurtAnimationPacket hurt = new ClientboundHurtAnimationPacket(player);
+		player.connection.send(hurt);
+		player.level().getChunkSource().sendToTrackingPlayers(player, hurt);
+		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_HURT, SoundSource.PLAYERS, 0.6F, 0.7F);
+		Fx fx = new Fx(player.level(), player.position(), 40, 48);
+		CursedSpellFx.bleed(fx, player);
+		fx.flush();
+	}
+
+	/**
 	 * Undoes what the vanilla client predicted when the use completed without consuming the item: the item eaten (the
 	 * inventory is sent again when {@code inventory}) and the item's use_cooldown (cleared when the server runs none for it).
 	 */
@@ -293,7 +352,7 @@ public final class ScrollCasting {
 			if (player == null || !player.isAlive() || !player.isUsingItem()) {
 				ended.add(entry.getKey());
 				if (player != null && player.isAlive()) {
-					Msg.actionBar(player, channel.key().startsWith("grimoire/") ? "grimoire.fail.interrupted" : "scroll.fail.interrupted");
+					Msg.actionBar(player, GrimoireItems.isGrimoireKey(channel.key()) ? "grimoire.fail.interrupted" : "scroll.fail.interrupted");
 					fizzle(player);
 				}
 				continue;
@@ -306,7 +365,7 @@ public final class ScrollCasting {
 				ended.add(entry.getKey());
 				player.stopUsingItem();
 				syncUsing(player);
-				Msg.actionBar(player, channel.key().startsWith("grimoire/") ? "grimoire.fail.interrupted" : "scroll.fail.interrupted");
+				Msg.actionBar(player, GrimoireItems.isGrimoireKey(channel.key()) ? "grimoire.fail.interrupted" : "scroll.fail.interrupted");
 				continue;
 			}
 			ScrollConfig.ScrollDef def = grimoire ? GrimoireItems.selectedDef(GrimoireItems.pages(using)) : cfg.scroll(key);
@@ -314,7 +373,8 @@ public final class ScrollCasting {
 				continue;
 			}
 			long elapsed = now - channel.start();
-			Safe.run("scroll.channel.fx", () -> drawChannel(player, def.spell(), elapsed, channel.ticks()));
+			boolean cursed = grimoire && GrimoireItems.isCursed(using);
+			Safe.run("scroll.channel.fx", () -> drawChannel(player, def.spell(), elapsed, channel.ticks(), cursed));
 		}
 		for (UUID uuid : ended) {
 			CHANNELS.remove(uuid);
@@ -326,7 +386,7 @@ public final class ScrollCasting {
 	 * whatever the channel's length, see {@link ChannelRules#drawProgress}), glyphs flowing into their hands, a rising light
 	 * and a shimmering halo once it is complete.
 	 */
-	private static void drawChannel(ServerPlayer player, Spell spell, long elapsed, int total) {
+	private static void drawChannel(ServerPlayer player, Spell spell, long elapsed, int total, boolean cursed) {
 		ScrollConfig.Limits limits = ScrollModule.config().limits;
 		double progress = ChannelRules.drawProgress(elapsed, total);
 		Fx fx = new Fx(player.level(), player.position(), 220, limits.viewDistance);
@@ -348,10 +408,16 @@ public final class ScrollCasting {
 			double angle = elapsed * 0.9;
 			fx.move(ParticleTypes.END_ROD, feet.x + Math.cos(angle) * CIRCLE_RADIUS, feet.y, feet.z + Math.sin(angle) * CIRCLE_RADIUS, 0, 0.18, 0);
 		}
+		if (cursed) {
+			CursedSpellFx.channel(fx, feet, CIRCLE_RADIUS, progress, phase(elapsed), elapsed, ThreadLocalRandom.current());
+		}
 		fx.flush();
 		if (elapsed % 10 == 5) {
 			player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.8F,
-					0.6F + (float) progress);
+					(cursed ? 0.4F : 0.6F) + (float) progress);
+		}
+		if (cursed) {
+			CursedSpellFx.channelSound(player, elapsed, progress);
 		}
 	}
 
@@ -364,7 +430,7 @@ public final class ScrollCasting {
 	 * Flash and sparks of a successful cast around the caster: the completed circle blazes one last time under their feet
 	 * (in its last rotation) and its light ripples outwards.
 	 */
-	private static void castFlash(ServerPlayer player, Spell spell, double phase) {
+	private static void castFlash(ServerPlayer player, Spell spell, double phase, boolean cursed) {
 		Fx fx = new Fx(player.level(), player.position(), 400, ScrollModule.config().limits.viewDistance);
 		Vec3 hands = player.position().add(0, 1.2, 0);
 		Vec3 feet = player.position().add(0, 0.08, 0);
@@ -374,9 +440,12 @@ public final class ScrollCasting {
 		fx.sphereBurst(Fx.fade(spell.color, spell.accent, 1.2F), hands, 0.3, 40, 0.25);
 		fx.burst(ParticleTypes.ENCHANT, hands, 40, 0.5, 1.0);
 		fx.arc(Fx.dust(spell.color, 1.0F), player.position().add(0, 0.1, 0), CIRCLE_RADIUS, 0, Math.PI * 2, 30, true);
+		if (cursed) {
+			CursedSpellFx.cast(fx, player, CIRCLE_RADIUS, phase);
+		}
 		fx.flush();
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-				spell.offensive ? SoundEvents.EVOKER_CAST_SPELL : SoundEvents.ILLUSIONER_CAST_SPELL, SoundSource.PLAYERS, 1.5F, 1.0F);
+				spell.offensive ? SoundEvents.EVOKER_CAST_SPELL : SoundEvents.ILLUSIONER_CAST_SPELL, SoundSource.PLAYERS, 1.5F, cursed ? 0.6F : 1.0F);
 	}
 
 	/** A failed or interrupted incantation: smoke and a dull sound. */

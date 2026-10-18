@@ -580,7 +580,8 @@ final class CursedEncounter {
 
 	/**
 	 * Drops added to a victory's loot: a cursed scroll sometimes on a guardian defeated in its risen form, and on a cursed
-	 * guardian a blank grimoire ({@code grimoireChance}) and a guaranteed spell scroll when no roll gave one.
+	 * guardian a blank grimoire ({@code grimoireChance}), a blank cursed grimoire when its ruin is listed in scrolls.json5
+	 * {@code cursedGrimoire.ruinDrops} (the Tour du Mage by default) and a guaranteed spell scroll when no roll gave one.
 	 *
 	 * @return the stacks dropped
 	 */
@@ -598,6 +599,8 @@ final class CursedEncounter {
 		if (scrolls.dropsEnabled && scrolls.grimoire.enabled && chance > 0 && (chance >= 1 || random.nextDouble() < chance)) {
 			dropped += RuinLoot.protectedDrop(level, boss, GrimoireItems.create(GrimoireRules.Pages.EMPTY));
 		}
+		// The cursed grimoire: only from the cursed guardians of scrolls.json5 cursedGrimoire.ruinDrops (the fallen archmage).
+		dropped += RuinLoot.protectedDrop(level, boss, ScrollModule.cursedGrimoireDrop(encounter.ruin.ruinId, true, random));
 		if (settings.rewards.guaranteedScroll && !scrollDropped) {
 			ItemStack scroll = ScrollDrops.pick(scrollSource, random);
 			dropped += RuinLoot.protectedDrop(level, boss, scroll);

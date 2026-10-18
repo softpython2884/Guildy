@@ -28,8 +28,9 @@ import java.util.regex.Pattern;
 		"Guildy - parchemins de sort : objets a usage unique qui lancent un sort tres puissant (clic droit maintenu).",
 		"Ils tombent des boss des ruines (surtout), des boss des hordes, des quetes, des expeditions des villageois et se",
 		"vendent parfois au Carrefour commercial. Les sorts ne blessent que les monstres et ne modifient aucun bloc.",
-		"Le grimoire (section grimoire) relie jusqu'a 4 parchemins et relance leurs sorts contre de la nourriture.",
-		"Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre] | grimoire <joueur> [ids]."
+		"Le grimoire (section grimoire) relie jusqu'a 4 parchemins et relance leurs sorts contre de la nourriture ; le grimoire",
+		"maudit (section cursedGrimoire) fait de meme avec des sorts bien plus puissants, contre plus de faim et un peu de sang.",
+		"Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre] | grimoire <joueur> [cursed] [ids]."
 })
 public final class ScrollConfig implements Validatable {
 	/**
@@ -74,6 +75,15 @@ public final class ScrollConfig implements Validatable {
 			"/guild grimoire = gerer les pages. Rien n'est consomme : chaque sort coute de la nourriture."
 	})
 	public Grimoire grimoire = new Grimoire();
+
+	@Comment({
+			"Grimoire maudit : memes regles que le grimoire (4 pages reliees depuis des parchemins, clic droit = lancer, accroupi +",
+			"clic droit = page suivante, accroupi + F = les pages ; incantation de la section grimoire) mais ses sorts sont bien",
+			"plus puissants : plus de degats, de duree, de portee, de cibles, de meteores... Prix : plus de faim, un peu de sang",
+			"(points de vie, jamais en dessous de minHealth : sinon le sort est refuse) et une recharge plus longue. Creatif : gratuit.",
+			"Il ne tombe que du gardien MAUDIT des ruines de ruinDrops (l'Archimage dechu de la Tour du Mage par defaut)."
+	})
+	public CursedGrimoire cursedGrimoire = new CursedGrimoire();
 
 	@Comment({
 			"Tables de butin par source : chance (0 a 1) qu'un parchemin tombe, min/max (nombre de parchemins), puis tirage",
@@ -199,6 +209,72 @@ public final class ScrollConfig implements Validatable {
 		public int fingerprint() {
 			return java.util.Objects.hash(enabled, item, glint, channelSeconds, channelFactor, animation, cooldownSeconds, powerMultiplier, foodCost,
 					model);
+		}
+	}
+
+	@Json5.Section
+	public static final class CursedGrimoire {
+		@Comment("Grimoire maudit actif (false = il ne lance plus rien et ne tombe plus ; ses pages sont conservees)")
+		public boolean enabled = true;
+		@Comment("Objet vanilla de base (simple, sans utilisation propre ; livre enchante par defaut)")
+		public String item = "minecraft:enchanted_book";
+		@Comment("Brillance")
+		public boolean glint = true;
+		@Comment("Multiplicateur des degats, soins et durees des sorts (0.1 a 5 ; 1 = comme le parchemin)")
+		public double powerMultiplier = 1.75;
+		@Comment("Multiplicateur des portees et des rayons (0.1 a 3)")
+		public double radiusMultiplier = 1.35;
+		@Comment("Multiplicateur des nombres : meteores, monstres foudroyes, ondes, golems, allies rappeles (0.1 a 5, arrondi)")
+		public double countMultiplier = 1.5;
+		@Comment("Niveaux d'effet en plus : Lenteur, Absorption, Resistance, Regeneration (0 a 3)")
+		public int levelBonus = 1;
+		@Comment({
+				"Reglages par sort (id du sort, voir spell des parchemins) : {parametre: multiplicateur} remplace le multiplicateur",
+				"general de ce parametre (niveaux : multiplies puis arrondis ; 0.1 a 5). Bornes : les nombres et les niveaux ne",
+				"depassent jamais le maximum du parametre, les portees et forces 1.5 fois ce maximum, les degats et durees 5 fois"
+		})
+		public Map<String, Map<String, Double>> spells = defaultCursedSpells();
+		@Comment("Recharge entre deux sorts (secondes, 0.05 a 600) : propre au grimoire maudit, un peu plus longue que celle du grimoire")
+		public double cooldownSeconds = 5;
+		@Comment("Cout d'un sort en points de faim (0 a 20) selon la rarete du parchemin (saturation d'abord, refus si la faim est plus basse)")
+		public Map<String, Integer> foodCost = defaultCursedFoodCost();
+		@Comment("Prix du sang : points de vie pris a chaque sort selon la rarete (0 a 20 ; 2 = 1 coeur)")
+		public Map<String, Integer> bloodCost = defaultBloodCost();
+		@Comment("Vie minimale apres le prix du sang (points de vie, 1 a 19) : en dessous, le sort est refuse")
+		public double minHealth = 6;
+		@Comment({
+				"Chance (0 a 1) que le gardien MAUDIT d'une ruine (id de ruins.json5) laisse un grimoire maudit vierge a sa mort",
+				"definitive (forme finale). Aucune autre source : ni les gardiens normaux, ni les quetes, ni le Carrefour"
+		})
+		public Map<String, Double> ruinDrops = defaultCursedRuinDrops();
+		@Comment("Texture du pack de ressources (vide = apparence vanilla ; suit le reglage customModels d'uniques.json5)")
+		public String model = "grimoire_maudit";
+
+		/** Food points a spell of this rarity costs. */
+		public int foodCost(UniqueRarity rarity) {
+			return CursedGrimoireRules.points(foodCost, rarity.name());
+		}
+
+		/** Health points a spell of this rarity costs. */
+		public int bloodCost(UniqueRarity rarity) {
+			return CursedGrimoireRules.points(bloodCost, rarity.name());
+		}
+
+		/** Amplification of a spell cast from the cursed grimoire (general multipliers + this spell's own). */
+		public SpellPower power(Spell spell) {
+			Map<String, Double> own = spells == null ? null : spells.get(spell.id);
+			return new SpellPower(powerMultiplier, radiusMultiplier, countMultiplier, levelBonus, own == null ? Map.of() : own, true);
+		}
+
+		/** Chance (0..1) that the defeated guardian of this ruin drops a blank cursed grimoire. */
+		public double dropChance(@Nullable String ruinId, boolean cursed) {
+			return CursedGrimoireRules.dropChance(ruinDrops, ruinId, cursed, enabled);
+		}
+
+		/** Stable fingerprint of what the item shows / does (cursed grimoires built from another fingerprint are refreshed). */
+		public int fingerprint() {
+			return java.util.Objects.hash(enabled, item, glint, powerMultiplier, radiusMultiplier, countMultiplier, levelBonus, spells,
+					cooldownSeconds, foodCost, bloodCost, minHealth, model);
 		}
 	}
 
@@ -344,6 +420,7 @@ public final class ScrollConfig implements Validatable {
 		configVersion = CURRENT_VERSION;
 		rebuildSections(warnings);
 		rebuildGrimoire(plainItem, warnings);
+		rebuildCursedGrimoire(plainItem, warnings);
 		rebuildScrolls(plainItem, warnings);
 		rebuildDrops(warnings);
 		return warnings;
@@ -396,6 +473,64 @@ public final class ScrollConfig implements Validatable {
 		if (!g.model.isEmpty() && !ID.matcher(g.model).matches()) {
 			warnings.add("grimoire: invalid model '" + g.model + "': vanilla look");
 			g.model = "";
+		}
+	}
+
+	private void rebuildCursedGrimoire(Predicate<String> plainItem, List<String> warnings) {
+		if (cursedGrimoire == null) {
+			cursedGrimoire = new CursedGrimoire();
+		}
+		CursedGrimoire c = cursedGrimoire;
+		c.item = normalize(c.item);
+		if (!plainItem.test(c.item)) {
+			warnings.add("cursedGrimoire: base item '" + c.item + "' unknown or with its own right-click use: minecraft:enchanted_book used");
+			c.item = "minecraft:enchanted_book";
+		}
+		c.powerMultiplier = clamp(c.powerMultiplier, 0.1, 5);
+		c.radiusMultiplier = clamp(c.radiusMultiplier, 0.1, 3);
+		c.countMultiplier = clamp(c.countMultiplier, 0.1, 5);
+		c.levelBonus = (int) clamp(c.levelBonus, 0, 3);
+		Map<String, Map<String, Double>> spells = new LinkedHashMap<>();
+		if (c.spells != null) {
+			for (Map.Entry<String, Map<String, Double>> entry : c.spells.entrySet()) {
+				Spell spell = Spell.byId(entry.getKey());
+				if (spell == null) {
+					warnings.add("cursedGrimoire.spells: unknown spell '" + entry.getKey() + "' (" + String.join(", ", Spell.ids()) + "): ignored");
+					continue;
+				}
+				Map<String, Double> own = new LinkedHashMap<>();
+				if (entry.getValue() != null) {
+					for (Map.Entry<String, Double> param : entry.getValue().entrySet()) {
+						Spell.Param known = param.getKey() == null ? null : spell.param(param.getKey().trim());
+						if (known == null || param.getValue() == null) {
+							warnings.add("cursedGrimoire.spells." + spell.id + ": unknown parameter '" + param.getKey() + "': ignored");
+							continue;
+						}
+						own.put(known.name(), clamp(param.getValue(), 0.1, 5));
+					}
+				}
+				spells.put(spell.id, own);
+			}
+		}
+		c.spells = spells;
+		c.cooldownSeconds = clamp(c.cooldownSeconds, 0.05, 600);
+		c.foodCost = rarityMap(c.foodCost, defaultCursedFoodCost(), 0, 20, "cursedGrimoire.foodCost", warnings);
+		c.bloodCost = rarityMap(c.bloodCost, defaultBloodCost(), 0, 20, "cursedGrimoire.bloodCost", warnings);
+		c.minHealth = clamp(c.minHealth, 1, 19);
+		Map<String, Double> chances = new LinkedHashMap<>();
+		if (c.ruinDrops != null) {
+			for (Map.Entry<String, Double> entry : c.ruinDrops.entrySet()) {
+				if (entry.getKey() == null || entry.getKey().isBlank()) {
+					continue;
+				}
+				chances.put(entry.getKey().trim().toLowerCase(Locale.ROOT), entry.getValue() == null ? 0 : clamp(entry.getValue(), 0, 1));
+			}
+		}
+		c.ruinDrops = chances;
+		c.model = c.model == null ? "" : c.model.trim().toLowerCase(Locale.ROOT);
+		if (!c.model.isEmpty() && !ID.matcher(c.model).matches()) {
+			warnings.add("cursedGrimoire: invalid model '" + c.model + "': vanilla look");
+			c.model = "";
 		}
 	}
 
@@ -594,6 +729,52 @@ public final class ScrollConfig implements Validatable {
 		map.put("EPIC", 5);
 		map.put("LEGENDARY", 7);
 		map.put("MYTHIC", 10);
+		return map;
+	}
+
+	static Map<String, Integer> defaultCursedFoodCost() {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		map.put("RARE", 4);
+		map.put("EPIC", 7);
+		map.put("LEGENDARY", 9);
+		map.put("MYTHIC", 12);
+		return map;
+	}
+
+	static Map<String, Integer> defaultBloodCost() {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		map.put("RARE", 1);
+		map.put("EPIC", 1);
+		map.put("LEGENDARY", 2);
+		map.put("MYTHIC", 2);
+		return map;
+	}
+
+	static Map<String, Double> defaultCursedRuinDrops() {
+		Map<String, Double> map = new LinkedHashMap<>();
+		map.put(CursedGrimoireRules.MAGE_TOWER, 0.1);
+		return map;
+	}
+
+	/** Per-spell multipliers of the cursed grimoire (on top of its general ones): the showpieces get far more. */
+	static Map<String, Map<String, Double>> defaultCursedSpells() {
+		Map<String, Map<String, Double>> map = new LinkedHashMap<>();
+		map.put(Spell.METEOR_SHOWER.id, params("count", 2.5, "radius", 1.6, "impactRadius", 1.3));
+		map.put(Spell.CHAIN_STORM.id, params("count", 2.5, "chainRadius", 1.5));
+		map.put(Spell.SOLAR_NOVA.id, params("knockback", 1.3));
+		map.put(Spell.SINGULARITY.id, params("radius", 1.6, "pullStrength", 1.4));
+		map.put(Spell.AEGIS.id, params("push", 1.3));
+		map.put(Spell.REVELATION.id, params("radius", 1.25));
+		map.put(Spell.EARTHQUAKE.id, params("waves", 1.67, "lift", 1.3));
+		map.put(Spell.ARCANE_RAY.id, params("width", 1.5));
+		return map;
+	}
+
+	private static Map<String, Double> params(Object... pairs) {
+		Map<String, Double> map = new LinkedHashMap<>();
+		for (int i = 0; i + 1 < pairs.length; i += 2) {
+			map.put((String) pairs[i], ((Number) pairs[i + 1]).doubleValue());
+		}
 		return map;
 	}
 

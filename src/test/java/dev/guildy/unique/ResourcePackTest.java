@@ -225,6 +225,31 @@ class ResourcePackTest {
 	}
 
 	@Test
+	void cursedGrimoireSelectsOneModelPerScroll() throws Exception {
+		JsonObject model = json(assets().resolve("items/grimoire_maudit.json")).getAsJsonObject("model");
+		assertEquals("minecraft:select", model.get("type").getAsString());
+		assertEquals("minecraft:custom_model_data", model.get("property").getAsString());
+		assertEquals(0, model.has("index") ? model.get("index").getAsInt() : 0);
+		assertEquals("guildy:item/grimoire_maudit", model.getAsJsonObject("fallback").get("model").getAsString(), "dormant cursed tome");
+		Set<String> cases = new HashSet<>();
+		for (JsonElement entry : model.getAsJsonArray("cases")) {
+			JsonObject value = entry.getAsJsonObject();
+			String spell = value.get("when").getAsString();
+			assertTrue(cases.add(spell), "duplicate case " + spell);
+			assertEquals("guildy:item/grimoire_maudit_" + spell, value.getAsJsonObject("model").get("model").getAsString());
+			assertTrue(Files.isRegularFile(assets().resolve("textures/item/grimoire_maudit_" + spell + ".png.mcmeta")), spell + ": animated");
+		}
+		ScrollConfig cfg = new ScrollConfig();
+		cfg.rebuild(id -> true);
+		Set<String> spells = new HashSet<>();
+		for (ScrollConfig.ScrollDef def : cfg.usable()) {
+			spells.add(def.id);
+		}
+		assertEquals(spells, cases, "one cursed grimoire model per default spell scroll");
+		assertEquals("grimoire_maudit", cfg.cursedGrimoire.model, "the item_model of the config");
+	}
+
+	@Test
 	void incantationScrollAndCrossbowStatesShipped() throws Exception {
 		assertTrue(Files.isRegularFile(assets().resolve("items/parchemin_incantation.json")));
 		assertTrue(Files.isRegularFile(assets().resolve("textures/item/parchemin_incantation.png")));

@@ -28,6 +28,7 @@
 			"dev.guildy.test.UniqueRegistryGameTests",
 			"dev.guildy.test.ScrollGameTests",
 			"dev.guildy.test.GrimoireGameTests",
+			"dev.guildy.test.CursedGrimoireGameTests",
 			"dev.guildy.test.VillageSignGameTests",
 			"dev.guildy.test.WorkGameTests",
 			"dev.guildy.test.StorageGameTests",

@@ -9,6 +9,7 @@ import dev.guildy.stats.FightTracker;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
@@ -16,7 +17,8 @@ import java.util.random.RandomGenerator;
  * Spell scrolls ("parchemins de sort"): single-use vanilla items (custom data + components) defined in
  * config/guildy/scrolls.json5, cast with a vanilla channel animation, twelve spells with long animated particle shows (PvE
  * only, no block ever changed), drop tables per source and the admin commands; the grimoire binds up to four scrolls and
- * casts their spells for food. Implements the core {@link ScrollDrops} hook used by the ruin bosses, the hordes, the quests,
+ * casts their spells for food, the cursed grimoire (dropped only by the cursed guardians of {@code cursedGrimoire.ruinDrops})
+ * casts them much stronger for food and blood. Implements the core {@link ScrollDrops} hook used by the ruin bosses, the hordes, the quests,
  * the merchants, the expeditions and the alchemist villagers.
  */
 public final class ScrollModule {
@@ -114,6 +116,24 @@ public final class ScrollModule {
 		return ScrollDrops.roll(TRADE_SOURCE);
 	}
 
+	/**
+	 * The cursed grimoire of a defeated ruin guardian: a blank cursed grimoire with the chance of {@code cursedGrimoire.ruinDrops}
+	 * for this ruin, only when the guardian was cursed (and drops are enabled), else empty. Its only source.
+	 */
+	public static ItemStack cursedGrimoireDrop(String ruinId, boolean cursed, RandomGenerator random) {
+		ScrollConfig cfg = config();
+		double chance = cfg.cursedGrimoire.dropChance(ruinId, cursed);
+		if (!cfg.dropsEnabled || chance <= 0 || !CursedGrimoireRules.drops(chance, chance >= 1 ? 0 : random.nextDouble())) {
+			return ItemStack.EMPTY;
+		}
+		return GrimoireItems.create(GrimoireRules.Pages.EMPTY, true);
+	}
+
+	/** Meteors of the meteor showers cast by this player that landed since the server started (statistics, tests). */
+	public static int meteorImpacts(UUID caster) {
+		return MeteorShowerSpell.impacts(caster);
+	}
+
 	/** {@link ScrollDrops.Factory}: scrolls of this id, or empty. */
 	static ItemStack create(String id, int count) {
 		ScrollConfig.ScrollDef def = config().scroll(id);
@@ -135,6 +155,10 @@ public final class ScrollModule {
 	 * tier); 0 when it must not be sold there (or the stack is no scroll).
 	 */
 	public static int tradePrice(ItemStack stack, int tier) {
+		if (GrimoireItems.isCursed(stack)) {
+			// Never sold: only the cursed guardians drop it.
+			return 0;
+		}
 		if (GrimoireItems.isGrimoire(stack)) {
 			ScrollConfig.Grimoire grimoire = config().grimoire;
 			return tier >= grimoire.tradeMinTier ? grimoire.tradePrice : 0;

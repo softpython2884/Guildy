@@ -74,7 +74,7 @@ final class GrimoireMenu {
 					}
 				}
 			};
-			gui.setTitle(Lang.get("grimoire.menu.title"));
+			gui.setTitle(Lang.get(GrimoireItems.key("grimoire.menu.title", GrimoireItems.isCursed(stack))));
 		}
 
 		void open() {
@@ -103,7 +103,7 @@ final class GrimoireMenu {
 		private void render() {
 			GrimoireRules.Pages pages = GrimoireItems.pages(stack);
 			shown = pages;
-			ItemStack book = GrimoireItems.create(pages);
+			ItemStack book = GrimoireItems.create(pages, GrimoireItems.isCursed(stack));
 			if (book.isEmpty()) {
 				book = new ItemStack(Items.ENCHANTED_BOOK);
 			}
@@ -133,15 +133,16 @@ final class GrimoireMenu {
 						});
 			}
 			boolean selected = page == pages.selected();
+			boolean cursed = GrimoireItems.isCursed(stack);
 			List<Component> lore = new ArrayList<>();
 			lore.add(Lang.get("scroll.item.header", ScrollItems.rarityName(def.rarity())));
 			lore.add(Component.empty());
 			lore.add(Lang.get("scroll.item.spell", Lang.raw(def.spell().langKey() + ".name")));
-			for (String line : ScrollItems.spellText(def, ScrollModule.config().grimoire.powerMultiplier).split("\n")) {
+			for (String line : ScrollItems.spellText(def, GrimoireItems.power(def, cursed)).split("\n")) {
 				lore.add(Lang.get("scroll.item.spell_line", line));
 			}
 			lore.add(Component.empty());
-			lore.add(Lang.get("grimoire.item.cost", GrimoireItems.foodCost(def)));
+			lore.add(GrimoireItems.costLine(def, cursed));
 			lore.add(Component.empty());
 			lore.addAll(GuiUtil.lines(selected ? "grimoire.menu.page.selected" : "grimoire.menu.page.select"));
 			lore.addAll(GuiUtil.lines("grimoire.menu.page.erase"));

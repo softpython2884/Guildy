@@ -113,6 +113,7 @@ final class SingularitySpell extends SpellEffect {
 		fx.sphereBurst(ParticleTypes.END_ROD, core, 0.5, 60, 0.45);
 		fx.sphereBurst(Fx.fade(spell.color, spell.accent, 2.0F), core, 0.8, 50, 0.3);
 		fx.burst(ParticleTypes.REVERSE_PORTAL, core, 80, 0.6, 0.6);
+		curse(fx, core.add(0, -1.3, 0), radius * 0.5);
 		sound(core, SoundEvents.WARDEN_SONIC_BOOM, 3.0F, 0.8F);
 		sound(core, SoundEvents.GENERIC_EXPLODE, 2.5F, 0.6F);
 		for (LivingEntity target : SpellTargets.hostiles(ctx, level, core, radius, 40)) {

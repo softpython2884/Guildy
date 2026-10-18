@@ -49,9 +49,9 @@ public final class Grimoires {
 			ScrollCasting.syncUsing(player);
 			return InteractionResult.SUCCESS_SERVER;
 		}
-		ScrollConfig cfg = ScrollModule.config();
-		if (!cfg.grimoire.enabled) {
-			return ScrollCasting.refuse(player, "grimoire.fail.disabled");
+		boolean cursed = GrimoireItems.isCursed(stack);
+		if (!GrimoireItems.enabled(cursed)) {
+			return ScrollCasting.refuse(player, GrimoireItems.key("grimoire.fail.disabled", cursed));
 		}
 		ScrollConfig.ScrollDef def = GrimoireItems.selectedDef(pages);
 		if (def == null) {
@@ -87,14 +87,16 @@ public final class Grimoires {
 		if (def == null) {
 			return;
 		}
-		Msg.actionBar(player, Lang.get("grimoire.page.turned", GrimoireItems.name(turned).getString(), GrimoireItems.foodCost(def)));
+		boolean cursed = GrimoireItems.isCursed(stack);
+		Msg.actionBar(player, Lang.get(GrimoireItems.key("grimoire.page.turned", cursed), GrimoireItems.name(turned, cursed).getString(),
+				GrimoireItems.foodCost(def, cursed), GrimoireItems.hearts(GrimoireItems.bloodCost(def, cursed))));
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F,
-				0.9F + 0.1F * next);
-		flourish(player, def.spell());
+				(cursed ? 0.6F : 0.9F) + 0.1F * next);
+		flourish(player, def.spell(), cursed);
 	}
 
-	/** A small swirl of the spell's colors around the book. */
-	private static void flourish(ServerPlayer player, Spell spell) {
+	/** A small swirl of the spell's colors around the book (with a whiff of blood and darkness for a cursed grimoire). */
+	private static void flourish(ServerPlayer player, Spell spell, boolean cursed) {
 		Fx fx = new Fx(player.level(), player.position(), 60, 32);
 		Vec3 look = player.getLookAngle();
 		Vec3 book = player.position().add(look.x * 0.6, 1.25, look.z * 0.6);
@@ -104,6 +106,9 @@ public final class Grimoires {
 			fx.dot(Fx.dust(i % 2 == 0 ? spell.color : spell.accent, 0.7F), book.add(offset));
 		}
 		fx.burst(ParticleTypes.ENCHANT, book, 12, 0.3, 0.6);
+		if (cursed) {
+			CursedSpellFx.flourish(fx, book);
+		}
 		fx.flush();
 	}
 
@@ -218,7 +223,7 @@ public final class Grimoires {
 				player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1.0F, 1.0F);
 				player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.8F,
 						1.2F);
-				flourish(player, def.spell());
+				flourish(player, def.spell(), GrimoireItems.isCursed(grimoire));
 				return true;
 			}
 			case DUPLICATE -> Msg.send(player, "grimoire.fuse.duplicate", GrimoireItems.spellName(def));

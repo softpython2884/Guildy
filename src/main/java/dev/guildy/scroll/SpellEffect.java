@@ -66,6 +66,13 @@ abstract class SpellEffect {
 		return player == null || player.isRemoved() ? null : player;
 	}
 
+	/** Where the spell strikes: a blood mark when it was cast from a cursed grimoire (nothing otherwise). */
+	void curse(Fx fx, Vec3 pos, double radius) {
+		if (ctx.cursed()) {
+			CursedSpellFx.mark(fx, pos, radius, age);
+		}
+	}
+
 	void sound(Vec3 pos, SoundEvent sound, float volume, float pitch) {
 		level.playSound(null, pos.x, pos.y, pos.z, sound, SoundSource.PLAYERS, volume, pitch);
 	}

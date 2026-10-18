@@ -62,6 +62,7 @@ final class EarthquakeSpell extends SpellEffect {
 				sound(center, SoundEvents.GENERIC_EXPLODE, 2.0F, 0.45F);
 				sound(center, SoundEvents.MACE_SMASH_GROUND_HEAVY, 2.5F, 0.6F);
 				fx.burst(ParticleTypes.EXPLOSION, center.x, center.y + 0.3, center.z, 2, 0.6, 0.1, 0.6, 0.0);
+				curse(fx, center, 2.5);
 			}
 			double inner = radius * easeOut(Math.max(0, t - 1) / (double) WAVE_TICKS);
 			double outer = radius * easeOut(t / (double) WAVE_TICKS);
