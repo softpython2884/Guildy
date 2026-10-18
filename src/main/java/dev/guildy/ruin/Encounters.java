@@ -336,7 +336,7 @@ public final class Encounters {
 		Msg.actionBar(player, "ruin.summon.hint.actionbar");
 		Msg.send(player, "ruin.summon.hint.chat", name, Lang.colorize(def.boss.name));
 		int guards = RoomGuards.alive(ruin);
-		if (guards > 0) {
+		if (guards > 0 && RoomGuards.tellOnce(ruin, player)) {
 			// A hint, never a count (the admins see it in /guild admin ruin info).
 			Msg.send(player, "ruin.guards.watch", guards);
 		}

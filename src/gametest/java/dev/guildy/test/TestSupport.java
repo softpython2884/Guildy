@@ -50,17 +50,22 @@ final class TestSupport {
 	private static final Map<UUID, List<String>> CHAT = new HashMap<>();
 	/** Random per run: the test world is reused, so avoid the blocks left by previous runs. */
 	private static final int BASE_X = 40000 + (int) (Math.random() * 400) * 65536;
+	/**
+	 * Random row per run too: regions of an older run (same BASE_X) still hold its entities (villagers that claim the new
+	 * beds, mobs...) and its blocks; a fresh row of chunks keeps every run independent.
+	 */
+	private static final int BASE_Z = 16 * (int) ((Math.random() - 0.5) * 1_600_000);
 
 	private TestSupport() {
 	}
 
 	/**
-	 * A fresh ground position far from spawn and from other scenarios (x = 40000 + n * 4096, y = 64), with a stone
+	 * A fresh ground position far from spawn and from other scenarios (x = BASE_X + n * 4096, z = BASE_Z + 8), with a stone
 	 * platform of the given radius (the test world is empty out there).
 	 */
 	static BlockPos region(ServerLevel level, int platformRadius) {
 		int n = REGIONS.getAndIncrement();
-		BlockPos center = pad(level, BASE_X + n * 4096, 8);
+		BlockPos center = pad(level, BASE_X + n * 4096, BASE_Z + 8);
 		BlockState stone = Blocks.STONE.defaultBlockState();
 		BlockState air = Blocks.AIR.defaultBlockState();
 		for (int dx = -platformRadius; dx <= platformRadius; dx++) {

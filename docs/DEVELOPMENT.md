@@ -399,6 +399,15 @@ schématiques) : `tools/ruins/`.
     noyables posés sous la nappe) ; audit `tools/ruins/ruinlib/water.py` dans check.py ; pots avec `LootTable`
     `guildy:pots/ruin`. `/guild admin scroll give` accepte `incantation` / `incantation_maudit`.
 
+55. **Colonnes et coffres filtrés** : `StorageLayout.Fill` (COLUMNS par défaut, ROWS = ancien ordre ;
+    `GuildVillagerData.chestLayout`, `storage.defaultChestLayout`) : emplacements en ordre de colonnes, un nouveau genre saute
+    en haut de la colonne suivante seulement si toutes les piles restantes tiennent après. Rôle `FILTER` + `ChestFilter`
+    (ITEMS / MATERIAL / TYPE) ; `ChestFilters` (pur, testé sur les 1 658 ids de 26.3 : mots modificateurs / de forme / de
+    type). `StorageRouting` (pur) : filtres (exacte, matière, type), catégorie, Divers, dépôt ; `Tidier.markOut` sort une clé
+    si une meilleure destination a de la place ; clé de groupe `room:filter:<clé>`. `ChestScan` (chunks revendiqués chargés,
+    4 chunks / 32 conteneurs par tick, aperçu non sauvegardé, `apply` revérifie chaque conteneur, budget
+    `maxFilterChests`) ; commandes `/guild stockage …` (`StorageCommands`).
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).

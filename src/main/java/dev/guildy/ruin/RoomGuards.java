@@ -31,10 +31,12 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.UUID;
 
@@ -72,6 +74,8 @@ public final class RoomGuards {
 		int posted;
 		int killed;
 		int secondsAlone;
+		/** Players who already read the hint about these guards ("des sentinelles veillent…"). */
+		final Set<UUID> told = new HashSet<>();
 
 		Watch(String ruinKey, ResourceKey<Level> dimension) {
 			this.ruinKey = ruinKey;
@@ -394,8 +398,18 @@ public final class RoomGuards {
 				Msg.actionBar(player, "ruin.guards.posted.screen", ruinName, watch.posts.size());
 			}
 			Msg.sound(player, SoundEvents.AMBIENT_CAVE, 0.8F, 0.7F);
+			// The entrance hint may have come before the guards took their posts: the chat hint follows them, once.
+			if (watch.told.add(player.getUUID())) {
+				Msg.send(player, "ruin.guards.watch", watch.posts.size());
+			}
 		}
 		return watch.posts.size();
+	}
+
+	/** True the first time this player gets the hint about the current guards of the ruin (then remembered). */
+	static boolean tellOnce(RuinRecord ruin, ServerPlayer player) {
+		Watch watch = WATCHES.get(ruin.key);
+		return watch != null && watch.told.add(player.getUUID());
 	}
 
 	/** Guard statistics: the ruin's {@code guards}, the escort's types / equipment / effects where left empty. */

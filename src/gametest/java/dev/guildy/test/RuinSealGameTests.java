@@ -180,7 +180,11 @@ public class RuinSealGameTests {
 				.thenIdle(5)
 				.thenExecute(() -> at(level, player, ruin.boss.offset(2, 0, 0)))
 				.thenWaitUntil(() -> helper.assertTrue(RoomGuards.guards(ruin).size() == 2, "waiting for the room guards"))
-				.thenWaitUntil(() -> helper.assertTrue(Viewer.any(viewer.chat(), line -> line.contains(watch)), "waiting for the entrance hint"))
+				.thenWaitUntil(() -> {
+					// The hint about the guards follows them when they take their posts, the entrance title comes on entering.
+					helper.assertTrue(Viewer.any(viewer.chat(), line -> line.contains(watch)), "waiting for the entrance hint");
+					helper.assertTrue(Viewer.any(viewer.titles(), line -> line.contains(Lang.raw("ruin.summon.hint.subtitle"))), "waiting for the entrance title");
+				})
 				.thenExecute(() -> {
 					guards.addAll(RoomGuards.guards(ruin));
 					guards.forEach(guard -> guard.setNoAi(true));

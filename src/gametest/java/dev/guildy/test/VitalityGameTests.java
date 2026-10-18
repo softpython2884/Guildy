@@ -197,7 +197,10 @@ public class VitalityGameTests {
 				})
 				.thenWaitUntil(() -> {
 					double dist = Math.min(worker.distanceToSqr(Vec3.atBottomCenterOf(foot)), worker.distanceToSqr(Vec3.atBottomCenterOf(head)));
-					helper.assertTrue(dist <= 3.0 * 3.0, "waiting for the worker to be brought next to the bed (at " + worker.blockPosition() + ")");
+					helper.assertTrue(dist <= 3.0 * 3.0, "waiting for the worker to be brought next to the bed (at " + worker.blockPosition()
+							+ ", bed " + foot.toShortString() + ", heart " + guild.heart + ", home " + worker.getBrain().getMemory(MemoryModuleType.HOME)
+							+ ", bed chunk claimed " + guild.owns(dev.guildy.data.ChunkKey.ofBlock(foot.getX(), foot.getZ()))
+							+ ", task " + record.task + ", clock " + level.getOverworldClockTime() + ")");
 					Optional<GlobalPos> home = worker.getBrain().getMemory(MemoryModuleType.HOME);
 					helper.assertTrue(home.isPresent() && (home.get().pos().equals(head) || home.get().pos().equals(foot)), "the free bed became its bed");
 					helper.assertTrue(worker.isAlive(), "alive");

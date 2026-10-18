@@ -1964,6 +1964,36 @@
 		// des rangees) entieres.
 		"defaultOrder": "columns",
 
+		// Rangement dans chaque coffre par defaut (modifiable par guilde dans le menu Stockage ou par
+		// /guild villagers storage layout) : 'columns' = chaque colonne de haut en bas, colonnes de gauche a droite, et
+		// chaque nouvel objet commence en haut d'une nouvelle colonne s'il reste la place ; 'rows' = emplacements dans
+		// l'ordre de lecture (rangee par rangee).
+		"defaultChestLayout": "columns",
+
+		// Coffres filtres (contenu impose : une famille comme 'diorite' ou 'laine', ou une liste d'objets) : nombre
+		// maximum par guilde (en plus de maxChests et maxRoomChests ; 0 = desactive)
+		"maxFilterChests": 256,
+
+		// Filtre d'apres le contenu d'un coffre : une liste exacte d'objets est proposee jusqu'a N objets differents
+		// (au-dela, sans famille commune, le coffre devient un coffre de categorie ou reste tel quel) (1 a 54)
+		"filterMaxItems": 9,
+
+		// Commande /guild villagers storage scan <chunks> : un coffre trop melange pour un filtre devient un coffre de sa
+		// categorie principale si elle represente au moins N % de ses piles (50 a 100)
+		"scanCategoryPercent": 75,
+
+		// Commande scan : rayon maximum (chunks) autour du joueur (1 a 16)
+		"scanMaxChunks": 8,
+
+		// Commande scan : chunks lus par tick (le scan est reparti sur plusieurs ticks) (1 a 64)
+		"scanChunksPerTick": 4,
+
+		// Commande scan : nombre maximum de conteneurs lus par scan (16 a 4096)
+		"scanMaxContainers": 1024,
+
+		// Commande scan : duree (secondes) de validite de l'apercu avant [Appliquer] (30 a 900)
+		"scanPreviewSeconds": 120,
+
 		// Salles des coffres (menu Stockage) : tous les coffres de la zone entre deux coffres-coins deviennent automatiques ;
 		// les trieurs leur donnent une categorie par colonnes (ou rangees) entieres, dans l'ordre des categories ci-dessus,
 		// 'Divers' a la fin, le reste en reserve. Nombre maximum de salles par guilde (0 = desactive)

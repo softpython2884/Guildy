@@ -480,15 +480,35 @@ l'ouvre. Dans le menu Stockage : clic gauche sur un coffre pour changer son rôl
 indique où ira l'objet que vous tenez. Les catégories (règles : objets, tags, propriétés) se règlent dans
 `villagers.json5`.
 
+#### Coffres filtrés
+Un **coffre filtré** n'accepte que certains objets : une **famille** (« Diorite » : diorite, diorite polie, dalles,
+escaliers, murets ; « Chêne » : bûches, planches, portes… mais pas le chêne noir ; « Laine » : toutes les couleurs ;
+« Blanc » : tout ce qui est blanc) ou une **liste d'objets** (« Blé, Canne à sucre et Graines de blé »). Le filtre se
+déduit de ce que vous avez mis dedans. Les trieurs y rangent ces objets **avant** leur coffre de catégorie (liste exacte,
+puis famille de matière, puis famille de type, puis catégorie, Divers, dépôt), sortent les objets qu'il refuse (vers leur
+catégorie, sinon vers un dépôt) et le rangent par colonnes. Le coffre prend le nom de son filtre, sauf si vous l'avez déjà
+nommé.
+- `/guild stockage filtre ici` : filtre le coffre que vous regardez d'après son contenu ; `/guild stockage filtre retirer`
+  : le retire du stockage. Aussi dans le choix du rôle d'un coffre : « Coffre filtré (d'après son contenu) ».
+- `/guild stockage scan <chunks>` : analyse tous les coffres de votre territoire autour de vous (une salle de cent coffres
+  déjà remplis, par exemple) et propose pour chacun un filtre, ou une catégorie s'il est trop mélangé (75 % d'une
+  catégorie). Survolez une entrée pour voir les objets, cliquez pour la repérer, puis **[Appliquer]** enregistre tout d'un
+  coup (valable 2 min). Ajoutez `remplacer` pour changer aussi les coffres déjà enregistrés (jamais les dépôts). Les
+  coffres vides sont seulement comptés.
+
 #### Coffres bien rangés
 Les coffres d'une même catégorie forment un **groupe** (un par salle des coffres, un pour les coffres hors salle). Le
 trieur les range **comme un mur qu'on lit**, vu de face : **par colonnes** (chaque colonne de haut en bas, colonnes de
 gauche à droite) ou **par rangées** (chaque rangée de gauche à droite, rangées de haut en bas) : réglage « Ordre de
 rangement » du menu Stockage, par colonnes par défaut. Un coffre double compte pour un seul coffre.
+- Dans chaque coffre, le trieur range **par colonnes** : chaque colonne de haut en bas, puis la suivante à droite, et
+  chaque nouvel objet commence en haut d'une nouvelle colonne tant qu'il reste la place (sinon il suit le précédent).
+  Réglage « Rangement dans le coffre » du menu Stockage (ou `/guild stockage rangement lignes`) pour revenir à l'ordre de
+  lecture.
 - Dans un groupe, les piles sont toujours **fusionnées** et triées dans l'**ordre de l'inventaire créatif** (tous les bois
   ensemble ; casque, plastron, jambières puis bottes de chaque matériau…), les objets simples avant les enchantés,
-  renommés ou abîmés, et rangées dans l'ordre de lecture : le coffre 1 est rempli avant le coffre 2. Un objet garde
-  toujours ses enchantements, son nom et son usure.
+  renommés ou abîmés ; le coffre 1 est rempli avant le coffre 2. Un objet garde toujours ses enchantements, son nom et son
+  usure.
 - Quand les dépôts sont vides, le trieur **re-range** : il sort les objets d'une autre catégorie, fusionne les piles, remet
   l'ordre et comble les trous. Les coffres à sa portée (une colonne, un pan de mur) sont réorganisés d'un coup, couvercles
   ouverts ; entre deux endroits éloignés, il porte les piles. Rien n'est jamais perdu ni dupliqué, et un coffre **ouvert
@@ -849,6 +869,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild uniques` | Collection d'armes uniques de la guilde |
 | `/guild grimoire` | Menu des pages du grimoire tenu en main |
 | `/guild bilan` · `bilan detail` | Dernier bilan de combat de ruine (chat ou menu détaillé) |
+| `/guild stockage scan <chunks> [remplacer]` · `stockage filtre ici\|retirer` · `stockage rangement colonnes\|lignes` | Coffres filtrés : analyser les coffres autour de soi et les enregistrer, filtrer le coffre regardé ; rangement dans les coffres (aussi `/guild villagers storage …`) |
 
 ### Administration
 Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions : opérateurs niveau 2
@@ -896,7 +917,8 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite, forgeron (`blacksmith`) et alchimiste (`alchemist`), travaux des champs
-(`farmer.fieldWork`, `farmer.irrigation`), re-rangement (`sorter.tidy`, portée, réservations) et salles des coffres
+(`farmer.fieldWork`, `farmer.irrigation`), re-rangement (`sorter.tidy`, portée, réservations), rangement par colonnes (`storage.defaultChestLayout`), coffres filtrés et
+analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 (`storage.maxRooms`, marge, seuils de réattribution) |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
