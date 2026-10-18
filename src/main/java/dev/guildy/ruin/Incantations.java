@@ -51,7 +51,8 @@ import java.util.UUID;
  * scroll (never in creative) and starts the {@link Ritual}. At its climax the fight starts ({@link Encounters#awaken});
  * a ritual nobody feeds any more (everyone left, died or disconnected), or stopped by the server, is cancelled and the
  * scroll goes back to its reader. A cursed incantation scroll ({@link CursedItems}) is read the same way and starts a
- * {@link CursedRitual} whose climax awakens the guardian cursed.
+ * {@link CursedRitual} whose climax awakens the guardian cursed. While room guards still hold the arena, the reading is
+ * sealed ({@link Seals}): the circle starts to form under the reader, then breaks; the scroll is kept.
  */
 public final class Incantations {
 	private static final Map<UUID, Channel> CHANNELS = new HashMap<>();
@@ -73,12 +74,15 @@ public final class Incantations {
 		UseItemCallback.EVENT.register(Incantations::onUse);
 		Scheduler.every("ruin.ritual", 1, 0, Incantations::tick);
 		Scheduler.every("ruin.incantation.scan", 20, 7, Incantations::scanAll);
+		Seals.init();
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Safe.run("ruin.incantation.join", () -> {
 			IncantationItems.scan(handler.getPlayer());
 			CursedItems.scan(handler.getPlayer());
 		}));
-		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Safe.run("ruin.incantation.leave",
-				() -> CHANNELS.remove(handler.getPlayer().getUUID())));
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Safe.run("ruin.incantation.leave", () -> {
+			CHANNELS.remove(handler.getPlayer().getUUID());
+			Seals.forget(handler.getPlayer().getUUID());
+		}));
 		Lifecycle.RELOADED.add(IncantationItems::clearSignature);
 		Lifecycle.RELOADED.add(CursedItems::clearSignature);
 	}
@@ -154,9 +158,14 @@ public final class Incantations {
 			return InteractionResult.PASS;
 		}
 		Target target = target(player, cursed);
+		if (target.refusal() == Refusal.GUARDED) {
+			return sealed(player, target, cursed, false);
+		}
 		if (target.refusal() != Refusal.NONE) {
 			return refuse(player, target);
 		}
+		// A real reading: no broken circle left under the new one.
+		Seals.stop(player.getUUID());
 		player.startUsingItem(hand);
 		if (!player.isUsingItem()) {
 			Msg.actionBar(player, "ruin.summon.interrupted");
@@ -227,6 +236,20 @@ public final class Incantations {
 		return InteractionResult.FAIL;
 	}
 
+	/**
+	 * The room guards still hold the arena: instead of a dry refusal, the incantation circle starts to form under the reader
+	 * and breaks ({@link Seals}; a new attempt while it plays is ignored). The scroll is kept.
+	 *
+	 * @param drawn the channel already drew the circle (the guards came meanwhile): it cracks at once
+	 */
+	private static InteractionResult sealed(ServerPlayer player, Target target, boolean cursed, boolean drawn) {
+		syncUsing(player);
+		if (target.ruin() != null) {
+			Seals.play(player, target.ruin(), cursed, drawn);
+		}
+		return InteractionResult.FAIL;
+	}
+
 	/** Sends the player's real "using an item" flags to their client (stops a predicted use animation). */
 	private static void syncUsing(ServerPlayer player) {
 		EntityDataAccessor<Byte> flags = LivingEntityFlagsAccessor.guildy$ruinLivingFlags();
@@ -259,6 +282,12 @@ public final class Incantations {
 		}
 		Target target = target(player, cursed);
 		if (target.refusal() != Refusal.NONE) {
+			// Nothing consumed: the client, which predicted the scroll eaten, gets its inventory back.
+			player.inventoryMenu.sendAllDataToRemote();
+			if (target.refusal() == Refusal.GUARDED) {
+				sealed(player, target, cursed, true);
+				return stack;
+			}
 			explain(player, target);
 			fizzle(player);
 			return stack;
@@ -413,6 +442,7 @@ public final class Incantations {
 		}
 		RITUALS.clear();
 		CHANNELS.clear();
+		Seals.clear();
 	}
 
 	// ================================================================== channel visuals
@@ -451,11 +481,7 @@ public final class Incantations {
 		RitualFx fx = new RitualFx(player.level(), player.position(), 160, cfg.summon.viewDistance);
 		Vec3 feet = player.position().add(0, 0.08, 0);
 		double spin = elapsed * 0.1;
-		fx.arc(RitualFx.dust(color, 0.9F), feet, 1.6, spin, spin + Math.PI * 2 * progress, (int) Math.ceil(24 * progress));
-		fx.arc(RitualFx.fade(Ritual.BLOOD, color, 0.8F), feet, 1.25, -spin, -spin - Math.PI * 2 * progress, (int) Math.ceil(18 * progress));
-		if (progress > 0.3) {
-			fx.polygram(RitualFx.dust(Ritual.BLOOD_BRIGHT, 0.8F), feet, 1.25, 5, 2, cursed ? Math.PI * 1.5 - spin * 0.5 : spin * 0.5, (progress - 0.3) / 0.7, 3.0);
-		}
+		drawReaderCircle(fx, feet, progress, spin, color, cursed);
 		if (cursed && elapsed % 2 == 0) {
 			fx.burst(RitualFx.dust(CursedFx.VOID, 1.0F), feet.x, feet.y + 0.6, feet.z, 3, 0.6, 0.4, 0.6, 0.0);
 			fx.move(ParticleTypes.SOUL, feet.x + Math.cos(spin * 3) * 1.6, feet.y + 0.1, feet.z + Math.sin(spin * 3) * 1.6, 0, 0.06, 0);
@@ -473,6 +499,24 @@ public final class Incantations {
 			player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.SCULK_CLICKING, SoundSource.PLAYERS, 0.8F,
 					0.6F + (float) progress * 0.6F);
 		}
+	}
+
+	/**
+	 * The circle under a reader, {@code progress} (0..1) of it drawn: two counter-rotating rings, then the pentagram from
+	 * 30 % (inverted for a cursed reading). Also the sealed circle of {@link Seals}.
+	 */
+	static void drawReaderCircle(RitualFx fx, Vec3 feet, double progress, double spin, int color, boolean cursed) {
+		double p = Math.max(0, Math.min(1, progress));
+		fx.arc(RitualFx.dust(color, 0.9F), feet, Seals.OUTER, spin, spin + Math.PI * 2 * p, (int) Math.ceil(24 * p));
+		fx.arc(RitualFx.fade(Ritual.BLOOD, color, 0.8F), feet, Seals.INNER, -spin, -spin - Math.PI * 2 * p, (int) Math.ceil(18 * p));
+		if (p > 0.3) {
+			fx.polygram(RitualFx.dust(Ritual.BLOOD_BRIGHT, 0.8F), feet, Seals.INNER, 5, 2, pentagramPhase(spin, cursed), (p - 0.3) / 0.7, 3.0);
+		}
+	}
+
+	/** Rotation of the reader's pentagram (a cursed one points down). */
+	static double pentagramPhase(double spin, boolean cursed) {
+		return cursed ? Math.PI * 1.5 - spin * 0.5 : spin * 0.5;
 	}
 
 	/** A failed or interrupted incantation: smoke and a dull sound. */

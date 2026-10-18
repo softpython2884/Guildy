@@ -328,10 +328,10 @@ public final class Encounters {
 		Msg.title(player, Component.literal(name), Lang.get("ruin.summon.hint.subtitle"), 10, 60, 20);
 		Msg.actionBar(player, "ruin.summon.hint.actionbar");
 		Msg.send(player, "ruin.summon.hint.chat", name, Lang.colorize(def.boss.name));
-		Msg.send(player, "ruin.summon.hint.threat", threatLabel(threatLevel(ruin)));
 		int guards = RoomGuards.alive(ruin);
 		if (guards > 0) {
-			Msg.send(player, "ruin.guards.hint", guards);
+			// A hint, never a count (the admins see it in /guild admin ruin info).
+			Msg.send(player, "ruin.guards.watch", guards);
 		}
 	}
 
@@ -460,8 +460,6 @@ public final class Encounters {
 			Msg.send(player, "ruin.awaken.chat", Lang.colorize(def.boss.name), Lang.colorize(def.name));
 			if (window > 0) {
 				Msg.send(player, "ruin.awaken.threat.chrono", label, ThreatRules.clock(window / 20));
-			} else {
-				Msg.send(player, "ruin.awaken.threat", label);
 			}
 			if (party.group()) {
 				Msg.send(player, "ruin.awaken.group", party.players(), GroupScaling.percent(party.health()), GroupScaling.percent(party.damage()));
@@ -918,14 +916,14 @@ public final class Encounters {
 		victoryEffects(level, boss);
 		Safe.run("ruin.stats.victory", () -> RuinFightStats.victory(level, encounter, boss, source, present));
 		if (encounter.cursed != null) {
-			// The curse is broken: its own titles, threat message and announcement.
+			// The curse is broken: its own titles and announcement.
 			Safe.run("ruin.cursed.victory", () -> encounter.cursed.victory(level, encounter, boss, present, threat, threat > stored));
 			forget(encounter);
 			return;
 		}
 		String bossName = Lang.colorize(encounter.def.boss.name);
 		String ruinName = Lang.colorize(encounter.def.name);
-		boolean raised = threat > stored;
+		// No note on the threat here: its level shows on the boss bar, the maps and the atelier.
 		for (ServerPlayer player : present) {
 			if (encounter.risen) {
 				Msg.title(player, Lang.get("ruin.risen.victory.title"), Lang.get("ruin.risen.victory.subtitle", bossName), 10, 80, 20);
@@ -934,9 +932,6 @@ public final class Encounters {
 				Msg.title(player, Lang.get("ruin.victory.title"), Lang.get("ruin.victory.subtitle", bossName), 10, 70, 20);
 			}
 			Msg.sound(player, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 1.0F);
-			if (cfg.escalation.enabled) {
-				Msg.send(player, raised ? "ruin.victory.threat" : "ruin.victory.threat.max", ruinName, threatLabel(threat));
-			}
 		}
 		if (cfg.encounter.announce) {
 			String names = encounter.names.isEmpty() ? Lang.raw("ruin.victory.someone") : String.join(", ", encounter.names.values());

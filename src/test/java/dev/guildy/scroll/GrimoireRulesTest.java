@@ -185,8 +185,8 @@ class GrimoireRulesTest {
 		ScrollConfig cfg = new ScrollConfig();
 		assertTrue(cfg.rebuild(id -> true).isEmpty(), "defaults need no fix");
 		ScrollConfig.Grimoire g = cfg.grimoire;
-		assertTrue(g.channelSeconds > 0 && g.channelSeconds <= 0.5, "a very short channel");
-		assertEquals(8, g.channelTicks());
+		assertTrue(g.channelSeconds >= 1.0 && g.channelSeconds <= 1.25, "long enough to see the circle form, shorter than most scrolls");
+		assertEquals(20, g.channelTicks());
 		assertTrue(g.cooldownSeconds > 0 && g.cooldownSeconds <= 5, "a very short cooldown");
 		assertEquals(1.0, g.powerMultiplier);
 		assertEquals(0.08, g.dropChance("ruin_boss"));

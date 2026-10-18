@@ -46,6 +46,8 @@ import java.util.UUID;
  */
 public final class ScrollCasting {
 	private static final Map<UUID, Channel> CHANNELS = new HashMap<>();
+	/** Radius (blocks) of the runic circle drawn under the caster. */
+	private static final double CIRCLE_RADIUS = 1.7;
 
 	/** A started incantation: what is cast (scroll id or "grimoire/" + id), hand, start, length. */
 	private record Channel(String key, InteractionHand hand, long start, int ticks) {
@@ -118,7 +120,9 @@ public final class ScrollCasting {
 			return refuse(player, "scroll.fail.unknown");
 		}
 		String key = grimoire ? GrimoireItems.channelKey(stack) : def.id;
-		int ticks = grimoire ? cfg.grimoire.channelTicks() : def.channelTicks();
+		// The real length of the vanilla use (the item's consumable component): the circle is complete before it ends.
+		int configured = grimoire ? cfg.grimoire.channelTicks(def) : def.channelTicks();
+		int ticks = player.getUseItemRemainingTicks() > 0 ? player.getUseItemRemainingTicks() : configured;
 		CHANNELS.put(player.getUUID(), new Channel(key == null ? def.id : key, hand, Scheduler.ticks(), ticks));
 		Vec3 pos = player.position();
 		player.level().playSound(null, pos.x, pos.y, pos.z, def.spell().offensive ? SoundEvents.EVOKER_PREPARE_ATTACK : SoundEvents.EVOKER_PREPARE_WOLOLO,
@@ -231,7 +235,7 @@ public final class ScrollCasting {
 			undoPrediction(player, stack, false);
 		}
 		player.awardStat(Stats.ITEM_USED.get(stack.getItem()));
-		castFlash(player, def.spell());
+		castFlash(player, def.spell(), phase(Scheduler.ticks() - channel.start()));
 		if (grimoire) {
 			int cost = player.hasInfiniteMaterials() ? 0 : GrimoireItems.foodCost(def);
 			eat(player, cost);
@@ -317,13 +321,20 @@ public final class ScrollCasting {
 		}
 	}
 
-	/** Runic circle drawing itself under the caster, glyphs flowing into their hands, a rising light at the end. */
+	/**
+	 * Runic circle drawing itself under the caster at the pace of the channel (complete a little before the spell fires,
+	 * whatever the channel's length, see {@link ChannelRules#drawProgress}), glyphs flowing into their hands, a rising light
+	 * and a shimmering halo once it is complete.
+	 */
 	private static void drawChannel(ServerPlayer player, Spell spell, long elapsed, int total) {
 		ScrollConfig.Limits limits = ScrollModule.config().limits;
-		double progress = Math.min(1, (elapsed + 1) / (double) total);
+		double progress = ChannelRules.drawProgress(elapsed, total);
 		Fx fx = new Fx(player.level(), player.position(), 220, limits.viewDistance);
 		Vec3 feet = player.position().add(0, 0.08, 0);
-		fx.runeCircle(feet, 1.7, spell.color, spell.accent, progress, elapsed * 0.08);
+		fx.runeCircle(feet, CIRCLE_RADIUS, spell.color, spell.accent, progress, phase(elapsed));
+		if (progress >= 1 && elapsed % 2 == 0) {
+			fx.ring(Fx.dust(Fx.mix(spell.accent, 0xFFFFFF, 0.4), 0.6F), feet.add(0, 0.04, 0), CIRCLE_RADIUS * 1.06, 22, -phase(elapsed) * 1.5);
+		}
 		Vec3 hands = player.position().add(0, 1.1, 0);
 		for (int i = 0; i < 2; i++) {
 			double angle = elapsed * 0.7 + i * Math.PI;
@@ -335,7 +346,7 @@ public final class ScrollCasting {
 		}
 		if (progress > 0.75) {
 			double angle = elapsed * 0.9;
-			fx.move(ParticleTypes.END_ROD, feet.x + Math.cos(angle) * 1.7, feet.y, feet.z + Math.sin(angle) * 1.7, 0, 0.18, 0);
+			fx.move(ParticleTypes.END_ROD, feet.x + Math.cos(angle) * CIRCLE_RADIUS, feet.y, feet.z + Math.sin(angle) * CIRCLE_RADIUS, 0, 0.18, 0);
 		}
 		fx.flush();
 		if (elapsed % 10 == 5) {
@@ -344,14 +355,25 @@ public final class ScrollCasting {
 		}
 	}
 
-	/** Flash and sparks of a successful cast around the caster. */
-	private static void castFlash(ServerPlayer player, Spell spell) {
-		Fx fx = new Fx(player.level(), player.position(), 200, ScrollModule.config().limits.viewDistance);
+	/** Rotation (radians) of the channel's circle after {@code elapsed} ticks. */
+	private static double phase(long elapsed) {
+		return elapsed * 0.08;
+	}
+
+	/**
+	 * Flash and sparks of a successful cast around the caster: the completed circle blazes one last time under their feet
+	 * (in its last rotation) and its light ripples outwards.
+	 */
+	private static void castFlash(ServerPlayer player, Spell spell, double phase) {
+		Fx fx = new Fx(player.level(), player.position(), 400, ScrollModule.config().limits.viewDistance);
 		Vec3 hands = player.position().add(0, 1.2, 0);
+		Vec3 feet = player.position().add(0, 0.08, 0);
+		fx.runeCircle(feet, CIRCLE_RADIUS, Fx.mix(spell.color, 0xFFFFFF, 0.35), Fx.mix(spell.accent, 0xFFFFFF, 0.5), 1.0, phase);
+		fx.dot(Fx.flash(spell.accent), feet.add(0, 0.3, 0));
 		fx.dot(Fx.flash(spell.color), hands);
 		fx.sphereBurst(Fx.fade(spell.color, spell.accent, 1.2F), hands, 0.3, 40, 0.25);
 		fx.burst(ParticleTypes.ENCHANT, hands, 40, 0.5, 1.0);
-		fx.arc(Fx.dust(spell.color, 1.0F), player.position().add(0, 0.1, 0), 1.7, 0, Math.PI * 2, 30, true);
+		fx.arc(Fx.dust(spell.color, 1.0F), player.position().add(0, 0.1, 0), CIRCLE_RADIUS, 0, Math.PI * 2, 30, true);
 		fx.flush();
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
 				spell.offensive ? SoundEvents.EVOKER_CAST_SPELL : SoundEvents.ILLUSIONER_CAST_SPELL, SoundSource.PLAYERS, 1.5F, 1.0F);

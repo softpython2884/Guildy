@@ -180,7 +180,7 @@ public final class RoomGuards {
 		return RoomGuardRules.blocksRitual(cfg.guards.blockRitual, inArena) ? inArena : 0;
 	}
 
-	/** "Des gardiens protègent encore la salle (N)" in the action bar (proximity mode, at most every 3 seconds). */
+	/** "Des sentinelles veillent encore…" in the action bar (proximity mode, at most every 3 seconds, never a count). */
 	static void remind(ServerPlayer player, int guards) {
 		long now = Scheduler.ticks();
 		Long last = REMINDED.get(player.getUUID());
@@ -188,7 +188,7 @@ public final class RoomGuards {
 			return;
 		}
 		REMINDED.put(player.getUUID(), now);
-		Msg.actionBar(player, "ruin.guards.blocking", guards);
+		Msg.actionBar(player, "ruin.guards.sealing", guards);
 	}
 
 	// ================================================================== loop
@@ -389,7 +389,10 @@ public final class RoomGuards {
 		Safe.run("ruin.stats.guards", () -> RuinFightStats.guardsPosted(level, ruin, watch.posts.size()));
 		String ruinName = Lang.colorize(def.name);
 		for (ServerPlayer player : intruders(level, ruin, cfg.guards.triggerMargin)) {
-			Msg.actionBar(player, "ruin.guards.posted", ruinName, watch.posts.size());
+			// No spoiler by default: a dull sound, then the hint of the chat at the entrance ("des sentinelles veillent…").
+			if (cfg.guards.announceOnScreen) {
+				Msg.actionBar(player, "ruin.guards.posted.screen", ruinName, watch.posts.size());
+			}
 			Msg.sound(player, SoundEvents.AMBIENT_CAVE, 0.8F, 0.7F);
 		}
 		return watch.posts.size();
