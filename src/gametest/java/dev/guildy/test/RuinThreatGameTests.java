@@ -272,8 +272,8 @@ public class RuinThreatGameTests {
 					helper.assertTrue(Encounters.barColor(ruin) == BossEvent.BossBarColor.GREEN, "green boss bar");
 					helper.assertFalse(Encounters.minions(ruin).isEmpty(), "escort");
 					for (Mob minion : Encounters.minions(ruin)) {
-						helper.assertTrue(minion.getType() == EntityTypes.BOGGED || minion.getType() == EntityTypes.CAVE_SPIDER,
-								"jungle escort, got " + minion.getType());
+						helper.assertTrue(minion.getType() == EntityTypes.BOGGED || minion.getType() == EntityTypes.PARCHED
+								|| minion.getType() == EntityTypes.CAVE_SPIDER, "the temple's undead, got " + minion.getType());
 						minion.setNoAi(true);
 					}
 				})

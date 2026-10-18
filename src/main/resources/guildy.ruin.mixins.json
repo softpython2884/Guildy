@@ -5,6 +5,7 @@
 	"mixins": [
 		"ItemStackIncantationMixin",
 		"LivingEntityFlagsAccessor",
+		"MobTargetSelectorAccessor",
 		"PistonStructureResolverSanctuaryMixin",
 		"RavagerRuinMixin",
 		"ServerExplosionSanctuaryMixin",

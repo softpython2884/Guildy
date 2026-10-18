@@ -51,7 +51,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * completed, admin command); read in a dormant ruin it starts the cursed ritual (heavier blood price) and its climax
  * awakens the guardian cursed (3x health, purple boss bar, "Maudit"); a killing blow in phase 1 starts the phase 2
  * transition (invulnerable) instead of a death or a resurrection; pentagrams appear on the floor, a player standing in one
- * is drained while the guardian heals; killed in phase 3 it gives the cursed rewards and the threat rises by 2; when
+ * is drained while the guardian heals; killed in phase 3 it always rises once more (its final form, enraged, nothing
+ * dropped yet), and only its second death gives the cursed rewards (no risen bonus on top) and the threat rises by 2; when
  * everyone leaves, the cursed guardian vanishes and the ruin sleeps again; like the normal one, the cursed scroll is
  * refused while room guards hold the arena (and given back when its ritual breaks).
  */
@@ -59,6 +60,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RuinCursedGameTests {
 	private static final Identifier CURSED_HEALTH = Identifier.fromNamespaceAndPath("guildy", "ruin_cursed_health");
 	private static final Identifier BOOST = Identifier.fromNamespaceAndPath("guildy-test", "cursed_test_health");
+	private static final Identifier RISEN_SCALE = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_scale");
+	private static final Identifier RISEN_SPEED = Identifier.fromNamespaceAndPath("guildy", "ruin_risen_speed");
 	private static final AtomicInteger IDS = new AtomicInteger();
 
 	/** A placed, indexed test ruin with its boss marker, at threat level I. */
@@ -222,7 +225,7 @@ public class RuinCursedGameTests {
 
 	// ================================================================== phases, pentagrams, rewards
 
-	@GameTest(maxTicks = 1000)
+	@GameTest(maxTicks = 1600)
 	public void cursedGuardianPhasesPentagramsAndRewards(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		RuinRecord ruin = ruin(helper);
@@ -297,6 +300,30 @@ public class RuinCursedGameTests {
 				.thenExecute(() -> {
 					helper.assertTrue(CursedFights.phase(ruin) == 3, "phase III");
 					helper.assertTrue(boss[0].hasEffect(MobEffects.STRENGTH), "stronger in phase III");
+					// Killed at the end of phase III, long after any fast-kill window: it always rises once more.
+					boss[0].hurtServer(level, level.damageSources().playerAttack(player), 100_000F);
+					helper.assertTrue(boss[0].isAlive() && Encounters.isActive(ruin) && ruin.state == RuinState.AWAKE && ruin.timesCleared == 0,
+							"the cursed guardian refuses to die");
+					helper.assertTrue(Encounters.rising(ruin) && !Encounters.risen(ruin), "it rises into its final form");
+					helper.assertTrue(boss[0].isInvulnerable() && boss[0].isNoAi(), "invulnerable and frozen while it rises");
+					helper.assertTrue(Encounters.barColor(ruin) == BossEvent.BossBarColor.PURPLE, "still the cursed bar");
+					helper.assertTrue(bar(ruin).contains("refuse de mourir"), "boss bar: " + bar(ruin));
+					helper.assertFalse(boss[0].hurtServer(level, level.damageSources().playerAttack(player), 50F), "no damage while it rises");
+				})
+				.thenIdle(10)
+				.thenExecute(() -> helper.assertTrue(drops(level, boss[0]).stream().noneMatch(e -> e.getItem().is(Items.GOLD_INGOT)),
+						"no reward before its final death"))
+				.thenWaitUntil(() -> helper.assertFalse(Encounters.rising(ruin), "waiting for the final form"))
+				.thenExecute(() -> {
+					helper.assertTrue(Encounters.risen(ruin) && boss[0].isAlive() && !boss[0].isNoAi(), "back, fighting");
+					String name = boss[0].getCustomName() == null ? "" : boss[0].getCustomName().getString();
+					helper.assertTrue(name.contains("Maudit") && name.contains("Enragé"), "enraged final form: " + name);
+					helper.assertTrue(bar(ruin).contains("Forme finale"), "boss bar: " + bar(ruin));
+					float ratio = boss[0].getHealth() / boss[0].getMaxHealth();
+					helper.assertTrue(Math.abs(ratio - cfg.finalForm.healthRatio) < 0.02, "back with part of its health: " + ratio);
+					helper.assertTrue(boss[0].getAttribute(Attributes.SCALE).getModifier(RISEN_SCALE) != null
+							|| boss[0].getAttribute(Attributes.MOVEMENT_SPEED).getModifier(RISEN_SPEED) != null, "the risen modifiers");
+					helper.assertTrue(ruin.state == RuinState.AWAKE && ruin.timesCleared == 0, "not cleared yet");
 					boss[0].hurtServer(level, level.damageSources().playerAttack(player), 100_000F);
 				})
 				.thenWaitUntil(() -> helper.assertTrue(ruin.state == RuinState.CLEARED, "waiting for the victory"))
@@ -308,6 +335,7 @@ public class RuinCursedGameTests {
 				.thenWaitUntil(() -> {
 					List<ItemEntity> items = drops(level, boss[0]);
 					int gold = items.stream().filter(e -> e.getItem().is(Items.GOLD_INGOT)).mapToInt(e -> e.getItem().getCount()).sum();
+					// The cursed rewards once, after the final death (no risen bonus on top: no double count).
 					helper.assertTrue(gold == 30, "gold x3: 10 -> 30, got " + gold);
 					boolean magic = items.stream().anyMatch(e -> ScrollDrops.isScroll(e.getItem()) || GuildyItems.is(e.getItem(), "grimoire"));
 					helper.assertTrue(magic, "a spell scroll (or a grimoire) guaranteed");

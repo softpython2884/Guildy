@@ -102,7 +102,7 @@ class RuinConfigTest {
 		assertEquals(0, fixed.respawnDays);
 		assertEquals("RED", fixed.bossBarColor);
 		assertEquals("minecraft:zombie", fixed.boss.entity, "unknown guardian replaced");
-		assertEquals(4, fixed.boss.scale);
+		assertEquals(RuinConfig.MAX_SCALE, fixed.boss.scale);
 		assertEquals(1, fixed.boss.knockbackResistance);
 		assertTrue(fixed.boss.equipment.isEmpty(), "unknown slot dropped");
 		assertEquals(Map.of("minecraft:zombie", 2), fixed.minions.types, "unknown escort dropped, ids normalized");
@@ -213,7 +213,10 @@ class RuinConfigTest {
 		assertTrue(temple.boss.name.contains("Serpent à plumes"));
 		assertTrue(temple.boss.scale >= 1.8, "scaled up");
 		assertTrue(temple.boss.equipment.isEmpty(), "a breeze wears nothing");
-		assertEquals(Set.of("minecraft:bogged", "minecraft:cave_spider"), temple.minions.types.keySet(), "jungle escort");
+		assertEquals(Set.of("minecraft:bogged", "minecraft:parched", "minecraft:cave_spider"), temple.minions.types.keySet(), "the temple's undead");
+		assertEquals(Set.of("minecraft:bogged", "minecraft:parched", "minecraft:zombie", "minecraft:cave_spider"), temple.guards.types.keySet(),
+				"undead on guard");
+		assertEquals("minecraft:turtle_helmet", temple.guards.equipment.get("head"), "jade-green helmets");
 		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("fire_ring") && a.style.equals("jade")), "jade ring");
 		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("volley") && a.style.equals("wind")), "wind volley");
 		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("blink")), "blink");
@@ -246,18 +249,38 @@ class RuinConfigTest {
 		assertEquals("Grand Temple du Jaguar céleste", temple.name);
 		assertEquals(5, temple.tier);
 		assertEquals("YELLOW", temple.bossBarColor);
-		assertEquals("minecraft:ravager", temple.boss.entity, "a giant ravager");
+		assertEquals("minecraft:ocelot", temple.boss.entity, "a giant ocelot");
 		assertTrue(temple.boss.name.contains("Jaguar céleste"));
-		assertTrue(temple.boss.scale >= 1.5, "scaled up");
+		assertTrue(temple.boss.scale >= 4 && temple.boss.scale <= 5.5, "about x4-5: " + temple.boss.scale);
+		// 0.6 x 0.7 ocelot: about 3 blocks wide and 3.5 high, in a 29 x 29 x 15 arena (like the giant ravager before).
+		assertTrue(0.6 * temple.boss.scale <= 3.3 && 0.7 * temple.boss.scale <= 4.0, "fits the arena");
+		assertTrue(temple.boss.speed > 0.2, "fast");
+		assertEquals("minecraft:cat", temple.boss.cursedForm.entity, "the cursed form: a cat");
+		assertEquals("minecraft:all_black", temple.boss.cursedForm.variant, "... all black");
+		assertTrue(temple.boss.cursedForm.name.contains("obsidienne"), temple.boss.cursedForm.name);
 		assertTrue(temple.leashRadius >= 20, "a large indoor arena");
-		assertEquals(Set.of("minecraft:vindicator", "minecraft:bogged", "minecraft:evoker"), temple.minions.types.keySet(), "jungle warriors");
-		assertEquals(Set.of("minecraft:vindicator", "minecraft:bogged", "minecraft:evoker"), temple.guards.types.keySet(), "jaguar warriors on guard");
+		assertEquals(Set.of("minecraft:bogged", "minecraft:parched", "minecraft:cave_spider"), temple.minions.types.keySet(), "the temple's undead");
+		assertEquals(Set.of("minecraft:bogged", "minecraft:parched", "minecraft:zombie", "minecraft:cave_spider"), temple.guards.types.keySet(),
+				"undead jaguar warriors on guard");
 		assertEquals("minecraft:golden_helmet", temple.guards.equipment.get("head"));
 		assertTrue(temple.guards.name.contains("jaguar"));
 		Set<String> styles = new HashSet<>();
-		temple.abilities.forEach(a -> styles.add(a.style));
+		Set<String> types = new HashSet<>();
+		temple.abilities.forEach(a -> {
+			styles.add(a.style);
+			types.add(a.type);
+		});
 		assertTrue(styles.containsAll(Set.of("solar", "gold", "jade")), "solar, gold and jade abilities: " + styles);
-		assertTrue(temple.abilities.stream().anyMatch(a -> a.type.equals("volley") && a.style.equals("solar")), "sun spears");
+		assertTrue(types.containsAll(Set.of("pounce", "claw_sweep", "stalk", "roar", "spirit_jaguars")), "jaguar attacks: " + types);
+
+		// Its cursed form: a copy with the black cat, the normal guardian untouched.
+		RuinConfig.RuinDef cursed = temple.cursedForm();
+		assertEquals("minecraft:cat", cursed.boss.entity);
+		assertEquals("minecraft:all_black", cursed.boss.variant);
+		assertTrue(cursed.boss.name.contains("obsidienne"));
+		assertEquals(temple.abilities.size(), cursed.abilities.size(), "same abilities");
+		assertEquals("minecraft:ocelot", temple.boss.entity, "the spotted ocelot stays the normal guardian");
+		assertSame(cfg.ruins.get("crypte_oubliee"), cfg.ruins.get("crypte_oubliee").cursedForm(), "no cursed form: the same guardian");
 
 		RuinConfig.RuinDef citadel = cfg.ruins.get("citadelle_des_ames");
 		assertEquals(citadel.tier, temple.tier, "the other tier-5 ruin");
@@ -274,7 +297,94 @@ class RuinConfigTest {
 		assertTrue(rebuild(old).isEmpty());
 		assertEquals(List.of("temple_maya", "grand_temple_maya"), new ArrayList<>(old.ruins.keySet()));
 		assertEquals(-1, old.ruins.get("temple_maya").guards.count, "an older ruin definition gets the default guards");
-		assertTrue(old.ruins.get("temple_maya").guards.types.isEmpty(), "... with the escort's types");
+		assertEquals(RuinDefaults.serpentGuards(), old.ruins.get("temple_maya").guards.types, "... the temple's undead (empty types migrated)");
+	}
+
+	@Test
+	void noRaiderInTheMayanTemples() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		Set<String> raiders = Set.of("minecraft:pillager", "minecraft:vindicator", "minecraft:evoker", "minecraft:illusioner", "minecraft:ravager",
+				"minecraft:witch", "minecraft:vex");
+		for (String id : List.of("temple_maya", "grand_temple_maya")) {
+			RuinConfig.RuinDef def = cfg.ruins.get(id);
+			Set<String> all = new HashSet<>(def.minions.types.keySet());
+			// Room guards: their own types, the escort's when empty.
+			all.addAll((def.guards.types.isEmpty() ? def.minions.types : def.guards.types).keySet());
+			for (String raider : raiders) {
+				assertFalse(all.contains(raider), id + " has no " + raider + ": " + all);
+			}
+			assertTrue(all.contains("minecraft:bogged") && all.contains("minecraft:parched"), id + ": bogged and parched");
+		}
+		assertTrue(cfg.ruins.get("ziggourat_des_sables").minions.types.containsKey("minecraft:parched"), "parched archers in the ziggurat");
+		assertTrue(cfg.ruins.get("tour_du_mage").guards.types.containsKey("minecraft:vindicator"), "the mage tower keeps its illagers");
+		assertTrue(cfg.ruins.get("bastion_de_givre").minions.types.containsKey("minecraft:stray"), "strays in the frost bastion");
+	}
+
+	@Test
+	void olderDefaultsAreMigrated() {
+		// A ruins.json5 of Guildy 1.8 (configVersion 1) still on its defaults, with a few values changed by the admin.
+		RuinConfig written = new RuinConfig();
+		written.configVersion = 1;
+		written.knownDefaults = new ArrayList<>(EIGHT);
+		RuinConfig.RuinDef ziggurat = written.ruins.get("ziggourat_des_sables");
+		ziggurat.minions.types = new LinkedHashMap<>(Map.of("minecraft:husk", 1));
+		RuinConfig.RuinDef serpent = written.ruins.get("temple_maya");
+		serpent.minions.types = new LinkedHashMap<>(Map.of("minecraft:bogged", 3, "minecraft:cave_spider", 2));
+		serpent.guards.types.clear();
+		serpent.guards.equipment.clear();
+		RuinConfig.RuinDef jaguar = written.ruins.get("grand_temple_maya");
+		jaguar.boss.entity = "minecraft:ravager";
+		jaguar.boss.scale = 1.6;
+		jaguar.boss.speed = 0;
+		jaguar.boss.cursedForm = new RuinConfig.CursedFormDef();
+		jaguar.abilities = new ArrayList<>(RuinMigration.oldJaguarAbilities());
+		jaguar.minions.types = new LinkedHashMap<>(Map.of("minecraft:vindicator", 3, "minecraft:bogged", 2, "minecraft:evoker", 1));
+		jaguar.guards.types = new LinkedHashMap<>(Map.of("minecraft:evoker", 1, "minecraft:vindicator", 4, "minecraft:bogged", 2));
+		// Changed by the admin: kept.
+		written.ruins.get("autel_infernal").minions.types = new LinkedHashMap<>(Map.of("minecraft:husk", 1));
+		RuinConfig old = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		assertTrue(rebuild(old).isEmpty());
+		assertEquals(RuinConfig.CURRENT_VERSION, old.configVersion);
+		assertEquals(RuinDefaults.zigguratEscort(), old.ruins.get("ziggourat_des_sables").minions.types);
+		assertEquals(RuinDefaults.serpentEscort(), old.ruins.get("temple_maya").minions.types);
+		assertEquals(RuinDefaults.serpentGuards(), old.ruins.get("temple_maya").guards.types);
+		assertEquals(RuinDefaults.JADE_HELMET, old.ruins.get("temple_maya").guards.equipment.get("head"));
+		RuinConfig.RuinDef migrated = old.ruins.get("grand_temple_maya");
+		assertEquals("minecraft:ocelot", migrated.boss.entity, "the ravager becomes the giant ocelot");
+		assertEquals(RuinDefaults.JAGUAR_SCALE, migrated.boss.scale);
+		assertEquals(RuinDefaults.JAGUAR_SPEED, migrated.boss.speed);
+		assertEquals("minecraft:cat", migrated.boss.cursedForm.entity);
+		assertTrue(RuinMigration.sameAbilities(migrated.abilities, RuinDefaults.jaguarAbilities()), "the jaguar attacks");
+		assertEquals(RuinDefaults.jaguarEscort(), migrated.minions.types);
+		assertEquals(RuinDefaults.jaguarGuards(), migrated.guards.types, "order ignored");
+		assertEquals(Map.of("minecraft:husk", 1), old.ruins.get("autel_infernal").minions.types, "the admin's escort is kept");
+		assertEquals(7, old.migrations().size(), "every migrated value reported: " + old.migrations());
+
+		// Changed by the admin: nothing is touched.
+		RuinConfig custom = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		custom.ruins.get("grand_temple_maya").boss.scale = 2.0;
+		custom.ruins.get("grand_temple_maya").abilities.getFirst().damage = 30;
+		custom.ruins.get("grand_temple_maya").minions.types.put("minecraft:pillager", 1);
+		custom.ruins.get("temple_maya").guards.equipment.put("head", "minecraft:iron_helmet");
+		assertTrue(rebuild(custom).isEmpty());
+		assertEquals("minecraft:ravager", custom.ruins.get("grand_temple_maya").boss.entity, "a boss changed by the admin is kept whole");
+		assertEquals(2.0, custom.ruins.get("grand_temple_maya").boss.scale);
+		assertEquals(30, custom.ruins.get("grand_temple_maya").abilities.getFirst().damage);
+		assertTrue(custom.ruins.get("grand_temple_maya").minions.types.containsKey("minecraft:pillager"));
+		assertTrue(custom.ruins.get("temple_maya").guards.types.isEmpty(), "guards with an equipment of the admin are kept");
+
+		// Already migrated (version 2): never again, even on the old values.
+		RuinConfig current = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		current.configVersion = RuinConfig.CURRENT_VERSION;
+		assertTrue(rebuild(current).isEmpty());
+		assertEquals("minecraft:ravager", current.ruins.get("grand_temple_maya").boss.entity);
+		assertTrue(current.migrations().isEmpty());
+
+		// A fresh file: the defaults need no migration.
+		RuinConfig fresh = new RuinConfig();
+		assertTrue(rebuild(fresh).isEmpty());
+		assertTrue(fresh.migrations().isEmpty(), "fresh defaults: " + fresh.migrations());
 	}
 
 	@Test

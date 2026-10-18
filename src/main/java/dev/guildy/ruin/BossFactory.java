@@ -72,13 +72,14 @@ final class BossFactory {
 
 	/** Spawns the guardian, made stronger by the threat level of its ruin. */
 	static @Nullable Mob spawnBoss(ServerLevel level, BossDef def, BlockPos pos, ThreatRules.Scaling scaling, Predicate<Mob> track) {
-		Mob mob = create(level, def.entity, pos);
+		Mob mob = create(level, def.entity, pos, def.variant);
 		if (mob == null) {
 			return null;
 		}
 		applyBoss(mob, def);
 		applyThreat(mob, scaling);
 		equip(mob, def.equipment);
+		Felines.styleGuardian(mob);
 		mob.addTag(TAG_BOSS);
 		mob.setCustomName(Component.literal(Lang.colorize(def.name)));
 		mob.setCustomNameVisible(true);
@@ -105,6 +106,11 @@ final class BossFactory {
 	}
 
 	static @Nullable Mob create(ServerLevel level, String entityId, BlockPos pos) {
+		return create(level, entityId, pos, "");
+	}
+
+	/** A ruin mob of {@code entityId} with a vanilla {@code variant} ("" = the game's choice), not added to the level yet. */
+	static @Nullable Mob create(ServerLevel level, String entityId, BlockPos pos, @Nullable String variant) {
 		EntityType<?> type = RuinRegistries.entity(entityId);
 		if (type == null) {
 			return null;
@@ -148,6 +154,9 @@ final class BossFactory {
 				return name.contains("TakeBlock") || name.contains("LeaveBlock");
 			});
 		}
+		// Shy ocelots and cats become hunters of players; the variant after finalizeSpawn (which picks one by biome).
+		Felines.hunt(mob);
+		Felines.applyVariant(mob, variant);
 		AttributeInstance reinforcements = mob.getAttribute(Attributes.SPAWN_REINFORCEMENTS_CHANCE);
 		if (reinforcements != null) {
 			reinforcements.removeModifiers();

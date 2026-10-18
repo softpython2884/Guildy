@@ -5,6 +5,7 @@ import dev.guildy.claim.ClaimGuard;
 import dev.guildy.claim.HeartIndex;
 import dev.guildy.core.Scheduler;
 import dev.guildy.data.GuildPermission;
+import dev.guildy.ruin.RoomGuards;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleOptions;
@@ -75,9 +76,9 @@ final class PowerUtil {
 		return isHostileType(entity) && entity instanceof LivingEntity living && living.isAlive() && !living.isSpectator();
 	}
 
-	/** A monster (alive or not): powers never affect players, villagers, animals or pets. */
+	/** A monster (alive or not): powers never affect players, villagers, animals or pets (the ruins' great cats are monsters). */
 	static boolean isHostileType(Entity entity) {
-		return entity instanceof Enemy;
+		return entity instanceof Enemy || RoomGuards.isRuinMob(entity);
 	}
 
 	/** The hostile mob under the crosshair (within {@code range}, in sight), or null. */

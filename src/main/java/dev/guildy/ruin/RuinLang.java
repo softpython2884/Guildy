@@ -61,6 +61,10 @@ final class RuinLang {
 		m.put("ruin.risen.victory.subtitle", "&e{0} &7ne se relèvera plus");
 		m.put("ruin.risen.victory.announce", "&6&l☠ &e{0} &7ont terrassé {1} &4&lressuscité &8(&f{2}&8) &7: &6butin exceptionnel !");
 
+		// The jaguar's spirits
+		m.put("ruin.jaguar.spirit.name", "&eEsprit jaguar");
+		m.put("ruin.jaguar.spirit.cursed", "&5Esprit d'obsidienne");
+
 		// Incantation scroll and ritual
 		m.put("ruin.summon.item.name", "&4&lParchemin d'incantation");
 		m.put("ruin.summon.item.header", "&5Objet rituel &8— usage unique");

@@ -142,7 +142,9 @@ final class RuinLoot {
 	/** Reward multipliers of the fight: threat level of the ruin, risen guardian, cursed guardian (the group is apart). */
 	static ThreatRules.Rewards bonus(Encounter encounter) {
 		RuinConfig cfg = RuinModule.config();
-		ThreatRules.Rewards rewards = ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, encounter.risen);
+		// The final form of a cursed guardian is part of its fight: no risen bonus on top of the curse (unless configured).
+		boolean risenBonus = CursedRules.risenBonus(encounter.cursed != null, encounter.risen, cfg.cursed.finalForm.risenRewards);
+		ThreatRules.Rewards rewards = ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, risenBonus);
 		return encounter.cursed != null ? CursedRules.rewards(rewards, cfg.cursed.rewards) : rewards;
 	}
 

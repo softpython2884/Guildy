@@ -41,7 +41,8 @@ import java.util.random.RandomGenerator;
  * The guardians' abilities (data-driven list in ruins.json5): animated particle effects and sounds over several ticks
  * ({@link RuinFx}), damage only to survival / adventure players, everything bounded (radius, count, duration). Styles of the
  * celestial jaguar: "solar" (sunfire: burns and dazzles, sun spears, a golden pounce) and "gold" (golden shockwave and ring:
- * slows; golden threads of the life drain).
+ * slows; golden threads of the life drain). The jaguar's own attacks (pounce, claw_sweep, stalk, roar, spirit_jaguars) are in
+ * {@link JaguarAbilities}.
  */
 final class BossAbilities {
 	private static final int SLAM_RISE_TICKS = 8;
@@ -76,6 +77,11 @@ final class BossAbilities {
 			case "volley" -> volley(level, boss, ability, targets, random);
 			case "summon" -> summon(level, encounter, boss, ability, random, summon);
 			case "life_drain" -> lifeDrain(level, boss, ability, targets);
+			case "pounce" -> JaguarAbilities.pounce(level, encounter, boss, ability, targets, random);
+			case "claw_sweep" -> JaguarAbilities.clawSweep(level, encounter, boss, ability, targets);
+			case "stalk" -> JaguarAbilities.stalk(level, encounter, boss, ability, targets, random);
+			case "roar" -> JaguarAbilities.roar(level, encounter, boss, ability, targets);
+			case "spirit_jaguars" -> JaguarAbilities.spiritJaguars(level, encounter, boss, ability, targets, random);
 			default -> false;
 		};
 	}

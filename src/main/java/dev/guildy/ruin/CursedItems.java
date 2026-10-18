@@ -135,6 +135,9 @@ public final class CursedItems {
 		lines.add(Component.empty());
 		lines.add(Lang.get("ruin.cursed.item.curse", IncantationItems.number(c.guardian.healthMultiplier), IncantationItems.number(c.guardian.damageMultiplier)));
 		lines.add(Lang.get("ruin.cursed.item.curse.attacks"));
+		if (c.finalForm.enabled) {
+			lines.add(Lang.get("ruin.cursed.item.final"));
+		}
 		if (c.ritual.drainHealth > 0) {
 			lines.add(Lang.get("ruin.cursed.item.price", IncantationItems.hearts(c.ritual.drainHealth)));
 			lines.add(Lang.get("ruin.cursed.item.price.min", IncantationItems.hearts(c.ritual.minHealth)));
@@ -171,13 +174,13 @@ public final class CursedItems {
 			CursedSettings.RitualSettings r = c.ritual;
 			StringBuilder texts = new StringBuilder();
 			for (String key : List.of("ruin.cursed.item.name", "ruin.cursed.item.header", "ruin.cursed.item.story", "ruin.cursed.item.curse",
-					"ruin.cursed.item.curse.attacks", "ruin.cursed.item.price", "ruin.cursed.item.price.min", "ruin.cursed.item.price.none",
+					"ruin.cursed.item.curse.attacks", "ruin.cursed.item.final", "ruin.cursed.item.price", "ruin.cursed.item.price.min", "ruin.cursed.item.price.none",
 					"ruin.cursed.item.rewards", "ruin.cursed.item.rewards.more", "ruin.cursed.item.use", "ruin.cursed.item.ritual",
 					"ruin.cursed.item.dormant", "ruin.cursed.item.single_use")) {
 				texts.append(Lang.raw(key)).append('|');
 			}
 			sig = Objects.hash(r.item, r.maxStack, r.channelSeconds, r.ritualSeconds, r.drainHealth, r.minHealth, c.guardian.healthMultiplier,
-					c.guardian.damageMultiplier, c.rewards.goldMultiplier, c.rewards.threatGain, RuinModule.config().summon.arenaRadius,
+					c.guardian.damageMultiplier, c.rewards.goldMultiplier, c.rewards.threatGain, c.finalForm.enabled, RuinModule.config().summon.arenaRadius,
 					UniqueVisuals.enabled(), texts.toString());
 			signature = sig;
 		}

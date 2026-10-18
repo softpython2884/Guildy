@@ -40,6 +40,13 @@ public final class CursedSettings {
 	})
 	public AttackSettings attacks = new AttackSettings();
 
+	@Comment({
+			"Forme finale : abattu a la fin de la phase 3, le gardien maudit se releve toujours une derniere fois, enrage (meme",
+			"animation que la resurrection, aux couleurs de la malediction ; taille, vitesse, degats, sbires et onde de choc de",
+			"'resurrection'), quelle que soit la duree du combat. Les recompenses maudites tombent a sa mort definitive"
+	})
+	public FinalFormSettings finalForm = new FinalFormSettings();
+
 	@Comment("Recompenses d'une victoire sur un gardien maudit (en plus des bonus de la menace)")
 	public RewardSettings rewards = new RewardSettings();
 
@@ -166,6 +173,19 @@ public final class CursedSettings {
 		public double auraWitherSeconds = 2.0;
 		@Comment("Particules envoyees au maximum par tick pour tous les rituels et combats maudits (au-dela, l'animation est allegee)")
 		public int particleBudget = 1200;
+	}
+
+	@Json5.Section
+	public static final class FinalFormSettings {
+		@Comment("Le gardien maudit se releve une derniere fois a la fin de la phase 3 (false = il meurt a la fin de la phase 3)")
+		public boolean enabled = true;
+		@Comment("Part de sa vie maximale rendue a la forme finale (0.1 a 1)")
+		public double healthRatio = 0.5;
+		@Comment({
+				"Ajouter aussi le bonus de butin d'un gardien ressuscite (section 'resurrection' : or, XP, tirages en plus). false par",
+				"defaut : la forme finale fait partie du combat maudit, ses recompenses sont deja celles de la malediction"
+		})
+		public boolean risenRewards = false;
 	}
 
 	@Json5.Section
@@ -298,6 +318,11 @@ public final class CursedSettings {
 		a.auraRadius = clamp(a.auraRadius, 0, 10);
 		a.auraWitherSeconds = clamp(a.auraWitherSeconds, 0, 10);
 		a.particleBudget = clamp(a.particleBudget, 100, 10_000);
+
+		if (finalForm == null) {
+			finalForm = new FinalFormSettings();
+		}
+		finalForm.healthRatio = clamp(finalForm.healthRatio, 0.1, 1);
 
 		if (rewards == null) {
 			rewards = new RewardSettings();

@@ -40,7 +40,8 @@ import java.util.SplittableRandom;
  *     (totem, beacon, wither, ender dragon, a racing heartbeat);</li>
  *     <li>its return: flashes, sonic booms, an explosion of light and a shockwave pushing the players back (no damage).</li>
  * </ul>
- * The fight logic (statistics of the risen guardian, boss bar, escort, messages) is in {@link Encounters}.
+ * The fight logic (statistics of the risen guardian, boss bar, escort, messages) is in {@link Encounters}. The final form of
+ * a cursed guardian plays the same sequence in the colours of the curse (blood, purple, violet, void, witch sparks, ink).
  */
 final class Resurrection {
 	static final int RED = 0xFF1A2B;
@@ -66,6 +67,19 @@ final class Resurrection {
 	final double scale;
 	final List<Vec3> souls;
 	final int theme;
+	/** The final form of a cursed guardian: the same sequence in the colours of the curse (purple, void, blood). */
+	final boolean cursed;
+	/** Part of its maximum health it comes back with. */
+	final double healthRatio;
+	private final int red;
+	private final int gold;
+	private final int soul;
+	private final int crimson;
+	private final int light;
+	private final int sun;
+	private final ParticleOptions sparks;
+	private final ParticleOptions rods;
+	private final ParticleOptions glow;
 	private final double height;
 	private final ParticleOptions floor;
 	private final SplittableRandom random = new SplittableRandom();
@@ -74,6 +88,21 @@ final class Resurrection {
 	private int nextBeat;
 
 	Resurrection(ServerLevel level, Mob boss, Encounter encounter, ResurrectionSettings cfg) {
+		this(level, boss, encounter, cfg, false, cfg.healthRatio);
+	}
+
+	Resurrection(ServerLevel level, Mob boss, Encounter encounter, ResurrectionSettings cfg, boolean cursed, double healthRatio) {
+		this.cursed = cursed;
+		this.healthRatio = healthRatio;
+		this.red = cursed ? CursedFx.BLOOD_BRIGHT : RED;
+		this.gold = cursed ? CursedFx.PURPLE : GOLD;
+		this.soul = cursed ? CursedFx.VIOLET : SOUL;
+		this.crimson = cursed ? CursedFx.VOID : CRIMSON;
+		this.light = cursed ? CursedFx.VIOLET : 0xFFFFFF;
+		this.sun = cursed ? CursedFx.PURPLE : 0xFFF2B0;
+		this.sparks = cursed ? ParticleTypes.WITCH : ParticleTypes.TOTEM_OF_UNDYING;
+		this.rods = cursed ? ParticleTypes.REVERSE_PORTAL : ParticleTypes.END_ROD;
+		this.glow = cursed ? ParticleTypes.SQUID_INK : ParticleTypes.GLOW;
 		this.duration = SummonRules.ticks(cfg.durationSeconds);
 		this.height = Math.max(0.5, boss.getBbHeight());
 		BlockPos floorPos = floor(level, boss.blockPosition());
@@ -140,10 +169,10 @@ final class Resurrection {
 		boss.clearFire();
 		boss.setDeltaMovement(Vec3.ZERO);
 		Vec3 core = boss.position().add(0, height / 2, 0);
-		fx.burst(ParticleTypes.TOTEM_OF_UNDYING, core, 80, 0.6, 0.5);
+		fx.burst(sparks, core, 80, 0.6, 0.5);
 		fx.burst(ParticleTypes.SOUL, core, 30, 0.5, 0.05);
 		fx.burst(ParticleTypes.LARGE_SMOKE, core, 20, 0.5, 0.03);
-		fx.dot(RitualFx.flash(RED), core);
+		fx.dot(RitualFx.flash(red), core);
 		sound(level, SoundEvents.TOTEM_USE, 2.0F, 0.5F);
 		sound(level, SoundEvents.SOUL_ESCAPE.value(), 3.0F, 0.5F);
 		sound(level, SoundEvents.AMBIENT_CAVE.value(), 3.0F, 0.6F);
@@ -161,7 +190,7 @@ final class Resurrection {
 		boss.setYRot(yaw);
 		boss.setYBodyRot(yaw);
 		boss.setYHeadRot(yaw);
-		boss.setHealth(ThreatRules.risingHealth(p, boss.getMaxHealth(), cfg.healthRatio));
+		boss.setHealth(ThreatRules.risingHealth(p, boss.getMaxHealth(), healthRatio));
 		Vec3 core = new Vec3(anchor.x, y + height * 0.5, anchor.z);
 		cues(level, p);
 		lightning(level);
@@ -179,7 +208,7 @@ final class Resurrection {
 			drawSouls(fx, core);
 		}
 		if (p >= ThreatRules.SINK_END) {
-			fx.burst(RitualFx.fade(RED, CRIMSON, 1.2F), core.x, core.y, core.z, 3, 0.5, height * 0.3, 0.5, 0.0);
+			fx.burst(RitualFx.fade(red, crimson, 1.2F), core.x, core.y, core.z, 3, 0.5, height * 0.3, 0.5, 0.0);
 		}
 		return age >= duration;
 	}
@@ -196,21 +225,21 @@ final class Resurrection {
 	void land(ServerLevel level, Mob boss, RitualFx fx, ResurrectionSettings cfg) {
 		double h = Math.max(0.5, boss.getBbHeight());
 		Vec3 core = anchor.add(0, h * 0.5, 0);
-		fx.dot(RitualFx.flash(RED), core);
-		fx.dot(RitualFx.flash(0xFFFFFF), core.add(0, 1.5, 0));
-		fx.dot(RitualFx.flash(GOLD), core.add(0, 3.0, 0));
+		fx.dot(RitualFx.flash(red), core);
+		fx.dot(RitualFx.flash(light), core.add(0, 1.5, 0));
+		fx.dot(RitualFx.flash(gold), core.add(0, 3.0, 0));
 		fx.burst(ParticleTypes.EXPLOSION_EMITTER, core, 1, 0, 0);
 		fx.dot(ParticleTypes.SONIC_BOOM, core);
 		for (int i = 0; i < 12; i++) {
 			double angle = Math.PI * 2 * i / 12;
 			fx.dot(ParticleTypes.SONIC_BOOM, anchor.x + Math.cos(angle) * 3.5, anchor.y + 1.0, anchor.z + Math.sin(angle) * 3.5);
 		}
-		fx.sphereBurst(RitualFx.fade(GOLD, RED, 1.8F), core, 0.5, 120, 0.5);
-		fx.burst(ParticleTypes.TOTEM_OF_UNDYING, core, 120, 0.8, 0.7);
+		fx.sphereBurst(RitualFx.fade(gold, red, 1.8F), core, 0.5, 120, 0.5);
+		fx.burst(sparks, core, 120, 0.8, 0.7);
 		fx.burst(ParticleTypes.SOUL_FIRE_FLAME, core, 60, 0.7, 0.2);
-		fx.burst(ParticleTypes.END_ROD, core, 40, 0.5, 0.4);
+		fx.burst(rods, core, 40, 0.5, 0.4);
 		fx.burst(floor, anchor.x, anchor.y + 0.2, anchor.z, 60, 2.5, 0.1, 2.5, 0.35);
-		fx.ring(RitualFx.fade(RED, GOLD, 1.8F), anchor.add(0, 0.15, 0), 3.0, 40, 0);
+		fx.ring(RitualFx.fade(red, gold, 1.8F), anchor.add(0, 0.15, 0), 3.0, 40, 0);
 		sound(level, SoundEvents.TOTEM_USE, 3.0F, 0.7F);
 		sound(level, SoundEvents.WITHER_SPAWN, 1.5F, 0.9F);
 		level.playSound(null, anchor.x, anchor.y, anchor.z, SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 3.0F, 0.6F);
@@ -219,7 +248,7 @@ final class Resurrection {
 		sound(level, SoundEvents.LIGHTNING_BOLT_THUNDER, 5.0F, 0.7F);
 		Vec3 at = anchor;
 		ParticleOptions debris = floor;
-		ParticleOptions blood = RitualFx.fade(RED, GOLD, 1.5F);
+		ParticleOptions blood = RitualFx.fade(red, gold, 1.5F);
 		double radius = cfg.shockwaveRadius;
 		RuinFx.play(level, (lvl, tick) -> {
 			double r = 1.0 + tick * Math.max(0.6, radius / 10.0);
@@ -329,7 +358,7 @@ final class Resurrection {
 		double top = height + 2.5;
 		double base = Math.min(anchor.y, bodyY);
 		for (int strand = 0; strand < 4; strand++) {
-			ParticleOptions particle = strand % 2 == 0 ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.TOTEM_OF_UNDYING;
+			ParticleOptions particle = strand % 2 == 0 ? ParticleTypes.SOUL_FIRE_FLAME : sparks;
 			for (int s = 0; s < 3; s++) {
 				double yy = (age * 0.2 + s * top / 3.0 + strand * 0.4) % top;
 				double angle = age * 0.3 + strand * Math.PI / 2 + yy * 1.1;
@@ -343,22 +372,22 @@ final class Resurrection {
 	/** A column of light falling from the sky onto the guardian. */
 	private void drawColumn(RitualFx fx, Vec3 core, double k) {
 		double top = anchor.y + COLUMN_HEIGHT;
-		int rods = 3 + (int) Math.round(5 * k);
-		for (int i = 0; i < rods; i++) {
+		int count = 3 + (int) Math.round(5 * k);
+		for (int i = 0; i < count; i++) {
 			double y = core.y + random.nextDouble() * (top - core.y);
-			fx.move(ParticleTypes.END_ROD, anchor.x + random.nextGaussian() * 0.15, y, anchor.z + random.nextGaussian() * 0.15, 0,
+			fx.move(rods, anchor.x + random.nextGaussian() * 0.15, y, anchor.z + random.nextGaussian() * 0.15, 0,
 					-(0.8 + 0.8 * k), 0);
 		}
 		for (int i = 0; i < 2 + (int) Math.round(3 * k); i++) {
 			double y = core.y + random.nextDouble() * (top - core.y) * 0.6;
-			fx.dot(ParticleTypes.GLOW, anchor.x + random.nextGaussian() * 0.3, y, anchor.z + random.nextGaussian() * 0.3);
+			fx.dot(glow, anchor.x + random.nextGaussian() * 0.3, y, anchor.z + random.nextGaussian() * 0.3);
 		}
 		if (age % 3 == 0) {
 			double y = core.y + random.nextDouble() * (top - core.y) * 0.7;
-			fx.ring(RitualFx.fade(GOLD, 0xFFFFFF, 1.1F), new Vec3(anchor.x, y, anchor.z), 0.7, 12, age * 0.2);
+			fx.ring(RitualFx.fade(gold, light, 1.1F), new Vec3(anchor.x, y, anchor.z), 0.7, 12, age * 0.2);
 		}
 		if (age % 10 == 0) {
-			fx.dot(RitualFx.flash(0xFFF2B0), new Vec3(anchor.x, top, anchor.z));
+			fx.dot(RitualFx.flash(sun), new Vec3(anchor.x, top, anchor.z));
 		}
 	}
 
@@ -369,7 +398,7 @@ final class Resurrection {
 				continue;
 			}
 			int index = born / RING_EVERY;
-			int color = index % 2 == 0 ? RED : GOLD;
+			int color = index % 2 == 0 ? red : gold;
 			double t = (double) (age - born) / RING_LIFE;
 			double radius = 0.4 + RING_RADIUS * Math.pow(1 - t, 1.2);
 			Vec3 center = new Vec3(anchor.x, anchor.y + 0.2 + (index % 3) * 0.9, anchor.z);
@@ -394,7 +423,7 @@ final class Resurrection {
 			Vec3 spot = souls.get(i);
 			fx.move(ParticleTypes.SOUL, spot.x + random.nextGaussian() * 0.2, spot.y + 0.3, spot.z + random.nextGaussian() * 0.2, 0, 0.06, 0);
 			if ((age / 2 + i) % 2 == 0) {
-				fx.dot(RitualFx.trail(core, SOUL, 12 + random.nextInt(7)), spot.x, spot.y + 1.0, spot.z);
+				fx.dot(RitualFx.trail(core, soul, 12 + random.nextInt(7)), spot.x, spot.y + 1.0, spot.z);
 			}
 			if ((age + i * 3) % 12 == 0) {
 				fx.burst(ParticleTypes.SCULK_SOUL, spot.x, spot.y + 0.4, spot.z, 2, 0.2, 0.1, 0.2, 0.02);

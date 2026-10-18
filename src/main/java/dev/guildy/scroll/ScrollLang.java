@@ -95,6 +95,13 @@ final class ScrollLang {
 		m.put("scroll.admin.list.drops_disabled", "&c(butin désactivé : dropsEnabled = false dans scrolls.json5)");
 		m.put("scroll.admin.list.effects", "&7Sorts actifs en ce moment : {0}");
 		m.put("scroll.admin.give", "&a{0}&a ×{1} donné(s) à &e{2}&a.");
+		m.put("scroll.admin.list.incantation", "&8- {0} &8[&7{1}&8] &7{2}");
+		m.put("scroll.admin.list.incantation.kind", "rituel des ruines : réveille leur gardien");
+		m.put("scroll.admin.list.incantation_cursed.kind", "rituel maudit : réveille le gardien sous sa forme maudite");
+		m.put("scroll.admin.list.incantation.hover", "&7Lu près du gardien endormi d'une ruine dormante,\n&7il lance le rituel qui le réveille.\n"
+				+ "&8Aussi : /guild admin ruin incantation <joueur> [nombre]");
+		m.put("scroll.admin.list.incantation_cursed.hover", "&7Comme le parchemin d'incantation, mais le gardien\n&7s'éveille &5maudit&7 (3 phases et une forme finale).\n"
+				+ "&8Aussi : /guild admin ruin incantation <joueur> [nombre] cursed");
 		m.put("scroll.admin.unknown", "&cParchemin inconnu : &e{0}&c (voir /guild admin scroll list).");
 		Lang.addDefaults(m);
 	}

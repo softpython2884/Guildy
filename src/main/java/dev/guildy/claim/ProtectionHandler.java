@@ -7,6 +7,7 @@ import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildPermission;
+import dev.guildy.ruin.RoomGuards;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -312,9 +313,9 @@ final class ProtectionHandler {
 
 	// ================================================================ entities
 
-	/** Entities protected in claims: everything except hostile mobs and players. */
+	/** Entities protected in claims: everything except hostile mobs (the ruins' mobs included) and players. */
 	private static boolean isProtected(Entity entity) {
-		return !(entity instanceof Enemy) && !(entity instanceof Player);
+		return !(entity instanceof Enemy) && !(entity instanceof Player) && !RoomGuards.isRuinMob(entity);
 	}
 
 	/** Hurting animals / villagers needs INTERACT; breaking decorations and vehicles needs BUILD. */

@@ -38,6 +38,7 @@ public final class RuinModule {
 		RoomGuards.init();
 		Sanctuaries.init();
 		CursedFights.init();
+		Felines.init();
 		RuinCommands.register();
 		CursedCommands.register();
 		StructureBehavior.register(Cartography.STRUCTURE_ID, new CartographerBehavior());

@@ -38,7 +38,7 @@ final class CursedClones {
 		}
 		String entity = encounter.def.boss.entity;
 		BlockPos spot = BossFactory.standable(level, pos, entity, 2);
-		Mob clone = BossFactory.create(level, entity, spot != null ? spot : pos);
+		Mob clone = BossFactory.create(level, entity, spot != null ? spot : pos, encounter.def.boss.variant);
 		if (clone == null) {
 			return null;
 		}

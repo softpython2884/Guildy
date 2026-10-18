@@ -12,23 +12,18 @@ import dev.guildy.ruin.RuinState;
 import dev.guildy.ruin.Sanctuaries;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
-import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.gametest.framework.GameTestSequence;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.BossEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -38,7 +33,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.piston.PistonStructureResolver;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +40,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Room guards, group scaling, beacon sanctuaries and the celestial jaguar, on the test ruin of {@link RuinGameTests}. The
+ * Room guards, group scaling and beacon sanctuaries, on the test ruin of {@link RuinGameTests} (the celestial jaguar: see
+ * {@link RuinJaguarGameTests}). The
  * guard scenarios give their ruin its own configured definition (the generic test ruin has no guards, see
  * {@link GuildyTestInit}): approaching posts the guards (fallback posts: escort markers, entrance; or the guard markers),
  * the incantation is refused while they live and accepted once they are dead, killed guards stay dead, the survivors leave
@@ -372,83 +367,5 @@ public class RuinGuardGameTests {
 		}
 		helper.assertTrue(level.getBlockState(base.offset(1, 1, 0)).is(Blocks.GOLD_BLOCK) && level.getBlockState(beacon).is(Blocks.BEACON), "beacon intact");
 		helper.succeed();
-	}
-
-	// ================================================================== the 8th ruin's guardian
-
-	@GameTest(maxTicks = 900)
-	public void celestialJaguarIsAGiantRavager(GameTestHelper helper) {
-		ServerLevel level = helper.getLevel();
-		RuinRecord ruin = ruin(helper, null);
-		RuinConfig.RuinDef template = RuinModule.config().ruins.get("grand_temple_maya");
-		helper.assertTrue(template != null, "grand_temple_maya in ruins.json5");
-		RuinConfig.RuinDef def = template.copy();
-		def.resetSeconds = 60;
-		def.fastKillSeconds = 0;
-		ServerPlayer player = TestSupport.survivor(helper, ruin.boss.offset(4, -1, 0));
-		shield(player);
-		for (int i = 0; i < 200 && !player.connection.hasClientLoaded(); i++) {
-			player.connection.tickClientLoadTimeout();
-		}
-		helper.assertTrue(player.connection.hasClientLoaded(), "mock player can be hit");
-		Set<EntityType<?>> warriors = Set.of(EntityTypes.VINDICATOR, EntityTypes.BOGGED, EntityTypes.EVOKER);
-		Mob[] boss = new Mob[1];
-		GameTestSequence sequence = helper.startSequence()
-				.thenExecute(() -> helper.assertTrue(Encounters.awaken(level, ruin, def, false) == null, "jaguar awakened"))
-				.thenWaitUntil(() -> {
-					boss[0] = Encounters.boss(ruin);
-					helper.assertTrue(boss[0] != null, "waiting for the celestial jaguar");
-				})
-				.thenExecute(() -> {
-					helper.assertTrue(boss[0].getType() == EntityTypes.RAVAGER, "a ravager, got " + boss[0].getType());
-					helper.assertTrue(Math.abs(boss[0].getAttributeValue(Attributes.SCALE) - def.boss.scale) < 1.0E-6, "scaled up");
-					helper.assertTrue(Math.abs(boss[0].getMaxHealth() - def.boss.health) < 0.5, "configured health " + boss[0].getMaxHealth());
-					helper.assertTrue(boss[0].getCustomName() != null && boss[0].getCustomName().getString().contains("Jaguar"), "named");
-					helper.assertTrue(Encounters.barColor(ruin) == BossEvent.BossBarColor.YELLOW, "yellow boss bar");
-					helper.assertFalse(Encounters.minions(ruin).isEmpty(), "escort");
-					for (Mob minion : Encounters.minions(ruin)) {
-						helper.assertTrue(warriors.contains(minion.getType()), "jaguar warriors, got " + minion.getType());
-						helper.assertTrue(minion.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(Items.GOLDEN_HELMET), "golden helmet");
-						minion.setNoAi(true);
-					}
-				})
-				.thenWaitUntil(() -> helper.assertTrue(boss[0].onGround(), "waiting for the jaguar to land"))
-				.thenExecute(() -> boss[0].setNoAi(true));
-		ability(helper, sequence, ruin, player, boss, "volley", "solar", () -> helper.assertTrue(player.getLastHurtByMob() == boss[0],
-				"hit by a sun spear, hurt by " + player.getLastHurtByMob()));
-		ability(helper, sequence, ruin, player, boss, "fire_ring", "solar", () -> helper.assertTrue(player.getRemainingFireTicks() > 0
-				&& player.hasEffect(MobEffects.BLINDNESS), "the sun ring burns and dazzles"));
-		ability(helper, sequence, ruin, player, boss, "fire_ring", "gold", () -> helper.assertTrue(player.hasEffect(MobEffects.SLOWNESS),
-				"the golden ring weighs down"));
-		ability(helper, sequence, ruin, player, boss, "blink", "solar", () -> helper.assertTrue(boss[0].distanceTo(player) < 5.5,
-				"the jaguar pounced on the player, distance " + boss[0].distanceTo(player)));
-		sequence.thenExecute(() -> {
-			helper.assertTrue(boss[0].isAlive() && Encounters.isActive(ruin), "fight still running");
-			away(level, player, ruin);
-			Encounters.reset(ruin);
-		}).thenSucceed();
-	}
-
-	/** Uses an ability now (cooldowns ignored), the jaguar on its spawn cell and the player 4 blocks away. */
-	private static void ability(GameTestHelper helper, GameTestSequence sequence, RuinRecord ruin, ServerPlayer player, Mob[] boss, String type,
-			String style, Runnable check) {
-		RuinConfig.AbilityDef ability = new RuinConfig.AbilityDef();
-		ability.type = type;
-		ability.style = style;
-		ability.damage = 4;
-		ability.radius = 7;
-		ability.count = 2;
-		sequence.thenExecute(() -> {
-			boss[0].teleportTo(ruin.boss.getX() + 0.5, ruin.boss.getY(), ruin.boss.getZ() + 0.5);
-			boss[0].lookAt(EntityAnchorArgument.Anchor.EYES, Vec3.atCenterOf(ruin.boss.offset(5, 0, 0)));
-			player.teleportTo(helper.getLevel(), ruin.boss.getX() + 5.5, ruin.boss.getY(), ruin.boss.getZ() + 0.5, Set.of(), 0, 0, true);
-			player.removeAllEffects();
-			shield(player);
-			player.clearFire();
-			player.setLastHurtByMob(null);
-			helper.assertTrue(Encounters.forceAbility(ruin, ability), "ability " + type + " " + style + " used");
-		})
-				.thenIdle(40)
-				.thenExecute(check);
 	}
 }

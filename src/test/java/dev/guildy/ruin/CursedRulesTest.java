@@ -49,6 +49,33 @@ class CursedRulesTest {
 	}
 
 	@Test
+	void theFinalFormAlwaysRisesOnce() {
+		// Killed at the end of the last phase: it rises again, whatever the time it took (no fast-kill window).
+		assertTrue(CursedRules.risesAgain(true, 3, false, false), "end of phase 3: the final form");
+		assertFalse(CursedRules.risesAgain(true, 3, true, false), "only once");
+		assertFalse(CursedRules.risesAgain(true, 1, false, false), "phase 1: the next phase instead");
+		assertFalse(CursedRules.risesAgain(true, 2, false, false), "phase 2: the next phase instead");
+		assertFalse(CursedRules.risesAgain(true, 3, false, true), "never during a transition");
+		assertFalse(CursedRules.risesAgain(false, 3, false, false), "final form switched off");
+		assertFalse(CursedRules.diesForGood(true, 3, false), "not before its final form");
+		assertTrue(CursedRules.diesForGood(true, 3, true), "the final form dies for good");
+		assertTrue(CursedRules.diesForGood(false, 3, false), "no final form: dies at the end of phase 3");
+		assertFalse(CursedRules.diesForGood(true, 2, true), "never outside the last phase");
+		for (int phase = 1; phase <= 3; phase++) {
+			for (boolean risen : new boolean[] {false, true}) {
+				assertFalse(CursedRules.risesAgain(true, phase, risen, false) && CursedRules.diesForGood(true, phase, risen),
+						"rises or dies, never both (phase " + phase + ", risen " + risen + ")");
+			}
+		}
+		// Rewards: the risen bonus is not counted twice on a cursed guardian (unless configured).
+		assertTrue(CursedRules.risenBonus(false, true, false), "a normal guardian killed too fast and risen");
+		assertFalse(CursedRules.risenBonus(false, false, true), "a normal guardian that never rose");
+		assertFalse(CursedRules.risenBonus(true, true, false), "the cursed final form: the cursed rewards only");
+		assertTrue(CursedRules.risenBonus(true, true, true), "cursed.finalForm.risenRewards adds it");
+		assertFalse(CursedRules.risenBonus(true, false, true), "never without a rising");
+	}
+
+	@Test
 	void transitionsRiseHoverAndSlam() {
 		assertEquals(0.0, CursedRules.lift(0, 3), EPS, "starts on the floor");
 		assertEquals(3.0, CursedRules.lift(CursedRules.RISE_END, 3), 1.0E-6, "risen at the end of the rise");
@@ -242,6 +269,16 @@ class CursedRulesTest {
 		assertEquals(5, s.rewards.threatGain);
 		assertEquals(1, s.sources.tradePrice);
 		assertEquals(1.0, s.sources.tradeChance, EPS);
+
+		CursedSettings fresh = new CursedSettings();
+		assertTrue(fresh.finalForm.enabled, "the cursed guardians always rise once more by default");
+		assertFalse(fresh.finalForm.risenRewards, "no double count of the risen bonus by default");
+		fresh.finalForm.healthRatio = 7;
+		fresh.fix(id -> true, warnings);
+		assertEquals(1.0, fresh.finalForm.healthRatio, EPS);
+		fresh.finalForm = null;
+		fresh.fix(id -> true, warnings);
+		assertTrue(fresh.finalForm.enabled && fresh.finalForm.healthRatio > 0.1, "missing section: defaults");
 	}
 
 	@Test
