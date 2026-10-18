@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -16,8 +17,11 @@ import java.util.TreeMap;
  * canonical order) and a count.
  * <ul>
  * <li>{@link #layout}: the perfect layout of a group: every key merged into full stacks followed by one partial stack,
- * keys in ascending order, laid out in reading order across the containers (container 0 slot 0, 1, 2... then container
- * 1...). A stack a container refuses (a shulker box in a shulker box) takes the next slot that accepts it.</li>
+ * keys in ascending order, laid out across the containers in their order (container 0, then container 1...). Inside a
+ * container ({@link Fill}): by columns (each column of the 9-slot rows top to bottom, columns left to right; every new
+ * item kind starts at the top of a fresh column while the rest still fits after it, else it follows the previous kind)
+ * or by rows (slot 0, 1, 2...: the reading order). A stack a container refuses (a shulker box in a shulker box) takes
+ * the next slot that accepts it.</li>
  * <li>{@link #arrange}: what a part of the group (a section within reach of one standing spot) becomes with only its own
  * items: each target slot gets what the section has of its key, extra items of a key top its stacks up, and items the
  * section must give away (other keys, extra counts) go into the last free slots. Same items before and after.</li>
@@ -29,6 +33,30 @@ public final class StorageLayout {
 	public record Stack(int key, int count) {
 	}
 
+	/** How a container is filled: by columns (default) or by rows (the reading order of the slots). */
+	public enum Fill {
+		COLUMNS,
+		ROWS;
+
+		/** Config / data id ("columns", "rows"). */
+		public String id() {
+			return name().toLowerCase(Locale.ROOT);
+		}
+
+		/** "columns" / "colonnes" / "rows" / "lignes" / "rangees" (case and accents ignored); null when unknown. */
+		public static @Nullable Fill parse(@Nullable String value) {
+			if (value == null) {
+				return null;
+			}
+			String id = value.trim().toLowerCase(Locale.ROOT).replace('é', 'e');
+			return switch (id) {
+				case "columns", "column", "colonnes", "colonne" -> COLUMNS;
+				case "rows", "row", "lignes", "ligne", "rangees", "rangee" -> ROWS;
+				default -> null;
+			};
+		}
+	}
+
 	/** Stack sizes and container restrictions of the items of a group. */
 	public interface Rules {
 		/** Largest stack of this key in the group's containers (&gt;= 1). */
@@ -37,6 +65,14 @@ public final class StorageLayout {
 		/** True when container {@code container} may hold this key. */
 		default boolean accepts(int container, int key) {
 			return true;
+		}
+
+		/**
+		 * Item kind of a key (the same item with other components = the same kind): with {@link Fill#COLUMNS}, each new
+		 * kind starts a fresh column. Default: every key is its own kind.
+		 */
+		default int kind(int key) {
+			return key;
 		}
 	}
 
@@ -71,10 +107,132 @@ public final class StorageLayout {
 	}
 
 	/**
-	 * Perfect layout of {@code totals} in containers of {@code sizes} slots (reading order), or null when it does not
-	 * fit.
+	 * Perfect layout of {@code totals} in containers of {@code sizes} slots, by rows (reading order of the slots), or
+	 * null when it does not fit.
 	 */
 	public static @Nullable Stack @Nullable [][] layout(int[] sizes, SortedMap<Integer, Long> totals, Rules rules) {
+		return layout(sizes, totals, rules, Fill.ROWS);
+	}
+
+	/**
+	 * Perfect layout of {@code totals} in containers of {@code sizes} slots, filled as {@code fill} says, or null when
+	 * it does not fit. By columns, a new kind skips the rest of the current column only when every stack still to place
+	 * fits after the skip (so a layout that fits by rows always fits by columns).
+	 */
+	public static @Nullable Stack @Nullable [][] layout(int[] sizes, SortedMap<Integer, Long> totals, Rules rules, Fill fill) {
+		if (fill == Fill.ROWS) {
+			return rowLayout(sizes, totals, rules);
+		}
+		Stack[][] result = columnLayout(sizes, totals, rules, true);
+		// A refused stack (shulker boxes) can make the skips too greedy: then pack the columns without skipping.
+		return result != null ? result : columnLayout(sizes, totals, rules, false);
+	}
+
+	/** Slots in a row of a container: 9 for chests, barrels and shulker boxes (rows of 9), else a single row. */
+	public static int width(int size) {
+		return size >= 9 && size % 9 == 0 ? 9 : Math.max(1, size);
+	}
+
+	/** Slot indices of a container in fill order (by columns: slot 0, 9, 18..., then 1, 10, 19...). */
+	public static int[] slotOrder(int size, Fill fill) {
+		int[] order = new int[size];
+		int width = width(size);
+		if (fill == Fill.ROWS || width >= size) {
+			for (int i = 0; i < size; i++) {
+				order[i] = i;
+			}
+			return order;
+		}
+		int rows = size / width;
+		int i = 0;
+		for (int column = 0; column < width; column++) {
+			for (int row = 0; row < rows; row++) {
+				order[i++] = row * width + column;
+			}
+		}
+		return order;
+	}
+
+	/**
+	 * Column layout: positions = every slot of every container in column order; {@code skips}: each new kind starts at
+	 * the top of the next column when all the stacks left fit after it.
+	 */
+	private static @Nullable Stack @Nullable [][] columnLayout(int[] sizes, SortedMap<Integer, Long> totals, Rules rules, boolean skips) {
+		Stack[][] result = empty(sizes);
+		int total = 0;
+		for (int size : sizes) {
+			total += size;
+		}
+		int[] containerOf = new int[total];
+		int[] slotOf = new int[total];
+		boolean[] columnStart = new boolean[total];
+		int p = 0;
+		for (int c = 0; c < sizes.length; c++) {
+			int rows = sizes[c] / width(sizes[c]);
+			int[] order = slotOrder(sizes[c], Fill.COLUMNS);
+			for (int i = 0; i < order.length; i++) {
+				containerOf[p] = c;
+				slotOf[p] = order[i];
+				columnStart[p] = rows <= 1 ? i == 0 : i % rows == 0;
+				p++;
+			}
+		}
+		long remaining = 0;
+		for (Map.Entry<Integer, Long> entry : totals.entrySet()) {
+			int max = Math.max(1, rules.maxStack(entry.getKey()));
+			remaining += (entry.getValue() + max - 1) / max;
+		}
+		int cursor = 0;
+		boolean first = true;
+		int previousKind = 0;
+		for (Map.Entry<Integer, Long> entry : totals.entrySet()) {
+			int key = entry.getKey();
+			long left = entry.getValue();
+			int max = Math.max(1, rules.maxStack(key));
+			int kind = rules.kind(key);
+			if (skips && !first && kind != previousKind && cursor < total && !columnStart[cursor]) {
+				int next = cursor + 1;
+				while (next < total && !columnStart[next]) {
+					next++;
+				}
+				long free = 0;
+				for (int q = next; q < total; q++) {
+					if (result[containerOf[q]][slotOf[q]] == null) {
+						free++;
+					}
+				}
+				if (free >= remaining) {
+					cursor = next;
+				}
+			}
+			first = false;
+			previousKind = kind;
+			while (left > 0) {
+				int count = (int) Math.min(max, left);
+				int at = -1;
+				for (int q = cursor; q < total; q++) {
+					if (result[containerOf[q]][slotOf[q]] == null && rules.accepts(containerOf[q], key)) {
+						at = q;
+						break;
+					}
+				}
+				if (at < 0) {
+					return null;
+				}
+				result[containerOf[at]][slotOf[at]] = new Stack(key, count);
+				left -= count;
+				remaining--;
+				if (at == cursor) {
+					while (cursor < total && result[containerOf[cursor]][slotOf[cursor]] != null) {
+						cursor++;
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private static @Nullable Stack @Nullable [][] rowLayout(int[] sizes, SortedMap<Integer, Long> totals, Rules rules) {
 		Stack[][] result = empty(sizes);
 		int cursorContainer = 0;
 		int cursorSlot = 0;

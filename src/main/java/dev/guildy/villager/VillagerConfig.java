@@ -638,6 +638,36 @@ public final class VillagerConfig implements Validatable {
 		})
 		public String defaultOrder = "columns";
 		@Comment({
+				"Rangement dans chaque coffre par defaut (modifiable par guilde dans le menu Stockage ou par",
+				"/guild villagers storage layout) : 'columns' = chaque colonne de haut en bas, colonnes de gauche a droite, et",
+				"chaque nouvel objet commence en haut d'une nouvelle colonne s'il reste la place ; 'rows' = emplacements dans",
+				"l'ordre de lecture (rangee par rangee)."
+		})
+		public String defaultChestLayout = "columns";
+		@Comment({
+				"Coffres filtres (contenu impose : une famille comme 'diorite' ou 'laine', ou une liste d'objets) : nombre",
+				"maximum par guilde (en plus de maxChests et maxRoomChests ; 0 = desactive)"
+		})
+		public int maxFilterChests = 256;
+		@Comment({
+				"Filtre d'apres le contenu d'un coffre : une liste exacte d'objets est proposee jusqu'a N objets differents",
+				"(au-dela, sans famille commune, le coffre devient un coffre de categorie ou reste tel quel) (1 a 54)"
+		})
+		public int filterMaxItems = 9;
+		@Comment({
+				"Commande /guild villagers storage scan <chunks> : un coffre trop melange pour un filtre devient un coffre de sa",
+				"categorie principale si elle represente au moins N % de ses piles (50 a 100)"
+		})
+		public int scanCategoryPercent = 75;
+		@Comment("Commande scan : rayon maximum (chunks) autour du joueur (1 a 16)")
+		public int scanMaxChunks = 8;
+		@Comment("Commande scan : chunks lus par tick (le scan est reparti sur plusieurs ticks) (1 a 64)")
+		public int scanChunksPerTick = 4;
+		@Comment("Commande scan : nombre maximum de conteneurs lus par scan (16 a 4096)")
+		public int scanMaxContainers = 1024;
+		@Comment("Commande scan : duree (secondes) de validite de l'apercu avant [Appliquer] (30 a 900)")
+		public int scanPreviewSeconds = 120;
+		@Comment({
 				"Salles des coffres (menu Stockage) : tous les coffres de la zone entre deux coffres-coins deviennent automatiques ;",
 				"les trieurs leur donnent une categorie par colonnes (ou rangees) entieres, dans l'ordre des categories ci-dessus,",
 				"'Divers' a la fin, le reste en reserve. Nombre maximum de salles par guilde (0 = desactive)"
@@ -1058,6 +1088,15 @@ public final class VillagerConfig implements Validatable {
 		storage.showSeconds = clamp(storage.showSeconds, 3, 120);
 		ChestOrder.Mode order = ChestOrder.Mode.parse(storage.defaultOrder);
 		storage.defaultOrder = (order == null ? ChestOrder.Mode.COLUMNS : order).id();
+		StorageLayout.Fill fill = StorageLayout.Fill.parse(storage.defaultChestLayout);
+		storage.defaultChestLayout = (fill == null ? StorageLayout.Fill.COLUMNS : fill).id();
+		storage.maxFilterChests = clamp(storage.maxFilterChests, 0, 1024);
+		storage.filterMaxItems = clamp(storage.filterMaxItems, 1, 54);
+		storage.scanCategoryPercent = clamp(storage.scanCategoryPercent, 50, 100);
+		storage.scanMaxChunks = clamp(storage.scanMaxChunks, 1, 16);
+		storage.scanChunksPerTick = clamp(storage.scanChunksPerTick, 1, 64);
+		storage.scanMaxContainers = clamp(storage.scanMaxContainers, 16, 4096);
+		storage.scanPreviewSeconds = clamp(storage.scanPreviewSeconds, 30, 900);
 		storage.maxRooms = clamp(storage.maxRooms, 0, 16);
 		storage.maxRoomChests = clamp(storage.maxRoomChests, 0, 1024);
 		storage.maxRoomSize = clamp(storage.maxRoomSize, 2, 64);

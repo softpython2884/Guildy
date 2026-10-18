@@ -61,9 +61,9 @@ final class CraftStock {
 		return true;
 	}
 
-	/** May the chest give this stack? Deposit chests, the stack's own category and fallback chests. */
+	/** May the chest give this stack? Deposit chests, filter chests accepting it, its own category and fallback chests. */
 	static boolean gives(StorageChest chest, ItemStack stack) {
-		return chest.isDeposit() || Storage.isFallback(chest) || Storage.effectiveCategory(chest).equalsIgnoreCase(Storage.categoryOf(stack));
+		return Storage.gives(chest, stack);
 	}
 
 	/** Plain items of that kind the chest may give. */

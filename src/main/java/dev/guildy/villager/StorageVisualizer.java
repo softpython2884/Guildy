@@ -43,7 +43,10 @@ final class StorageVisualizer {
 	static final String ROOM = "@room:";
 	/** Filter prefix of the chests of one group ("@group:" + {@link StorageGroups#key}). */
 	static final String GROUP = "@group:";
+	/** Filter of the filter chests. */
+	static final String FILTERS = "@filters";
 	private static final char RESERVE_CODE = '8';
+	private static final char FILTER_CODE = 'd';
 	private static final char DEPOSIT_CODE = 'b';
 	private static final char FALLBACK_CODE = '7';
 	/** Legacy colour codes used for the categories (in config order, cycling), matching {@link #rgb(char)}. */
@@ -54,6 +57,12 @@ final class StorageVisualizer {
 	}
 
 	private static final Map<UUID, Session> SESSIONS = new HashMap<>();
+
+	/** Unregistered containers shown to a player (scan preview), with their colour codes. */
+	private record Spots(List<BlockPos> positions, List<Character> codes, long until) {
+	}
+
+	private static final Map<UUID, Spots> SPOTS = new HashMap<>();
 
 	private StorageVisualizer() {
 	}
@@ -75,7 +84,8 @@ final class StorageVisualizer {
 		Map<String, Character> colours = new HashMap<>();
 		for (StorageChest chest : guild.villagers.chests) {
 			if (matches(chest, filter)) {
-				String role = Storage.roleName(chest);
+				// Filter chests share one legend entry (a room may hold a hundred different filters).
+				String role = chest.isFilter() ? Lang.raw("villager.storage.role.filter") : Storage.roleName(chest);
 				counts.merge(role, 1, Integer::sum);
 				colours.put(role, code(chest));
 			}
@@ -95,11 +105,33 @@ final class StorageVisualizer {
 		return total;
 	}
 
+	/**
+	 * Shows some containers that are not registered (yet): one colour per legend code ({@code codes}, same order as
+	 * {@code positions}), for {@code storage.showSeconds}.
+	 */
+	static void showSpots(ServerPlayer player, List<BlockPos> positions, List<Character> codes) {
+		int seconds = VillagerModule.config().storage.showSeconds;
+		SPOTS.put(player.getUUID(), new Spots(List.copyOf(positions), List.copyOf(codes), Scheduler.ticks() + seconds * 20L));
+		Safe.run("villager.storage.show", () -> drawSpots(player, SPOTS.get(player.getUUID())));
+	}
+
 	private static void tick() {
+		long now = Scheduler.ticks();
+		if (!SPOTS.isEmpty()) {
+			Iterator<Map.Entry<UUID, Spots>> spots = SPOTS.entrySet().iterator();
+			while (spots.hasNext()) {
+				Map.Entry<UUID, Spots> entry = spots.next();
+				ServerPlayer player = GuildyServer.player(entry.getKey());
+				if (player == null || now > entry.getValue().until()) {
+					spots.remove();
+					continue;
+				}
+				Safe.run("villager.storage.show", () -> drawSpots(player, entry.getValue()));
+			}
+		}
 		if (SESSIONS.isEmpty()) {
 			return;
 		}
-		long now = Scheduler.ticks();
 		Iterator<Map.Entry<UUID, Session>> it = SESSIONS.entrySet().iterator();
 		while (it.hasNext()) {
 			Map.Entry<UUID, Session> entry = it.next();
@@ -125,10 +157,12 @@ final class StorageVisualizer {
 			return chest.room > 0 && filter.equals(ROOM + chest.room);
 		}
 		if (filter.startsWith(GROUP)) {
-			return !chest.isDeposit() && !chest.isFree()
-					&& filter.substring(GROUP.length()).equals(StorageGroups.key(chest.room, Storage.effectiveCategory(chest)));
+			return !chest.isDeposit() && !chest.isFree() && filter.substring(GROUP.length()).equals(StorageGroups.keyOf(chest));
 		}
-		return !chest.isDeposit() && !chest.isFree() && Storage.effectiveCategory(chest).equalsIgnoreCase(filter);
+		if (filter.equals(FILTERS)) {
+			return chest.isFilter();
+		}
+		return !chest.isDeposit() && !chest.isFree() && !chest.isFilter() && Storage.effectiveCategory(chest).equalsIgnoreCase(filter);
 	}
 
 	/** Particle columns (and the top corners) above the nearest matching containers. */
@@ -145,28 +179,57 @@ final class StorageVisualizer {
 		chests.sort(Comparator.comparingDouble(chest -> horizontalDistSq(player, chest.pos)));
 		List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>();
 		for (StorageChest chest : chests) {
-			DustParticleOptions dust = new DustParticleOptions(rgb(code(chest)), 1.6F);
-			List<BlockPos> blocks = new ArrayList<>(List.of(chest.pos));
-			BlockPos other = Storage.otherHalf(level, chest.pos);
-			if (other != null) {
-				blocks.add(other);
-			}
-			for (BlockPos pos : blocks) {
-				double x = pos.getX() + 0.5;
-				double z = pos.getZ() + 0.5;
-				for (double dy = 1.2; dy <= 2.8; dy += 0.4) {
-					add(packets, dust, x, pos.getY() + dy, z);
-				}
-				for (int corner = 0; corner < 4; corner++) {
-					add(packets, dust, pos.getX() + (corner % 2 == 0 ? 0.05 : 0.95), pos.getY() + 1.05, pos.getZ() + (corner < 2 ? 0.05 : 0.95));
-				}
-			}
+			column(packets, level, chest.pos, code(chest));
 			if (packets.size() >= MAX_PARTICLES) {
 				break;
 			}
 		}
 		if (!packets.isEmpty()) {
 			player.connection.send(new ClientboundBundlePacket(packets));
+		}
+	}
+
+	private static void drawSpots(ServerPlayer player, @Nullable Spots spots) {
+		if (spots == null || !GuildyServer.isClaimLevel(player.level()) || !(player.level() instanceof ServerLevel level)) {
+			return;
+		}
+		List<Integer> order = new ArrayList<>();
+		for (int i = 0; i < spots.positions().size(); i++) {
+			BlockPos pos = spots.positions().get(i);
+			if (level.isLoaded(pos) && horizontalDistSq(player, pos) <= (double) RANGE * RANGE) {
+				order.add(i);
+			}
+		}
+		order.sort(Comparator.comparingDouble(i -> horizontalDistSq(player, spots.positions().get(i))));
+		List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>();
+		for (int i : order) {
+			column(packets, level, spots.positions().get(i), spots.codes().get(i));
+			if (packets.size() >= MAX_PARTICLES) {
+				break;
+			}
+		}
+		if (!packets.isEmpty()) {
+			player.connection.send(new ClientboundBundlePacket(packets));
+		}
+	}
+
+	/** A particle column and the top corners above a container (both halves of a double chest). */
+	private static void column(List<Packet<? super ClientGamePacketListener>> packets, ServerLevel level, BlockPos at, char code) {
+		DustParticleOptions dust = new DustParticleOptions(rgb(code), 1.6F);
+		List<BlockPos> blocks = new ArrayList<>(List.of(at));
+		BlockPos other = Storage.otherHalf(level, at);
+		if (other != null) {
+			blocks.add(other);
+		}
+		for (BlockPos pos : blocks) {
+			double x = pos.getX() + 0.5;
+			double z = pos.getZ() + 0.5;
+			for (double dy = 1.2; dy <= 2.8; dy += 0.4) {
+				add(packets, dust, x, pos.getY() + dy, z);
+			}
+			for (int corner = 0; corner < 4; corner++) {
+				add(packets, dust, pos.getX() + (corner % 2 == 0 ? 0.05 : 0.95), pos.getY() + 1.05, pos.getZ() + (corner < 2 ? 0.05 : 0.95));
+			}
 		}
 	}
 
@@ -189,6 +252,9 @@ final class StorageVisualizer {
 		}
 		if (chest.isFree()) {
 			return RESERVE_CODE;
+		}
+		if (chest.role == StorageChest.Role.FILTER) {
+			return FILTER_CODE;
 		}
 		int index = Storage.categories().indexOf(Storage.effectiveCategory(chest));
 		return index < 0 ? FALLBACK_CODE : PALETTE[index % PALETTE.length];
@@ -218,9 +284,11 @@ final class StorageVisualizer {
 
 	static void forget(UUID player) {
 		SESSIONS.remove(player);
+		SPOTS.remove(player);
 	}
 
 	static void clear() {
 		SESSIONS.clear();
+		SPOTS.clear();
 	}
 }

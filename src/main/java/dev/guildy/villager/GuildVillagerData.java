@@ -37,6 +37,8 @@ public class GuildVillagerData {
 	public int nextRoomId = 1;
 	/** Storage order of the chest groups: "columns" or "rows" ("" = the default of villagers.json5). */
 	public String storageOrder = "";
+	/** Layout inside each chest: "columns" or "rows" ("" = the default of villagers.json5, storage.defaultChestLayout). */
+	public String chestLayout = "";
 
 	/** A fanion block to remove later; only removed if the banner there still carries {@link #name}. */
 	public static class StaleFanion {
@@ -179,6 +181,9 @@ public class GuildVillagerData {
 		}
 		if (storageOrder == null) {
 			storageOrder = "";
+		}
+		if (chestLayout == null) {
+			chestLayout = "";
 		}
 
 		if (zones == null) {

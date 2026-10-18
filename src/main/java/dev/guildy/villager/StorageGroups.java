@@ -16,12 +16,20 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Chest groups: the CATEGORY chests of one category inside one chest room (room 0 = the chests outside any room), in
- * reading order ({@link ChestOrder}, order setting of the guild). Deposits and free automatic chests belong to no group.
+ * Chest groups: the CATEGORY chests of one category, or the FILTER chests of one filter, inside one chest room (room 0
+ * = the chests outside any room), in reading order ({@link ChestOrder}, order setting of the guild). Deposits and free
+ * automatic chests belong to no group.
  */
 final class StorageGroups {
-	/** A group of chests, in reading order. {@code key} = "room:category" (lower case). */
-	record Group(String key, String category, int room, List<StorageChest> chests) {
+	/**
+	 * A group of chests, in reading order. {@code key} = "room:category" (lower case) or "room:filter:" + filter key;
+	 * {@code category} = the category, or the name of the filter (statuses, menus); {@code filter} null for category
+	 * groups.
+	 */
+	record Group(String key, String category, int room, List<StorageChest> chests, @Nullable ChestFilter filter) {
+		boolean isFilter() {
+			return filter != null;
+		}
 	}
 
 	private StorageGroups() {
@@ -29,6 +37,27 @@ final class StorageGroups {
 
 	static String key(int room, String category) {
 		return room + ":" + category.toLowerCase(Locale.ROOT);
+	}
+
+	static String filterKey(int room, ChestFilter filter) {
+		return room + ":filter:" + filter.key();
+	}
+
+	/** Group key of a chest (deposits and free chests: a key no group has). */
+	static String keyOf(StorageChest chest) {
+		if (chest.isFilter()) {
+			return filterKey(chest.room, chest.filter);
+		}
+		return key(chest.room, Storage.effectiveCategory(chest));
+	}
+
+	/** Layout inside the chests of the guild (its setting, else the default of villagers.json5): by columns or rows. */
+	static StorageLayout.Fill fill(Guild guild) {
+		StorageLayout.Fill fill = StorageLayout.Fill.parse(guild.villagers.chestLayout);
+		if (fill == null) {
+			fill = StorageLayout.Fill.parse(VillagerModule.config().storage.defaultChestLayout);
+		}
+		return fill == null ? StorageLayout.Fill.COLUMNS : fill;
 	}
 
 	/** Storage order of the guild (its setting, else the default of villagers.json5). */
@@ -40,31 +69,43 @@ final class StorageGroups {
 		return mode == null ? ChestOrder.Mode.COLUMNS : mode;
 	}
 
-	/** Groups of the guild: categories in config order (fallback last), then rooms (outside rooms first). */
+	/**
+	 * Groups of the guild: filter groups first (by name), then categories in config order (fallback last); rooms
+	 * outside first.
+	 */
 	static List<Group> groups(ServerLevel level, Guild guild) {
 		Map<String, List<StorageChest>> byKey = new LinkedHashMap<>();
 		Map<String, String> categoryOf = new LinkedHashMap<>();
 		Map<String, Integer> roomOf = new LinkedHashMap<>();
+		Map<String, ChestFilter> filterOf = new LinkedHashMap<>();
 		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.pos == null || chest.isDeposit() || chest.isFree()) {
+			if (chest.pos == null || chest.isDeposit() || chest.isFree() || (chest.role == StorageChest.Role.FILTER && !chest.isFilter())) {
 				continue;
 			}
-			String category = Storage.effectiveCategory(chest);
-			String key = key(chest.room, category);
+			String key = keyOf(chest);
+			if (!byKey.containsKey(key)) {
+				categoryOf.put(key, chest.isFilter() ? FilterNames.text(chest.filter) : Storage.effectiveCategory(chest));
+				roomOf.put(key, chest.room);
+				if (chest.isFilter()) {
+					filterOf.put(key, chest.filter);
+				}
+			}
 			byKey.computeIfAbsent(key, k -> new ArrayList<>()).add(chest);
-			categoryOf.putIfAbsent(key, category);
-			roomOf.putIfAbsent(key, chest.room);
 		}
 		StorageCategories categories = Storage.categories();
 		List<String> keys = new ArrayList<>(byKey.keySet());
 		keys.sort(Comparator.comparingInt((String key) -> {
+			if (filterOf.containsKey(key)) {
+				return -1;
+			}
 			int index = categories.indexOf(categoryOf.get(key));
 			return index < 0 ? Integer.MAX_VALUE : index;
-		}).thenComparingInt(roomOf::get));
+		}).thenComparing(key -> filterOf.containsKey(key) ? categoryOf.get(key).toLowerCase(Locale.ROOT) : "")
+				.thenComparingInt(roomOf::get).thenComparing(key -> key));
 		ChestOrder.Mode mode = mode(guild);
 		List<Group> groups = new ArrayList<>();
 		for (String key : keys) {
-			groups.add(new Group(key, categoryOf.get(key), roomOf.get(key), ordered(level, byKey.get(key), mode)));
+			groups.add(new Group(key, categoryOf.get(key), roomOf.get(key), ordered(level, byKey.get(key), mode), filterOf.get(key)));
 		}
 		return groups;
 	}

@@ -20,13 +20,17 @@ final class StorageSetup {
 	static void init() {
 		StorageLang.register();
 		TidyLang.register();
+		FilterLang.register();
 		StorageLabels.init();
 		StorageVisualizer.register();
+		ChestScan.init();
+		StorageCommands.init();
 		Lifecycle.STARTED.add(server -> {
 			ItemClassifier.invalidate();
 			StorageVisualizer.clear();
 			Tidier.clear();
 			ChestRooms.clear();
+			ChestScan.clear();
 			migrateChestCategories();
 		});
 		Lifecycle.RELOADED.add(() -> {
@@ -36,7 +40,10 @@ final class StorageSetup {
 		// Tags (and so categories) may change with the data packs.
 		ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> Safe.run("villager.storage.reload", ItemClassifier::invalidate));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Safe.run("villager.storage.disconnect",
-				() -> StorageVisualizer.forget(handler.getPlayer().getUUID())));
+				() -> {
+					StorageVisualizer.forget(handler.getPlayer().getUUID());
+					ChestScan.forget(handler.getPlayer().getUUID());
+				}));
 		GuildEvents.DISBANDED.add(guild -> Safe.run("villager.storage.disband", () -> {
 			StorageLabels.onDisband(guild);
 			Tidier.forget(guild);

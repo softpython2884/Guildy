@@ -14,6 +14,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.ProblemReporter;
@@ -31,8 +32,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Vanilla custom names of the registered containers ("Dépôt", "Minerais et lingots"), shown as the title when a player
- * opens them. Choosing a role names the container (both halves of a double chest); unregistering it removes the name
+ * Vanilla custom names of the registered containers ("Dépôt", "Minerais et lingots", "Diorite" for a filter chest),
+ * shown as the title when a player opens them. Choosing a role names the container (both halves of a double chest);
+ * the chat scan and the filter commands only name containers without a player's name; unregistering it removes the name
  * while it is still Guildy's. A periodic pass renames the loaded containers whose label changed (category renamed or
  * removed, lang edited, chest replaced) without ever overwriting a name given by a player. Breaking a registered
  * container clears its name first (the dropped item stays a plain chest) and moves the registration to the other half of
@@ -54,24 +56,51 @@ final class StorageLabels {
 				Safe.run("villager.storage.broken", () -> afterBreak(level, player instanceof ServerPlayer p ? p : null, pos, state)));
 	}
 
-	/** Name a chest should bear: "Dépôt" or its (effective) category; "" when naming is disabled. */
-	static String desired(StorageChest chest) {
+	/**
+	 * Name a chest should bear: "Dépôt", its filter's name or its (effective) category; null when naming is disabled.
+	 * A filter chest's name holds the item names as translatable parts (French for French players); its plain text on
+	 * the server is what {@link StorageChest#label} remembers.
+	 */
+	static @Nullable Component desiredName(StorageChest chest) {
 		if (!VillagerModule.config().storage.labelChests) {
-			return "";
+			return null;
 		}
 		if (chest.isFree()) {
-			return Lang.raw("villager.storage.label.reserve");
+			return Component.literal(Lang.raw("villager.storage.label.reserve"));
 		}
-		return chest.isDeposit() ? Lang.raw("villager.storage.label.deposit") : Lang.raw("villager.storage.label.category", Storage.roleName(chest));
+		if (chest.isFilter()) {
+			return withArgument("villager.storage.label.filter", FilterNames.component(chest.filter));
+		}
+		return Component.literal(chest.isDeposit() ? Lang.raw("villager.storage.label.deposit")
+				: Lang.raw("villager.storage.label.category", Storage.roleName(chest)));
+	}
+
+	/** Lang text whose "{0}" is replaced by a component (kept translatable). */
+	private static Component withArgument(String key, Component argument) {
+		String pattern = Lang.raw(key);
+		int at = pattern.indexOf("{0}");
+		if (at < 0) {
+			return Component.literal(pattern);
+		}
+		MutableComponent result = Component.empty();
+		if (at > 0) {
+			result.append(Component.literal(pattern.substring(0, at)));
+		}
+		result.append(argument);
+		if (at + 3 < pattern.length()) {
+			result.append(Component.literal(pattern.substring(at + 3)));
+		}
+		return result;
 	}
 
 	/** A player chose the role: names the container (any previous name is replaced). */
 	static void apply(ServerLevel level, StorageChest chest) {
-		String label = desired(chest);
+		Component name = desiredName(chest);
+		String label = name == null ? "" : name.getString();
 		for (BlockPos pos : halves(level, chest.pos)) {
 			String current = name(level, pos);
-			if (!label.isEmpty()) {
-				setName(level, pos, label);
+			if (name != null && !label.isEmpty()) {
+				setName(level, pos, name);
 			} else if (current != null && current.equals(chest.label)) {
 				setName(level, pos, null);
 			}
@@ -117,7 +146,8 @@ final class StorageLabels {
 		if (chest.label == null) {
 			chest.label = "";
 		}
-		String label = GuildManager.at(level, chest.pos) == guild ? desired(chest) : "";
+		Component name = GuildManager.at(level, chest.pos) == guild ? desiredName(chest) : null;
+		String label = name == null ? "" : name.getString();
 		for (BlockPos pos : halves(level, chest.pos)) {
 			String current = name(level, pos);
 			if (Objects.equals(current, label.isEmpty() ? null : label)) {
@@ -125,7 +155,7 @@ final class StorageLabels {
 			}
 			// A name given by a player is never replaced.
 			if (current == null || current.equals(chest.label)) {
-				setName(level, pos, label.isEmpty() ? null : label);
+				setName(level, pos, label.isEmpty() ? null : name);
 			}
 		}
 		if (!chest.label.equals(label)) {
@@ -210,7 +240,7 @@ final class StorageLabels {
 	 * Sets (or removes, {@code name} null) the custom name of a container through its saved data, like the /data command
 	 * does (there is no setter): contents and loot table are saved and loaded back unchanged.
 	 */
-	private static void setName(ServerLevel level, BlockPos pos, @Nullable String name) {
+	private static void setName(ServerLevel level, BlockPos pos, @Nullable Component name) {
 		if (!(level.getBlockEntity(pos) instanceof BaseContainerBlockEntity container)) {
 			return;
 		}
@@ -219,7 +249,7 @@ final class StorageLabels {
 		if (name == null) {
 			tag.remove("CustomName");
 		} else {
-			tag.store("CustomName", ComponentSerialization.CODEC, registries.createSerializationContext(NbtOps.INSTANCE), Component.literal(name));
+			tag.store("CustomName", ComponentSerialization.CODEC, registries.createSerializationContext(NbtOps.INSTANCE), name);
 		}
 		container.loadCustomOnly(TagValueInput.create(ProblemReporter.DISCARDING, registries, tag));
 		container.setChanged();

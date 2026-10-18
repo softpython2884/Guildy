@@ -1,6 +1,7 @@
 package dev.guildy.villager;
 
 import net.minecraft.core.BlockPos;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A container assigned to the guild storage system (persisted).
@@ -10,7 +11,9 @@ public class StorageChest {
 		/** Workers drop their loot here; the sorter empties it. */
 		DEPOSIT,
 		/** Receives the items of {@link #category} (the fallback category name = "misc" chest). */
-		CATEGORY
+		CATEGORY,
+		/** Receives only the items its {@link #filter} accepts (family or exact items), before their category chests. */
+		FILTER
 	}
 
 	public BlockPos pos;
@@ -29,6 +32,8 @@ public class StorageChest {
 	public boolean auto = false;
 	/** Chest room holding this container (0 = none). */
 	public int room = 0;
+	/** What a FILTER chest accepts (null for the other roles). */
+	public @Nullable ChestFilter filter;
 
 	public StorageChest() {
 	}
@@ -39,8 +44,19 @@ public class StorageChest {
 		this.category = category == null ? "" : category;
 	}
 
+	public static StorageChest filtered(BlockPos pos, ChestFilter filter) {
+		StorageChest chest = new StorageChest(pos, Role.FILTER, "");
+		chest.filter = filter;
+		return chest;
+	}
+
 	public boolean isDeposit() {
 		return role == Role.DEPOSIT;
+	}
+
+	/** Filter chest with a usable filter. */
+	public boolean isFilter() {
+		return role == Role.FILTER && filter != null;
 	}
 
 	/** Automatic chest without category yet (reserve of a chest room): no group, receives nothing. */
@@ -60,6 +76,16 @@ public class StorageChest {
 		}
 		if (room < 0) {
 			room = 0;
+		}
+		if (role == Role.FILTER && (filter == null || !filter.sanitize())) {
+			// A filter that accepts nothing (edited data): the chest becomes a fallback chest.
+			role = Role.CATEGORY;
+			filter = null;
+		}
+		if (role != Role.FILTER) {
+			filter = null;
+		} else {
+			auto = false;
 		}
 		if (auto) {
 			role = Role.CATEGORY;

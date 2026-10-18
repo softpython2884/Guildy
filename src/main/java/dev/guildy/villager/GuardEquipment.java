@@ -406,18 +406,18 @@ final class GuardEquipment {
 	}
 
 	/**
-	 * Puts a stack into the guild storage: a chest of its category first, then the fallback category, then a deposit
-	 * chest, then any registered chest (nearest first). @return what did not fit
+	 * Puts a stack into the guild storage in the order of the sorters ({@link StorageRouting}: a filter chest accepting
+	 * it, a chest of its category, the fallback, a deposit), then any registered chest (nearest first). @return what did
+	 * not fit
 	 */
 	static ItemStack storeInStorage(ServerLevel level, Guild guild, ItemStack stack, Vec3 from) {
 		if (stack.isEmpty()) {
 			return ItemStack.EMPTY;
 		}
 		ItemStack rest = stack.copy();
-		String category = Storage.categoryOf(rest);
 		List<StorageChest> order = new ArrayList<>(guild.villagers.chests);
 		order.removeIf(chest -> !Storage.usable(level, guild, chest));
-		order.sort(Comparator.<StorageChest>comparingInt(chest -> priority(chest, category))
+		order.sort(Comparator.<StorageChest>comparingInt(chest -> Storage.tier(chest, stack))
 				.thenComparingDouble(chest -> from.distanceToSqr(Vec3.atCenterOf(chest.pos))));
 		for (StorageChest chest : order) {
 			if (rest.isEmpty()) {
@@ -429,16 +429,6 @@ final class GuardEquipment {
 			}
 		}
 		return rest;
-	}
-
-	private static int priority(StorageChest chest, String category) {
-		if (chest.role == StorageChest.Role.CATEGORY && chest.category.equalsIgnoreCase(category)) {
-			return 0;
-		}
-		if (Storage.isFallback(chest)) {
-			return 1;
-		}
-		return chest.isDeposit() ? 2 : 3;
 	}
 
 	private static void drop(ServerLevel level, Vec3 pos, ItemStack stack) {

@@ -45,15 +45,17 @@ public class TidyGameTests {
 
 	/**
 	 * 2 columns × 4 chests facing south (reading order: the west column top to bottom, then the east one), shuffled
-	 * armor and half stacks of smithing templates: after one reorganisation everything is merged, packed from the first
-	 * chest and in the creative inventory order (shield, leather, iron helmet / chestplate / leggings / boots, enchanted
-	 * after plain, diamond, templates last), with the very same items.
+	 * armor and half stacks of smithing templates, the guild's in-chest layout set to rows (the old reading order):
+	 * after one reorganisation everything is merged, packed from the first chest and in the creative inventory order
+	 * (shield, leather, iron helmet / chestplate / leggings / boots, enchanted after plain, diamond, templates last), with
+	 * the very same items.
 	 */
 	@GameTest(environment = "guildy-test:day", maxTicks = 2400)
 	public void armorWallIsMergedAndOrderedInReadingOrder(GameTestHelper helper) throws Exception {
 		ServerLevel level = helper.getLevel();
 		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Mur");
 		Guild guild = recruit.guild();
+		guild.villagers.chestLayout = "rows";
 		BlockPos ground = recruit.ground();
 		List<BlockPos> wall = new ArrayList<>();
 		for (int column = 0; column < 2; column++) {
@@ -242,7 +244,8 @@ public class TidyGameTests {
 
 	/**
 	 * Two armor chests 12 blocks apart (out of reach of one standing spot): the items of the second one are carried into
-	 * the first one (first in reading order), merged and ordered there, without losing anything.
+	 * the first one (first in reading order), merged and ordered there by columns (each kind at the top of its own
+	 * column: shield, the two helmets, boots, templates), without losing anything.
 	 */
 	@GameTest(environment = "guildy-test:day", maxTicks = 3000)
 	public void distantChestsOfAGroupAreFilledByCarrying(GameTestHelper helper) throws Exception {
@@ -274,9 +277,10 @@ public class TidyGameTests {
 			helper.assertTrue(templates == 40 && helmets == 2, "items lost or duplicated (templates " + templates + ", helmets " + helmets + ")");
 			helper.assertTrue(stacks(level, second) == 0, "waiting for the far chest to be emptied into the first one");
 			Container near = (Container) level.getBlockEntity(first);
-			helper.assertTrue(near.getItem(0).is(Items.SHIELD) && near.getItem(1).is(Items.IRON_HELMET) && near.getItem(2).is(Items.IRON_HELMET)
-					&& near.getItem(3).is(Items.IRON_BOOTS) && near.getItem(4).getCount() == 40 && stacks(level, first) == 5,
-					"waiting for the first chest to be merged and ordered");
+			// By columns (slot = row * 9 + column): column 1 shield, column 2 both helmets, column 3 boots, column 4 templates.
+			helper.assertTrue(near.getItem(0).is(Items.SHIELD) && near.getItem(1).is(Items.IRON_HELMET) && near.getItem(10).is(Items.IRON_HELMET)
+					&& near.getItem(2).is(Items.IRON_BOOTS) && near.getItem(3).getCount() == 40 && stacks(level, first) == 5,
+					"waiting for the first chest to be merged and ordered by columns");
 			GuildManager.disband(guild);
 		});
 	}
@@ -400,7 +404,8 @@ public class TidyGameTests {
 						helper.assertTrue(stack.isEmpty() || stack.is(kind), "waiting for column " + column + " to hold only " + kind);
 					}
 				}
-				List<ItemStack> sequence = readingOrder(helper, level, columns.get(column));
+				// One kind per column of chests: packed by columns inside the chests (the default layout).
+				List<ItemStack> sequence = packed(helper, level, columns.get(column), true);
 				assertMerged(helper, sequence);
 			}
 			GuildManager.disband(guild);
@@ -426,14 +431,25 @@ public class TidyGameTests {
 
 	/** Non-empty stacks in reading order; fails while an empty slot comes before a stack (not packed). */
 	private static List<ItemStack> readingOrder(GameTestHelper helper, ServerLevel level, List<BlockPos> chests) {
+		return packed(helper, level, chests, false);
+	}
+
+	/**
+	 * Non-empty stacks of the chests in slot order ({@code columns}: each column of 9-slot rows top to bottom, then the
+	 * next column); fails while an empty slot comes before a stack (not packed).
+	 */
+	static List<ItemStack> packed(GameTestHelper helper, ServerLevel level, List<BlockPos> chests, boolean columns) {
 		List<ItemStack> sequence = new ArrayList<>();
 		boolean gap = false;
 		for (BlockPos pos : chests) {
-			for (ItemStack stack : contents(level, pos)) {
+			List<ItemStack> slots = contents(level, pos);
+			for (int i = 0; i < slots.size(); i++) {
+				int rows = slots.size() / 9;
+				ItemStack stack = columns && rows > 0 ? slots.get((i % rows) * 9 + i / rows) : slots.get(i);
 				if (stack.isEmpty()) {
 					gap = true;
 				} else {
-					helper.assertTrue(!gap, "waiting for the chests to be packed in reading order");
+					helper.assertTrue(!gap, columns ? "waiting for the chests to be packed by columns" : "waiting for the chests to be packed in reading order");
 					sequence.add(stack);
 				}
 			}
@@ -442,7 +458,7 @@ public class TidyGameTests {
 	}
 
 	/** At most one partial stack of each kind. */
-	private static void assertMerged(GameTestHelper helper, List<ItemStack> sequence) {
+	static void assertMerged(GameTestHelper helper, List<ItemStack> sequence) {
 		for (int i = 0; i < sequence.size(); i++) {
 			ItemStack a = sequence.get(i);
 			if (a.getCount() >= a.getMaxStackSize()) {
