@@ -106,6 +106,22 @@ Posez un panneau (n'importe quel bois, debout ou mural) et écrivez sur **la pre
 - Nombre de coffres : **1 trésor, 1 à 3 rares, 2 à 6 communs**. Un coffre sans panneau devient « commun » (avec un
   avertissement). Ne remplissez pas les coffres : leur contenu est tiré au hasard à l'ouverture.
 - Jusqu'à **2 spawners** vanilla par ruine si vous voulez (réglés avec un œuf d'apparition).
+- **Pots décorés** : posez-les vides, avec ou sans tessons. Ils reçoivent tous la table « pot » (`guildy:pots/ruin`,
+  Nether : `guildy:pots/ruin_nether`) : un seul petit objet (pépites d'or, os, flèches, émeraudes, éclats
+  d'améthyste, plumes, tessons de poterie…, rarement un parchemin de Rappel), qui tombe quand on casse le pot.
+
+### L'eau (et la lave)
+
+- Mettez l'eau dans ce qui la retient : un **bassin** ou un **canal creusé dans le sol** (l'eau une couche sous le
+  sol où l'on marche), des bords pleins tout autour et un fond plein. Une cascade doit **tomber dans un bassin**.
+  Ailleurs, l'eau coule jusqu'à 7 blocs sur les sols, dévale les escaliers et tombe des plafonds.
+- Un escalier, une dalle, un mur, une chaîne ou une lanterne collés à deux sources se remplissent d'eau et la
+  répandent : gardez-les hors des bassins, ou noyez-les vous-même s'ils doivent en faire partie.
+- `check.py` fait couler l'eau du gabarit comme le jeu (même portée, mêmes chutes) et refuse celle qui finit sur un
+  sol, une marche, dans l'arène ; il signale les canaux à sec ou à moitié vides.
+- Sous le sol, tout ce qui touche une salle doit être construit : un trou laissé au **vide de structure** au milieu
+  d'une pièce ou au fond d'une niche montre le terrain… ou l'eau, quand la ruine est creusée sous la nappe (fréquent
+  dans les jungles et près des rivières). Le convertisseur et `check.py` le signalent.
 
 ### À éviter
 
@@ -169,10 +185,10 @@ et `.nbt`, puis reconvertie et comparée à l'originale.
 | `build_all.py` | construit les huit ruines (+ variantes importées), écrit les ressources du mod, vérifie, dessine |
 | `ruins/<id>.py` | une ruine par script (lancer seul : construit et dessine cette ruine) |
 | `render.py` | aperçus PNG (`python tools/ruins/render.py <id>` ou `--nbt fichier.nbt`) ; planche de coupes pour les ruines qui déclarent des `sections` |
-| `check.py` | vérification du contrat sur les gabarits de `src/main/resources` (ou un fichier `.nbt` donné, `--big` / `--grand` pour les limites des repères) |
+| `check.py` | vérification du contrat sur les gabarits de `src/main/resources` (ou un fichier `.nbt` donné, `--big` / `--grand` pour les limites des repères), audit de l'eau compris |
 | `import_schematic.py`, `test_import.py` | convertisseur de schématiques et son test |
 | `gen_block_data.py` | régénère `data/blocks.json` (blocs / propriétés) et `data/colors.json` (couleurs des aperçus) pour une autre version de Minecraft, à partir du rapport du générateur de données et du jar client |
-| `ruinlib/` | NBT, gabarits, états de blocs, formats, techniques de construction (murs à relief, contreforts, arcs, voûtes, toits, flèches, dômes, matériaux patinés), ruine (dégâts, effondrement sans bloc flottant, gravats), végétation, rendu |
+| `ruinlib/` | NBT, gabarits, états de blocs, formats, techniques de construction (murs à relief, contreforts, arcs, voûtes, toits, flèches, dômes, matériaux patinés), ruine (dégâts, effondrement sans bloc flottant, gravats), végétation, rendu, écoulement de l'eau et de la lave selon les règles du jeu (`water.py` ; son test : `python -m ruinlib.water` depuis `tools/ruins`) |
 
 Prérequis : Python 3.10+ et Pillow (`pip install pillow`) pour les aperçus ; le reste n'utilise que la
 bibliothèque standard.
@@ -203,3 +219,10 @@ bibliothèque standard.
   défendent la salle du boss avant le combat. `check.py` vérifie leur nombre, leur place (sol plein, 2 blocs libres
   au-dessus, de quoi bouger) et qu'ils sont sur le chemin praticable depuis l'entrée.
 - Coffres : tables `guildy:chests/ruin/common|rare|treasure` (Nether : `nether_common|nether_rare|nether_treasure`).
+  Pots décorés : `guildy:pots/ruin` (Nether : `guildy:pots/ruin_nether`), un tirage, ouvert quand le pot se casse.
+- Eau : les structures ont `"liquid_settings": "ignore_waterlogging"` (comme les chambres d'épreuves). En vanilla, le
+  placement noie tout bloc « immergeable » (escaliers, dalles, chaînes, lanternes, pots…) posé là où le monde avait
+  de l'eau : les sous-sols creusés sous la nappe (le grand temple descend 18 couches sous la jungle) se retrouvaient
+  avec de l'eau qui tombait des voûtes et inondait la salle du boss, les escaliers et les galeries. L'eau du gabarit
+  (et ses blocs noyés) est posée telle quelle. Les trous de vide de structure laissés sous le sol au milieu des salles
+  (une décoration retirée par l'usure) deviennent de l'air (`split_pieces`).

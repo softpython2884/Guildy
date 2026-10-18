@@ -17,7 +17,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BeaconBeamBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
@@ -37,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * The ruin structures (data/guildy/structure/ruin, worldgen/structure/ruin): every template loads and honours
@@ -54,6 +58,8 @@ public class RuinTemplateGameTests {
 	static final List<String> BIG = List.of("bastion_de_givre", "temple_maya", "citadelle_des_ames");
 	/** The grand temple: up to 116 x 116 x 128 (its start piece stays within the 8 chunks a structure start reaches). */
 	static final String GRAND = "grand_temple_maya";
+	/** Loot table of the decorated pots of the ruins (one item each, broken or not). */
+	static final Identifier POT_LOOT = Identifier.fromNamespaceAndPath("guildy", "pots/ruin");
 	/** Random per run (the test world is reused): far from the other scenarios (x > 40000, z = 8). */
 	private static final int BASE_X = -120000 - (int) (Math.random() * 400) * 2048;
 	private static final AtomicInteger SLOTS = new AtomicInteger();
@@ -92,7 +98,10 @@ public class RuinTemplateGameTests {
 		helper.succeed();
 	}
 
-	/** One variant: size budget, one boss marker, 2-8 minions, 2-8 room guards, one treasure, loot tables on every container. */
+	/**
+	 * One variant: size budget, one boss marker, 2-8 minions, 2-8 room guards, one treasure, loot tables on every container
+	 * (chests, barrels, decorated pots).
+	 */
 	private static void checkVariant(GameTestHelper helper, StructureTemplateManager manager, String name, List<Identifier> ids,
 		int footprint, int maxHeight, boolean nether) {
 		helper.assertTrue(ids.size() == 1 || ids.size() == 2, name + " has one template or a surface + below pair, got " + ids);
@@ -130,6 +139,11 @@ public class RuinTemplateGameTests {
 						treasure++;
 					}
 				}
+			}
+			for (StructureTemplate.StructureBlockInfo info : template.filterBlocks(BlockPos.ZERO, settings, Blocks.DECORATED_POT)) {
+				String table = info.nbt() == null ? "" : info.nbt().getStringOr("LootTable", "");
+				helper.assertTrue(table.startsWith(POT_LOOT.toString()), templateId + " decorated pot at " + info.pos()
+					+ " has a ruin pot loot table, got '" + table + "'");
 			}
 			helper.assertTrue(template.filterBlocks(BlockPos.ZERO, settings, Blocks.COMMAND_BLOCK).isEmpty()
 				&& template.filterBlocks(BlockPos.ZERO, settings, Blocks.BARRIER).isEmpty(), templateId + " has no command block / barrier");
@@ -214,16 +228,125 @@ public class RuinTemplateGameTests {
 		place(helper, "citadelle_des_ames", Level.NETHER);
 	}
 
+	/**
+	 * The grand temple keeps the water where it was built. Its basement is dug 18 layers deep, under the water table of
+	 * most jungles: it is placed here into flooded ground (water filling the whole volume of its "below" piece before
+	 * the placement, like an aquifer) and the fluids tick. Nothing of that water may get in: no block waterlogged by the
+	 * placement (the structure ignores the world's water), no gap in the masonry around the rooms, so no flowing water
+	 * anywhere in the basement (the hall of the Celestial Jaguar, its stairs and galleries stay dry; the cenote, its
+	 * canal and the gallery of waters are still water). Every decorated pot carries the ruin pot loot table.
+	 */
+	@GameTest(maxTicks = 600)
+	public void grandTempleMayaKeepsTheWaterTableOut(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel().getServer().getLevel(Level.OVERWORLD);
+		BoundingBox[] basement = new BoundingBox[1];
+		List<ChunkPos> forced = new ArrayList<>();
+		StructureStart start = placeStart(helper, GRAND, Level.OVERWORLD, s -> {
+			BoundingBox below = s.getPieces().stream().map(StructurePiece::getBoundingBox)
+				.min(java.util.Comparator.comparingInt(BoundingBox::minY)).orElseThrow();
+			basement[0] = below;
+			BoundingBox box = s.getBoundingBox();
+			ChunkPos.rangeClosed(ChunkPos.containing(new BlockPos(box.minX(), 0, box.minZ())),
+				ChunkPos.containing(new BlockPos(box.maxX(), 0, box.maxZ()))).forEach(c -> {
+					level.setChunkForced(c.x(), c.z(), true);
+					forced.add(c);
+				});
+			BlockState water = Blocks.WATER.defaultBlockState();
+			BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+			for (int x = below.minX(); x <= below.maxX(); x++) {
+				for (int z = below.minZ(); z <= below.maxZ(); z++) {
+					for (int y = below.minY(); y <= below.maxY(); y++) {
+						level.setBlock(p.set(x, y, z), water, Block.UPDATE_CLIENTS);
+					}
+				}
+			}
+		});
+		StructureTemplateManager manager = level.getStructureTemplateManager();
+		int expectedPots = 0;
+		for (Identifier templateId : variants(manager, GRAND).get("ruin/" + GRAND)) {
+			expectedPots += manager.get(templateId).orElseThrow()
+				.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), Blocks.DECORATED_POT).size();
+		}
+		int pots = expectedPots;
+		helper.runAfterDelay(160, () -> {
+			BoundingBox below = basement[0];
+			List<String> flowing = new ArrayList<>();
+			List<String> waterlogged = new ArrayList<>();
+			int sources = 0;
+			BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+			for (int x = below.minX(); x <= below.maxX(); x++) {
+				for (int z = below.minZ(); z <= below.maxZ(); z++) {
+					for (int y = below.minY(); y <= below.maxY(); y++) {
+						BlockState state = level.getBlockState(p.set(x, y, z));
+						if (state.getFluidState().isEmpty()) {
+							continue;
+						}
+						if (!state.getFluidState().isSource()) {
+							flowing.add(p.toShortString());
+						} else if (state.hasProperty(BlockStateProperties.WATERLOGGED) && !state.is(Blocks.SEA_PICKLE)) {
+							waterlogged.add(p.toShortString() + " " + state.getBlock().getDescriptionId());
+						} else {
+							sources++;
+						}
+					}
+				}
+			}
+			// the arena (29 x 29 around the guardian's marker): its floor and the layer above stay dry
+			BlockPos boss = bossMarkers(level, start).getFirst();
+			List<String> wetArena = new ArrayList<>();
+			for (int dx = -14; dx <= 14; dx++) {
+				for (int dz = -14; dz <= 14; dz++) {
+					for (int dy = 0; dy <= 1; dy++) {
+						if (!level.getFluidState(p.setWithOffset(boss, dx, dy, dz)).isEmpty()) {
+							wetArena.add(p.toShortString());
+						}
+					}
+				}
+			}
+			BoundingBox box = start.getBoundingBox();
+			List<DecoratedPotBlockEntity> found = new ArrayList<>();
+			for (ChunkPos c : forced) {
+				for (BlockEntity entity : level.getChunk(c.x(), c.z()).getBlockEntities().values()) {
+					if (entity instanceof DecoratedPotBlockEntity pot && box.isInside(pot.getBlockPos())) {
+						found.add(pot);
+					}
+				}
+			}
+			forced.forEach(c -> level.setChunkForced(c.x(), c.z(), false));
+			helper.assertTrue(waterlogged.isEmpty(), "no block of the basement waterlogged by the flooded ground: "
+				+ waterlogged.size() + ", e.g. " + waterlogged.subList(0, Math.min(6, waterlogged.size())));
+			helper.assertTrue(flowing.isEmpty(), "no water flows in the basement (" + sources + " still sources): " + flowing.size()
+				+ " flowing cells, e.g. " + flowing.subList(0, Math.min(6, flowing.size())));
+			helper.assertTrue(wetArena.isEmpty(), "the arena floor stays dry: " + wetArena.size() + " wet cells, e.g. "
+				+ wetArena.subList(0, Math.min(6, wetArena.size())));
+			helper.assertTrue(found.size() == pots, "every decorated pot of the grand temple placed: " + found.size() + " / " + pots);
+			for (DecoratedPotBlockEntity pot : found) {
+				helper.assertTrue(pot.getLootTable() != null && pot.getLootTable().identifier().equals(POT_LOOT),
+					"pot at " + pot.getBlockPos().toShortString() + " has the ruin pot loot table, got " + pot.getLootTable());
+			}
+			// the table rolls one item into the pot (what breaking it spills)
+			helper.assertFalse(found.getFirst().getTheItem().isEmpty(), "the ruin pot loot table gives an item");
+			helper.succeed();
+		});
+	}
+
 	private static void place(GameTestHelper helper, String id, ResourceKey<Level> dimension) {
 		placeStart(helper, id, dimension);
 		helper.succeed();
 	}
 
+	private static StructureStart placeStart(GameTestHelper helper, String id, ResourceKey<Level> dimension) {
+		return placeStart(helper, id, dimension, s -> {
+		});
+	}
+
 	/**
 	 * Generates the structure start in a far chunk and places it in every chunk it covers (PlaceCommand.placeStructure),
-	 * then finds the boss marker through the pieces, as the ruin runtime does.
+	 * then finds the boss marker through the pieces, as the ruin runtime does. {@code beforePlacing} runs once the chunks
+	 * are loaded, just before the pieces are placed.
 	 */
-	private static StructureStart placeStart(GameTestHelper helper, String id, ResourceKey<Level> dimension) {
+	private static StructureStart placeStart(GameTestHelper helper, String id, ResourceKey<Level> dimension,
+		Consumer<StructureStart> beforePlacing) {
 		ServerLevel level = helper.getLevel().getServer().getLevel(dimension);
 		helper.assertTrue(level != null, "dimension " + dimension.identifier() + " exists");
 		ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath("guildy", "ruin/" + id));
@@ -241,9 +364,21 @@ public class RuinTemplateGameTests {
 		ChunkPos min = new ChunkPos(SectionPos.blockToSectionCoord(box.minX()), SectionPos.blockToSectionCoord(box.minZ()));
 		ChunkPos max = new ChunkPos(SectionPos.blockToSectionCoord(box.maxX()), SectionPos.blockToSectionCoord(box.maxZ()));
 		ChunkPos.rangeClosed(min, max).forEach(c -> level.getChunk(c.x(), c.z()));
+		beforePlacing.accept(start);
 		ChunkPos.rangeClosed(min, max).forEach(c -> start.placeInChunk(level, level.structureManager(), generator, level.getRandom(),
 			new BoundingBox(c.getMinBlockX(), level.getMinY(), c.getMinBlockZ(), c.getMaxBlockX(), level.getMaxY() + 1, c.getMaxBlockZ()), c));
 		helper.assertTrue(start.getPieces().size() == 1 || start.getPieces().size() == 2, id + " has 1 or 2 pieces, got " + start.getPieces().size());
+		List<BlockPos> bosses = bossMarkers(level, start);
+		helper.assertTrue(bosses.size() == 1, id + " placed with one boss marker, got " + bosses.size());
+		BlockPos boss = bosses.getFirst();
+		helper.assertTrue(box.isInside(boss), id + " boss marker " + boss + " inside the structure " + box);
+		helper.assertFalse(level.getBlockState(boss.below()).isAir(), id + " boss marker stands on a block");
+		helper.assertTrue(level.getBlockState(boss.above(2)).isAir(), id + " free space above the boss marker");
+		return start;
+	}
+
+	/** The guildy:boss DATA markers of a placed start, found through its pieces as the ruin runtime does. */
+	private static List<BlockPos> bossMarkers(ServerLevel level, StructureStart start) {
 		List<BlockPos> bosses = new ArrayList<>();
 		for (StructurePiece piece : start.getPieces()) {
 			if (piece instanceof PoolElementStructurePiece pool && pool.getElement() instanceof SinglePoolElement single) {
@@ -254,11 +389,6 @@ public class RuinTemplateGameTests {
 				}
 			}
 		}
-		helper.assertTrue(bosses.size() == 1, id + " placed with one boss marker, got " + bosses.size());
-		BlockPos boss = bosses.getFirst();
-		helper.assertTrue(box.isInside(boss), id + " boss marker " + boss + " inside the structure " + box);
-		helper.assertFalse(level.getBlockState(boss.below()).isAir(), id + " boss marker stands on a block");
-		helper.assertTrue(level.getBlockState(boss.above(2)).isAir(), id + " free space above the boss marker");
-		return start;
+		return bosses;
 	}
 }

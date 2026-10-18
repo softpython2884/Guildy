@@ -17,7 +17,8 @@ What it does:
        [coffre commun]  [coffre rare]  [coffre tresor] -> loot table on the chest / barrel the sign is attached to
                                                         (wall sign: the block behind it; standing sign: the block
                                                         under it), or a new chest in the sign's cell
-     containers left without a table get the --default-loot one (common), with a warning;
+     containers left without a table get the --default-loot one (common), with a warning; decorated pots get the
+     pot table guildy:pots/ruin (Nether: guildy:pots/ruin_nether);
   3. structure_void cells stay "void" (the natural terrain is kept there); air outside the build becomes void too
      (--air smart: air above the highest block of its neighbourhood, i.e. open sky, is void; air under roofs and in
      rooms is kept so it carves); barriers become air, light blocks / jigsaws / command blocks are removed;
@@ -211,6 +212,19 @@ def convert(t, nether=False, air_mode="smart", default_loot="common", ground=0, 
 		tag.pop("Items", None)
 		out.nbt[pos] = tag
 		msgs.append(f"{block_id} en {pos} sans panneau -> table {deco.LOOT[prefix + default_loot]}")
+	# decorated pots: the ruin pot table (one modest item, spilled when the pot breaks); the sherds stay
+	pots = 0
+	for pos, state in list(out.cells.items()):
+		if not state.startswith("minecraft:decorated_pot"):
+			continue
+		tag = out.nbt.get(pos) or N.Compound(id=N.String("minecraft:decorated_pot"))
+		tag["id"] = N.String("minecraft:decorated_pot")
+		tag["LootTable"] = N.String(deco.POT_LOOT[nether])
+		tag.pop("item", None)
+		out.nbt[pos] = tag
+		pots += 1
+	if pots:
+		msgs.append(f"{pots} pot(s) décoré(s) -> table {deco.POT_LOOT[nether]}")
 	# 4. air outside the build
 	if air_mode == "void":
 		for pos, state in list(out.cells.items()):

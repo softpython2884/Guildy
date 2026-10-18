@@ -78,6 +78,10 @@ class Ruin:
 		self.grand = False  # the grand temple size class (116 x 116 x 128)
 		self.set_weight = 1  # weight in the dimension's structure set (matters where ruins share biomes)
 		self.structure_set = None  # None = the dimension's set (ruins_overworld / ruins_nether), else its own set
+		# The placement never merges the world's water into the ruin's blocks (vanilla apply_waterlogging would waterlog
+		# every stair, slab, chain... standing in an aquifer: water falling from the vaults, flooding the rooms). The
+		# template's own water (and waterlogged blocks) is placed as built.
+		self.liquid_settings = "ignore_waterlogging"
 
 	# the procedural variant (kept for the scripts / previews)
 	@property
@@ -162,6 +166,7 @@ class Ruin:
 			"start_height": {"absolute": self.start_height},
 			"max_distance_from_center": 80,
 			"use_expansion_hack": False,
+			"liquid_settings": self.liquid_settings,
 		}
 		if self.dimension == "overworld":
 			structure["project_start_to_heightmap"] = "WORLD_SURFACE_WG"
@@ -204,9 +209,12 @@ def split_pieces(ruin_id, template, ground, jigsaw_xz=None, variant=""):
 	Splits an assembled overworld template at its ground floor: "surface" (layers ground..top, layer 0 = ground
 	floor) and "below" (everything under it), linked by a jigsaw pair at jigsaw_xz (a cell that is void in both:
 	the jigsaws become structure_void, i.e. keep the natural block). jigsaw_xz None = first suitable column.
+	Holes left under the ground in the middle of the rooms (a decoration the decay removed there becomes void, i.e.
+	terrain: a floating block of dirt, or a water source in flooded ground) become air first.
 	"""
-	from . import deco
+	from . import deco, water
 	from .build import Builder
+	water.fill_holes(template, ground)
 	sx, sy, sz = template.size
 	below = Template(sx, ground, sz, ruin_id + "/below")
 	surface = Template(sx, sy - ground, sz, ruin_id + "/surface")
