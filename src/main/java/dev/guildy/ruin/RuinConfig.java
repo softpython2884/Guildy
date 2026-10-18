@@ -4,6 +4,7 @@ import dev.guildy.Guildy;
 import dev.guildy.config.Comment;
 import dev.guildy.config.Json5;
 import dev.guildy.config.Validatable;
+import dev.guildy.stats.FightStatsSettings;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -81,6 +82,14 @@ public final class RuinConfig implements Validatable {
 			"[nombre] cursed | awaken cursed | cursed phase | cursed attack <attaque>"
 	})
 	public CursedSettings cursed = new CursedSettings();
+
+	@Comment({
+			"Bilan du combat : a la victoire (et en plus court sur un echec), chaque participant recoit dans le chat les titres du",
+			"combat (meilleurs degats au gardien, aux gardiens de salle, aux sbires, soins, absorption, degats encaisses, coup fatal)",
+			"et sa propre ligne, avec le detail par joueur (survol des noms, menu [Voir le detail], /guild bilan). Compte depuis",
+			"l'apparition des gardiens de salle ; projectiles, sorts et animaux comptent pour leur proprietaire ; creatif ignore"
+	})
+	public FightStatsSettings stats = new FightStatsSettings();
 
 	@Comment("Recherches de l'Atelier du cartographe")
 	public CartographySettings cartography = new CartographySettings();
@@ -628,6 +637,10 @@ public final class RuinConfig implements Validatable {
 			cursed = new CursedSettings();
 		}
 		cursed.fix(itemExists, warnings);
+		if (stats == null) {
+			stats = new FightStatsSettings();
+		}
+		stats.fix(warnings);
 		if (cartography == null) {
 			cartography = new CartographySettings();
 		}

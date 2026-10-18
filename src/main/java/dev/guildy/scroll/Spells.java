@@ -1,5 +1,6 @@
 package dev.guildy.scroll;
 
+import dev.guildy.stats.FightTracker;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -49,7 +50,11 @@ final class Spells {
 			case SINGULARITY -> EffectRunner.start(new SingularitySpell(ctx, SpellTargets.aimPoint(ctx, ctx.p("range"))));
 			case AEGIS -> EffectRunner.start(new AegisSpell(ctx));
 			case RECALL -> {
-				return RecallSpell.cast(ctx);
+				String failure = RecallSpell.cast(ctx);
+				if (failure == null) {
+					FightTracker.spellCast(ctx.caster);
+				}
+				return failure;
 			}
 			case GUARDIANS -> {
 				List<Vec3> spots = GuardiansSpell.spots(ctx);
@@ -63,6 +68,7 @@ final class Spells {
 			case EARTHQUAKE -> EffectRunner.start(new EarthquakeSpell(ctx));
 			case ARCANE_RAY -> EffectRunner.start(new ArcaneRaySpell(ctx));
 		}
+		FightTracker.spellCast(ctx.caster);
 		return null;
 	}
 }

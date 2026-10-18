@@ -159,6 +159,11 @@ public final class Encounters {
 		BY_MOB.remove(uuid, encounter);
 	}
 
+	/** The running fight a guardian or escort mob belongs to, or null (fight statistics). */
+	static @Nullable Encounter encounterOf(UUID mob) {
+		return BY_MOB.get(mob);
+	}
+
 	/** The guardian of this ruin is rising from the dead right now. */
 	public static boolean rising(RuinRecord ruin) {
 		Encounter encounter = ACTIVE.get(ruin.key);
@@ -461,6 +466,7 @@ public final class Encounters {
 			}
 		}
 		syncBar(level, encounter, boss, present);
+		Safe.run("ruin.stats.awaken", () -> RuinFightStats.awakened(level, encounter));
 		return null;
 	}
 
@@ -775,6 +781,8 @@ public final class Encounters {
 	 * @param announce reset by absence: the players still close get a message
 	 */
 	private static void end(Encounter encounter, @Nullable ServerLevel level, boolean announce) {
+		// Short "Bilan du combat" while the guardian is still there (its health left).
+		Safe.run("ruin.stats.end", () -> RuinFightStats.ended(encounter, level));
 		ACTIVE.remove(encounter.ruin.key);
 		if (encounter.ruin.state == RuinState.AWAKE) {
 			encounter.ruin.state = RuinState.DORMANT;
@@ -830,6 +838,8 @@ public final class Encounters {
 	 * the chunks are saved).
 	 */
 	static void stopAll() {
+		// No summary for the fights cut short by the stop.
+		Safe.run("ruin.stats.stop", RuinFightStats::clear);
 		Safe.run("ruin.ritual.stop", Incantations::stopAll);
 		PRESENCE.clear();
 		MinecraftServer server = GuildyServer.server();
@@ -904,6 +914,7 @@ public final class Encounters {
 			minion.discard();
 		}
 		victoryEffects(level, boss);
+		Safe.run("ruin.stats.victory", () -> RuinFightStats.victory(level, encounter, boss, source, present));
 		if (encounter.cursed != null) {
 			// The curse is broken: its own titles and announcement.
 			Safe.run("ruin.cursed.victory", () -> encounter.cursed.victory(level, encounter, boss, present, threat, threat > stored));

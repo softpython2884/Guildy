@@ -3,6 +3,7 @@ package dev.guildy.scroll;
 import dev.guildy.Guildy;
 import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
+import dev.guildy.stats.FightHealing;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -102,10 +103,17 @@ final class EffectRunner {
 					continue;
 				}
 				Fx fx = new Fx(effect.level, effect.anchor(), Math.min(share, Math.max(0, left)), limits.viewDistance);
-				boolean ok = Safe.get("scroll.effect", () -> {
-					effect.tick(fx);
-					return true;
-				}, false);
+				// Whatever the spell heals or shields counts for its caster in the fight statistics.
+				FightHealing.push(effect.ctx.caster);
+				boolean ok;
+				try {
+					ok = Safe.get("scroll.effect", () -> {
+						effect.tick(fx);
+						return true;
+					}, false);
+				} finally {
+					FightHealing.pop();
+				}
 				if (!ok) {
 					Guildy.LOGGER.warn("[scrolls] spell effect {} stopped after an error", effect.getClass().getSimpleName());
 					effect.finish();

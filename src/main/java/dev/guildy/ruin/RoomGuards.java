@@ -147,6 +147,12 @@ public final class RoomGuards {
 		return watch == null ? null : watch.posts.get(guard.getUUID());
 	}
 
+	/** Key of the ruin a living guard watches, or null when it is not a tracked guard (fight statistics). */
+	static @Nullable String ruinKeyOf(UUID guard) {
+		Watch watch = BY_GUARD.get(guard);
+		return watch == null ? null : watch.ruinKey;
+	}
+
 	/** The distinct posts used in the current dormant period (empty when no guard was posted). */
 	public static List<BlockPos> posts(RuinRecord ruin) {
 		Watch watch = WATCHES.get(ruin.key);
@@ -380,6 +386,7 @@ public final class RoomGuards {
 			return 0;
 		}
 		WATCHES.put(ruin.key, watch);
+		Safe.run("ruin.stats.guards", () -> RuinFightStats.guardsPosted(level, ruin, watch.posts.size()));
 		String ruinName = Lang.colorize(def.name);
 		for (ServerPlayer player : intruders(level, ruin, cfg.guards.triggerMargin)) {
 			// No spoiler by default: a dull sound, then the hint of the chat at the entrance ("des sentinelles veillent…").

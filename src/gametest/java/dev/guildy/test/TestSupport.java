@@ -30,6 +30,10 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +46,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class TestSupport {
 	private static final Logger LOGGER = LoggerFactory.getLogger("GuildyTest");
 	private static final AtomicInteger REGIONS = new AtomicInteger();
+	/** Chat received by the mock players (see {@link #chat}). */
+	private static final Map<UUID, List<String>> CHAT = new HashMap<>();
 	/** Random per run: the test world is reused, so avoid the blocks left by previous runs. */
 	private static final int BASE_X = 40000 + (int) (Math.random() * 400) * 65536;
 
@@ -111,6 +117,32 @@ final class TestSupport {
 		return connected(helper, pos, GameType.SURVIVAL, "test-survivor");
 	}
 
+	/** Connected mock player in SURVIVAL mode with its own name (at most 16 characters). */
+	static ServerPlayer survivor(GameTestHelper helper, BlockPos pos, String name) {
+		return connected(helper, pos, GameType.SURVIVAL, name);
+	}
+
+	/** Chat messages received by a mock player (plain text, oldest first, the last 200). */
+	static List<String> chat(ServerPlayer player) {
+		synchronized (CHAT) {
+			List<String> lines = CHAT.get(player.getUUID());
+			return lines == null ? List.of() : new ArrayList<>(lines);
+		}
+	}
+
+	private static void rememberChat(UUID player, String line) {
+		synchronized (CHAT) {
+			List<String> lines = CHAT.computeIfAbsent(player, uuid -> new ArrayList<>());
+			if (lines.size() >= 200) {
+				lines.removeFirst();
+			}
+			lines.add(line);
+			if (CHAT.size() > 256) {
+				CHAT.keySet().removeIf(uuid -> !uuid.equals(player));
+			}
+		}
+	}
+
 	/** Mock player with an embedded connection; its chat messages are written to the log (handy to debug tests). */
 	private static ServerPlayer connected(GameTestHelper helper, BlockPos pos, GameType mode, String name) {
 		ServerLevel level = helper.getLevel();
@@ -120,6 +152,9 @@ final class TestSupport {
 			@Override
 			public void sendSystemMessage(Component message, boolean overlay) {
 				LOGGER.info("[{}] {}", name, message.getString());
+				if (!overlay) {
+					rememberChat(getUUID(), message.getString());
+				}
 				super.sendSystemMessage(message, overlay);
 			}
 		};

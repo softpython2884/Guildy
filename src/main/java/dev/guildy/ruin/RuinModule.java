@@ -32,6 +32,7 @@ public final class RuinModule {
 		config = ConfigManager.register("ruins.json5", RuinConfig.class, RuinConfig::new);
 		RuinLang.register();
 		CursedLang.register();
+		RuinFightStats.init();
 		Encounters.init();
 		Incantations.init();
 		RoomGuards.init();

@@ -5,6 +5,7 @@ import dev.guildy.config.ConfigManager;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Lang;
 import dev.guildy.core.ScrollDrops;
+import dev.guildy.stats.FightTracker;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -37,6 +38,8 @@ public final class ScrollModule {
 		ScrollCasting.register();
 		EffectRunner.init();
 		ScrollTracker.init();
+		// Fight statistics: the hits of a summoned guardian count for its caster.
+		FightTracker.addOwnerResolver(GuardiansSpell::summoner);
 		ScrollDrops.roller = ScrollModule::roll;
 		ScrollDrops.picker = ScrollModule::pick;
 		ScrollDrops.factory = ScrollModule::create;
