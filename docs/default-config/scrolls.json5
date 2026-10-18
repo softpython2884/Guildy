@@ -6,7 +6,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 1,
+	"configVersion": 2,
 
 	// Parchemins actifs (false = ils ne lancent plus rien, ils ne sont pas consommes)
 	"enabled": true,
@@ -81,8 +81,13 @@
 		// Brillance
 		"glint": true,
 
-		// Duree de l'incantation (secondes, 0.05 a 5 ; les parchemins : 0.75 a 4)
-		"channelSeconds": 0.4,
+		// Duree minimale de l'incantation (secondes, 0.05 a 5) : le cercle runique a le temps de se dessiner sous le
+		// lanceur. Jamais plus longue que celle du parchemin lui-meme (0.75 a 4 s par defaut)
+		"channelSeconds": 1.0,
+
+		// Part de la duree d'incantation du parchemin (0 a 1) : un sort long reste plus long a lire dans le grimoire
+		// (ex. 0.6 : Singularite 2 s -> 1.2 s, Rappel 4 s -> 2.4 s ; les sorts courts prennent la duree minimale)
+		"channelFactor": 0.6,
 
 		// Animation de l'incantation (toot_horn, spyglass, bow, trident, brush, block...)
 		"animation": "toot_horn",

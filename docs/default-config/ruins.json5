@@ -81,6 +81,13 @@
 		// Distance (blocs) a laquelle les joueurs voient le rituel (particules longue distance)
 		"viewDistance": 128,
 
+		// Incantation scellee (des gardiens de salle tiennent encore l'arene) : duree (secondes, 0.5 a 5) pendant laquelle le
+		// cercle d'incantation se dessine sous le lecteur avant de se briser. Le parchemin n'est jamais consomme
+		"sealSeconds": 1.5,
+
+		// Delai (secondes, 1 a 30) avant qu'un joueur puisse relancer une incantation scellee (anti-spam, compte des le debut)
+		"sealCooldownSeconds": 3.0,
+
 		// Palier minimal du Carrefour commercial dont le marchand propose parfois un parchemin d'incantation (0 = jamais)
 		"tradeTier": 2,
 
@@ -233,6 +240,10 @@
 		// Tant que des gardiens vivent dans l'arene (rayon 'summon.arenaRadius' autour du gardien endormi), l'incantation est
 		// refusee (en mode proximity, le gardien ne se reveille pas)
 		"blockRitual": true,
+
+		// Message a l'ecran (barre d'action) quand les gardiens prennent leur poste. false = aucun : seuls un bruit sourd et
+		// l'indice du chat a l'entree de la ruine trahissent leur presence (sans les compter)
+		"announceOnScreen": false,
 
 		// Ruines sans marqueur guildy:guard : rayon (blocs) du cercle de postes de secours autour du gardien endormi
 		"fallbackRadius": 7,
@@ -487,6 +498,43 @@
 			// Chance (0 a 1) qu'un contrat legendaire termine donne un parchemin maudit
 			"legendaryQuestChance": 0.1
 		}
+	},
+
+	// Bilan du combat : a la victoire (et en plus court sur un echec), chaque participant recoit dans le chat les titres du
+	// combat (meilleurs degats au gardien, aux gardiens de salle, aux sbires, soins, absorption, degats encaisses, coup fatal)
+	// et sa propre ligne, avec le detail par joueur (survol des noms, menu [Voir le detail], /guild bilan). Compte depuis
+	// l'apparition des gardiens de salle ; projectiles, sorts et animaux comptent pour leur proprietaire ; creatif ignore
+	"stats": {
+
+		// Bilan du combat actif (false = rien n'est suivi ni envoye)
+		"enabled": true,
+
+		// Titres du chat, dans cet ordre : guardian (Fleau du gardien : degats au gardien), guards (Briseur de gardes : degats
+		// aux gardiens de salle), escort (Chasseur de sbires : degats a l'escorte), healing (Ange gardien : soins donnes aux
+		// autres joueurs), shield (Protecteur : absorption donnee), tank (Rempart : degats encaisses), final_blow (Coup fatal),
+		// kills (Moissonneur : monstres tues), spells (Arcaniste : sorts lances). Le menu du detail montre toujours tout
+		"categories": [
+			"guardian",
+			"guards",
+			"escort",
+			"healing",
+			"shield",
+			"tank",
+			"final_blow"
+		],
+
+		// Points minimum (degats infliges, soins, absorption donnee ou degats encaisses) pour figurer dans le bilan (0 a 10000 ;
+		// 0 = tous les joueurs passes dans l'arene). Les joueurs presents a la fin le recoivent quand meme
+		"minDamage": 1.0,
+
+		// Minutes pendant lesquelles chacun peut rouvrir son dernier bilan avec /guild bilan (1 a 1440)
+		"keepMinutes": 30,
+
+		// Bilan court aussi quand le combat echoue (combat reinitialise faute de joueurs, gardien disparu, admin reset)
+		"onFailure": true,
+
+		// Joueurs suivis au maximum par combat (2 a 64)
+		"maxPlayers": 32
 	},
 
 	// Recherches de l'Atelier du cartographe

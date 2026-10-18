@@ -695,8 +695,10 @@ Le pack de ressources facultatif leur donne des textures animées (comme aux arm
 Un livre ancien qui **relie jusqu'à 4 parchemins** et relance leurs sorts sans jamais les consommer.
 - **Relier** : dans l'inventaire, clic droit avec un parchemin sur le grimoire (ou avec le grimoire sur un parchemin) : un
   parchemin est consommé et devient une page (pas deux fois le même sort).
-- **Clic droit** : lance le sort de la page choisie, avec la même visée et les mêmes animations que le parchemin, une
-  incantation éclair (0,4 s) et une petite recharge (3 s). **Accroupi + clic droit** : page suivante.
+- **Clic droit** : lance le sort de la page choisie, avec la même visée et les mêmes animations que le parchemin et une
+  petite recharge (3 s). L'incantation est plus rapide que celle du parchemin (60 %), mais jamais moins de 1 s : on a le
+  temps de voir le cercle runique se dessiner sous ses pieds, puis s'embraser au lancement (Singularité 1,2 s, Rappel
+  2,4 s). **Accroupi + clic droit** : page suivante.
 - **Accroupi + F** (échange de main) ou `/guild grimoire` : le menu des pages (choisir, effacer une page — le parchemin
   est perdu —, Maj-clic sur un parchemin de l'inventaire pour le relier ; c'est aussi la façon de relier en créatif).
 - Chaque sort **coûte de la nourriture** selon sa rareté : Rare 3, Épique 5, Légendaire 7, Mythique 10 points de faim (sur
@@ -733,12 +735,22 @@ s'arrête et le gardien se rendort (avec toute sa vie). Les coffres des ruines o
 | **Citadelle des âmes** | Nether : vallée des âmes, deltas de basalte, forêt biscornue | 5 | Champion des âmes (squelette wither, 650 PV) + squelettes wither et blazes |
 
 
-**Gardiens de salle** : une ruine dormante n'est pas vide. Dès qu'un joueur en survie approche, ses gardiens prennent leur
-poste dans les couloirs, les antichambres et aux entrées de l'arène : 2 à 6 selon le palier, un de plus par joueur
-supplémentaire et tous les deux niveaux de menace. Ils défendent leur poste sans s'en éloigner. Tant qu'il en reste dans
-la salle du gardien, le parchemin d'incantation refuse de fonctionner : « Des gardiens protègent encore la salle (N) ».
-Tués, ils ne reviennent pas tant que vous restez dans les parages ; si tout le monde s'éloigne une minute, les survivants
-repartent et d'autres vous attendront au prochain passage. Ils disparaissent quand le gardien est vaincu.
+**Sentinelles** : une ruine dormante n'est pas vide. Dès qu'un joueur en survie approche, des sentinelles prennent leur
+poste dans les couloirs, les antichambres et aux entrées de l'arène (2 à 6 selon le palier, une de plus par joueur
+supplémentaire et tous les deux niveaux de menace). Elles ne s'annoncent pas : « Des sentinelles veillent sur ce lieu…
+tant qu'elles se dressent, le sommeil du gardien ne peut être troublé. » Lire un parchemin d'incantation alors qu'il en
+reste dans la salle fait apparaître le cercle… qui se fissure et vole en éclats (« Une présence scelle encore
+l'entité… »), le parchemin est conservé. Tuées, elles ne reviennent pas tant que vous restez dans les parages ; si tout le
+monde s'éloigne une minute, les survivantes repartent et d'autres vous attendront au prochain passage.
+
+**Bilan du combat** : à la fin d'un combat de ruine, chaque participant reçoit son bilan dans le chat : durée, ruine,
+menace, gardien maudit ou ressuscité, puis les titres du combat — *Fléau du gardien* (dégâts au gardien), *Briseur de
+gardes* (sentinelles), *Chasseur de sbires* (escorte), *Ange gardien* (soins donnés aux autres), *Protecteur* (absorption
+donnée), *Rempart* (dégâts encaissés), *Coup fatal* — et sa propre ligne. Survolez un nom pour voir tous ses chiffres ;
+**[Voir le détail]** ouvre une tête par joueur. Tout compte dès l'apparition des sentinelles ; flèches, sorts, armes
+uniques, animaux et golems invoqués comptent pour leur propriétaire ; le surplus de soin ne compte pas (soins comptés :
+sorts Guildy, potions jetées de soin, de régénération ou d'absorption). `/guild bilan` (ou `/guild bilan detail`)
+rouvre le dernier bilan pendant 30 min. En cas d'échec : bilan court.
 
 **Plus on est, plus il est fort** : à son apparition, le gardien compte les joueurs en survie présents (8 au plus). Par
 joueur au-delà du premier, il gagne +50 % de vie, +15 % de dégâts et des sbires en plus ; la barre de boss l'affiche
@@ -834,6 +846,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild trade` | Carrefour commercial : palier, marchands présents, échanges possibles, amélioration |
 | `/guild uniques` | Collection d'armes uniques de la guilde |
 | `/guild grimoire` | Menu des pages du grimoire tenu en main |
+| `/guild bilan` · `bilan detail` | Dernier bilan de combat de ruine (chat ou menu détaillé) |
 
 ### Administration
 Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions : opérateurs niveau 2
@@ -887,7 +900,7 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
-| `ruins.json5` | Ruines : gardiens de salle (`guards`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
+| `ruins.json5` | Ruines : bilan du combat (`stats`), sentinelles (`guards`, annonce à l'écran désactivée), rituel scellé (`summon.sealSeconds`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) |
 | `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 

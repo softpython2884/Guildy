@@ -841,7 +841,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<p>Un livre ancien qui <strong>relie jusqu'à 4 parchemins</strong> et relance leurs sorts sans les consommer.</p>
 				<div class="cards">
 					<div class="card"><h3>Relier</h3><p>Dans l'inventaire, clic droit avec un parchemin sur le grimoire : le parchemin devient une page (pas deux fois le même sort).</p></div>
-					<div class="card"><h3>Lancer</h3><p>Clic droit : sort de la page choisie, incantation éclair (0,4 s), recharge de 3 s. Accroupi + clic droit : page suivante. Accroupi + F ou <button class="cmd" type="button">/guild grimoire</button> : le menu des pages.</p></div>
+					<div class="card"><h3>Lancer</h3><p>Clic droit : sort de la page choisie, incantation plus courte que le parchemin mais d'au moins 1 s (le temps de voir le cercle se dessiner), recharge de 3 s. Accroupi + clic droit : page suivante. Accroupi + F ou <button class="cmd" type="button">/guild grimoire</button> : le menu des pages.</p></div>
 					<div class="card"><h3>Le prix : la faim</h3><p>Rare 3, Épique 5, Légendaire 7, Mythique 10 points de faim (sur 20). Barre trop basse : le sort ne part pas.</p></div>
 				</div>
 				<p class="hint">On le trouve sur les boss des ruines (8 %, 12 % dans le Nether), dans les contrats légendaires (4 %) et parfois chez le marchand du Carrefour (palier III, 400 or).</p>
@@ -871,10 +871,11 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>Victoire légendaire</h3><p>Le vaincre sous sa forme enragée rapporte +50 % d'or et d'XP et des tirages de butin en plus. Tout le serveur l'apprend.</p></div>
 				</div>
 				<div class="cards">
-					<div class="card"><h3>Gardiens de salle</h3><p>Approchez d'une ruine : des gardiens prennent leur poste. Éliminez ceux de la salle avant de lire le parchemin d'incantation (« Des gardiens protègent encore la salle »).</p></div>
+					<div class="card"><h3>Sentinelles</h3><p>Des sentinelles veillent sur les ruines dormantes. Tant qu'elles se dressent dans la salle, le cercle d'incantation se brise (« Une présence scelle encore l'entité… ») : le parchemin est conservé, éliminez-les d'abord.</p></div>
 					<div class="card"><h3>À plusieurs</h3><p>Le gardien compte les joueurs présents : +50 % de vie et +15 % de dégâts par joueur en plus (barre « — N joueurs »), mais +50 % d'or et d'XP par joueur, et chacun reçoit sa part d'or.</p></div>
 					<div class="card"><h3>Sanctuaires</h3><p>Les balises des ruines et leur pyramide sont indestructibles.</p></div>
 				</div>
+				<div class="note"><p><strong>Bilan du combat :</strong> après chaque boss de ruine, chacun reçoit le bilan : qui a le plus frappé le gardien, les sentinelles et les sbires, qui a le mieux soigné l'équipe (Bénédiction, potions jetées), qui a encaissé le plus, qui a porté le coup fatal. Survolez un nom pour ses statistiques, cliquez [Voir le détail] ou tapez <button class="cmd" type="button">/guild bilan</button> pour le revoir.</p></div>
 				<h3 id="maudit">Le parchemin d'incantation maudit</h3>
 				<p>Un rituel maudit de 10 s (3 ❤ par joueur) fait surgir le gardien <strong>Maudit</strong> : vie ×3, dégâts ×2, barre violette, et <strong>trois phases</strong>. À 66 % puis 33 % de vie, il s'élève, un pentagramme géant s'embrase, des chaînes d'âmes vous lient, puis il revient plus fort. Phase II : pentagrammes au sol qui boivent votre vie (sortez-en !), chaînes d'âmes, météores noirs. Phase III : ténèbres, cages de foudre, nova de sang, ombres, aura maudite. Chaque attaque est annoncée par un cercle rouge.</p>
 				<p class="hint">Victoire : or et XP ×3, jusqu'à 2 armes uniques, un parchemin garanti, 35 % de grimoire, menace +2. On le trouve chez le marchand du Carrefour (palier III, 250 or, parfois), sur les gardiens Enragés (15 %) et dans les contrats légendaires (10 %).</p>
@@ -997,7 +998,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.8.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.8.1.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>

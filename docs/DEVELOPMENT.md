@@ -374,6 +374,21 @@ schématiques) : `tools/ruins/`.
     GameTests : `GuildyTestInit` monte `encounter.maxActive` à 64. Les armes uniques ne sont plus vendues au Carrefour
     (`trade.json5` format 3 retire l'ancienne offre une fois).
 
+52. **Incantation du grimoire et indices des ruines** : `ChannelRules` (pur) : grimoire = max(`grimoire.channelSeconds` 1 s,
+    `channelFactor` 0,6 × durée du parchemin), jamais plus long que le parchemin ; le cercle runique suit la vraie durée de
+    l'utilisation (complet à 85 %, halo, embrasé au lancement) ; `scrolls.json5` format 2 (0,4 → 1 s si inchangé). Ruines :
+    plus de note de menace (présence, réveil, victoire), sentinelles sans annonce à l'écran (`guards.announceOnScreen`) ni
+    nombre ; refus GUARDED = `Seals` (cercle `summon.sealSeconds`, fissures, éclatement, `summon.sealCooldownSeconds`,
+    parchemin jamais consommé).
+53. **Bilan du combat** (`stats/`, pont `ruin/RuinFightStats`, section `stats` de ruins.json5) : une `FightSession` par
+    ruine (ouverte quand les sentinelles sont postées ou que le gardien apparaît, arène = boîte + `presenceMargin`). Dégâts =
+    PV + absorption perdus autour de `actuallyHurt` dans `hurtServer` (mixin), attribués par `FightRules.owner`
+    (`OwnableEntity` / `TraceableEntity` / golems de sort) ; classement boss / escorte / garde au premier coup, coup fatal
+    via `Encounters.victory`. Soins : pile de contextes `FightHealing` (tick d'un sort = lanceur,
+    `HealOrHarmMobEffect.applyInstantaneousEffect` = propriétaire de la potion, tick de régénération = donneur), surplus et
+    soi-même exclus. Chat 30 ticks après la victoire, forme courte en cas d'échec, `/guild bilan [detail]` ; rien n'est
+    sauvegardé. Hordes non couvertes (pont `WaveFightStats` à faire).
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).
