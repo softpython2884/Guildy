@@ -272,6 +272,7 @@ public class RuinGuardGameTests {
 		def.fastKillSeconds = 0;
 		def.rewards.goldMin = 10;
 		def.rewards.goldMax = 10;
+		def.rewards.goldPerEscort = 0;
 		def.rewards.lootTable = "";
 		def.rewards.items.clear();
 		ServerPlayer a = TestSupport.survivor(helper, ruin.boss.offset(3, -1, 0));

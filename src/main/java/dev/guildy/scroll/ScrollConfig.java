@@ -11,6 +11,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,11 +37,14 @@ import java.util.regex.Pattern;
 public final class ScrollConfig implements Validatable {
 	/**
 	 * Current file format. 2: the grimoire's channel follows each spell ({@code grimoire.channelFactor}), its minimum goes
-	 * from 0.4 s to 1 s when still at the old default.
+	 * from 0.4 s to 1 s when still at the old default. 3 (Guildy 1.10): stronger damage spells (spell damage ignores armor
+	 * and the default damage is raised): a scroll whose damage is still the old default of its spell gets the new one.
 	 */
-	public static final int CURRENT_VERSION = 2;
+	public static final int CURRENT_VERSION = 3;
 	/** Channel of the grimoire before format 2 (too short to see the circle form). */
 	static final double OLD_GRIMOIRE_CHANNEL = 0.4;
+	/** Default damage (health points) of the damage spells before format 3. */
+	public static final Map<Spell, Double> OLD_DAMAGE = oldDamage();
 	/** Drop sources used by the other modules (ScrollDrops.roll). */
 	public static final List<String> SOURCES = List.of("ruin_boss", "nether_ruin_boss", "boss", "blood_boss", "legendary_quest", "quest",
 			"expedition", "trade");
@@ -107,6 +112,8 @@ public final class ScrollConfig implements Validatable {
 
 	private transient Map<String, ScrollDef> byId = new LinkedHashMap<>();
 	private transient Set<String> disabledDimensions = Set.of();
+	/** Scrolls migrated by the last {@link #rebuild} ("id.damage"). */
+	private transient List<String> migrations = new ArrayList<>();
 
 	// ================================================================== sections
 
@@ -406,6 +413,9 @@ public final class ScrollConfig implements Validatable {
 		})) {
 			Guildy.LOGGER.warn("[scrolls.json5] {}", warning);
 		}
+		if (!migrations.isEmpty()) {
+			Guildy.LOGGER.info("[scrolls.json5] new spell damage applied to the scrolls left on the old defaults: {}", String.join(", ", migrations));
+		}
 	}
 
 	/**
@@ -431,6 +441,50 @@ public final class ScrollConfig implements Validatable {
 		if (configVersion < 2 && grimoire != null && Math.abs(grimoire.channelSeconds - OLD_GRIMOIRE_CHANNEL) < 1.0E-9) {
 			grimoire.channelSeconds = new Grimoire().channelSeconds;
 		}
+		migrations = configVersion < 3 ? migrateDamage(scrolls) : List.of();
+	}
+
+	/**
+	 * Format 3 (pure): the damage of every scroll (default or added by the admin) still equal to the old default of its spell
+	 * becomes the new default; any other value is kept. @return the scrolls changed ("id.damage")
+	 */
+	static List<String> migrateDamage(@Nullable List<ScrollDef> scrolls) {
+		List<String> changed = new ArrayList<>();
+		if (scrolls == null) {
+			return changed;
+		}
+		for (ScrollDef def : scrolls) {
+			Spell spell = def == null ? null : Spell.byId(def.spell);
+			Double old = spell == null ? null : OLD_DAMAGE.get(spell);
+			if (old == null || def.params == null) {
+				continue;
+			}
+			Double value = def.params.get("damage");
+			Spell.Param param = spell.param("damage");
+			if (value != null && param != null && Math.abs(value - old) < 1.0E-9) {
+				def.params.put("damage", param.defaultValue());
+				changed.add(def.id + ".damage");
+			}
+		}
+		return changed;
+	}
+
+	/** Values migrated by the last {@link #rebuild} (logged, tests). */
+	public List<String> migrations() {
+		return migrations == null ? List.of() : List.copyOf(migrations);
+	}
+
+	private static Map<Spell, Double> oldDamage() {
+		Map<Spell, Double> map = new EnumMap<>(Spell.class);
+		map.put(Spell.METEOR_SHOWER, 12.0);
+		map.put(Spell.CHAIN_STORM, 14.0);
+		map.put(Spell.BLIZZARD, 4.0);
+		map.put(Spell.SOLAR_NOVA, 20.0);
+		map.put(Spell.SINGULARITY, 26.0);
+		map.put(Spell.AEGIS, 2.0);
+		map.put(Spell.EARTHQUAKE, 10.0);
+		map.put(Spell.ARCANE_RAY, 5.0);
+		return Collections.unmodifiableMap(map);
 	}
 
 	private void rebuildGrimoire(Predicate<String> plainItem, List<String> warnings) {

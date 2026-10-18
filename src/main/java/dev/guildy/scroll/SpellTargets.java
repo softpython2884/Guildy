@@ -3,6 +3,7 @@ package dev.guildy.scroll;
 import dev.guildy.Guildy;
 import dev.guildy.data.Guild;
 import dev.guildy.ruin.RoomGuards;
+import dev.guildy.scroll.mixin.LivingEntityAccessor;
 import dev.guildy.villager.VillagerManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -32,16 +33,23 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Minecraft side of {@link TargetRules}: what an entity is for a caster, the monsters / allies around a point, aiming,
- * and the spell damage (attributed to the caster, guildy damage types, invulnerability frames reset for them).
+ * Minecraft side of {@link TargetRules}: what an entity is for a caster, the monsters / allies around a point (distance to
+ * their hitbox: a giant guardian is reached by its body, not only by its feet), aiming, and the spell damage: attributed to
+ * the caster, guildy spell damage types that ignore armor like vanilla magic (data/minecraft/tags/damage_type/
+ * bypasses_armor.json; the Resistance effect and the Protection enchantments still count), and outside the invulnerability
+ * frames (a spell hit is never swallowed by the frames of an earlier hit, and leaves the frames as they were for the next
+ * sword or arrow).
  */
 final class SpellTargets {
 	/** Tag of the iron golems summoned by a scroll (Gardiens). */
 	static final String TAG_GUARDIAN = "guildy_scroll_guardian";
+	/** Spell damage types (the unique weapons' foudre / brasier / givre procs keep their own types, armor applies to them). */
 	static final ResourceKey<DamageType> ARCANE = key("arcane");
-	static final ResourceKey<DamageType> FOUDRE = key("foudre");
-	static final ResourceKey<DamageType> BRASIER = key("brasier");
-	static final ResourceKey<DamageType> GIVRE = key("givre");
+	static final ResourceKey<DamageType> FOUDRE = key("sort_foudre");
+	static final ResourceKey<DamageType> BRASIER = key("sort_brasier");
+	static final ResourceKey<DamageType> GIVRE = key("sort_givre");
+	/** Every spell damage type, tagged minecraft:bypasses_armor. */
+	static final List<ResourceKey<DamageType>> TYPES = List.of(ARCANE, FOUDRE, BRASIER, GIVRE);
 
 	/** Damage element: the matching guildy damage type, arcane when the target is immune to it (spell magic still lands). */
 	enum Element {
@@ -81,14 +89,20 @@ final class SpellTargets {
 		return entity instanceof LivingEntity && TargetRules.mayHelp(facts(entity, caster, guild));
 	}
 
-	/** Monsters within {@code radius} of {@code center}, nearest first ({@code max} at most). */
+	/** Monsters whose hitbox is within {@code radius} of {@code center}, nearest first ({@code max} at most). */
 	static List<LivingEntity> hostiles(SpellContext ctx, ServerLevel level, Vec3 center, double radius, int max) {
 		AABB box = AABB.ofSize(center, radius * 2, radius * 2, radius * 2);
 		double r2 = radius * radius;
 		List<LivingEntity> found = new ArrayList<>(level.getEntitiesOfClass(LivingEntity.class, box,
-				e -> e.distanceToSqr(center) <= r2 && harmable(e, ctx.caster, ctx.guild)));
-		found.sort(Comparator.comparingDouble(e -> e.distanceToSqr(center)));
+				e -> e.getBoundingBox().distanceToSqr(center) <= r2 && harmable(e, ctx.caster, ctx.guild)));
+		found.sort(Comparator.comparingDouble((LivingEntity e) -> e.getBoundingBox().distanceToSqr(center))
+				.thenComparingDouble(e -> e.distanceToSqr(center)));
 		return found.size() > max ? new ArrayList<>(found.subList(0, Math.max(0, max))) : found;
+	}
+
+	/** Distance from a point to the hitbox of an entity (0 inside it). */
+	static double distance(LivingEntity entity, Vec3 point) {
+		return Math.sqrt(entity.getBoundingBox().distanceToSqr(point));
 	}
 
 	/** Caster, guild members and guild villagers within {@code radius} of {@code center} (the caster first when there). */
@@ -180,12 +194,31 @@ final class SpellTargets {
 		Holder<DamageType> holder = level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(type);
 		// No direct entity: the hit is not a melee hit of the caster (unique weapon passives stay out of it).
 		ServerPlayer caster = ctx.caster.isRemoved() ? null : ctx.caster;
-		return target.hurtServer(level, new DamageSource(holder, null, caster), (float) amount);
+		// The frames of the last hit (a sword, an arrow): the spell lands on top of them (allowDamage) and leaves them as they
+		// were, otherwise a stream of small spell hits (ray, blizzard) would swallow the hits of the fighters around.
+		int frames = target.damageCooldownTime;
+		float lastHurt = ((LivingEntityAccessor) target).guildy$lastHurt();
+		boolean dealt = target.hurtServer(level, new DamageSource(holder, null, caster), (float) amount);
+		if (target.isAlive()) {
+			target.damageCooldownTime = frames;
+			((LivingEntityAccessor) target).guildy$setLastHurt(lastHurt);
+		}
+		return dealt;
+	}
+
+	/** True for the damage of a spell (a guildy spell damage type). */
+	static boolean isSpell(DamageSource source) {
+		for (ResourceKey<DamageType> type : TYPES) {
+			if (source.is(type)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Guildy spell damage types land on top of any other hit (invulnerability frames reset). */
 	static boolean allowDamage(LivingEntity entity, DamageSource source) {
-		if (source.is(ARCANE) || source.is(FOUDRE) || source.is(BRASIER) || source.is(GIVRE)) {
+		if (isSpell(source)) {
 			entity.damageCooldownTime = 0;
 		}
 		return true;

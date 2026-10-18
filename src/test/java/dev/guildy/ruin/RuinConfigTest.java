@@ -47,7 +47,10 @@ class RuinConfigTest {
 			assertTrue(def.abilities.stream().anyMatch(a -> a.type.equals("enrage")), id + " enrages");
 			assertTrue(def.abilities.stream().filter(a -> !a.type.equals("enrage")).count() >= 3, id + " has 3 active abilities");
 			assertEquals(7, def.respawnDays, id + " back after a week");
-			assertTrue(def.rewards.goldMax <= 30 && def.rewards.goldMin >= 1, id + " modest gold");
+			assertTrue(def.rewards.goldMin >= 15 && def.rewards.goldMax <= 100 && def.rewards.goldMax > def.rewards.goldMin,
+					id + " gold worth the fight, never a fortune: " + def.rewards.goldMin + "-" + def.rewards.goldMax);
+			assertEquals(1, def.rewards.goldPerEscort, id + " one ingot per escort mob killed");
+			assertEquals(12, def.rewards.escortGoldMax, id + " escort gold capped");
 			assertTrue(def.rewards.lootTable.startsWith("guildy:chests/ruin/"), id + " ruin loot table");
 			assertTrue(def.rewards.items.stream().noneMatch(i -> i.item.equals("minecraft:gold_block")), id + " never gold blocks");
 			assertTrue(def.boss.health >= 200, id + " is a boss");
@@ -89,6 +92,8 @@ class RuinConfigTest {
 		def.abilities = new ArrayList<>(List.of(unknown, ring));
 		def.rewards.goldMin = 10;
 		def.rewards.goldMax = 2;
+		def.rewards.goldPerEscort = -4;
+		def.rewards.escortGoldMax = 100_000;
 		cfg.ruins.put("Ma_Ruine", def);
 		cfg.cartography.researchMinutes = -1;
 		cfg.cartography.overworldCost.put("minecraft:unicorn_horn", 2);
@@ -112,6 +117,8 @@ class RuinConfigTest {
 		assertEquals(32, fixed.abilities.getFirst().radius);
 		assertEquals(1, fixed.abilities.getFirst().healthBelow);
 		assertEquals(10, fixed.rewards.goldMax, "goldMax >= goldMin");
+		assertEquals(0, fixed.rewards.goldPerEscort);
+		assertEquals(576, fixed.rewards.escortGoldMax);
 		assertEquals(0.05, cfg.cartography.researchMinutes);
 		assertFalse(cfg.cartography.overworldCost.containsKey("minecraft:unicorn_horn"));
 		assertEquals(1, cfg.encounter.maxActive);
@@ -385,6 +392,84 @@ class RuinConfigTest {
 		RuinConfig fresh = new RuinConfig();
 		assertTrue(rebuild(fresh).isEmpty());
 		assertTrue(fresh.migrations().isEmpty(), "fresh defaults: " + fresh.migrations());
+	}
+
+	@Test
+	void goldGrowsWithTheTier() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		int[] lastMin = new int[6];
+		int[] lastMax = new int[6];
+		for (int tier = 1; tier <= 5; tier++) {
+			RuinConfig.RuinDef generic = RuinDefaults.generic(tier, false);
+			assertEquals(RuinDefaults.GOLD_MIN[tier - 1], generic.rewards.goldMin, "generic guardian of tier " + tier);
+			assertEquals(RuinDefaults.GOLD_MAX[tier - 1], generic.rewards.goldMax);
+			lastMin[tier] = generic.rewards.goldMin;
+			lastMax[tier] = generic.rewards.goldMax;
+			if (tier > 1) {
+				assertTrue(lastMin[tier] > lastMin[tier - 1] && lastMax[tier] > lastMax[tier - 1], "more gold at tier " + tier);
+			}
+		}
+		for (Map.Entry<String, RuinConfig.RuinDef> entry : cfg.ruins.entrySet()) {
+			RuinConfig.RuinDef def = entry.getValue();
+			if (!entry.getKey().equals("grand_temple_maya")) {
+				assertEquals(RuinDefaults.GOLD_MIN[def.tier - 1], def.rewards.goldMin, entry.getKey() + ": the gold of its tier");
+				assertEquals(RuinDefaults.GOLD_MAX[def.tier - 1], def.rewards.goldMax, entry.getKey());
+			}
+			int[] old = RuinMigration.OLD_GOLD.get(entry.getKey());
+			double ratio = (def.rewards.goldMin + def.rewards.goldMax) / (double) (old[0] + old[1]);
+			assertTrue(ratio >= 3.0 && ratio <= 3.5, entry.getKey() + ": about three times the gold of 1.9, x" + ratio);
+		}
+		// One victory over the tier-1 guardian pays more than a level-1 quest, a tier-5 one about a third of a tier-4 upgrade.
+		assertTrue(cfg.ruins.get("crypte_oubliee").rewards.goldMin >= 15);
+		assertTrue(cfg.ruins.get("grand_temple_maya").rewards.goldMax <= 100);
+	}
+
+	@Test
+	void olderGoldIsMigrated() {
+		// A ruins.json5 of Guildy 1.9 (format 2) still on its gold defaults, two ranges changed by the admin.
+		RuinConfig written = new RuinConfig();
+		written.configVersion = 2;
+		written.knownDefaults = new ArrayList<>(EIGHT);
+		for (Map.Entry<String, int[]> old : RuinMigration.OLD_GOLD.entrySet()) {
+			written.ruins.get(old.getKey()).rewards.goldMin = old.getValue()[0];
+			written.ruins.get(old.getKey()).rewards.goldMax = old.getValue()[1];
+		}
+		written.ruins.get("autel_infernal").rewards.goldMax = 40;
+		written.ruins.get("crypte_oubliee").rewards.goldMin = 5;
+		RuinConfig old = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		assertTrue(rebuild(old).isEmpty());
+		assertEquals(RuinConfig.CURRENT_VERSION, old.configVersion);
+		Map<String, RuinConfig.RuinDef> defaults = RuinDefaults.ruins();
+		for (String id : List.of("tour_du_mage", "ziggourat_des_sables", "bastion_de_givre", "citadelle_des_ames", "temple_maya",
+				"grand_temple_maya")) {
+			assertEquals(defaults.get(id).rewards.goldMin, old.ruins.get(id).rewards.goldMin, id + ": new gold");
+			assertEquals(defaults.get(id).rewards.goldMax, old.ruins.get(id).rewards.goldMax, id);
+		}
+		assertEquals(60, old.ruins.get("grand_temple_maya").rewards.goldMin, "the jaguar: 60 to 90 instead of 18 to 28");
+		assertEquals(90, old.ruins.get("grand_temple_maya").rewards.goldMax);
+		assertEquals(10, old.ruins.get("autel_infernal").rewards.goldMin, "a range changed by the admin is kept whole");
+		assertEquals(40, old.ruins.get("autel_infernal").rewards.goldMax);
+		assertEquals(5, old.ruins.get("crypte_oubliee").rewards.goldMin);
+		assertEquals(8, old.ruins.get("crypte_oubliee").rewards.goldMax);
+		assertEquals(6, old.migrations().size(), "every migrated range reported: " + old.migrations());
+		assertTrue(old.migrations().contains("grand_temple_maya.rewards.gold"), old.migrations().toString());
+		assertEquals(1, old.ruins.get("tour_du_mage").rewards.goldPerEscort, "escort gold: new values, defaults");
+
+		// Already migrated (version 3): never again.
+		RuinConfig current = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		current.configVersion = RuinConfig.CURRENT_VERSION;
+		assertTrue(rebuild(current).isEmpty());
+		assertEquals(18, current.ruins.get("grand_temple_maya").rewards.goldMin, "values of the admin since version 3");
+		assertTrue(current.migrations().isEmpty());
+
+		// A file of 1.8 (version 1) gets both migrations.
+		RuinConfig older = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		older.configVersion = 1;
+		assertTrue(rebuild(older).isEmpty());
+		assertEquals(28, older.ruins.get("bastion_de_givre").rewards.goldMin, "28 to 42");
+		assertEquals(42, older.ruins.get("bastion_de_givre").rewards.goldMax);
+		assertTrue(older.migrations().contains("bastion_de_givre.rewards.gold"));
 	}
 
 	@Test

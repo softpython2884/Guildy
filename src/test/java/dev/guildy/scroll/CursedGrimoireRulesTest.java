@@ -61,14 +61,14 @@ class CursedGrimoireRulesTest {
 		// Pluie de météores: 2.5x the meteors over a 1.6x wider area, 1.75x the damage.
 		assertEquals(25, cursed(cfg, Spell.METEOR_SHOWER, "count"), EPS);
 		assertEquals(9.6, cursed(cfg, Spell.METEOR_SHOWER, "radius"), EPS);
-		assertEquals(21.0, cursed(cfg, Spell.METEOR_SHOWER, "damage"), EPS);
+		assertEquals(49.0, cursed(cfg, Spell.METEOR_SHOWER, "damage"), EPS);
 		assertEquals(3.9, cursed(cfg, Spell.METEOR_SHOWER, "impactRadius"), EPS);
 		assertEquals(7.0, cursed(cfg, Spell.METEOR_SHOWER, "fireSeconds"), EPS);
 		assertEquals(54.0, cursed(cfg, Spell.METEOR_SHOWER, "range"), EPS);
 		// Tempête de foudre: 20 monsters, chains 15 blocks away.
 		assertEquals(20, cursed(cfg, Spell.CHAIN_STORM, "count"), EPS);
 		assertEquals(15.0, cursed(cfg, Spell.CHAIN_STORM, "chainRadius"), EPS);
-		assertEquals(24.5, cursed(cfg, Spell.CHAIN_STORM, "damage"), EPS);
+		assertEquals(42.0, cursed(cfg, Spell.CHAIN_STORM, "damage"), EPS);
 		// Singularité: pulls from 16 blocks, harder and longer.
 		assertEquals(16.0, cursed(cfg, Spell.SINGULARITY, "radius"), EPS);
 		assertEquals(0.49, cursed(cfg, Spell.SINGULARITY, "pullStrength"), EPS);

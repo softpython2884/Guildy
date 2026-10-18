@@ -31,6 +31,18 @@ class RuinRulesTest {
 	}
 
 	@Test
+	void escortKillsAddCappedGold() {
+		assertEquals(20, RuinRules.baseGold(20, 0, 1, 12), "no escort killed");
+		assertEquals(27, RuinRules.baseGold(20, 7, 1, 12), "one ingot per escort mob");
+		assertEquals(32, RuinRules.baseGold(20, 40, 1, 12), "capped: summons are no endless source of gold");
+		assertEquals(30, RuinRules.baseGold(20, 5, 2, 12), "two per mob, still capped");
+		assertEquals(20, RuinRules.baseGold(20, 9, 0, 12), "disabled");
+		assertEquals(20, RuinRules.baseGold(20, 9, 1, 0), "no cap = no bonus");
+		assertEquals(0, RuinRules.baseGold(-5, -2, -1, -3), "never negative");
+		assertEquals(Integer.MAX_VALUE, RuinRules.baseGold(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
+	}
+
+	@Test
 	void defeatedGuardiansComeBackAfterTheirRespawnDays() {
 		assertFalse(RuinRules.rearmed(10, 16, 7));
 		assertTrue(RuinRules.rearmed(10, 17, 7));

@@ -33,9 +33,10 @@ import java.util.function.Predicate;
 public final class RuinConfig implements Validatable {
 	/**
 	 * 2 = Guildy 1.8.2: themed escorts and room guards (no raiders in the Mayan temples), the celestial jaguar becomes a giant
-	 * ocelot (a black cat when cursed); entries still on the 1.8 defaults are migrated by {@link RuinMigration}.
+	 * ocelot (a black cat when cursed). 3 = Guildy 1.10: about three times more gold from every guardian. Entries still on
+	 * the older defaults are migrated by {@link RuinMigration}.
 	 */
-	public static final int CURRENT_VERSION = 2;
+	public static final int CURRENT_VERSION = 3;
 	public static final Set<String> ABILITIES = Set.of("summon", "ground_slam", "fire_ring", "blink", "volley", "life_drain", "enrage", "pounce",
 			"claw_sweep", "stalk", "roar", "spirit_jaguars");
 	public static final Set<String> STYLES = Set.of("", "fire", "soul", "frost", "sand", "arrow", "spectral", "fireball", "jade", "wind",
@@ -132,7 +133,9 @@ public final class RuinConfig implements Validatable {
 			"embuscade : degats damage a moins de radius blocs), roar (rugissement en cone de longueur radius : Lenteur de niveau",
 			"amplifier et Faiblesse), spirit_jaguars (count esprits jaguars temporaires, morsure damage, a moins de radius blocs) ;",
 			"styles gold (Lenteur), jade (Poison), solar (brule) ; violet et noir sous la forme maudite.",
-			"rewards : goldMin/goldMax (lingots), xp (XP de guilde partagee entre les guildes des participants), lootTable +",
+			"rewards : goldMin/goldMax (lingots), goldPerEscort (lingots en plus par sbire de l'escorte tue pendant le combat, au plus",
+			"escortGoldMax ; avant les bonus de menace, de groupe, de resurrection et de malediction), xp (XP de guilde partagee",
+			"entre les guildes des participants), lootTable +",
 			"lootRolls (table de butin vanilla tiree au cadavre), items [{item, min, max, chance}], uniqueSource / scrollSource",
 			"(vide = ruin_boss dans l'Overworld, nether_ruin_boss dans le Nether ; sources de uniques.json5 et des parchemins).",
 			"guards (gardiens de salle) : count (-1 = 'guards.countByTier' du palier, 0 = aucun), name (nom affiche en les visant,",
@@ -558,8 +561,11 @@ public final class RuinConfig implements Validatable {
 	}
 
 	public static final class RewardDef {
-		public int goldMin = 4;
-		public int goldMax = 8;
+		public int goldMin = 15;
+		public int goldMax = 25;
+		/** Gold added per escort mob killed during the fight (before the multipliers), at most {@link #escortGoldMax}. */
+		public int goldPerEscort = 1;
+		public int escortGoldMax = 12;
 		public int xp = 80;
 		public String lootTable = "";
 		public int lootRolls = 1;
@@ -946,6 +952,8 @@ public final class RuinConfig implements Validatable {
 		RewardDef r = def.rewards;
 		r.goldMin = clamp(r.goldMin, 0, 576);
 		r.goldMax = clamp(r.goldMax, r.goldMin, 576);
+		r.goldPerEscort = clamp(r.goldPerEscort, 0, 64);
+		r.escortGoldMax = clamp(r.escortGoldMax, 0, 576);
 		r.xp = clamp(r.xp, 0, 100_000);
 		r.lootTable = r.lootTable == null ? "" : r.lootTable.trim().toLowerCase(Locale.ROOT);
 		r.lootRolls = clamp(r.lootRolls, 0, 10);

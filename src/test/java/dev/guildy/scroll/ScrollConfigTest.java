@@ -119,11 +119,109 @@ class ScrollConfigTest {
 			check(missing, "/assets/guildy/models/item/" + def.model + ".json");
 			check(missing, "/assets/guildy/textures/item/" + def.model + ".png");
 		}
-		for (String type : List.of("arcane", "foudre", "brasier", "givre")) {
+		for (String type : List.of("arcane", "sort_foudre", "sort_brasier", "sort_givre")) {
 			check(missing, "/data/guildy/damage_type/" + type + ".json");
 		}
 		check(missing, "/guildy.scroll.mixins.json");
 		assertTrue(missing.isEmpty(), "missing resources: " + missing);
+		// Spell damage ignores armor like vanilla magic: every spell damage type is in the vanilla tag.
+		try (InputStream in = ScrollConfigTest.class.getResourceAsStream("/data/minecraft/tags/damage_type/bypasses_armor.json")) {
+			assertNotNull(in, "bypasses_armor tag shipped");
+			String tag = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+			assertTrue(tag.contains("\"replace\": false"), "the vanilla entries are kept");
+			for (String type : List.of("arcane", "sort_foudre", "sort_brasier", "sort_givre")) {
+				assertTrue(tag.contains("\"guildy:" + type + "\""), type + " ignores armor");
+			}
+			for (String proc : List.of("foudre", "brasier", "givre")) {
+				assertFalse(tag.contains("\"guildy:" + proc + "\""), "the procs of the unique weapons keep the armor: " + proc);
+			}
+		}
+	}
+
+	@Test
+	void damageSpellsHitHarder() {
+		Map<Spell, Double> old = ScrollConfig.OLD_DAMAGE;
+		assertEquals(8, old.size(), "every damage spell");
+		for (Map.Entry<Spell, Double> entry : old.entrySet()) {
+			double now = entry.getKey().param("damage").defaultValue();
+			double ratio = now / entry.getValue();
+			assertTrue(ratio >= 1.5 && ratio <= 2.5, entry.getKey() + ": x1.5 to x2.5, got x" + ratio);
+			assertTrue(now <= entry.getKey().param("damage").max(), entry.getKey() + ": within the bounds");
+		}
+		double meteor = Spell.METEOR_SHOWER.param("damage").defaultValue() / old.get(Spell.METEOR_SHOWER);
+		assertTrue(meteor >= 2.0, "the meteor shower clearly more: x" + meteor);
+		// A full shower (every meteor on the boss) is a real dent in a guardian of 650 health points.
+		assertTrue(Spell.METEOR_SHOWER.param("count").defaultValue() * Spell.METEOR_SHOWER.param("damage").defaultValue() >= 250);
+		// The cursed grimoire stays far above the scroll and the grimoire, within the bounds of SpellPower.
+		ScrollConfig cfg = new ScrollConfig();
+		assertTrue(cfg.rebuild(id -> true).isEmpty());
+		for (Spell spell : old.keySet()) {
+			Spell.Param damage = spell.param("damage");
+			double scroll = damage.defaultValue();
+			double grimoire = SpellPower.of(cfg.grimoire.powerMultiplier).apply(damage, scroll);
+			double cursed = cfg.cursedGrimoire.power(spell).apply(damage, scroll);
+			assertTrue(cursed >= 1.5 * grimoire && grimoire >= scroll, spell + ": cursed " + cursed + ", grimoire " + grimoire);
+			assertTrue(cursed < damage.max() * SpellPower.POWER_CEILING, spell + ": never on the ceiling");
+		}
+	}
+
+	@Test
+	void oldSpellDamageIsMigrated() {
+		// A scrolls.json5 of Guildy 1.9 (format 2): every damage still on its old default, but the earthquake changed by the
+		// admin; plus a scroll of the admin on an old default.
+		ScrollConfig written = new ScrollConfig();
+		written.configVersion = 2;
+		for (ScrollConfig.ScrollDef def : written.scrolls) {
+			Spell spell = Spell.byId(def.spell);
+			if (ScrollConfig.OLD_DAMAGE.containsKey(spell)) {
+				def.params.put("damage", ScrollConfig.OLD_DAMAGE.get(spell));
+			}
+			if (def.id.equals("seisme")) {
+				def.params.put("damage", 13.0);
+			}
+		}
+		ScrollConfig.ScrollDef own = new ScrollConfig.ScrollDef();
+		own.id = "petite_pluie";
+		own.spell = "meteor_shower";
+		own.params = new LinkedHashMap<>(Map.of("count", 4.0, "damage", 12.0));
+		written.scrolls.add(own);
+		ScrollConfig.ScrollDef blessing = new ScrollConfig.ScrollDef();
+		blessing.id = "soin_maison";
+		blessing.spell = "blessing";
+		blessing.params = new LinkedHashMap<>(Map.of("heal", 12.0));
+		written.scrolls.add(blessing);
+		ScrollConfig old = Json5.fromString(Json5.GSON.toJson(written), ScrollConfig.class);
+		assertTrue(old.rebuild(id -> true).isEmpty());
+		assertEquals(ScrollConfig.CURRENT_VERSION, old.configVersion);
+		assertEquals(28.0, old.scroll("pluie_de_meteores").param("damage"), "12 -> 28");
+		assertEquals(24.0, old.scroll("tempete_de_foudre").param("damage"));
+		assertEquals(7.0, old.scroll("blizzard").param("damage"));
+		assertEquals(34.0, old.scroll("nova_solaire").param("damage"));
+		assertEquals(48.0, old.scroll("singularite").param("damage"));
+		assertEquals(4.0, old.scroll("egide").param("damage"));
+		assertEquals(8.0, old.scroll("rayon_arcanique").param("damage"));
+		assertEquals(13.0, old.scroll("seisme").param("damage"), "the admin's value is kept");
+		assertEquals(28.0, old.scroll("petite_pluie").param("damage"), "an admin scroll on the old default of its spell");
+		assertEquals(4.0, old.scroll("petite_pluie").param("count"), "its other values are kept");
+		assertEquals(12.0, old.scroll("soin_maison").param("heal"), "no damage, nothing to migrate");
+		assertEquals(8, old.migrations().size(), "every migrated scroll reported: " + old.migrations());
+		assertTrue(old.migrations().contains("petite_pluie.damage"));
+
+		// Already in format 3: an old value is now the admin's choice.
+		ScrollConfig current = Json5.fromString(Json5.GSON.toJson(written), ScrollConfig.class);
+		current.configVersion = ScrollConfig.CURRENT_VERSION;
+		assertTrue(current.rebuild(id -> true).isEmpty());
+		assertEquals(12.0, current.scroll("pluie_de_meteores").param("damage"));
+		assertTrue(current.migrations().isEmpty());
+
+		// A fresh file: nothing to migrate; the round trip keeps the new values.
+		ScrollConfig fresh = new ScrollConfig();
+		assertTrue(fresh.rebuild(id -> true).isEmpty());
+		assertTrue(fresh.migrations().isEmpty(), "fresh defaults: " + fresh.migrations());
+		ScrollConfig again = Json5.fromString(Json5.GSON.toJson(old), ScrollConfig.class);
+		assertTrue(again.rebuild(id -> true).isEmpty());
+		assertEquals(28.0, again.scroll("pluie_de_meteores").param("damage"));
+		assertTrue(again.migrations().isEmpty(), "migrated once");
 	}
 
 	private static void check(List<String> missing, String path) throws Exception {
@@ -190,7 +288,7 @@ class ScrollConfigTest {
 		assertEquals(64, fixed.maxStack);
 		assertEquals("", fixed.model);
 		assertEquals(30.0, fixed.param("count"), "count clamped to its maximum");
-		assertEquals(12.0, fixed.param("damage"), "NaN: default");
+		assertEquals(Spell.METEOR_SHOWER.param("damage").defaultValue(), fixed.param("damage"), "NaN: default");
 		assertFalse(fixed.params.containsKey("explosions"), "unknown parameter dropped");
 		assertEquals(Spell.METEOR_SHOWER.params().size(), fixed.params.size(), "missing parameters filled with defaults");
 		assertEquals(1.0, cfg.table("ruin_boss").chance);
