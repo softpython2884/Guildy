@@ -16,6 +16,8 @@ final class FightStatsLang {
 		m.put("fight.report.header", "&6&l⚔ Bilan du combat &8— {0}");
 		m.put("fight.report.header.failure", "&c&l⚔ Bilan du combat &7(échec) &8— {0}");
 		m.put("fight.report.info", "&7  {0} &8· &7{1} &8· &7durée &f{2} &8· &f{3}&7 participant(s)");
+		m.put("fight.report.info.totems", "&8 · &e☥ {0}&7 totems utilisés");
+		m.put("fight.report.info.totems.one", "&8 · &e☥ {0}&7 totem utilisé");
 		m.put("fight.report.cursed", "{0} &5☠ Maudit");
 		m.put("fight.report.risen", "{0} &c— Ressuscité");
 		m.put("fight.report.failure.health", "&7  Le gardien avait encore &c{0} %&7 de sa vie.");
@@ -25,6 +27,10 @@ final class FightStatsLang {
 		m.put("fight.report.and", "&7, ");
 		m.put("fight.report.more", "&7 +{0}");
 		m.put("fight.report.you", "&e  ➤ Vous &7(#{0}/{1}) : &c{2}&7 au gardien &8· &c{3}&7 aux gardes et sbires &8· &a{4}&7 soins/absorption &8· &c{5}&7 encaissés");
+		m.put("fight.report.you.totems", "&8 · &e☥ {0}&7 totems");
+		m.put("fight.report.you.totems.one", "&8 · &e☥ {0}&7 totem");
+		m.put("fight.report.with_totems", "&7 (avec &e{0}&7 totems &e☥&7)");
+		m.put("fight.report.with_totems.one", "&7 (avec &e{0}&7 totem &e☥&7)");
 		m.put("fight.report.you.none", "&7  ➤ Vous n'apparaissez pas dans ce bilan (moins de {0} points infligés, soignés ou encaissés).");
 		m.put("fight.report.indent", "&7  ");
 		m.put("fight.report.detail", "&b&n[Voir le détail]");
@@ -36,6 +42,7 @@ final class FightStatsLang {
 		m.put("fight.title.healing", "&a✚ Ange gardien");
 		m.put("fight.title.shield", "&e⛨ Protecteur");
 		m.put("fight.title.tank", "&9⛨ Rempart");
+		m.put("fight.title.totems", "&e☥ Increvable");
 		m.put("fight.title.final_blow", "&c☠ Coup fatal");
 		m.put("fight.title.kills", "&6✦ Moissonneur");
 		m.put("fight.title.spells", "&d✧ Arcaniste");
@@ -45,6 +52,8 @@ final class FightStatsLang {
 		m.put("fight.value.healing", "&8 — &a{0}&7 PV soignés");
 		m.put("fight.value.shield", "&8 — &e{0}&7 PV d'absorption donnés");
 		m.put("fight.value.tank", "&8 — &c{0}&7 dégâts encaissés");
+		m.put("fight.value.totems", "&8 — &e{0}&7 totems d'immortalité consommés");
+		m.put("fight.value.totems.one", "&8 — &e{0}&7 totem d'immortalité consommé");
 		m.put("fight.value.final_blow", "&8 — &7a achevé {0}");
 		m.put("fight.value.kills", "&8 — &f{0}&7 monstres tués");
 		m.put("fight.value.spells", "&8 — &d{0}&7 sorts lancés");
@@ -55,6 +64,7 @@ final class FightStatsLang {
 		m.put("fight.stat.escort", "&7Dégâts aux sbires : &c{0} &8({1} tué(s))");
 		m.put("fight.stat.final_blow", "&c☠ Coup fatal sur le gardien");
 		m.put("fight.stat.taken", "&7Dégâts encaissés : &c{0} &8· &7morts : &f{1}");
+		m.put("fight.stat.totems", "&7Totems d'immortalité utilisés : &e☥ {0}");
 		m.put("fight.stat.healing", "&7Soins donnés : &a{0} &8· &7absorption donnée : &e{1}");
 		m.put("fight.stat.misc", "&7Sorts lancés : &d{0} &8· &7temps dans l'arène : &f{1}");
 		// Menu

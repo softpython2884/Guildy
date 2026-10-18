@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Fight statistics, pure parts: who a hit belongs to (projectiles, pets, summons), healing without overheal, the tallies,
- * the titles of the summary and their ties, the participants listed, the settings.
+ * the titles of the summary and their ties, the totems of undying, the participants listed, the settings.
  */
 class FightStatsTest {
 	private static final double EPS = 1.0E-9;
@@ -273,7 +273,8 @@ class FightStatsTest {
 		assertTrue(s.enabled && s.onFailure);
 		assertEquals(FightStatsSettings.DEFAULT_CATEGORIES, s.categories);
 		assertEquals(List.of(FightCategory.GUARDIAN, FightCategory.GUARDS, FightCategory.ESCORT, FightCategory.HEALING, FightCategory.SHIELD,
-				FightCategory.TANK, FightCategory.FINAL_BLOW), s.categoryList());
+				FightCategory.TANK, FightCategory.TOTEMS, FightCategory.FINAL_BLOW), s.categoryList());
+		assertEquals(FightStatsSettings.CURRENT_VERSION, s.version);
 
 		s.categories = new ArrayList<>(List.of("TANK", "nope", "tank", " spells "));
 		s.minDamage = -4;
@@ -292,6 +293,122 @@ class FightStatsTest {
 		assertEquals(1, s.minDamage, EPS);
 		assertNull(FightCategory.byId("unknown"));
 		assertSame(FightCategory.FINAL_BLOW, FightCategory.byId("Final_Blow"));
+	}
+
+	// ================================================================== totems of undying
+
+	@Test
+	void totemsAreCountedAndEarnTheirTitle() {
+		FightTally t = new FightTally();
+		assertEquals(0, t.totems());
+		assertFalse(t.qualifies(1), "nothing done");
+		t.addTotem();
+		assertTrue(t.qualifies(1000), "a totem used: listed whatever the threshold");
+		t.addTotem();
+		FightTally copy = t.copy();
+		t.addTotem();
+		assertEquals(2, copy.totems(), "copied, then independent");
+		assertEquals(3, t.totems());
+		assertEquals(3, FightCategory.TOTEMS.value(t), EPS);
+		assertTrue(FightCategory.TOTEMS.count(), "counted in whole totems");
+		assertSame(FightCategory.TOTEMS, FightCategory.byId("totems"));
+
+		// The best damage dealer went through 40 totems, the healer through 2, the third none.
+		FightTally hero = new FightTally();
+		hero.addDamage(FightKind.BOSS, 2000);
+		for (int i = 0; i < 40; i++) {
+			hero.addTotem();
+		}
+		FightTally healer = new FightTally();
+		healer.addHealing(50);
+		healer.addTotem();
+		healer.addTotem();
+		FightTally safe = new FightTally();
+		safe.addDamage(FightKind.BOSS, 100);
+		UUID h = UUID.randomUUID();
+		UUID m = UUID.randomUUID();
+		UUID s = UUID.randomUUID();
+		Map<UUID, FightTally> tallies = new LinkedHashMap<>();
+		tallies.put(s, safe);
+		tallies.put(m, healer);
+		tallies.put(h, hero);
+		FightReport report = FightReport.of(header(), Map.of(h, "Hero", m, "Medic", s, "Safe"), tallies, 1, List.of());
+		assertEquals(42, report.totems(), "the team total");
+		FightReport.Title increvable = FightReport.titles(report.entries(), List.of(FightCategory.TOTEMS)).getFirst();
+		assertEquals(List.of(h), holders(increvable), "Increvable: the most totems");
+		assertEquals(40, increvable.value(), EPS);
+		FightReport.Title guardian = FightReport.titles(report.entries(), List.of(FightCategory.GUARDIAN)).getFirst();
+		assertEquals(40, FightReport.totems(guardian.holders()), "the totems behind the best damage on the guardian");
+		assertEquals(List.of(FightCategory.GUARDIAN, FightCategory.TOTEMS), report.titlesOf(h, List.of(FightCategory.values())));
+
+		// Nobody used one: no title; a tie shares it.
+		assertTrue(FightReport.titles(List.of(new FightReport.Entry(s, "Safe", safe)), List.of(FightCategory.TOTEMS)).isEmpty());
+		FightTally one = new FightTally();
+		one.addTotem();
+		FightTally other = new FightTally();
+		other.addTotem();
+		List<FightReport.Entry> tie = List.of(new FightReport.Entry(UUID.randomUUID(), "One", one), new FightReport.Entry(UUID.randomUUID(), "Other", other));
+		FightReport.Title shared = FightReport.titles(tie, List.of(FightCategory.TOTEMS)).getFirst();
+		assertEquals(2, shared.holders().size(), "one totem each: both");
+		assertEquals(2, FightReport.totems(shared.holders()));
+	}
+
+	@Test
+	void shortFormKeepsTheFirstTitleAndIncrevable() {
+		FightTally a = new FightTally();
+		a.addDamage(FightKind.BOSS, 80);
+		a.addTaken(30);
+		a.addTotem();
+		FightTally b = new FightTally();
+		b.addHealing(12);
+		List<FightReport.Entry> entries = List.of(new FightReport.Entry(UUID.randomUUID(), "A", a), new FightReport.Entry(UUID.randomUUID(), "B", b));
+		List<FightCategory> categories = new FightStatsSettings().categoryList();
+		List<FightReport.Title> titles = FightReport.titles(entries, categories);
+		assertEquals(List.of(FightCategory.GUARDIAN, FightCategory.HEALING, FightCategory.TANK, FightCategory.TOTEMS), categories(titles));
+		assertEquals(categories(titles), categories(FightReport.chatTitles(titles, FightReport.Outcome.VICTORY)), "a victory shows them all");
+		assertEquals(List.of(FightCategory.GUARDIAN, FightCategory.TOTEMS), categories(FightReport.chatTitles(titles, FightReport.Outcome.FAILURE)),
+				"a failure: the first title, and Increvable");
+		FightTally noTotem = new FightTally();
+		noTotem.addDamage(FightKind.BOSS, 5);
+		noTotem.addTaken(4);
+		List<FightReport.Title> plain = FightReport.titles(List.of(new FightReport.Entry(UUID.randomUUID(), "N", noTotem)), categories);
+		assertEquals(List.of(FightCategory.GUARDIAN), categories(FightReport.chatTitles(plain, FightReport.Outcome.FAILURE)),
+				"no totem: the first title only");
+		List<FightReport.Title> onlyTotems = FightReport.titles(entries, List.of(FightCategory.TOTEMS, FightCategory.GUARDIAN));
+		assertEquals(List.of(FightCategory.TOTEMS), categories(FightReport.chatTitles(onlyTotems, FightReport.Outcome.FAILURE)),
+				"Increvable first: shown once");
+		assertTrue(FightReport.chatTitles(List.of(), FightReport.Outcome.FAILURE).isEmpty());
+	}
+
+	@Test
+	void oldTitleListsGetTheTotems() {
+		// A section written by 1.8.1 - 1.9 (no version) with the default titles of that time: Increvable is added after Rempart.
+		FightStatsSettings old = new FightStatsSettings();
+		old.version = 0;
+		old.categories = new ArrayList<>(FightStatsSettings.V1_CATEGORIES);
+		List<String> warnings = new ArrayList<>();
+		old.fix(warnings);
+		assertEquals(FightStatsSettings.DEFAULT_CATEGORIES, old.categories);
+		assertEquals(FightStatsSettings.CURRENT_VERSION, old.version);
+		assertTrue(warnings.isEmpty(), "" + warnings);
+		// Fixed again (next load): unchanged.
+		old.fix(warnings);
+		assertEquals(FightStatsSettings.DEFAULT_CATEGORIES, old.categories);
+		// A customised list is left alone, and so is the old list chosen again on purpose after the update.
+		FightStatsSettings custom = new FightStatsSettings();
+		custom.version = 0;
+		custom.categories = new ArrayList<>(List.of("guardian", "kills"));
+		custom.fix(warnings);
+		assertEquals(List.of("guardian", "kills"), custom.categories);
+		FightStatsSettings chosen = new FightStatsSettings();
+		chosen.version = FightStatsSettings.CURRENT_VERSION;
+		chosen.categories = new ArrayList<>(FightStatsSettings.V1_CATEGORIES);
+		chosen.fix(warnings);
+		assertEquals(FightStatsSettings.V1_CATEGORIES, chosen.categories, "an up-to-date section is never migrated");
+	}
+
+	private static List<FightCategory> categories(List<FightReport.Title> titles) {
+		return titles.stream().map(FightReport.Title::category).toList();
 	}
 
 	private static List<UUID> holders(FightReport.Title title) {

@@ -24,6 +24,8 @@ public enum FightCategory {
 	SHIELD("shield", FightTally::shielding),
 	/** "Rempart": damage taken. */
 	TANK("tank", FightTally::taken),
+	/** "Increvable": totems of undying that saved the player. */
+	TOTEMS("totems", FightTally::totems),
 	/** "Coup fatal": the blow that killed the guardian. */
 	FINAL_BLOW("final_blow", t -> t.finalBlow() ? 1 : 0),
 	/** "Moissonneur": monsters of the fight killed. */
@@ -45,7 +47,7 @@ public enum FightCategory {
 
 	/** Counted in whole units (no rounding of a health amount). */
 	public boolean count() {
-		return this == FINAL_BLOW || this == KILLS || this == SPELLS;
+		return this == FINAL_BLOW || this == KILLS || this == SPELLS || this == TOTEMS;
 	}
 
 	public static @Nullable FightCategory byId(@Nullable String id) {

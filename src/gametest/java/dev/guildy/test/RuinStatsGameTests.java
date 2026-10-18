@@ -15,10 +15,13 @@ import dev.guildy.stats.FightCategory;
 import dev.guildy.stats.FightKind;
 import dev.guildy.stats.FightReport;
 import dev.guildy.stats.FightReports;
+import dev.guildy.stats.FightSession;
 import dev.guildy.stats.FightTally;
+import dev.guildy.stats.FightTracker;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,6 +34,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 import java.util.ArrayList;
@@ -42,7 +46,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * "Bilan du combat" on the test ruin of {@link RuinGameTests}: two players fight the room guards, the escort and the guardian
  * with different amounts, one heals the other with a Bénédiction scroll; at the victory both get the summary (chat and
- * stored report) with the right numbers and titles, and the detail menu opens. A fight reset by an admin sends the short
+ * stored report) with the right numbers and titles, and the detail menu opens. The totems of undying that save a player
+ * during the fight (either hand, not before it) are counted and earn "Increvable". A fight reset by an admin sends the short
  * summary.
  */
 @SuppressWarnings("removal")
@@ -95,6 +100,24 @@ public class RuinStatsGameTests {
 		target.damageCooldownTime = 0;
 		target.hurtServer(level, source, amount);
 		return before - (target.isAlive() ? target.getHealth() + target.getAbsorptionAmount() : 0);
+	}
+
+	/** A totem of undying in {@code hand}, then a lethal blow (not from a player): the totem must save the player. */
+	private static void totemSaves(GameTestHelper helper, ServerLevel level, ServerPlayer player, InteractionHand hand) {
+		player.setItemInHand(hand, new ItemStack(Items.TOTEM_OF_UNDYING));
+		hit(level, player, level.damageSources().magic(), 1000F);
+		helper.assertTrue(player.isAlive() && player.getHealth() > 0, "the totem saved " + player.getName().getString());
+		helper.assertTrue(player.getItemInHand(hand).isEmpty(), "the totem in the " + hand + " was used");
+	}
+
+	/** The lore of a menu item, one string (formatting stripped, lines separated by '|'). */
+	private static String lore(ItemStack stack) {
+		ItemLore lore = stack.get(DataComponents.LORE);
+		StringBuilder sb = new StringBuilder();
+		if (lore != null) {
+			lore.lines().forEach(l -> sb.append(plain(l.getString())).append('|'));
+		}
+		return sb.toString();
 	}
 
 	private static String plain(String text) {
@@ -271,6 +294,7 @@ public class RuinStatsGameTests {
 					Encounters.minions(ruin).forEach(m -> m.setNoAi(true));
 					helper.assertTrue(hit(level, boss[0], level.damageSources().playerAttack(player), 20F) > 0, "the guardian is hit");
 					helper.assertTrue(hit(level, player, level.damageSources().magic(), 4F) > 0, "the player is hurt (Rempart too)");
+					totemSaves(helper, level, player, InteractionHand.OFF_HAND);
 					Encounters.reset(ruin);
 					helper.assertFalse(Encounters.isActive(ruin), "fight over");
 					FightReport report = FightReports.last(player.getUUID());
@@ -278,12 +302,90 @@ public class RuinStatsGameTests {
 					helper.assertTrue(report.header().bossHealthLeft() > 0 && report.header().bossHealthLeft() < 1,
 							"the guardian's health left: " + report.header().bossHealthLeft());
 					helper.assertTrue(holders(report, FightCategory.TANK).equals(List.of("StatsLoner")), "he holds Rempart as well");
+					helper.assertTrue(report.totems() == 1 && holders(report, FightCategory.TOTEMS).equals(List.of("StatsLoner")), "one totem: Increvable");
 				})
 				.thenWaitUntil(() -> helper.assertTrue(line(player, "Bilan du combat", "(échec)") != null, "waiting for the short summary"))
 				.thenExecute(() -> {
 					helper.assertTrue(line(player, "Le gardien avait encore") != null, "health left in the chat: " + TestSupport.chat(player));
-					helper.assertTrue(line(player, "Fléau du gardien", "StatsLoner") != null, "the first title only");
+					helper.assertTrue(line(player, "Fléau du gardien", "StatsLoner", "(avec 1 totem ☥)") != null, "the first title, with his totem");
 					helper.assertTrue(line(player, "Rempart") == null, "the short form keeps one title");
+					helper.assertTrue(line(player, "Increvable", "StatsLoner", "1 totem d'immortalité consommé") != null, "and Increvable");
+					helper.assertTrue(line(player, "durée", "1 totem utilisé") != null, "the totem on the fight line");
+					helper.assertTrue(line(player, "Vous (#1/1)", "1 totem") != null, "and on his own line");
+				})
+				.thenSucceed();
+	}
+
+	@GameTest(maxTicks = 900)
+	public void totemsAreCountedInTheSummary(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		RuinConfig.RuinDef def = guardian(0);
+		RuinRecord ruin = ruin(helper, def);
+		ServerPlayer immortal = TestSupport.survivor(helper, ruin.boss.offset(3, -1, 0), "StatsTotem");
+		ServerPlayer mate = TestSupport.survivor(helper, ruin.boss.offset(-3, -1, 0), "StatsMate");
+		loaded(immortal);
+		loaded(mate);
+		Mob[] boss = new Mob[1];
+		helper.startSequence()
+				.thenExecute(() -> {
+					// Before the fight (no session yet): the totem is not counted.
+					helper.assertTrue(FightTracker.sessionOf(immortal) == null, "no fight session before the guardian appears");
+					totemSaves(helper, level, immortal, InteractionHand.OFF_HAND);
+					helper.assertTrue(Encounters.awaken(level, ruin, def, false) == null, "guardian awakened");
+				})
+				.thenWaitUntil(() -> {
+					boss[0] = Encounters.boss(ruin);
+					helper.assertTrue(boss[0] != null, "waiting for the guardian");
+				})
+				.thenExecute(() -> {
+					boss[0].setNoAi(true);
+					Encounters.minions(ruin).forEach(m -> m.setNoAi(true));
+					helper.assertTrue(hit(level, boss[0], level.damageSources().playerAttack(immortal), 30F) > 0, "the guardian is hit by StatsTotem");
+					helper.assertTrue(hit(level, boss[0], level.damageSources().playerAttack(mate), 5F) > 0, "and by StatsMate");
+					// Two totems during the fight, one in each hand.
+					totemSaves(helper, level, immortal, InteractionHand.OFF_HAND);
+					totemSaves(helper, level, immortal, InteractionHand.MAIN_HAND);
+					FightSession session = FightTracker.sessionOf(immortal);
+					FightTally live = session == null ? null : session.existing(immortal.getUUID());
+					helper.assertTrue(live != null && live.totems() == 2, "two totems counted, got " + (live == null ? "no tally" : live.totems()));
+					helper.assertTrue(hit(level, boss[0], level.damageSources().playerAttack(immortal), 100_000F) > 0, "final blow");
+				})
+				.thenWaitUntil(() -> helper.assertTrue(ruin.state == RuinState.CLEARED, "waiting for the victory"))
+				.thenWaitUntil(() -> {
+					helper.assertTrue(line(immortal, "Bilan du combat") != null, "waiting for StatsTotem's summary");
+					helper.assertTrue(line(mate, "Bilan du combat") != null, "waiting for StatsMate's summary");
+				})
+				.thenExecute(() -> {
+					FightReport report = FightReports.last(immortal.getUUID());
+					helper.assertTrue(report != null && report.header().outcome() == FightReport.Outcome.VICTORY, "a victory");
+					FightTally a = report.entry(immortal.getUUID()).tally();
+					FightTally b = report.entry(mate.getUUID()).tally();
+					helper.assertTrue(a.totems() == 2 && b.totems() == 0 && report.totems() == 2, "totems " + a.totems() + " / " + b.totems());
+					helper.assertTrue(holders(report, FightCategory.TOTEMS).equals(List.of("StatsTotem")), "Increvable");
+					helper.assertTrue(holders(report, FightCategory.GUARDIAN).equals(List.of("StatsTotem")), "Fléau du gardien");
+					for (ServerPlayer player : List.of(immortal, mate)) {
+						helper.assertTrue(line(player, "Increvable", "StatsTotem", "2 totems d'immortalité consommés") != null,
+								"chat: Increvable " + TestSupport.chat(player));
+						helper.assertTrue(line(player, "Fléau du gardien", "StatsTotem", "(avec 2 totems ☥)") != null, "chat: the best damage, with its totems");
+						helper.assertTrue(line(player, "durée", "2 totems utilisés") != null, "chat: the team total");
+					}
+					helper.assertTrue(line(immortal, "Vous (#1/2)", "2 totems") != null, "StatsTotem's own line: " + TestSupport.chat(immortal));
+					String mateLine = line(mate, "Vous (#2/2)");
+					helper.assertTrue(mateLine != null && !mateLine.contains("totem"), "StatsMate's own line, no totem: " + mateLine);
+					String hover = String.join("|", FightReports.statLines(a).stream().map(c -> plain(c.getString())).toList());
+					helper.assertTrue(hover.contains("Totems d'immortalité utilisés : ☥ 2"), "hover: " + hover);
+					String mateHover = String.join("|", FightReports.statLines(b).stream().map(c -> plain(c.getString())).toList());
+					helper.assertTrue(!mateHover.contains("Totems"), "no totem line without a totem: " + mateHover);
+					// The detail menu: the team total on top, the title and the count on the head.
+					level.getServer().getCommands().performPrefixedCommand(immortal.createCommandSourceStack(), "guild bilan detail");
+					helper.assertTrue(immortal.containerMenu != immortal.inventoryMenu, "the detail menu is open");
+					String top = lore(immortal.containerMenu.getSlot(4).getItem());
+					helper.assertTrue(top.contains("Totems d'immortalité utilisés : ☥ 2"), "menu header: " + top);
+					ItemStack head = immortal.containerMenu.getSlot(9).getItem();
+					String headLore = lore(head);
+					helper.assertTrue(head.getHoverName().getString().contains("StatsTotem") && headLore.contains("Increvable")
+							&& headLore.contains("Totems d'immortalité utilisés : ☥ 2"), "StatsTotem's head: " + headLore);
+					immortal.closeContainer();
 				})
 				.thenSucceed();
 	}
