@@ -229,8 +229,9 @@ final class AtelierMenu {
 		if (Incantations.ritualRunning(ruin)) {
 			return Lang.get("ruin.known.state.ritual");
 		}
+		// Watched or not, never how many (the admins see the count in /guild admin ruin info).
 		int guards = RoomGuards.alive(ruin);
-		return guards > 0 ? Lang.get("ruin.known.state.guarded", guards) : Lang.get("ruin.known.state.dormant");
+		return guards > 0 ? Lang.get("ruin.known.state.watched", guards) : Lang.get("ruin.known.state.dormant");
 	}
 
 	private static String formatMinutes(double minutes) {

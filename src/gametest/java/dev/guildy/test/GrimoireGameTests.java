@@ -7,6 +7,7 @@ import dev.guildy.scroll.GrimoireRules;
 import dev.guildy.scroll.ScrollConfig;
 import dev.guildy.scroll.ScrollItems;
 import dev.guildy.scroll.ScrollModule;
+import dev.guildy.scroll.Spell;
 import dev.guildy.unique.UniqueVisuals;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
@@ -113,7 +114,8 @@ public class GrimoireGameTests {
 		ItemStack blank = GrimoireItems.create(GrimoireRules.Pages.EMPTY);
 		helper.assertTrue(GrimoireItems.isGrimoire(blank) && GuildyItems.is(blank, GrimoireItems.KIND), "custom_data guildy.kind=grimoire");
 		helper.assertTrue(blank.is(Items.ENCHANTED_BOOK) && blank.getMaxStackSize() == 1, "an enchanted book, one per slot");
-		helper.assertTrue(blank.has(DataComponents.CONSUMABLE) && blank.getUseDuration(null) == cfg.channelTicks(), "short vanilla channel");
+		helper.assertTrue(blank.has(DataComponents.CONSUMABLE) && blank.getUseDuration(null) == cfg.channelTicks(),
+				"vanilla channel of the grimoire's minimum length without a spell");
 		UseCooldown cooldown = blank.get(DataComponents.USE_COOLDOWN);
 		helper.assertTrue(cooldown != null && cooldown.cooldownGroup().map(GrimoireItems.COOLDOWN_GROUP::equals).orElse(false),
 				"own cooldown group");
@@ -328,5 +330,54 @@ public class GrimoireGameTests {
 		channel(builder);
 		helper.assertTrue(builder.getMainHandItem() == grimoire && builder.getFoodData().getFoodLevel() == 1, "creative: free");
 		helper.succeedWhen(() -> helper.assertTrue(builder.hasEffect(MobEffects.REGENERATION), "but cast (regeneration)"));
+	}
+
+	@GameTest(environment = ENV, maxTicks = 200)
+	public void grimoireChannelFollowsTheSpell(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos ground = TestSupport.region(level, 6);
+		ScrollConfig cfg = ScrollModule.config();
+		ScrollConfig.Grimoire g = cfg.grimoire;
+		// The item carries the selected spell's channel: long enough to see the circle form, never longer than the scroll.
+		ItemStack pagesBook = GrimoireItems.create(pages(0, "benediction", "singularite", "revelation"));
+		int[] lengths = new int[3];
+		for (int page = 0; page < 3; page++) {
+			GrimoireRules.Pages turned = GrimoireItems.pages(pagesBook).select(page);
+			GrimoireItems.apply(pagesBook, turned);
+			ScrollConfig.ScrollDef def = GrimoireItems.selectedDef(turned);
+			int ticks = pagesBook.getUseDuration(null);
+			lengths[page] = ticks;
+			helper.assertTrue(def != null && ticks == g.channelTicks(def) && ticks == GrimoireItems.channelTicks(turned),
+					"page " + page + ": the item's channel follows its spell, got " + ticks);
+			helper.assertTrue(ticks >= 15 && ticks <= def.channelTicks(), def.id + ": at least 0.75 s, never longer than the scroll: " + ticks);
+		}
+		helper.assertTrue(lengths[0] == 20, "Bénédiction (1.25 s scroll): 1 s, got " + lengths[0]);
+		helper.assertTrue(lengths[1] > lengths[0], "Singularité (2 s scroll) keeps a longer channel: " + lengths[1]);
+		StringBuilder lore = new StringBuilder();
+		pagesBook.get(DataComponents.LORE).lines().forEach(line -> lore.append(line.getString()).append('|'));
+		helper.assertTrue(lore.indexOf("Incantation : " + seconds(g.channelSeconds(cfg.scroll("revelation")))) >= 0,
+				"the lore shows the selected spell's channel: " + lore);
+
+		// Cast for real: the vanilla use lasts exactly the new channel, then the spell fires.
+		ServerPlayer caster = TestSupport.survivor(helper, ground);
+		ItemStack grimoire = GrimoireItems.create(pages(0, "benediction"));
+		caster.setItemInHand(InteractionHand.MAIN_HAND, grimoire);
+		feed(caster, 20, 0.0F);
+		helper.assertTrue(rightClick(caster) instanceof InteractionResult.Success && caster.isUsingItem(), "incantation started");
+		int expected = g.channelTicks(cfg.scroll("benediction"));
+		int ticks = 0;
+		while (caster.isUsingItem() && ticks < 400) {
+			caster.doTick();
+			ticks++;
+		}
+		helper.assertTrue(ticks == expected && expected > 8, "a channel of " + expected + " ticks (0.4 s before), took " + ticks);
+		helper.assertTrue(caster.getCooldowns().isOnCooldown(grimoire), "cast: the grimoire's cooldown started");
+		helper.assertTrue(caster.getFoodData().getFoodLevel() == 20 - GrimoireItems.foodCost(cfg.scroll("benediction")), "food cost unchanged");
+		helper.succeedWhen(() -> helper.assertTrue(caster.hasEffect(MobEffects.REGENERATION), "the blessing is cast"));
+	}
+
+	/** "0,75 s" as the lore writes it. */
+	private static String seconds(double value) {
+		return Spell.number(value) + " s";
 	}
 }

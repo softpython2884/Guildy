@@ -21,9 +21,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What a player does with a grimoire: right click casts the selected page (through {@link ScrollCasting}: same targeting
- * and animation as the scroll, short channel, food instead of the scroll), sneak + right click turns to the next written
- * page, right-clicking a scroll onto the grimoire in a container (or the grimoire onto a scroll, like a bundle) fuses it,
- * sneak + swap hands opens the pages menu. An empty grimoire opens its menu on right click.
+ * and animation as the scroll, a channel never longer than the scroll's, food instead of the scroll), sneak + right click
+ * turns to the next written page, right-clicking a scroll onto the grimoire in a container (or the grimoire onto a scroll,
+ * like a bundle) fuses it, sneak + swap hands opens the pages menu. An empty grimoire opens its menu on right click.
  */
 public final class Grimoires {
 	private Grimoires() {

@@ -178,6 +178,13 @@ public final class RuinConfig implements Validatable {
 		public int particleBudget = 900;
 		@Comment("Distance (blocs) a laquelle les joueurs voient le rituel (particules longue distance)")
 		public int viewDistance = 128;
+		@Comment({
+				"Incantation scellee (des gardiens de salle tiennent encore l'arene) : duree (secondes, 0.5 a 5) pendant laquelle le",
+				"cercle d'incantation se dessine sous le lecteur avant de se briser. Le parchemin n'est jamais consomme"
+		})
+		public double sealSeconds = 1.5;
+		@Comment("Delai (secondes, 1 a 30) avant qu'un joueur puisse relancer une incantation scellee (anti-spam, compte des le debut)")
+		public double sealCooldownSeconds = 3.0;
 		@Comment("Palier minimal du Carrefour commercial dont le marchand propose parfois un parchemin d'incantation (0 = jamais)")
 		public int tradeTier = 2;
 		@Comment("Chance (0 a 1) que le marchand du Carrefour propose un parchemin d'incantation")
@@ -283,6 +290,11 @@ public final class RuinConfig implements Validatable {
 				"refusee (en mode proximity, le gardien ne se reveille pas)"
 		})
 		public boolean blockRitual = true;
+		@Comment({
+				"Message a l'ecran (barre d'action) quand les gardiens prennent leur poste. false = aucun : seuls un bruit sourd et",
+				"l'indice du chat a l'entree de la ruine trahissent leur presence (sans les compter)"
+		})
+		public boolean announceOnScreen = false;
 		@Comment("Ruines sans marqueur guildy:guard : rayon (blocs) du cercle de postes de secours autour du gardien endormi")
 		public int fallbackRadius = 7;
 		@Comment("Ruines sans marqueur guildy:guard : postes de secours sur ce cercle (en plus des sbires et de l'entree)")
@@ -566,6 +578,8 @@ public final class RuinConfig implements Validatable {
 		s.minHealth = clamp(s.minHealth, 1, 40);
 		s.particleBudget = clamp(s.particleBudget, 100, 10_000);
 		s.viewDistance = clamp(s.viewDistance, 16, 256);
+		s.sealSeconds = clamp(s.sealSeconds, 0.5, 5);
+		s.sealCooldownSeconds = clamp(s.sealCooldownSeconds, 1, 30);
 		s.tradeTier = clamp(s.tradeTier, 0, 3);
 		s.tradeChance = clamp(s.tradeChance, 0, 1);
 		s.tradePrice = clamp(s.tradePrice, 1, 2304);

@@ -67,7 +67,6 @@ final class CursedLang {
 		m.put("ruin.cursed.victory.title", "&5&lLa malédiction est brisée !");
 		m.put("ruin.cursed.victory.subtitle", "{0} &7est anéanti");
 		m.put("ruin.cursed.victory.announce", "&5&l☠ La malédiction est brisée… &d{0} &7ont anéanti {1} &5&lMaudit &8(&f{2}&8) &7: &6butin légendaire !");
-		m.put("ruin.cursed.victory.threat", "&f{0}&7 : la malédiction attise la menace, {1}&7. Son gardien reviendra bien plus fort.");
 
 		// Admin
 		m.put("ruin.cursed.admin.incantation", "&a{0} parchemin(s) d'incantation maudit(s) donné(s) à {1}.");

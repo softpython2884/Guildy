@@ -49,10 +49,7 @@ final class RuinLang {
 		m.put("ruin.bar.name.risen", "{0} &4&lEnragé &8— {1}");
 		m.put("ruin.bar.chrono", "{0} &8| &eRésurrection possible : &f{1}");
 		m.put("ruin.bar.rising", "&4&l☠ &c{0} &crevient d'entre les morts… &8— {1} &4&l☠");
-		m.put("ruin.awaken.threat", "&8» {0}&7 : plus fort à chaque victoire.");
 		m.put("ruin.awaken.threat.chrono", "&8» {0}&7 : abattu en moins de &e{1}&7, il se relèvera, fou de rage…");
-		m.put("ruin.victory.threat", "&f{0}&7 : la menace grandit, {1}&7. Son gardien reviendra plus fort.");
-		m.put("ruin.victory.threat.max", "&f{0}&7 : menace maximale atteinte, {1}&7.");
 		m.put("ruin.risen.name", "{0} &4&lEnragé");
 		m.put("ruin.risen.title", "&4&l☠ Il se relève ! ☠");
 		m.put("ruin.risen.subtitle", "&c{0} &crefuse de mourir…");
@@ -99,15 +96,16 @@ final class RuinLang {
 		m.put("ruin.summon.hint.subtitle", "&7Une présence dort ici…");
 		m.put("ruin.summon.hint.actionbar", "&5Un parchemin d'incantation &7pourrait l'éveiller.");
 		m.put("ruin.summon.hint.chat", "&7Une présence dort dans la &f{0}&7 : {1}&7. Un &5parchemin d'incantation&7, lu au cœur de la ruine, pourrait l'éveiller.");
-		m.put("ruin.summon.hint.threat", "&7Niveau de menace : {0} &8(le gardien revient plus fort après chaque victoire)");
 		m.put("ruin.summon.start.threat", "&8» &7Menace de la ruine : {0}");
-		m.put("ruin.summon.fail.guarded", "&cDes gardiens protègent encore la salle (&e{4}&c) : éliminez-les avant l'incantation.");
+		m.put("ruin.summon.fail.guarded", "&5Une présence scelle encore l'entité…");
+		m.put("ruin.summon.sealed", "&5Une présence scelle encore l'entité… &7le cercle se brise.");
+		m.put("ruin.summon.sealed.cursed", "&5Une présence scelle encore l'entité… &7le pentagramme maudit se brise.");
 
 		// Room guards
-		m.put("ruin.guards.posted", "&6⚔ &eDes gardiens veillent sur la &f{0}&e (&c{1}&e).");
-		m.put("ruin.guards.hint", "&7Des &cgardiens de salle&7 veillent encore (&c{0}&7) : éliminez ceux de la salle du gardien avant l'incantation.");
-		m.put("ruin.guards.blocking", "&cDes gardiens protègent encore la salle (&e{0}&c) : le gardien ne s'éveillera pas avant leur chute.");
-		m.put("ruin.known.state.guarded", "&7État : &adormante &8— &c{0} gardien(s) de salle");
+		m.put("ruin.guards.posted.screen", "&f{0}&7 : des sentinelles prennent leur poste…");
+		m.put("ruin.guards.watch", "&7Des &csentinelles&7 veillent sur ce lieu… tant qu'elles se dressent, le sommeil du gardien ne peut être troublé.");
+		m.put("ruin.guards.sealing", "&7Des sentinelles veillent encore… &8tant qu'elles se dressent, le gardien ne s'éveillera pas.");
+		m.put("ruin.known.state.watched", "&7État : &adormante &8— &7des sentinelles veillent");
 
 		// Group scaling
 		m.put("ruin.bar.group", "{0} &8— &e{1} joueurs");
