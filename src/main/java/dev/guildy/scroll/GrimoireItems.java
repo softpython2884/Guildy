@@ -83,6 +83,11 @@ public final class GrimoireItems {
 		return id.isEmpty() ? null : ScrollModule.config().scroll(id);
 	}
 
+	/** Channel time in ticks of the selected page (the grimoire's minimum without a readable spell), as on the item. */
+	public static int channelTicks(GrimoireRules.Pages pages) {
+		return ScrollModule.config().grimoire.channelTicks(selectedDef(pages));
+	}
+
 	/** Channel key of a grimoire: "grimoire/" + selected scroll id (null for other items). */
 	static @Nullable String channelKey(ItemStack stack) {
 		return isGrimoire(stack) ? "grimoire/" + pages(stack).selectedSpell() : null;
@@ -125,7 +130,8 @@ public final class GrimoireItems {
 		stack.set(DataComponents.LORE, new ItemLore(lore(pages)));
 		stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, g.glint);
 		stack.set(DataComponents.CONSUMABLE, Consumable.builder()
-				.consumeSeconds((float) g.channelSeconds)
+				// The selected spell's channel: the client animation and the server completion follow it.
+				.consumeSeconds((float) g.channelSeconds(selectedDef(pages)))
 				.animation(animation(g.animation))
 				.sound(SILENT)
 				.hasConsumeParticles(false)
@@ -209,7 +215,7 @@ public final class GrimoireItems {
 			}
 			lines.add(Component.empty());
 		}
-		lines.add(Lang.get("grimoire.item.cast", Spell.number(g.channelSeconds), Spell.number(g.cooldownSeconds)));
+		lines.add(Lang.get("grimoire.item.cast", Spell.number(g.channelSeconds(def)), Spell.number(g.cooldownSeconds)));
 		if (g.powerMultiplier != 1.0) {
 			lines.add(Lang.get("grimoire.item.power", Spell.number(g.powerMultiplier)));
 		}

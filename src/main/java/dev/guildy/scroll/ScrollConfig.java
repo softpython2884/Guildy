@@ -32,8 +32,13 @@ import java.util.regex.Pattern;
 		"Commandes admin : /guild admin scroll list | give <joueur> <id> [nombre] | grimoire <joueur> [ids]."
 })
 public final class ScrollConfig implements Validatable {
-	/** Current file format (no migration yet). */
-	public static final int CURRENT_VERSION = 1;
+	/**
+	 * Current file format. 2: the grimoire's channel follows each spell ({@code grimoire.channelFactor}), its minimum goes
+	 * from 0.4 s to 1 s when still at the old default.
+	 */
+	public static final int CURRENT_VERSION = 2;
+	/** Channel of the grimoire before format 2 (too short to see the circle form). */
+	static final double OLD_GRIMOIRE_CHANNEL = 0.4;
 	/** Drop sources used by the other modules (ScrollDrops.roll). */
 	public static final List<String> SOURCES = List.of("ruin_boss", "nether_ruin_boss", "boss", "blood_boss", "legendary_quest", "quest",
 			"expedition", "trade");
@@ -135,8 +140,12 @@ public final class ScrollConfig implements Validatable {
 		public String item = "minecraft:enchanted_book";
 		@Comment("Brillance")
 		public boolean glint = true;
-		@Comment("Duree de l'incantation (secondes, 0.05 a 5 ; les parchemins : 0.75 a 4)")
-		public double channelSeconds = 0.4;
+		@Comment({"Duree minimale de l'incantation (secondes, 0.05 a 5) : le cercle runique a le temps de se dessiner sous le",
+				"lanceur. Jamais plus longue que celle du parchemin lui-meme (0.75 a 4 s par defaut)"})
+		public double channelSeconds = 1.0;
+		@Comment({"Part de la duree d'incantation du parchemin (0 a 1) : un sort long reste plus long a lire dans le grimoire",
+				"(ex. 0.6 : Singularite 2 s -> 1.2 s, Rappel 4 s -> 2.4 s ; les sorts courts prennent la duree minimale)"})
+		public double channelFactor = 0.6;
 		@Comment("Animation de l'incantation (toot_horn, spyglass, bow, trident, brush, block...)")
 		public String animation = "toot_horn";
 		@Comment({"Recharge entre deux sorts (secondes, 0.05 a 600) : propre au grimoire (partagee par les grimoires d'un joueur),",
@@ -157,9 +166,19 @@ public final class ScrollConfig implements Validatable {
 		@Comment("Texture du pack de ressources (vide = apparence vanilla ; suit le reglage customModels d'uniques.json5)")
 		public String model = "grimoire";
 
-		/** Channel time in ticks, computed like the vanilla consumable component does. */
+		/** Minimum channel time in ticks (a grimoire without a readable page), computed like the vanilla consumable component. */
 		public int channelTicks() {
-			return Math.max(1, (int) ((float) channelSeconds * 20.0F));
+			return ChannelRules.ticks(channelSeconds);
+		}
+
+		/** Channel (seconds) of this spell read from the grimoire (the minimum without a spell). */
+		public double channelSeconds(@Nullable ScrollDef def) {
+			return def == null ? channelSeconds : ChannelRules.grimoireSeconds(def.channelSeconds, channelSeconds, channelFactor);
+		}
+
+		/** Channel time in ticks of this spell read from the grimoire, like the vanilla consumable component. */
+		public int channelTicks(@Nullable ScrollDef def) {
+			return ChannelRules.ticks(channelSeconds(def));
 		}
 
 		/** Chance (0..1) that a roll of this source gives a grimoire. */
@@ -178,7 +197,8 @@ public final class ScrollConfig implements Validatable {
 
 		/** Stable fingerprint of what the item shows / does (grimoires built from another fingerprint are refreshed). */
 		public int fingerprint() {
-			return java.util.Objects.hash(enabled, item, glint, channelSeconds, animation, cooldownSeconds, powerMultiplier, foodCost, model);
+			return java.util.Objects.hash(enabled, item, glint, channelSeconds, channelFactor, animation, cooldownSeconds, powerMultiplier, foodCost,
+					model);
 		}
 	}
 
@@ -320,12 +340,20 @@ public final class ScrollConfig implements Validatable {
 	 */
 	public List<String> rebuild(Predicate<String> plainItem) {
 		List<String> warnings = new ArrayList<>();
+		migrate();
 		configVersion = CURRENT_VERSION;
 		rebuildSections(warnings);
 		rebuildGrimoire(plainItem, warnings);
 		rebuildScrolls(plainItem, warnings);
 		rebuildDrops(warnings);
 		return warnings;
+	}
+
+	/** Older files: only values still equal to their old default change (admin edits are kept). */
+	private void migrate() {
+		if (configVersion < 2 && grimoire != null && Math.abs(grimoire.channelSeconds - OLD_GRIMOIRE_CHANNEL) < 1.0E-9) {
+			grimoire.channelSeconds = new Grimoire().channelSeconds;
+		}
 	}
 
 	private void rebuildGrimoire(Predicate<String> plainItem, List<String> warnings) {
@@ -339,6 +367,7 @@ public final class ScrollConfig implements Validatable {
 			g.item = "minecraft:enchanted_book";
 		}
 		g.channelSeconds = clamp(g.channelSeconds, 0.05, 5);
+		g.channelFactor = clamp(g.channelFactor, 0, 1);
 		g.animation = g.animation == null ? "" : g.animation.trim().toLowerCase(Locale.ROOT);
 		if (!ANIMATIONS.contains(g.animation)) {
 			warnings.add("grimoire: unknown animation '" + g.animation + "': toot_horn used");

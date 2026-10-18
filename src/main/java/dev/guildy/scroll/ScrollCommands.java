@@ -166,8 +166,18 @@ final class ScrollCommands {
 		MutableComponent grimoireName = GrimoireItems.name(GrimoireRules.Pages.EMPTY).copy().withStyle(style -> style
 				.withClickEvent(new ClickEvent.SuggestCommand("/guild admin scroll grimoire " + playerName(source)))
 				.withHoverEvent(new HoverEvent.ShowText(grimoireHover)));
-		Component grimoireLine = TextUtil.lang("grimoire.admin.list", grimoireName, GrimoireRules.PAGES, Spell.number(g.channelSeconds),
-				Spell.number(g.cooldownSeconds));
+		// Channel range over the scrolls (it follows each spell, see grimoire.channelFactor).
+		double shortest = g.channelSeconds;
+		double longest = g.channelSeconds;
+		boolean first = true;
+		for (ScrollConfig.ScrollDef def : cfg.usable()) {
+			double seconds = g.channelSeconds(def);
+			shortest = first ? seconds : Math.min(shortest, seconds);
+			longest = first ? seconds : Math.max(longest, seconds);
+			first = false;
+		}
+		String channel = Spell.number(shortest) + (longest > shortest ? "-" + Spell.number(longest) : "");
+		Component grimoireLine = TextUtil.lang("grimoire.admin.list", grimoireName, GrimoireRules.PAGES, channel, Spell.number(g.cooldownSeconds));
 		source.sendSuccess(() -> grimoireLine, false);
 		List<String> tables = new ArrayList<>();
 		for (Map.Entry<String, ScrollConfig.DropTable> entry : cfg.drops.entrySet()) {

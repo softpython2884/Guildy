@@ -455,7 +455,10 @@ final class CursedEncounter {
 
 	// ================================================================== awakening, failure, victory
 
-	/** The cursed guardian appears: titles, the curse in the chat, a burst of void. */
+	/**
+	 * The cursed guardian appears: titles, the curse in the chat, a burst of void ({@code threatLine}: the threat label, shown
+	 * on the boss bar only).
+	 */
 	void announce(ServerLevel level, Encounter encounter, Mob boss, List<ServerPlayer> present, String threatLine) {
 		String ruinName = Lang.colorize(encounter.def.name);
 		String bossName = Lang.colorize(encounter.def.boss.name);
@@ -464,7 +467,6 @@ final class CursedEncounter {
 		for (ServerPlayer player : present) {
 			Msg.title(player, title, subtitle, 10, 70, 20);
 			Msg.send(player, "ruin.cursed.awaken.chat", bossName, ruinName, IncantationItems.number(stats.health()), IncantationItems.number(stats.damage()));
-			Msg.send(player, "ruin.awaken.threat", threatLine);
 			GroupScaling.Party party = encounter.party;
 			if (party.group()) {
 				Msg.send(player, "ruin.awaken.group", party.players(), GroupScaling.percent(party.health()), GroupScaling.percent(party.damage()));
@@ -501,7 +503,10 @@ final class CursedEncounter {
 		clones.clear();
 	}
 
-	/** The curse is broken: titles, sounds, a purifying burst of light, the threat message and the server announcement. */
+	/**
+	 * The curse is broken: titles, sounds, a purifying burst of light and the server announcement (no note on the threat:
+	 * {@code threat} / {@code raised} show on the boss bar, the maps and the atelier).
+	 */
 	void victory(ServerLevel level, Encounter encounter, Mob boss, List<ServerPlayer> present, int threat, boolean raised) {
 		RuinConfig cfg = RuinModule.config();
 		String bossName = Lang.colorize(encounter.def.boss.name);
@@ -510,9 +515,6 @@ final class CursedEncounter {
 			Msg.title(player, Lang.get("ruin.cursed.victory.title"), Lang.get("ruin.cursed.victory.subtitle", bossName), 10, 90, 25);
 			Msg.sound(player, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 0.7F);
 			Msg.sound(player, SoundEvents.ENDER_DRAGON_DEATH, 0.35F, 1.2F);
-			if (cfg.escalation.enabled) {
-				Msg.send(player, raised ? "ruin.cursed.victory.threat" : "ruin.victory.threat.max", ruinName, Encounters.threatLabel(threat));
-			}
 		}
 		Vec3 at = boss.position();
 		RitualFx fx = new RitualFx(level, at, 900, cfg.summon.viewDistance);
