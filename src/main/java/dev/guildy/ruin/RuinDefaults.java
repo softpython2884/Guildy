@@ -15,13 +15,21 @@ import java.util.Map;
 
 /**
  * Default guardians of the eight ruins (tier 1 to 5) and the generic tier-based guardian of unknown ruins.
- * Balance: modest gold (never gold blocks), vanilla rare items through the ruin loot tables, a rare unique weapon and
+ * Balance: gold worth the fight and the incantation (about 20 ingots at tier 1 up to 75 for the celestial jaguar, plus one
+ * per escort mob killed; never gold blocks), vanilla rare items through the ruin loot tables, a rare unique weapon and
  * spell scroll; the escort grows with the number of players. Each ruin has its room guards (themed names, types): the
  * crypt's skeletons and zombies, the mage tower's illagers, the ziggurat's husks and parched, the frost bastion's strays,
  * the infernal altar's piglin brutes, the soul citadel's wither skeletons, and the undead of the two Mayan temples (bogged,
  * parched, zombies on guard, cave spiders: never a raider), under jade-green or golden helmets.
  */
 final class RuinDefaults {
+	/** Gold of a guardian by tier (1 to 5): the generic guardian and the default ruins of each tier (Guildy 1.10). */
+	static final int[] GOLD_MIN = {15, 20, 28, 36, 50};
+	static final int[] GOLD_MAX = {25, 32, 42, 56, 75};
+	/** The celestial jaguar, above the soul citadel. */
+	static final int JAGUAR_GOLD_MIN = 60;
+	static final int JAGUAR_GOLD_MAX = 90;
+
 	private RuinDefaults() {
 	}
 
@@ -52,7 +60,7 @@ final class RuinDefaults {
 				ability("summon", 22, 0, 4, 2, "", 0.8),
 				ability("life_drain", 18, 3, 10, 1, "", 0.6),
 				enrage(0.3, 0)));
-		def.rewards = rewards(4, 8, 80, "guildy:chests/ruin/rare", 1);
+		def.rewards = rewards(GOLD_MIN[0], GOLD_MAX[0], 80, "guildy:chests/ruin/rare", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 4, 8, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:wither_skeleton_skull", 1, 1, 0.15));
 		def.guards.name = "&7Gardien des cryptes";
@@ -72,7 +80,7 @@ final class RuinDefaults {
 				ability("fire_ring", 15, 6, 7, 1, "fire", 0.85),
 				ability("summon", 24, 0, 4, 2, "", 0.7),
 				enrage(0.3, 1)));
-		def.rewards = rewards(6, 10, 120, "guildy:chests/ruin/rare", 2);
+		def.rewards = rewards(GOLD_MIN[1], GOLD_MAX[1], 120, "guildy:chests/ruin/rare", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 6, 12, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:totem_of_undying", 1, 1, 0.25));
 		// No vex on guard duty: they fly through the walls.
@@ -96,7 +104,7 @@ final class RuinDefaults {
 				ability("summon", 18, 0, 4, 3, "", 1.0),
 				ability("fire_ring", 16, 6, 7, 1, "fire", 0.75),
 				enrage(0.3, 1)));
-		def.rewards = rewards(6, 10, 120, "guildy:chests/ruin/rare", 2);
+		def.rewards = rewards(GOLD_MIN[1], GOLD_MAX[1], 120, "guildy:chests/ruin/rare", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 6, 12, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:golden_apple", 1, 2, 0.6));
 		def.guards.name = "&6Momie gardienne";
@@ -118,7 +126,7 @@ final class RuinDefaults {
 				ability("blink", 14, 8, 4, 1, "", 0.7),
 				ability("summon", 22, 0, 4, 3, "", 0.6),
 				enrage(0.3, 1)));
-		def.rewards = rewards(8, 14, 160, "guildy:chests/ruin/treasure", 1);
+		def.rewards = rewards(GOLD_MIN[2], GOLD_MAX[2], 160, "guildy:chests/ruin/treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
 		def.guards.name = "&bSentinelle de givre";
@@ -140,7 +148,7 @@ final class RuinDefaults {
 				ability("volley", 12, 5, 4, 4, "fireball", 0.8),
 				ability("summon", 22, 0, 4, 2, "", 0.7),
 				enrage(0.3, 1)));
-		def.rewards = rewards(10, 18, 220, "guildy:chests/ruin/nether_treasure", 1);
+		def.rewards = rewards(GOLD_MIN[3], GOLD_MAX[3], 220, "guildy:chests/ruin/nether_treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:netherite_scrap", 1, 2, 0.5));
 		// No magma cube on guard duty (their split children would not be guards).
@@ -165,7 +173,7 @@ final class RuinDefaults {
 				ability("volley", 12, 5, 4, 5, "fireball", 0.6),
 				ability("summon", 24, 0, 4, 3, "", 0.6),
 				enrage(0.3, 2)));
-		def.rewards = rewards(14, 24, 300, "guildy:chests/ruin/nether_treasure", 2);
+		def.rewards = rewards(GOLD_MIN[4], GOLD_MAX[4], 300, "guildy:chests/ruin/nether_treasure", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 12, 24, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:netherite_scrap", 1, 3, 0.75));
 		// No blaze on guard duty: they fly off their post.
@@ -190,7 +198,7 @@ final class RuinDefaults {
 				ability("blink", 12, 8, 4, 1, "wind", 0.8),
 				ability("summon", 22, 0, 4, 3, "", 0.65),
 				enrage(0.3, 1)));
-		def.rewards = rewards(8, 14, 160, "guildy:chests/ruin/treasure", 1);
+		def.rewards = rewards(GOLD_MIN[2], GOLD_MAX[2], 160, "guildy:chests/ruin/treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
 		def.rewards.items.add(new ItemDrop("minecraft:emerald", 3, 8, 0.6));
@@ -218,7 +226,7 @@ final class RuinDefaults {
 		def.minions.types.putAll(jaguarEscort());
 		def.minions.equipment.put("head", GOLD_HELMET);
 		def.abilities = jaguarAbilities();
-		def.rewards = rewards(18, 28, 380, "guildy:chests/ruin/treasure", 3);
+		def.rewards = rewards(JAGUAR_GOLD_MIN, JAGUAR_GOLD_MAX, 380, "guildy:chests/ruin/treasure", 3);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 16, 28, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 2, 4, 0.75));
 		def.rewards.items.add(new ItemDrop("minecraft:emerald", 6, 12, 0.75));
@@ -322,12 +330,10 @@ final class RuinDefaults {
 				ability(nether ? "fire_ring" : "volley", 14, 4 + t, 6, 4, nether ? "fire" : "arrow", 1.0),
 				ability("summon", 22, 0, 4, 2, "", 0.7),
 				enrage(0.3, t >= 4 ? 1 : 0)));
-		int[] goldMin = {4, 6, 8, 10, 14};
-		int[] goldMax = {8, 10, 14, 18, 24};
 		int[] xp = {80, 120, 160, 220, 300};
 		String table = nether ? (t >= 4 ? "guildy:chests/ruin/nether_treasure" : "guildy:chests/ruin/nether_rare")
 				: (t >= 3 ? "guildy:chests/ruin/treasure" : "guildy:chests/ruin/rare");
-		def.rewards = rewards(goldMin[t - 1], goldMax[t - 1], xp[t - 1], table, t >= 4 ? 2 : 1);
+		def.rewards = rewards(GOLD_MIN[t - 1], GOLD_MAX[t - 1], xp[t - 1], table, t >= 4 ? 2 : 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 2 + 2 * t, 4 + 4 * t, 1.0));
 		return def;
 	}

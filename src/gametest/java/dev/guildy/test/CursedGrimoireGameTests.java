@@ -240,6 +240,7 @@ public class CursedGrimoireGameTests {
 		def.minions.types.clear();
 		def.rewards.goldMin = 10;
 		def.rewards.goldMax = 10;
+		def.rewards.goldPerEscort = 0;
 		def.rewards.lootTable = "";
 		def.rewards.items.clear();
 		return def;

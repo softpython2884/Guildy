@@ -33,7 +33,7 @@ import java.util.UUID;
 import java.util.random.RandomGenerator;
 
 /**
- * Rewards of a defeated guardian: gold ingots, rolls in a vanilla loot table, extra items, a unique weapon and a spell
+ * Rewards of a defeated guardian: gold ingots (with a capped bonus per escort mob killed), rolls in a vanilla loot table, extra items, a unique weapon and a spell
  * scroll (rare, protected drops), guild XP split between the guilds of the participants. The ruin's threat level adds gold,
  * XP and a chance of extra unique / scroll rolls; a guardian defeated in its risen form gives bonus rolls on top. A group
  * fight (see {@link GroupScaling}) gives more gold and XP, the gold being shared: one pile per participant, that only they
@@ -52,7 +52,8 @@ final class RuinLoot {
 		ThreatRules.Rewards bonus = bonus(encounter);
 		List<ItemStack> drops = new ArrayList<>();
 		int rolled = rewards.goldMin + (rewards.goldMax > rewards.goldMin ? random.nextInt(rewards.goldMax - rewards.goldMin + 1) : 0);
-		int gold = ThreatRules.scaled(rolled, GroupScaling.combined(bonus.gold(), encounter.party.gold()));
+		int base = RuinRules.baseGold(rolled, encounter.kills, rewards.goldPerEscort, rewards.escortGoldMax);
+		int gold = ThreatRules.scaled(base, GroupScaling.combined(bonus.gold(), encounter.party.gold()));
 		int dropped = gold > 0 ? dropGold(level, encounter, boss, gold) : 0;
 		int lootRolls = rewards.lootRolls + bonus.extraLootRolls();
 		if (!rewards.lootTable.isBlank() && lootRolls > 0) {

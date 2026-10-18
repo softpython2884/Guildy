@@ -62,6 +62,7 @@ public class RuinThreatGameTests {
 		def.fastKillSeconds = fastKillSeconds;
 		def.rewards.goldMin = 10;
 		def.rewards.goldMax = 10;
+		def.rewards.goldPerEscort = 0;
 		def.rewards.lootTable = "";
 		def.rewards.items.clear();
 		return def;
@@ -183,6 +184,49 @@ public class RuinThreatGameTests {
 					helper.assertTrue(ruin.timesCleared == 1 && ruin.threat == 2, "victory and threat raised");
 				})
 				.thenWaitUntil(() -> helper.assertTrue(gold(level, boss[0]) == 10, "plain reward, got " + gold(level, boss[0])))
+				.thenSucceed();
+	}
+
+	// ================================================================== gold
+
+	@GameTest(maxTicks = 400)
+	public void guardianPaysItsTierGoldAndItsEscort(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		RuinRecord ruin = ruin(helper);
+		// The gold of the default tier-1 guardian (crypte_oubliee), with its escort bonus; the window closed at once.
+		RuinConfig.RuinDef crypt = RuinModule.config().def("crypte_oubliee", false);
+		RuinConfig.RuinDef def = guardian(1);
+		def.rewards.goldMin = crypt.rewards.goldMin;
+		def.rewards.goldMax = crypt.rewards.goldMax;
+		def.rewards.goldPerEscort = crypt.rewards.goldPerEscort;
+		def.rewards.escortGoldMax = crypt.rewards.escortGoldMax;
+		helper.assertTrue(def.rewards.goldMin >= 15 && def.rewards.goldPerEscort == 1, "Guildy 1.10 gold: " + def.rewards.goldMin);
+		ServerPlayer player = fighter(helper, ruin);
+		Mob[] boss = new Mob[1];
+		int[] killed = new int[1];
+		helper.startSequence()
+				.thenExecute(() -> awaken(helper, ruin, def))
+				.thenWaitUntil(() -> {
+					boss[0] = Encounters.boss(ruin);
+					helper.assertTrue(boss[0] != null && !Encounters.minions(ruin).isEmpty(), "waiting for the guardian and its escort");
+				})
+				.thenIdle(45)
+				.thenExecute(() -> {
+					for (Mob minion : Encounters.minions(ruin)) {
+						minion.hurtServer(level, level.damageSources().playerAttack(player), 100_000F);
+						killed[0] += minion.isDeadOrDying() ? 1 : 0;
+					}
+					helper.assertTrue(killed[0] >= 2, "escort killed, got " + killed[0]);
+					boss[0].hurtServer(level, level.damageSources().playerAttack(player), 100_000F);
+					helper.assertTrue(ruin.state == RuinState.CLEARED, "victory");
+				})
+				.thenWaitUntil(() -> helper.assertTrue(gold(level, boss[0]) > 0, "waiting for the gold"))
+				.thenExecute(() -> {
+					int gold = gold(level, boss[0]);
+					int escort = Math.min(killed[0] * def.rewards.goldPerEscort, def.rewards.escortGoldMax);
+					helper.assertTrue(gold >= def.rewards.goldMin + escort && gold <= def.rewards.goldMax + escort,
+							"tier-1 gold " + def.rewards.goldMin + "-" + def.rewards.goldMax + " + " + escort + " for the escort, got " + gold);
+				})
 				.thenSucceed();
 	}
 

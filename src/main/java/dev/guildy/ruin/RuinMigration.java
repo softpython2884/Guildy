@@ -7,6 +7,7 @@ import dev.guildy.ruin.RuinConfig.RuinDef;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -19,17 +20,65 @@ import java.util.Map;
  * Version 2 (Guildy 1.8.2, themed dungeons): no raiders in the Mayan temples (their undead: bogged, parched, zombies, cave
  * spiders), parched archers in the ziggurat, the celestial jaguar becomes a giant ocelot (a giant black cat when cursed)
  * with its jaguar abilities. The boss is migrated as a whole (entity, scale and speed all on the 1.8 defaults).
+ * <p>
+ * Version 3 (Guildy 1.10, balance): about three times more gold from every guardian; the gold range of a default ruin is
+ * migrated as a pair (both bounds still on their 1.9 defaults), so that a range changed by the admin is never mixed with a
+ * new bound.
  */
 final class RuinMigration {
+	/** Gold ranges {min, max} of the default ruins up to Guildy 1.9 (format 2), in the order of the file. */
+	static final Map<String, int[]> OLD_GOLD = oldGold();
+
 	private RuinMigration() {
+	}
+
+	private static Map<String, int[]> oldGold() {
+		Map<String, int[]> map = new LinkedHashMap<>();
+		map.put("crypte_oubliee", new int[] {4, 8});
+		map.put("tour_du_mage", new int[] {6, 10});
+		map.put("ziggourat_des_sables", new int[] {6, 10});
+		map.put("bastion_de_givre", new int[] {8, 14});
+		map.put("autel_infernal", new int[] {10, 18});
+		map.put("citadelle_des_ames", new int[] {14, 24});
+		map.put("temple_maya", new int[] {8, 14});
+		map.put("grand_temple_maya", new int[] {18, 28});
+		return Collections.unmodifiableMap(map);
 	}
 
 	/** Migrates the definitions read from a file of version {@code fromVersion}. @return the values changed ("ruin.field") */
 	static List<String> migrate(@Nullable Map<String, RuinDef> ruins, int fromVersion) {
 		List<String> changed = new ArrayList<>();
-		if (ruins == null || fromVersion >= 2) {
+		if (ruins == null) {
 			return changed;
 		}
+		if (fromVersion < 2) {
+			themedDungeons(ruins, changed);
+		}
+		if (fromVersion < 3) {
+			moreGold(ruins, changed);
+		}
+		return changed;
+	}
+
+	/** Version 3: the gold range of each default ruin still on its 1.9 defaults becomes the new one. */
+	private static void moreGold(Map<String, RuinDef> ruins, List<String> changed) {
+		Map<String, RuinDef> defaults = RuinDefaults.ruins();
+		for (Map.Entry<String, int[]> old : OLD_GOLD.entrySet()) {
+			RuinDef def = ruins.get(old.getKey());
+			RuinDef fresh = defaults.get(old.getKey());
+			if (def == null || def.rewards == null || fresh == null) {
+				continue;
+			}
+			if (def.rewards.goldMin == old.getValue()[0] && def.rewards.goldMax == old.getValue()[1]) {
+				def.rewards.goldMin = fresh.rewards.goldMin;
+				def.rewards.goldMax = fresh.rewards.goldMax;
+				changed.add(old.getKey() + ".rewards.gold");
+			}
+		}
+	}
+
+	/** Version 2: themed escorts and guards, the celestial jaguar. */
+	private static void themedDungeons(Map<String, RuinDef> ruins, List<String> changed) {
 		RuinDef ziggurat = ruins.get("ziggourat_des_sables");
 		if (ziggurat != null && ziggurat.minions != null && sameTypes(ziggurat.minions.types, Map.of("minecraft:husk", 1))) {
 			ziggurat.minions.types = new LinkedHashMap<>(RuinDefaults.zigguratEscort());
@@ -80,7 +129,6 @@ final class RuinMigration {
 				changed.add("grand_temple_maya.guards.types");
 			}
 		}
-		return changed;
 	}
 
 	/** The celestial jaguar's abilities in Guildy 1.8 (a giant ravager). */

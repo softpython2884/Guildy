@@ -94,6 +94,15 @@ public final class RuinRules {
 	}
 
 	/**
+	 * Gold of a victory before the multipliers: the rolled amount plus {@code perEscort} per escort mob killed during the
+	 * fight, that bonus capped at {@code escortCap} (the summons never make an endless source of gold).
+	 */
+	public static int baseGold(int rolled, int escortKills, int perEscort, int escortCap) {
+		long escort = Math.min(Math.max(0, escortCap), (long) Math.max(0, escortKills) * Math.max(0, perEscort));
+		return (int) Math.min(Integer.MAX_VALUE, Math.max(0, rolled) + escort);
+	}
+
+	/**
 	 * Splits the guild XP of a victory between the guilds of the participants, proportionally to their number of
 	 * participants, at least {@code minPerGuild} each (rounded down, the remainder goes to the largest groups first).
 	 *
