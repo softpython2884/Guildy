@@ -1,5 +1,7 @@
 package dev.guildy.wave;
 
+import dev.guildy.level.LevelScaling;
+
 /**
  * Pure balance formulas of the night hordes (no Minecraft access, unit-tested).
  */
@@ -11,13 +13,21 @@ public final class WaveFormula {
 
 	// ------------------------------------------------------------------ difficulty
 
-	/** D = base + perNight * night + perLevel * (level - 1) + perExtraPlayer * (players - 1), clamped to [base, max]. */
+	/**
+	 * D = base + perNight * night + level bonus + perExtraPlayer * (players - 1), clamped to [base, max]; level bonus =
+	 * perLevel * (level - 1) up to level 10, then perLevelAbove10 per level, at most maxAbove10 (see {@link #levelDifficulty}).
+	 */
 	public static double difficulty(WaveConfig.DifficultySettings c, int night, int level, int nearbyPlayers) {
 		double d = c.base
 				+ c.perNight * Math.max(0, night)
-				+ c.perLevel * Math.max(0, level - 1)
+				+ levelDifficulty(c, level)
 				+ c.perExtraPlayer * Math.max(0, nearbyPlayers - 1);
 		return clamp(d, c.base, Math.max(c.base, c.max));
+	}
+
+	/** Part of the difficulty that comes from the guild level (unchanged up to level 10, slow and capped past it). */
+	public static double levelDifficulty(WaveConfig.DifficultySettings c, int level) {
+		return LevelScaling.bonus(level, c.perLevel, c.perLevelAbove10, c.maxAbove10);
 	}
 
 	/** Total mobs = clamp(round((mobsBase + mobsPerDifficulty * D) * multiplier), minMobs, maxMobsPerWave). */
@@ -97,8 +107,10 @@ public final class WaveFormula {
 
 	// ------------------------------------------------------------------ heart
 
+	/** baseIntegrity + integrityPerLevel per level up to 10, then integrityPerLevelAbove10 per level (at most maxIntegrityAbove10). */
 	public static int heartIntegrity(WaveConfig.HeartSettings h, int level) {
-		long value = (long) h.baseIntegrity + (long) h.integrityPerLevel * Math.max(0, level - 1);
+		double bonus = LevelScaling.bonus(level, h.integrityPerLevel, h.integrityPerLevelAbove10, h.maxIntegrityAbove10);
+		double value = h.baseIntegrity + Math.floor(bonus + 1e-9);
 		return (int) Math.max(1, Math.min(Integer.MAX_VALUE, value));
 	}
 

@@ -54,6 +54,25 @@ class QuestGeneratorTest {
 	}
 
 	@Test
+	void levelsPastTenScaleSlower() {
+		QuestConfig config = new QuestConfig();
+		assertEquals(10, config.scalingLevel(10));
+		assertEquals(12, config.scalingLevel(20));
+		assertEquals(28, config.scalingLevel(100));
+		assertEquals(config.maxScalingLevel, config.scalingLevel(500));
+		// Eligibility uses the real level (minLevel 40), amounts and rewards the scaling level (12).
+		QuestTemplate late = template("late", QuestType.GATHER, 10, 40);
+		late.amountMax = late.amountMin;
+		late.rewardGoldMax = late.rewardGoldMin;
+		assertNull(QuestGenerator.generate(List.of(late), 20, 12, Set.of(), true, new Random(1)));
+		QuestGenerator.Rolled rolled = QuestGenerator.generate(List.of(late), 50, 12, Set.of(), true, new Random(1));
+		assertNotNull(rolled);
+		assertEquals(10 + 5 * 11, rolled.amount());
+		assertEquals(4 + 16, rolled.gold());
+		assertEquals(30 + 10 * 11, rolled.xp());
+	}
+
+	@Test
 	void eligibilityFilters() {
 		QuestTemplate low = template("low", QuestType.GATHER, 10, 1);
 		QuestTemplate high = template("high", QuestType.GATHER, 10, 5);

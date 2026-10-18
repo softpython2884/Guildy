@@ -9,6 +9,8 @@ import dev.guildy.core.Hooks;
 import dev.guildy.core.Lang;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildRole;
+import dev.guildy.level.LevelRewardRules;
+import dev.guildy.level.LevelUps;
 import dev.guildy.upgrade.Upgrades;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.network.chat.Component;
@@ -103,7 +105,11 @@ final class MainMenu extends GuildGui {
 		if (role != null) {
 			lore.add(Lang.get("menu.main.info.role", Lang.raw(role.langKey())));
 		}
-		lore.add(Lang.get("menu.main.info.level", guild.level));
+		lore.add(Lang.get("menu.main.info.level_of", guild.level, config.maxLevel()));
+		GuildyConfig.Rank rank = config.rank(guild.level);
+		if (rank != null) {
+			lore.add(Lang.get("menu.main.info.rank", rank.name));
+		}
 		boolean max = guild.level >= config.maxLevel();
 		if (max) {
 			lore.add(Lang.get("menu.main.info.xp_max", guild.xp));
@@ -113,6 +119,21 @@ final class MainMenu extends GuildGui {
 			lore.add(Lang.get("menu.main.info.xp", guild.xp, next));
 			lore.add(Lang.get("menu.main.info.bar", GuildRules.progressBar(progress[0], progress[1], 20, "&a", "&8", '|'),
 					GuildRules.percent(progress[0], progress[1])));
+			GuildyConfig.Rank nextRank = LevelRewardRules.nextRank(config.levels.ranks, guild.level);
+			if (nextRank != null && nextRank.level <= config.maxLevel()) {
+				lore.add(Lang.get("menu.main.info.next_rank", nextRank.name, nextRank.level));
+			}
+			int milestone = config.levels.rewards.enabled ? LevelRewardRules.nextMilestone(config.levels.rewards, guild.level, config.maxLevel()) : -1;
+			if (milestone > 0) {
+				lore.add(Lang.get("menu.main.info.milestone", milestone));
+				String preview = LevelUps.milestonePreview(config, milestone);
+				if (!preview.isEmpty()) {
+					lore.add(Lang.get("menu.main.info.milestone.rewards", preview));
+				}
+			}
+		}
+		if (guild.freeFlags > 0) {
+			lore.add(Lang.get("menu.main.info.free_flags", guild.freeFlags));
 		}
 		lore.add(Lang.get("menu.main.info.members", guild.onlineMembers().size(), guild.size()));
 		lore.add(Lang.get("menu.main.info.chunks", guild.claimCount(), guild.maxChunks()));

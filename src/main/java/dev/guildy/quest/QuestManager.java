@@ -272,7 +272,7 @@ public final class QuestManager {
 				guild.quests.hasLegendary(), now, guild.quests.lastLegendaryAt, cfg.legendary.cooldownTicks(), cfg.legendary.chance, RANDOM);
 		for (int attempt = 0; attempt < 4; attempt++) {
 			Collection<QuestTemplate> pool = legendary ? QuestGenerator.legendaryCandidates(cfg.usable().values()) : cfg.usable().values();
-			QuestGenerator.Rolled rolled = QuestGenerator.generate(pool, guild.level, exclude, guild.heart != null, RANDOM);
+			QuestGenerator.Rolled rolled = QuestGenerator.generate(pool, guild.level, cfg.scalingLevel(guild.level), exclude, guild.heart != null, RANDOM);
 			if (rolled == null) {
 				if (legendary && !forceLegendary) {
 					legendary = false; // no template can become legendary at this level: a normal quest instead

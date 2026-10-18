@@ -115,8 +115,10 @@ final class ClaimCommands {
 		if (!guild.isFounded()) {
 			return ClaimService.giveFoundingFlag(player, guild);
 		}
-		MutableComponent line = Lang.get("claim.flag.info", ClaimService.extensionFlagPrice(guild), guild.treasury)
-				.append(Msg.button("claim.flag.buy", "/guild flag buy", "claim.flag.buy.hover"));
+		MutableComponent line = guild.freeFlags > 0
+				? Lang.get("claim.flag.info.free", guild.freeFlags).append(Msg.button("claim.flag.take", "/guild flag buy", "claim.flag.take.hover"))
+				: Lang.get("claim.flag.info", ClaimService.extensionFlagPrice(guild), guild.treasury)
+						.append(Msg.button("claim.flag.buy", "/guild flag buy", "claim.flag.buy.hover"));
 		Msg.sendRaw(player, line);
 		Msg.send(player, "claim.info.usage");
 		return null;

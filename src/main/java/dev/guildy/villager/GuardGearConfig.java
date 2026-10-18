@@ -72,9 +72,52 @@ public final class GuardGearConfig {
 
 	/**
 	 * Wooden / stone sword → iron → diamond → netherite; bow, then Power; crossbow from level 6 (Quick Charge, then
-	 * Piercing); armor none → leather → chainmail → iron → diamond.
+	 * Piercing); armor none → leather → chainmail → iron → diamond; past level 10: sharper swords, netherite armor at
+	 * level 30, Multishot at level 50.
 	 */
 	public static List<GearLevel> defaultLevels() {
+		List<GearLevel> levels = classicLevels();
+		levels.addAll(highLevels());
+		return levels;
+	}
+
+	/** Steps of the guild levels past 10 (added once to the tables written before, see {@link #addHighLevelSteps}). */
+	static List<GearLevel> highLevels() {
+		String crossbow = "minecraft:crossbow";
+		GearLevel fifty = new GearLevel(50, "minecraft:netherite_sword", 5, crossbow, 0, 3, 4, "minecraft:netherite");
+		fifty.multishot = 1;
+		return new ArrayList<>(List.of(
+				new GearLevel(20, "minecraft:netherite_sword", 3, crossbow, 0, 3, 3, "minecraft:diamond"),
+				new GearLevel(30, "minecraft:netherite_sword", 4, crossbow, 0, 3, 4, "minecraft:netherite"),
+				fifty));
+	}
+
+	/**
+	 * Old tables (format 6 and before) that are still exactly the old default table get the steps of the levels past 10.
+	 *
+	 * @return true when steps were added
+	 */
+	static boolean addHighLevelSteps(GuardGearConfig gear) {
+		if (gear.levels == null) {
+			return false;
+		}
+		List<GearLevel> old = classicLevels();
+		if (gear.levels.size() != old.size()) {
+			return false;
+		}
+		for (int i = 0; i < old.size(); i++) {
+			GearLevel step = gear.levels.get(i);
+			if (step == null || step.level != old.get(i).level || !step.key().equals(old.get(i).key())) {
+				return false;
+			}
+		}
+		gear.levels = new ArrayList<>(gear.levels);
+		gear.levels.addAll(highLevels());
+		return true;
+	}
+
+	/** The table of the levels 1 to 10 (the whole default table before guild levels past 10). */
+	static List<GearLevel> classicLevels() {
 		String bow = "minecraft:bow";
 		String crossbow = "minecraft:crossbow";
 		return new ArrayList<>(List.of(

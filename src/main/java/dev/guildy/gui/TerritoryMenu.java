@@ -11,6 +11,7 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildPermission;
 import dev.guildy.data.GuildRole;
+import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.DyeColor;
@@ -115,6 +116,9 @@ final class TerritoryMenu extends GuildGui {
 		if (guild == null) {
 			return new Denial("error.no_guild");
 		}
+		if (guild.freeFlags > 0) {
+			return permission(guild, player, GuildPermission.CLAIM);
+		}
 		Denial denial = permission(guild, player, GuildPermission.TREASURY);
 		if (denial != null) {
 			return denial;
@@ -199,9 +203,12 @@ final class TerritoryMenu extends GuildGui {
 
 		// Icons are plain banners in the guild colors (never the real flag items).
 		int price = ClaimService.extensionFlagPrice(guild);
-		action(20, icon(guild.banner.createBanner(GuildyServer.registryAccess()), Lang.get("menu.territory.buy_flag.name"),
-						GuiUtil.lines("menu.territory.buy_flag.lore", price, guild.treasury)),
-				this::buyFlagDenial, () -> result(ClaimService.buyExtensionFlag(player, guild)));
+		GuiElementBuilder flagIcon = guild.freeFlags > 0
+				? icon(guild.banner.createBanner(GuildyServer.registryAccess()), Lang.get("menu.territory.buy_flag.free.name"),
+						GuiUtil.lines("menu.territory.buy_flag.free.lore", guild.freeFlags)).glow()
+				: icon(guild.banner.createBanner(GuildyServer.registryAccess()), Lang.get("menu.territory.buy_flag.name"),
+						GuiUtil.lines("menu.territory.buy_flag.lore", price, guild.treasury));
+		action(20, flagIcon, this::buyFlagDenial, () -> result(ClaimService.buyExtensionFlag(player, guild)));
 		action(22, icon(guild.banner.createBanner(GuildyServer.registryAccess()), Lang.get("menu.territory.founding_flag.name"),
 						GuiUtil.lines("menu.territory.founding_flag.lore")).glow(),
 				this::foundingFlagDenial, () -> result(ClaimService.giveFoundingFlag(player, guild)));
@@ -233,7 +240,8 @@ final class TerritoryMenu extends GuildGui {
 			lore.add(guild.home == null ? Lang.get("menu.territory.info.home_none")
 					: Lang.get("menu.territory.info.home", guild.home.getX(), guild.home.getY(), guild.home.getZ()));
 		}
-		lore.add(Lang.get("menu.territory.info.flag_price", ClaimService.extensionFlagPrice(guild)));
+		lore.add(guild.freeFlags > 0 ? Lang.get("guild.info.free_flags", guild.freeFlags)
+				: Lang.get("menu.territory.info.flag_price", ClaimService.extensionFlagPrice(guild)));
 		return lore;
 	}
 

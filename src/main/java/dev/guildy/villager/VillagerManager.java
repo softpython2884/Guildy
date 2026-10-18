@@ -118,8 +118,10 @@ public final class VillagerManager {
 
 	// ================================================================ queries
 
+	/** Villager places: by guild level (villagers.json5), level milestones (config.json5) and the upgrade tree. */
 	public static int maxVillagers(Guild guild) {
-		return VillagerModule.config().maxVillagers(guild.level) + Upgrades.count(guild, UpgradeEffects.EXTRA_VILLAGERS);
+		return VillagerModule.config().maxVillagers(guild.level) + GuildyServer.config().levelVillagerSlots(guild.level)
+				+ Upgrades.count(guild, UpgradeEffects.EXTRA_VILLAGERS);
 	}
 
 	/** Oldest waiting candidate (null when none). */

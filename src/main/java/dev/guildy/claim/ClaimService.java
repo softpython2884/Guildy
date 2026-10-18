@@ -308,16 +308,33 @@ public final class ClaimService {
 		return null;
 	}
 
-	/** Current price (treasury gold) of the next extension flag, after the guild's upgrade discount. */
+	/** Current price (treasury gold) of the next extension flag, after the guild's upgrade discount (0 = a free flag waits). */
 	public static int extensionFlagPrice(Guild guild) {
+		if (guild.freeFlags > 0) {
+			return 0;
+		}
 		return Upgrades.discount(guild, UpgradeEffects.FLAG_DISCOUNT_PCT, GuildyServer.config().extensionFlagPrice(guild.extensionFlagsBought));
 	}
 
-	/** Buys an extension flag with treasury gold (TREASURY permission) and gives it to the player. */
+	/**
+	 * Gives an extension flag: a free one earned with the level milestones first (CLAIM permission; the price of the
+	 * bought flags does not rise), otherwise bought with treasury gold (TREASURY permission).
+	 */
 	public static @Nullable String buyExtensionFlag(ServerPlayer player, Guild guild) {
 		UUID uuid = player.getUUID();
 		if (!guild.isMember(uuid)) {
 			return "error.no_guild";
+		}
+		if (guild.freeFlags > 0) {
+			if (!guild.can(uuid, GuildPermission.CLAIM)) {
+				return "error.no_permission";
+			}
+			guild.freeFlags--;
+			GuildManager.markDirty();
+			ItemUtil.giveOrDrop(player, GuildyItems.extensionFlag(guild));
+			Msg.send(player, "claim.flag.free", guild.freeFlags);
+			Msg.sound(player, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.6f, 1.4f);
+			return null;
 		}
 		if (!guild.can(uuid, GuildPermission.TREASURY)) {
 			return "error.no_permission";

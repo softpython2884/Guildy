@@ -138,8 +138,17 @@ public final class QuestGenerator {
 
 	/** Picks and rolls a quest; null when no template is eligible. */
 	public static @Nullable Rolled generate(Collection<QuestTemplate> templates, int level, Set<String> exclude, boolean allowExplore, Random random) {
+		return generate(templates, level, level, exclude, allowExplore, random);
+	}
+
+	/**
+	 * Picks a template allowed at the guild {@code level} and rolls its amounts and rewards with {@code scalingLevel}
+	 * (slower than the level past 10, see {@code QuestConfig.scalingLevel}); null when no template is eligible.
+	 */
+	public static @Nullable Rolled generate(Collection<QuestTemplate> templates, int level, int scalingLevel, Set<String> exclude,
+			boolean allowExplore, Random random) {
 		QuestTemplate template = pick(eligible(templates, level, exclude, allowExplore), random);
-		return template == null ? null : roll(template, level, random);
+		return template == null ? null : roll(template, scalingLevel, random);
 	}
 
 	/**

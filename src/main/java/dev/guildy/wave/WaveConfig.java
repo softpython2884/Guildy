@@ -31,8 +31,9 @@ public final class WaveConfig implements Validatable {
 	public Timing timing = new Timing();
 
 	@Comment({
-			"Difficulte D = base + perNight * nuit + perLevel * (niveau - 1) + perExtraPlayer * (membres presents - 1),",
-			"bornee a [base, max]. 'nuit' = palier de la guilde (+1 par victoire, recule apres une defaite)."
+			"Difficulte D = base + perNight * nuit + bonus du niveau + perExtraPlayer * (membres presents - 1), bornee a [base, max].",
+			"Bonus du niveau = perLevel * (niveau - 1) jusqu'au niveau 10, puis perLevelAbove10 par niveau (au plus maxAbove10).",
+			"'nuit' = palier de la guilde (+1 par victoire, recule apres une defaite)."
 	})
 	public DifficultySettings difficulty = new DifficultySettings();
 
@@ -119,8 +120,15 @@ public final class WaveConfig implements Validatable {
 		public double base = 1.0;
 		@Comment("Difficulte ajoutee par palier de nuit")
 		public double perNight = 0.5;
-		@Comment("Difficulte ajoutee par niveau de guilde au-dela du niveau 1")
+		@Comment("Difficulte ajoutee par niveau de guilde au-dela du niveau 1, jusqu'au niveau 10")
 		public double perLevel = 0.5;
+		@Comment({
+				"Au-dela du niveau 10 : difficulte ajoutee par niveau, au plus maxAbove10 pour ces niveaux (0 = sans plafond).",
+				"Par defaut le niveau ajoute 4.5 au niveau 10, 5 au niveau 20, 7 au niveau 60 et 9 a partir du niveau 100 :",
+				"la nuit (palier) et les membres presents comptent toujours (une defaite fait encore baisser la difficulte)"
+		})
+		public double perLevelAbove10 = 0.05;
+		public double maxAbove10 = 4.5;
 		@Comment("Difficulte ajoutee par membre present supplementaire (au demarrage)")
 		public double perExtraPlayer = 0.75;
 		@Comment("Difficulte maximale")
@@ -237,9 +245,15 @@ public final class WaveConfig implements Validatable {
 
 	@Json5.Section
 	public static final class HeartSettings {
-		@Comment("Integrite du coeur = baseIntegrity + integrityPerLevel * (niveau - 1)")
+		@Comment("Integrite du coeur = baseIntegrity + integrityPerLevel * (niveau - 1), jusqu'au niveau 10")
 		public int baseIntegrity = 150;
 		public int integrityPerLevel = 30;
+		@Comment({
+				"Au-dela du niveau 10 : integrite ajoutee par niveau, au plus maxIntegrityAbove10 pour ces niveaux (0 = sans plafond).",
+				"Par defaut : 420 au niveau 10, 870 au niveau 100, 1020 au plus (avant l'arbre d'evolution)"
+		})
+		public int integrityPerLevelAbove10 = 5;
+		public int maxIntegrityAbove10 = 600;
 		@Comment("Les monstres a moins de 'radius' blocs (horizontalement) et 'verticalRange' blocs (verticalement) du coeur l'endommagent")
 		public double radius = 3.0;
 		public double verticalRange = 4.0;
@@ -616,6 +630,8 @@ public final class WaveConfig implements Validatable {
 		d.max = clamp(d.max, d.base, 1000);
 		d.perNight = clamp(d.perNight, 0, 100);
 		d.perLevel = clamp(d.perLevel, 0, 100);
+		d.perLevelAbove10 = clamp(d.perLevelAbove10, 0, 100);
+		d.maxAbove10 = clamp(d.maxAbove10, 0, 1000);
 		d.perExtraPlayer = clamp(d.perExtraPlayer, 0, 100);
 		d.mobsBase = clamp(d.mobsBase, 0, 1000);
 		d.mobsPerDifficulty = clamp(d.mobsPerDifficulty, 0, 1000);
@@ -671,6 +687,8 @@ public final class WaveConfig implements Validatable {
 		HeartSettings h = heart;
 		h.baseIntegrity = clamp(h.baseIntegrity, 1, 1_000_000);
 		h.integrityPerLevel = clamp(h.integrityPerLevel, 0, 1_000_000);
+		h.integrityPerLevelAbove10 = clamp(h.integrityPerLevelAbove10, 0, 1_000_000);
+		h.maxIntegrityAbove10 = clamp(h.maxIntegrityAbove10, 0, 100_000_000);
 		h.radius = clamp(h.radius, 0.5, 16);
 		h.verticalRange = clamp(h.verticalRange, 0.5, 16);
 		h.damageNormal = clamp(h.damageNormal, 0, 1_000_000);

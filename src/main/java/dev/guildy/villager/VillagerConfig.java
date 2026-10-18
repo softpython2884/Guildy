@@ -3,6 +3,7 @@ package dev.guildy.villager;
 import dev.guildy.config.Comment;
 import dev.guildy.config.Json5;
 import dev.guildy.config.Validatable;
+import dev.guildy.level.LevelScaling;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,7 +24,7 @@ public final class VillagerConfig implements Validatable {
 	 * Current file format; older files get their untouched old defaults migrated in {@link #validate()} (each step:
 	 * {@code if (configVersion < N) {...}}, only values still equal to the old default are changed).
 	 */
-	public static final int CURRENT_VERSION = 6;
+	public static final int CURRENT_VERSION = 7;
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int configVersion = 0;
@@ -143,8 +144,13 @@ public final class VillagerConfig implements Validatable {
 	public static final class Arrivals {
 		@Comment("Nombre maximum de villageois au niveau 1 de la guilde")
 		public int baseMaxVillagers = 2;
-		@Comment("Villageois supplementaires autorises par niveau de guilde")
+		@Comment("Villageois supplementaires autorises par niveau de guilde, jusqu'au niveau 10")
 		public int maxVillagersPerLevel = 1;
+		@Comment({
+				"Au-dela du niveau 10 : villageois supplementaires par niveau (0.1 = un tous les 10 niveaux). 0 par defaut : les",
+				"places suivantes viennent des paliers de niveau (config.json5, levels.rewards.villagerSlotEvery)"
+		})
+		public double maxVillagersPerLevelAbove10 = 0.0;
 		@Comment("Chance (0 a 1) qu'un villageois se presente chaque matin (si les conditions sont reunies)")
 		public double arrivalChance = 0.6;
 		@Comment("Delai (secondes) avant le premier candidat apres la construction du bureau d'accueil")
@@ -530,8 +536,14 @@ public final class VillagerConfig implements Validatable {
 		public int zoneMargin = 8;
 		@Comment("Degats par coup au niveau 1 de la guilde")
 		public double damage = 4.0;
-		@Comment("Degats supplementaires par niveau de guilde")
+		@Comment("Degats supplementaires par niveau de guilde, jusqu'au niveau 10")
 		public double damagePerLevel = 0.5;
+		@Comment({
+				"Au-dela du niveau 10 : degats supplementaires par niveau, au plus maxDamageAbove10 pour ces niveaux (0 = sans",
+				"plafond). Par defaut : 8.5 au niveau 10, 13 a partir du niveau 100 (avant l'equipement et l'arbre d'evolution)"
+		})
+		public double damagePerLevelAbove10 = 0.05;
+		public double maxDamageAbove10 = 4.5;
 		@Comment("Delai (ticks, 20 = 1 seconde) entre deux coups")
 		public int attackCooldownTicks = 20;
 		@Comment("Distance (blocs) a laquelle le garde peut frapper")
@@ -934,13 +946,15 @@ public final class VillagerConfig implements Validatable {
 
 	// ------------------------------------------------------------------ helpers
 
-	/** Max villagers for a guild level (never negative). */
+	/** Max villagers for a guild level (never negative; the level rewards and the upgrade tree add their own places). */
 	public int maxVillagers(int guildLevel) {
-		return Math.max(0, arrivals.baseMaxVillagers + Math.max(0, guildLevel - 1) * arrivals.maxVillagersPerLevel);
+		double bonus = LevelScaling.bonus(guildLevel, arrivals.maxVillagersPerLevel, arrivals.maxVillagersPerLevelAbove10, 0);
+		return (int) Math.max(0, Math.min(Integer.MAX_VALUE, arrivals.baseMaxVillagers + Math.floor(bonus + 1e-9)));
 	}
 
+	/** Guard hit damage of a guild level (unchanged up to level 10, slower and capped past it). */
 	public double guardDamage(int guildLevel) {
-		return guard.damage + Math.max(0, guildLevel - 1) * guard.damagePerLevel;
+		return guard.damage + LevelScaling.bonus(guildLevel, guard.damagePerLevel, guard.damagePerLevelAbove10, guard.maxDamageAbove10);
 	}
 
 	@Override
@@ -1019,6 +1033,7 @@ public final class VillagerConfig implements Validatable {
 		routes.selectionTimeoutSeconds = clamp(routes.selectionTimeoutSeconds, 20, 600);
 		arrivals.baseMaxVillagers = clamp(arrivals.baseMaxVillagers, 0, 100);
 		arrivals.maxVillagersPerLevel = clamp(arrivals.maxVillagersPerLevel, 0, 20);
+		arrivals.maxVillagersPerLevelAbove10 = clamp(arrivals.maxVillagersPerLevelAbove10, 0.0, 5.0);
 		arrivals.arrivalChance = clamp(arrivals.arrivalChance, 0.0, 1.0);
 		arrivals.firstArrivalDelaySeconds = clamp(arrivals.firstArrivalDelaySeconds, 1, 3600);
 		arrivals.candidateTimeoutSeconds = clamp(arrivals.candidateTimeoutSeconds, 30, 24 * 3600);
@@ -1056,6 +1071,8 @@ public final class VillagerConfig implements Validatable {
 		guard.zoneMargin = clamp(guard.zoneMargin, 0, 32);
 		guard.damage = clamp(guard.damage, 0.0, 100.0);
 		guard.damagePerLevel = clamp(guard.damagePerLevel, 0.0, 20.0);
+		guard.damagePerLevelAbove10 = clamp(guard.damagePerLevelAbove10, 0.0, 20.0);
+		guard.maxDamageAbove10 = clamp(guard.maxDamageAbove10, 0.0, 1000.0);
 		guard.attackCooldownTicks = clamp(guard.attackCooldownTicks, 1, 200);
 		guard.attackReach = clamp(guard.attackReach, 1.0, 6.0);
 		guard.chaseTimeoutSeconds = clamp(guard.chaseTimeoutSeconds, 3, 300);
@@ -1064,6 +1081,10 @@ public final class VillagerConfig implements Validatable {
 		validateGuard(guard);
 		if (guardGear == null) {
 			guardGear = new GuardGearConfig();
+		}
+		if (configVersion < 7 && GuardGearConfig.addHighLevelSteps(guardGear)) {
+			// Guild levels past 10: an untouched old table receives the default steps of levels 20, 30 and 50.
+			org.slf4j.LoggerFactory.getLogger("Guildy").info("[villagers.json5] guard equipment steps for guild levels 20, 30 and 50 added");
 		}
 		guardGear.validate();
 		if (vitality == null) {

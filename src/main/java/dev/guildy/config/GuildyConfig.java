@@ -2,6 +2,10 @@ package dev.guildy.config;
 
 import dev.guildy.data.GuildPermission;
 import dev.guildy.data.GuildRole;
+import dev.guildy.level.LevelCurve;
+import dev.guildy.level.LevelRewardRules;
+import dev.guildy.level.LevelScaling;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,7 +19,7 @@ import java.util.Map;
 })
 public final class GuildyConfig implements Validatable {
 	/** Current file format; older files get their untouched old defaults migrated in {@link #validate()}. */
-	public static final int CURRENT_VERSION = 2;
+	public static final int CURRENT_VERSION = 3;
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int configVersion = 0;
@@ -82,8 +86,14 @@ public final class GuildyConfig implements Validatable {
 		public int minDistanceFromSpawn = 4;
 		@Comment("Nombre maximum de chunks au niveau 1")
 		public int baseMaxChunks = 12;
-		@Comment("Chunks supplementaires autorises par niveau de guilde")
+		@Comment("Chunks supplementaires autorises par niveau de guilde, jusqu'au niveau 10")
 		public int maxChunksPerLevel = 6;
+		@Comment({
+				"Au-dela du niveau 10 : chunks supplementaires par niveau, au plus maxChunksAbove10 en tout pour ces niveaux",
+				"(0 = sans plafond). Par defaut : 66 chunks au niveau 10, 156 au niveau 100, 256 au plus"
+		})
+		public int maxChunksPerLevelAbove10 = 1;
+		public int maxChunksAbove10 = 190;
 		@Comment("Prix (or, paye par le tresor) du premier drapeau d'extension")
 		public int extensionFlagBasePrice = 8;
 		@Comment("Augmentation du prix pour chaque drapeau d'extension deja achete")
@@ -124,8 +134,80 @@ public final class GuildyConfig implements Validatable {
 
 	@Json5.Section
 	public static final class Levels {
-		@Comment("XP totale requise pour atteindre chaque niveau (index 0 = niveau 2, etc.). Niveau max = taille + 1")
+		@Comment("Niveau maximum des guildes (10 a 500)")
+		public int maxLevel = 100;
+		@Comment({
+				"XP totale requise pour atteindre chaque niveau de la liste (index 0 = niveau 2, etc.) ;",
+				"les niveaux suivants, jusqu'a maxLevel, suivent la formule xpStepBase / xpStepGrowth"
+		})
 		public List<Integer> xpThresholds = new ArrayList<>(List.of(100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200));
+		@Comment({
+				"Au-dela de la liste : XP pour passer du niveau N-1 au niveau N = xpStepBase + xpStepGrowth x (N - dernier niveau",
+				"de la liste). Par defaut (liste jusqu'au niveau 10) : 1340 XP pour le niveau 11, 2600 pour le 20, 6800 pour le 50,",
+				"13800 pour le 100 ; XP totale : 3200 au niveau 10, 22900 au 20, 166000 au 50, 684500 au 100"
+		})
+		public int xpStepBase = 1200;
+		public int xpStepGrowth = 140;
+		@Comment("Recompenses des niveaux gagnes au-dela du niveau 10")
+		public LevelRewards rewards = new LevelRewards();
+		@Comment({
+				"Rangs de guilde : le rang dont 'level' est le plus haut niveau atteint s'affiche dans /guild info, le menu",
+				"principal et l'annonce de niveau (name : nom affiche, codes couleur &)"
+		})
+		public List<Rank> ranks = defaultRanks();
+	}
+
+	@Json5.Section
+	public static final class LevelRewards {
+		@Comment("Activer les recompenses des niveaux au-dela du niveau 10 (or, paliers, drapeaux, places de villageois)")
+		public boolean enabled = true;
+		@Comment("Or verse au tresor a chaque niveau gagne au-dela du niveau 10 = min(goldMax, goldBase + goldPerLevel x (niveau - 10))")
+		public int goldBase = 20;
+		public double goldPerLevel = 1.0;
+		public int goldMax = 120;
+		@Comment("Paliers : tous les 'milestoneEvery' niveaux au-dela du niveau 10 (5 = niveaux 15, 20, 25...) ; 0 = aucun palier")
+		public int milestoneEvery = 5;
+		@Comment("Or verse au tresor en plus a chaque palier")
+		public int milestoneGold = 100;
+		@Comment("Drapeaux d'extension offerts a chaque palier (pris gratuitement dans le menu Territoire ou avec /guild flag buy)")
+		public int milestoneFlags = 1;
+		@Comment("Annoncer les paliers (et les nouveaux rangs) a tout le serveur")
+		public boolean announceMilestones = true;
+		@Comment({
+				"Places de villageois en plus : une tous les 'villagerSlotEvery' niveaux au-dela du niveau 10 (10 = niveaux 20, 30...),",
+				"au plus maxVillagerSlots en tout (0 = aucune)"
+		})
+		public int villagerSlotEvery = 10;
+		public int maxVillagerSlots = 10;
+	}
+
+	/** One guild rank (plain JSON object in the file). */
+	public static final class Rank {
+		public int level = 1;
+		public String name = "";
+
+		public Rank() {
+		}
+
+		public Rank(int level, String name) {
+			this.level = level;
+			this.name = name;
+		}
+	}
+
+	public static List<Rank> defaultRanks() {
+		return new ArrayList<>(List.of(
+				new Rank(1, "&7Novice"),
+				new Rank(10, "&6Bronze"),
+				new Rank(20, "&fArgent"),
+				new Rank(30, "&eOr"),
+				new Rank(40, "&3Platine"),
+				new Rank(50, "&bDiamant"),
+				new Rank(75, "&aÉmeraude"),
+				new Rank(100, "&d&lLégendaire"),
+				new Rank(150, "&5&lMythique"),
+				new Rank(250, "&c&lImmortelle"),
+				new Rank(400, "&6&lDivine")));
 	}
 
 	@Json5.Section
@@ -173,21 +255,29 @@ public final class GuildyConfig implements Validatable {
 		return GuildRole.parse(value, fallback);
 	}
 
+	/** Max chunks of a guild level (before the upgrade tree): unchanged up to level 10, slower and capped past it. */
 	public int maxChunks(int level) {
-		return territory.baseMaxChunks + Math.max(0, level - 1) * territory.maxChunksPerLevel;
+		double bonus = LevelScaling.bonus(level, territory.maxChunksPerLevel, territory.maxChunksPerLevelAbove10, territory.maxChunksAbove10);
+		return (int) Math.min(Integer.MAX_VALUE, territory.baseMaxChunks + (long) Math.floor(bonus + 1e-9));
 	}
 
 	public int maxLevel() {
-		return levels.xpThresholds.size() + 1;
+		return levels.maxLevel;
 	}
 
 	/** Total XP needed to reach {@code level} (level 1 = 0). */
 	public long xpForLevel(int level) {
-		if (level <= 1) {
-			return 0;
-		}
-		int index = Math.min(level - 2, levels.xpThresholds.size() - 1);
-		return levels.xpThresholds.get(index);
+		return LevelCurve.xpForLevel(level, levels.xpThresholds, levels.xpStepBase, levels.xpStepGrowth);
+	}
+
+	/** Rank of a guild level (null when no rank applies). */
+	public @Nullable Rank rank(int level) {
+		return LevelRewardRules.rank(levels.ranks, level);
+	}
+
+	/** Extra villager places earned with the guild level (level rewards). */
+	public int levelVillagerSlots(int level) {
+		return levels.rewards.enabled ? LevelRewardRules.villagerSlots(levels.rewards, level) : 0;
 	}
 
 	public int extensionFlagPrice(int alreadyBought) {
@@ -197,9 +287,24 @@ public final class GuildyConfig implements Validatable {
 
 	@Override
 	public void validate() {
+		if (levels == null) {
+			levels = new Levels();
+		}
+		if (levels.xpThresholds == null) {
+			levels.xpThresholds = new ArrayList<>();
+		}
+		levels.xpThresholds.removeIf(v -> v == null || v < 0);
+		if (levels.xpThresholds.isEmpty()) {
+			levels.xpThresholds = new ArrayList<>(new Levels().xpThresholds);
+		}
+		levels.xpThresholds.sort(Integer::compareTo);
 		// Migrations: only values still equal to the old default change (admin edits are kept).
 		if (configVersion < 2 && territory != null && territory.borderDisplaySeconds == 15) {
 			territory.borderDisplaySeconds = 45;
+		}
+		if (configVersion < 3 && levels.xpThresholds.size() + 1 > levels.maxLevel) {
+			// v3: the maximum level is no longer the length of the list; a list edited past the new default keeps its levels.
+			levels.maxLevel = levels.xpThresholds.size() + 1;
 		}
 		configVersion = CURRENT_VERSION;
 		guilds.nameMinLength = Math.max(1, guilds.nameMinLength);
@@ -215,17 +320,22 @@ public final class GuildyConfig implements Validatable {
 		int founding = (2 * territory.foundingRadius + 1) * (2 * territory.foundingRadius + 1);
 		territory.baseMaxChunks = Math.max(founding, territory.baseMaxChunks);
 		territory.maxChunksPerLevel = Math.max(0, territory.maxChunksPerLevel);
+		territory.maxChunksPerLevelAbove10 = Math.max(0, Math.min(1000, territory.maxChunksPerLevelAbove10));
+		territory.maxChunksAbove10 = Math.max(0, Math.min(1_000_000, territory.maxChunksAbove10));
 		territory.extensionFlagBasePrice = Math.max(0, territory.extensionFlagBasePrice);
 		territory.extensionFlagPriceStep = Math.max(0, territory.extensionFlagPriceStep);
 		territory.extensionFlagMaxPrice = Math.max(territory.extensionFlagBasePrice, territory.extensionFlagMaxPrice);
 		territory.borderDisplaySeconds = Math.max(1, Math.min(120, territory.borderDisplaySeconds));
 		economy.decorativeBannerPrice = Math.max(0, economy.decorativeBannerPrice);
 		economy.startingTreasury = Math.max(0, economy.startingTreasury);
-		if (levels.xpThresholds == null || levels.xpThresholds.isEmpty()) {
-			levels.xpThresholds = new ArrayList<>(new Levels().xpThresholds);
+		levels.maxLevel = Math.max(LevelCurve.MIN_MAX_LEVEL, Math.min(LevelCurve.ABSOLUTE_MAX_LEVEL, levels.maxLevel));
+		levels.xpStepBase = Math.max(1, Math.min(10_000_000, levels.xpStepBase));
+		levels.xpStepGrowth = Math.max(0, Math.min(1_000_000, levels.xpStepGrowth));
+		if (levels.rewards == null) {
+			levels.rewards = new LevelRewards();
 		}
-		levels.xpThresholds.removeIf(v -> v == null || v < 0);
-		levels.xpThresholds.sort(Integer::compareTo);
+		LevelRewardRules.validate(levels.rewards);
+		levels.ranks = LevelRewardRules.cleanRanks(levels.ranks);
 		if (rolePermissions == null) {
 			rolePermissions = defaultRolePermissions();
 		}

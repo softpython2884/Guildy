@@ -22,6 +22,7 @@
 			"dev.guildy.test.MenuGameTests",
 			"dev.guildy.test.BannerGameTests",
 			"dev.guildy.test.UpgradeGameTests",
+			"dev.guildy.test.LevelGameTests",
 			"dev.guildy.test.EventGameTests",
 			"dev.guildy.test.QuestGameTests",
 			"dev.guildy.test.UniqueGameTests",
