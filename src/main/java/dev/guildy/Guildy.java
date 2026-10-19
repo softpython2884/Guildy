@@ -15,6 +15,7 @@ import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
 import dev.guildy.data.GuildManager;
 import dev.guildy.event.EventModule;
+import dev.guildy.fly.FlyModule;
 import dev.guildy.gui.GuildMenus;
 import dev.guildy.level.LevelLang;
 import dev.guildy.quest.QuestModule;
@@ -63,6 +64,7 @@ public final class Guildy implements ModInitializer {
 		UpgradeModule.init();
 		TradeModule.init();
 		EventModule.init(); // after the wave and trade modules (hooks into both)
+		FlyModule.init(); // /guild fly: flight inside the own territory, never during a horde
 		UniqueModule.init(); // unique weapons: implements the core UniqueDrops hook
 		ScrollModule.init(); // spell scrolls: implements the core ScrollDrops hook
 		RuinModule.init(); // ruins guarded by bosses + cartographer (uses the structure and villager modules)

@@ -152,6 +152,9 @@ public final class GuildChat {
 		for (String line : Lang.raw("guild.help.lines").split("\n")) {
 			player.sendSystemMessage(Component.literal(line));
 		}
+		if (GuildyServer.config().fly.enabled) {
+			player.sendSystemMessage(Msg.suggest(Lang.get("guild.help.fly"), "/guild fly", Lang.get("guild.help.fly.hover")));
+		}
 		MutableComponent buttons = Lang.get("guild.help.commands");
 		boolean inGuild = GuildManager.of(player) != null;
 		buttons.append(button("menu", "/guild", false));
