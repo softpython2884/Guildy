@@ -320,7 +320,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<h3>Trésor</h3>
 				<p>1 or = 1 lingot d'or (un bloc d'or vaut 9). Tout le monde peut déposer : « Déposer tout mon or » prend aussi les pépites par paquets de 9. Seuls les officiers peuvent retirer.</p>
 				<h3>Point de retour</h3>
-				<p><button class="cmd" type="button">/guild sethome</button> dans votre territoire, puis <button class="cmd" type="button">/guild home</button> : 3 secondes sans bouger, puis téléportation (une fois par minute).</p>
+				<p><button class="cmd" type="button">/guild sethome</button> dans votre territoire, puis <button class="cmd" type="button">/guild home</button> : 3 secondes sans bouger, puis téléportation (une fois par minute). Raccourcis : <button class="cmd" type="button">/sethome</button> et <button class="cmd" type="button">/home</button>.</p>
 			</section>
 
 			<!-- ================================================================ TERRITORY -->
@@ -342,7 +342,9 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<li><button class="cmd" type="button">/guild claim</button> : utilise un drapeau d'extension de votre inventaire sur le chunk où vous êtes.</li>
 					<li><button class="cmd" type="button">/guild unclaim</button> : rend le chunk où vous êtes et vous redonne un drapeau. Impossible pour le chunk du cœur, ou si le territoire serait coupé en deux.</li>
 					<li><button class="cmd" type="button">/guild flag</button> : redonne le drapeau fondateur tant que la base n'est pas fondée.</li>
+					<li><button class="cmd" type="button">/guild fly</button> : vol de guilde (sautez deux fois pour décoller), seulement dans votre territoire et jamais pendant une horde.</li>
 				</ul>
+				<div class="note good"><p><strong>Voler chez soi :</strong> <button class="cmd" type="button">/guild fly</button> (ou « Vol de guilde » dans le menu Territoire) vous laisse voler comme en créatif dans les chunks de votre guilde. Le vol s'arrête au bord du territoire (vous êtes prévenu juste avant) et dès qu'une horde attaque ; s'il s'arrête en l'air, votre chute est sans danger.</p></div>
 				<div class="note"><p><strong>Déménager :</strong> le chef peut utiliser « Abandonner le territoire » dans le menu Territoire. Tous les chunks sont libérés et le drapeau fondateur est rendu. Impossible pendant une horde.</p></div>
 			</section>
 
@@ -954,6 +956,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<div class="eyebrow">Référence</div>
 				<h2>Commandes</h2>
 				<p><button class="cmd" type="button">/gld</button> marche partout à la place de <button class="cmd" type="button">/guild</button>. La touche Tab complète les noms. Cliquez sur une commande pour la copier.</p>
+				<p class="hint">Raccourcis : <button class="cmd" type="button">/g</button> = <button class="cmd" type="button">/guild</button>, <button class="cmd" type="button">/home</button>, <button class="cmd" type="button">/sethome</button>, <button class="cmd" type="button">/fly</button>, <button class="cmd" type="button">/quetes</button>, <button class="cmd" type="button">/villageois</button>, <button class="cmd" type="button">/bilan</button> marchent comme la commande <code>/guild …</code> du même nom (mêmes arguments). Le serveur peut en ajouter ou en retirer ; <button class="cmd" type="button">/guild help</button> affiche ceux qui sont disponibles.</p>
 				<div class="table-wrap"><table>
 					<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
 					<tbody>
@@ -973,6 +976,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td><button class="cmd" type="button">/guild flag</button> · <button class="cmd" type="button">/guild flag buy</button></td><td>Drapeau fondateur, acheter un drapeau d'extension (ou prendre un drapeau offert)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild claim</button> · <button class="cmd" type="button">/guild unclaim</button> · <button class="cmd" type="button">/guild show</button></td><td>Ajouter ou rendre le chunk actuel, voir les limites</td></tr>
 						<tr><td><button class="cmd" type="button">/guild sethome</button> · <button class="cmd" type="button">/guild home</button></td><td>Point de retour de la guilde</td></tr>
+						<tr><td><button class="cmd" type="button">/guild fly</button></td><td>Vol de guilde dans votre territoire (jamais pendant une horde)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild waves</button></td><td>Hordes : état, prochaine nuit, statistiques, règles</td></tr>
 						<tr><td><button class="cmd" type="button">/guild build</button></td><td>Constructions et plans</td></tr>
 						<tr><td><button class="cmd" type="button">/guild quests</button></td><td>Quêtes</td></tr>
@@ -1021,12 +1025,13 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.10.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2.</p>
+				<p>Installation : <code>guildy-1.11.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
 						<tbody>
 							<tr><td><button class="cmd" type="button">/guild admin reload</button> · <button class="cmd" type="button">/guild admin save</button></td><td>Recharger la configuration, sauvegarder les guildes</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin shortcuts</button></td><td>Raccourcis actifs et ignorés (avec la raison)</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin bypass</button></td><td>Ignorer les protections des territoires</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin info &lt;guilde&gt;</button> · <button class="cmd" type="button">/guild admin disband &lt;guilde&gt;</button></td><td>Voir ou dissoudre une guilde</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin forcejoin &lt;joueur&gt; &lt;guilde&gt;</button></td><td>Mettre un joueur dans une guilde</td></tr>
@@ -1083,7 +1088,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.10.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.11.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

@@ -16,7 +16,8 @@ ou à héberger pour les joueurs.
 ## Fonctionnalités
 
 - **Guildes** : chef, officiers et membres, invitations, trésor en lingots d'or, point de retour, **niveaux jusqu'à
-  100** (réglable jusqu'à 500) avec rangs, paliers et récompenses.
+  100** (réglable jusqu'à 500) avec rangs, paliers et récompenses, **vol dans son territoire** (`/guild fly`) et
+  raccourcis (`/home`, `/g`…).
 - **Territoire** : drapeau fondateur (le cœur de la base) et drapeaux d'extension par chunk, protections (explosions,
   feu, pistons, fluides), limites affichées en particules, bannière tissée au métier à tisser et visible sur les cartes.
 - **Hordes nocturnes** : 7 thèmes (morts-vivants, arachnides, illageois, Nether, End, boss, élites), difficulté
@@ -123,6 +124,13 @@ tient une carte qui couvre la base. L'éditeur gratuit (sans ressources) peut ê
 - Le territoire est protégé : seuls les membres (selon leur rôle) cassent, posent ou interagissent.
   Explosions, feu, pistons et liquides venant de l'extérieur ne l'abîment pas.
 - Entrer/sortir d'un territoire affiche son nom (titre ou barre d'action). `/guild show` dessine ses limites en particules.
+- **Voler chez soi** : `/guild fly` (ou le bouton « Vol de guilde » du menu Territoire) active le vol de guilde. Dans
+  les chunks de **votre** guilde, en survie ou en aventure, vous pouvez voler comme en créatif (sautez deux fois pour
+  décoller). Le vol s'arrête dès que vous sortez du territoire (un avertissement s'affiche quand le bord approche) et
+  **pendant toute horde** (nuit, raid de pillards, vague de test) ; il revient tout seul ensuite. Si le vol s'arrête en
+  l'air, la chute qui suit ne fait **aucun dégât**. Le réglage est mémorisé (reconnexion, mort) ; `/guild fly off`
+  l'éteint. Le serveur peut exiger un niveau de guilde ou un rôle minimum (section `fly` de `config.json5`). Avec les
+  Bottes de Zéphyr, le double saut reprend dès l'atterrissage hors du territoire.
 - **Drapeaux d'extension** (achetés avec le trésor dans le menu Territoire ou `/guild flag buy`, gagnés en quête ou sur un boss) :
   plantés dans un chunk **voisin** du territoire, ils l'ajoutent. `/guild claim` utilise un drapeau de l'inventaire
   sur le chunk où vous êtes, `/guild unclaim` rend le chunk (et le drapeau).
@@ -931,6 +939,27 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 `/gld` est un alias de `/guild`. Auto-complétion partout ; les noms de guilde avec espaces sont acceptés
 (entre guillemets quand un autre argument suit).
 
+### Raccourcis
+Les commandes les plus tapées existent aussi au premier niveau. Un raccourci **copie** la sous-commande : mêmes
+arguments (`/g info <guilde>`, `/villageois accept`), même auto-complétion, mêmes droits (une commande d'admin reste
+réservée aux admins).
+
+| Raccourci | Commande |
+|---|---|
+| `/g` | `/guild` (le menu, et toutes les sous-commandes : `/g info`, `/g deposit`…) |
+| `/home` · `/sethome` | `/guild home` · `/guild sethome` |
+| `/fly` | `/guild fly` |
+| `/quetes` | `/guild quests` |
+| `/villageois` | `/guild villagers` |
+| `/bilan` | `/guild bilan` |
+
+Ils se règlent dans `config.json5 > shortcuts` (`enabled`, `aliases` : raccourci → sous-commande de `/guild`, plusieurs
+mots possibles, `"guild"` = `/guild` lui-même ; par exemple `"depot": "deposit"`, `"stockage": "stockage"`) et
+s'appliquent au démarrage, avec `/reload` ou avec `/guild admin reload`. Un nom déjà pris par Minecraft ou par un autre
+mod (par exemple le `/home` d'Essential Commands) n'est **jamais remplacé** : le raccourci est ignoré et signalé dans le
+journal du serveur et par `/guild admin shortcuts` ; renommez-le (`"ghome": "home"`) ou retirez-le. `/guild help`
+affiche les raccourcis disponibles (cliquables).
+
 ### Joueurs
 | Commande | Effet |
 |---|---|
@@ -946,6 +975,7 @@ quêtes ; le chef promeut, rétrograde, transfère la direction et dissout. Modi
 | `/guild flag` · `flag buy` | Récupérer le drapeau fondateur / acheter un drapeau d'extension (prend d'abord un drapeau offert par un palier de niveau) |
 | `/guild claim` · `unclaim` · `show` | Territoire |
 | `/guild sethome` · `home` | Point de retour de la guilde |
+| `/guild fly` · `fly on\|off` | Vol de guilde dans son territoire (bascule / activer / désactiver) ; jamais pendant une horde. Permission `guildy.fly` (accordée par défaut) |
 | `/guild waves` | Hordes : état, prochaine nuit, statistiques, règles |
 | `/guild build` | Constructions et plans |
 | `/guild quests` | Quêtes |
@@ -967,6 +997,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin bypass` | Ignorer les protections de territoire |
 | `/guild admin info\|disband <guilde>` · `forcejoin <joueur> <guilde>` | Gestion des guildes |
 | `/guild admin setlevel\|addxp\|addgold <guilde> <valeur>` | Progression et trésor (`setlevel` jusqu'au niveau max, sans récompenses ; `addxp` donne les récompenses des niveaux gagnés) |
+| `/guild admin shortcuts` | Raccourcis : actifs, ou ignorés avec la raison (nom invalide ou réservé, en double, cible absente, nom déjà pris par Minecraft ou un autre mod, remplacé ensuite par un autre mod) |
 | `/guild admin levels` | Courbe des niveaux : XP totale, XP du niveau et rang aux niveaux clés |
 | `/guild admin giveflag <joueur> extension [n]` · `giveflag <joueur> founding <guilde>` · `tp <guilde>` | Drapeaux, téléport au cœur |
 | `/guild admin wave start\|stop\|status <guilde>` · `wave setnight <guilde> <n>` · `wave truce <guilde> <nuits>` · `wave schedule <guilde> <nuits>` | Hordes (start = horde de test immédiate ; truce = nuits de trêve restantes, 0 = fin ; schedule = prochaine horde dans N nuits, 0 = cette nuit) |
@@ -1000,7 +1031,8 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 | Fichier | Contenu |
 |---|---|
 | `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, niveaux (`levels` : niveau max, seuils et formule d'XP, récompenses, paliers, rangs ; chunks au-delà du
-niveau 10), bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles |
+niveau 10), bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles, vol de guilde (`fly` : niveau, rôle,
+hordes, délai après un coup, avertissement de bord, protection de chute), raccourcis de commandes (`shortcuts`) |
 | `waves.json5` | Horaires, jours entre deux hordes (1 à 3), formule de difficulté (et part du niveau au-delà de 10 : `perLevelAbove10`, `maxAbove10`), taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, trêve après plusieurs défaites, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), niveau de calcul au-delà de 10 (`levelScalingAbove10`, `maxScalingLevel`), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
@@ -1122,6 +1154,14 @@ Formules par défaut (modifiables) :
   peut retirer ~800 PV à un gardien seul (réglable : `params.damage`, `cursedGrimoire.powerMultiplier`). Un tiers des
   météores tombe toujours au hasard ; sur un monstre volant, le météore qui le suit explose en l'air.
 - Bilan du combat : un totem ne compte que dans l'arène d'un combat de ruine en cours (pas pendant les hordes).
+
+- Vol de guilde : il repose sur l'autorisation de vol vanilla, comme le double saut (un anticheat externe pourrait le
+  signaler) ; la sortie du territoire est vue toutes les 0,25 s (en vol rapide, on dépasse le bord de quelques blocs, la
+  chute reste protégée) ; la protection annule une seule chute ; un vol donné par un opérateur ou un autre mod n'est
+  jamais pris ni retiré (les Bottes de Zéphyr le laissent aussi tranquille désormais).
+- Raccourcis : un mod qui enregistre le même nom après Guildy prend le dessus (signalé « remplacé » dans
+  `/guild admin shortcuts`) ; un raccourci ne peut pas préremplir une valeur d'argument (`"deposit all"` marche,
+  `"deposit 5"` non) ; noms sans accents ; pas de permission propre (il hérite de la commande cible).
 
 ---
 

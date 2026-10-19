@@ -79,6 +79,8 @@ villager/     VillagerManager (arrivées, candidats, départs), TaskEngine + *Ta
               (pur), StorageDefaults, StorageLabels, StorageGui), DepthLoot (pur), VillagerGui, ZoneGui, VillagerConfig
 upgrade/      UpgradeTree/UpgradeRules/UpgradeMath/UpgradeEffects (purs, testés), Upgrades (bonus lus par les autres
               modules), UpgradeService (déblocage atomique), UpgradeMenu, UpgradeBuffs, UpgradeConfig
+fly/          FlyModule, GuildFly (vol de guilde), FlyRules (pur, testé), FlyLang ; core/FlightOwnership (pur) +
+              FlightGrants : propriété partagée de `mayfly` (vol de guilde, double saut)
 level/        LevelCurve, LevelScaling, LevelRewardRules (purs, testés), LevelUps (montées de niveau, récompenses,
               annonces), LevelLang
 unique/       UniqueItems (fabrique), UniqueRolls (tables de butin), UniquePowers + Combat/Lightning/MiningPowers,
@@ -468,6 +470,32 @@ schématiques) : `tools/ruins/`.
     liste encore égale aux défauts 1.8.1 (`FightStatsSettings.V1_CATEGORIES`) reçoit le titre. Chat : total de l'équipe sur
     la ligne d'info, « (avec N totems) » après *Fléau du gardien*, ligne du lecteur, survol / lore et en-tête du menu (si
     > 0) ; forme courte = premier titre + *Increvable* (`FightReport.chatTitles`) ; singulier / pluriel : clé `….one`.
+
+62. **Vol de guilde** (`fly/`, section `fly` de config.json5) : `/guild fly [on|off]` (nœud `guildy.fly`, accordé par
+    défaut ; enfant ordinaire de `/guild`), préférence = tag `guildy_fly` (sauvé, gardé à la réapparition). `FlyRules`
+    (pur) : DISABLED > GAME_MODE > NO_GUILD > ROLE > LEVEL > PERMISSION (lue en dernier, cache 2 s) > HORDE
+    (`Hooks.isWaveActive` = toute session de `WaveManager` : nuit, test, événement) > OUTSIDE (chunk de sa guilde, dimension
+    des claims) > COMBAT ; activation refusée seulement pour les raisons durables. `GuildFly` : joueurs avec la préférence
+    seulement, tous les 5 ticks (répartis par id), plus tout de suite sur WAVE_STARTED, TERRITORY_CHANGED, MEMBER_LEFT,
+    DISBANDED (forcé : la guilde est encore indexée) et RELOADED. Vol retiré en l'air → `FallGuard` : la prochaine chute
+    (`#is_fall`, ALLOW_DAMAGE) est annulée une fois dans `fallProtectionSeconds`, garde levée après un atterrissage
+    (sol, eau, échelle) ; connexion en l'air avec la préférence = même garde. Avertissement de bord : 8 directions à
+    `borderWarningBlocks` + trajectoire extrapolée. Propriété partagée de `mayfly` (`core/FlightOwnership` pur +
+    `FlightGrants`) : un propriétaire ne prend la main que si `mayfly` est faux ou déjà donné par Guildy (jamais sur
+    créatif, opérateur ou autre mod, donc jamais repris), rangs GUILD_FLY > DOUBLE_JUMP (le double saut s'efface : ni
+    octroi, ni bond, ni retrait), `mayfly` retiré au départ du dernier propriétaire, `flying` à celui du dernier qui permet
+    le vrai vol ; tag par propriétaire (`guildy_guild_fly`, `guildy_double_jump` inchangé) nettoyé à la connexion, tout
+    rendu à la déconnexion et à l'arrêt.
+63. **Raccourcis de commandes** (`command/ShortcutCommands`, `ShortcutRules` pur et testé, section `shortcuts` de
+    config.json5 : `enabled`, `aliases` raccourci → chemin sous `/guild`) : enregistrés dans une phase tardive
+    `guildy:shortcuts` de `CommandRegistrationCallback` (après `Event.DEFAULT_PHASE` : vanilla et les autres mods ont déjà
+    leurs commandes) ; chaque raccourci est un nouveau littéral racine qui **copie** la cible (commande, enfants partagés,
+    redirection éventuelle, ET des `requires` de tout le chemin) — pas de `redirect` nu (un nœud redirigé sans argument ne
+    s'exécute pas). Refus : nom invalide, réservé (`guild`, `gld`), doublon, cible mal écrite, cible absente (un défaut
+    absent = log debug), nom déjà pris à la racine (jamais remplacé) ; un message par cause et par JVM. État par
+    dispatcher (`WeakHashMap`, `/reload` reconstruit) ; nœud fusionné ensuite par un autre mod = `OVERRIDDEN`.
+    `/guild admin reload` reconstruit en place (retrait par réflexion sur `children/literals/arguments` de `CommandNode`,
+    échec → warn) et renvoie l'arbre aux joueurs (`Commands.sendCommands`, aussi après `END_DATA_PACK_RELOAD`).
 
 ## Notes API Minecraft 26.3
 

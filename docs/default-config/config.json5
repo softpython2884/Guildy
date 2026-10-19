@@ -217,6 +217,34 @@
 		]
 	},
 
+	// Vol dans le territoire de sa guilde (/guild fly), jamais pendant une horde
+	"fly": {
+
+		// Activer /guild fly : un membre qui l'active vole (comme en creatif, double saut pour decoller) dans les chunks
+		// de sa guilde, en survie / aventure seulement. Permission 'guildy.fly' (accordee par defaut)
+		"enabled": true,
+
+		// Niveau de guilde minimum pour voler
+		"minGuildLevel": 1,
+
+		// Role minimum pour voler (MEMBER, OFFICER, LEADER)
+		"minRole": "MEMBER",
+
+		// Couper le vol pendant les hordes de la guilde (nuit, vague de test, raid de pillards...).
+		// false n'est PAS recommande : voler au-dessus de la horde la rend sans danger
+		"disableDuringWaves": true,
+
+		// Pas de vol pendant N secondes apres avoir ete blesse par un monstre (0 = desactive)
+		"combatCooldownSeconds": 0,
+
+		// Avertir (barre d'action) en vol a moins de N blocs du bord du territoire (0 = jamais, 16 au plus)
+		"borderWarningBlocks": 6,
+
+		// Vol coupe en l'air (bord du territoire, horde...) : la prochaine chute ne fait aucun degat si elle a lieu
+		// dans les N secondes (5 a 120)
+		"fallProtectionSeconds": 30
+	},
+
 	// Banniere / drapeau de guilde et affichage sur les cartes
 	"banners": {
 
@@ -258,5 +286,27 @@
 
 		// Niveau d'operateur vanilla requis pour les commandes admin si aucun gestionnaire de permissions n'est installe
 		"adminOpLevel": 2
+	},
+
+	// Raccourcis : commandes courtes au premier niveau, par ex. /home = /guild home, /g = /guild (menu + sous-commandes).
+	// Un raccourci deja pris par Minecraft ou par un autre mod est ignore (jamais remplace), de meme qu'une cible absente.
+	// Appliques au demarrage, avec /reload et avec /guild admin reload. Etat de chaque raccourci : /guild admin shortcuts
+	"shortcuts": {
+
+		// Activer les raccourcis
+		"enabled": true,
+
+		// Raccourci -> sous-commande de /guild. Raccourci : minuscules, chiffres, _ et - (ni guild ni gld).
+		// Cible : un ou plusieurs mots (ex. "villagers storage") ; "guild" = /guild lui-meme. Les arguments suivent
+		// le raccourci comme avec /guild (/depot 5 si "depot": "deposit") ; les permissions restent celles de la cible.
+		"aliases": {
+			"g": "guild",
+			"home": "home",
+			"sethome": "sethome",
+			"fly": "fly",
+			"quetes": "quests",
+			"villageois": "villagers",
+			"bilan": "bilan"
+		}
 	}
 }
