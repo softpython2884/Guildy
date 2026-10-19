@@ -3,6 +3,7 @@ package dev.guildy;
 import dev.guildy.claim.ClaimModule;
 import dev.guildy.command.GuildCommand;
 import dev.guildy.command.GuildCommands;
+import dev.guildy.command.ShortcutCommands;
 import dev.guildy.config.ConfigHandle;
 import dev.guildy.config.ConfigManager;
 import dev.guildy.config.GuildyConfig;
@@ -52,6 +53,7 @@ public final class Guildy implements ModInitializer {
 		// Feature modules register their configs, lang defaults, events, commands and hooks here.
 		ClaimModule.init();
 		GuildCommands.init();
+		ShortcutCommands.init(); // /home = /guild home...: late command registration phase, after the other mods' commands
 		GuildMenus.init();
 		WaveModule.init();
 		StructureModule.init();

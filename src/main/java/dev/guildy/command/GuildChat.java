@@ -164,6 +164,10 @@ public final class GuildChat {
 		}
 		buttons.append(button("list", "/guild list", false));
 		player.sendSystemMessage(buttons);
+		Component shortcuts = ShortcutCommands.helpLine(player);
+		if (shortcuts != null) {
+			player.sendSystemMessage(shortcuts);
+		}
 	}
 
 	private static Component button(String id, String command, boolean suggest) {
