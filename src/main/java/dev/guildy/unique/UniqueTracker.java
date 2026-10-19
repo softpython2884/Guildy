@@ -44,10 +44,8 @@ final class UniqueTracker {
 
 	static void init() {
 		Scheduler.every("unique.scan", 20, 3, UniqueTracker::scanAll);
-		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Safe.run("unique.join", () -> {
-			DoubleJump.onJoin(handler.getPlayer());
-			scan(handler.getPlayer());
-		}));
+		// (A double jump grant left by a crash is taken back at login by FlightGrants.)
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> Safe.run("unique.join", () -> scan(handler.getPlayer())));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Safe.run("unique.leave", () -> {
 			// Last look at what leaves with the player (a pickup just before logging out).
 			scan(handler.getPlayer());

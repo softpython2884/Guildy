@@ -7,6 +7,7 @@ import dev.guildy.config.ConfigHandle;
 import dev.guildy.config.ConfigManager;
 import dev.guildy.config.GuildyConfig;
 import dev.guildy.core.CoreLang;
+import dev.guildy.core.FlightGrants;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Lifecycle;
@@ -48,6 +49,7 @@ public final class Guildy implements ModInitializer {
 		GuildyServer.setConfigHandle(config);
 		CoreLang.register();
 		LevelLang.register();
+		FlightGrants.init(); // shared owner of the survival flight (guild fly, double jump): before the modules' login hooks
 
 		// Feature modules register their configs, lang defaults, events, commands and hooks here.
 		ClaimModule.init();
