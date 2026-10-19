@@ -1,5 +1,8 @@
 package dev.guildy.unique;
 
+import dev.guildy.core.FlightGrants;
+import dev.guildy.core.FlightOwnership;
+import dev.guildy.core.FlightOwnership.Owner;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Scheduler;
 import net.minecraft.core.particles.ParticleTypes;
@@ -13,22 +16,19 @@ import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
  * Bottes de Zéphyr: double jump for vanilla clients. While the boots are worn (survival / adventure) the player may
  * "fly" (abilities.mayfly) when standing on the ground; a double tap on jump makes the client start flying, which the
  * server turns into an upward boost and takes the flight back until the next landing. Players allowed to fly never take
- * fall damage (vanilla rule), which is part of the power. The grant is marked with an entity tag (saved with the player)
- * so that a crash never leaves a survival player able to fly: the tag is cleaned up at the next login.
+ * fall damage (vanilla rule), which is part of the power. The grant goes through {@link FlightGrants} (owner
+ * {@link Owner#DOUBLE_JUMP}, marked with an entity tag taken back at login after a crash): while guild flight holds it,
+ * the double jump steps aside (real flight, no boost, no revoke) and takes over again from the next landing.
  */
 final class DoubleJump {
-	static final String TAG = "guildy_double_jump";
-	private static final Set<UUID> GRANTED = new HashSet<>();
 	private static final Map<UUID, Long> LAST_JUMP = new HashMap<>();
 
 	private DoubleJump() {
@@ -39,35 +39,30 @@ final class DoubleJump {
 		for (ServerPlayer player : List.copyOf(GuildyServer.players())) {
 			boolean eligible = player.gameMode.isSurvival() && !player.isSpectator()
 					&& UniqueItems.powerOf(player.getItemBySlot(EquipmentSlot.FEET)) == UniquePower.DOUBLE_JUMP;
-			boolean managed = GRANTED.contains(player.getUUID());
+			boolean managed = FlightGrants.holds(player, Owner.DOUBLE_JUMP);
 			if (!eligible) {
 				if (managed) {
 					revoke(player);
 				}
 				continue;
 			}
+			if (FlightGrants.outranked(player, Owner.DOUBLE_JUMP)) {
+				// Guild flight holds the grant: the player really flies; mayfly stays with the higher owner.
+				if (managed) {
+					FlightGrants.release(player, Owner.DOUBLE_JUMP);
+				}
+				continue;
+			}
 			Abilities abilities = player.getAbilities();
-			if (managed && abilities.flying) {
-				// Double tap on jump: the client asked to fly.
-				abilities.flying = false;
-				abilities.mayfly = false;
-				player.onUpdateAbilities();
+			if (managed && abilities.flying && FlightOwnership.flightIsBoost(FlightGrants.holders(player))) {
+				// Double tap on jump: the client asked to fly (flight and mayfly are taken back until the next landing).
+				FlightGrants.release(player, Owner.DOUBLE_JUMP);
 				jump(player);
 				continue;
 			}
 			if ((player.onGround() || player.isInWater() || player.onClimbable()) && (!managed || !abilities.mayfly)) {
-				grant(player);
+				FlightGrants.grant(player, Owner.DOUBLE_JUMP);
 			}
-		}
-	}
-
-	private static void grant(ServerPlayer player) {
-		GRANTED.add(player.getUUID());
-		player.addTag(TAG);
-		Abilities abilities = player.getAbilities();
-		if (!abilities.mayfly) {
-			abilities.mayfly = true;
-			player.onUpdateAbilities();
 		}
 	}
 
@@ -90,36 +85,18 @@ final class DoubleJump {
 		level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BREEZE_JUMP, SoundSource.PLAYERS, 0.7F, 1.3F);
 	}
 
-	/** Takes back the flight we granted (never touches creative / spectator flight). */
+	/** Takes back the flight we granted (never touches creative / spectator flight, nor a flight still held by guild fly). */
 	static void revoke(ServerPlayer player) {
-		GRANTED.remove(player.getUUID());
 		LAST_JUMP.remove(player.getUUID());
-		player.removeTag(TAG);
-		if (player.gameMode.isSurvival()) {
-			Abilities abilities = player.getAbilities();
-			if (abilities.mayfly || abilities.flying) {
-				abilities.mayfly = false;
-				abilities.flying = false;
-				player.onUpdateAbilities();
-			}
-		}
+		FlightGrants.release(player, Owner.DOUBLE_JUMP);
 	}
 
-	/** Login: a leftover grant (crash, logout with the boots on) is taken back; the next tick grants it again if worn. */
-	static void onJoin(ServerPlayer player) {
-		if (player.entityTags().contains(TAG)) {
-			revoke(player);
-		}
-	}
-
+	/** Logout: the grant itself is taken back by {@link FlightGrants}; only the jump cooldown is forgotten here. */
 	static void onLeave(ServerPlayer player) {
-		if (GRANTED.contains(player.getUUID())) {
-			revoke(player);
-		}
+		LAST_JUMP.remove(player.getUUID());
 	}
 
 	static void clear() {
-		GRANTED.clear();
 		LAST_JUMP.clear();
 	}
 }

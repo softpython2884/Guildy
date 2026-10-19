@@ -11,6 +11,7 @@
 		"fabric-gametest": [
 			"dev.guildy.test.GuildyGameTests",
 			"dev.guildy.test.TerritoryGameTests",
+			"dev.guildy.test.FlyGameTests",
 			"dev.guildy.test.WaveGameTests",
 			"dev.guildy.test.VillagerGameTests",
 			"dev.guildy.test.ExpeditionGameTests",

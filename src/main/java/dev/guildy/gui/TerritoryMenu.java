@@ -11,6 +11,7 @@ import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildPermission;
 import dev.guildy.data.GuildRole;
+import dev.guildy.fly.GuildFly;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -224,6 +225,12 @@ final class TerritoryMenu extends GuildGui {
 				close();
 				ClaimService.teleportHome(player, guild);
 			});
+		}
+		if (GuildyServer.config().fly.enabled) {
+			boolean on = GuildFly.preference(player);
+			GuiElementBuilder flyIcon = icon(on ? Items.ELYTRA : Items.FEATHER,
+					Lang.get(on ? "menu.territory.fly.name.on" : "menu.territory.fly.name.off"), GuildFly.menuLore(player));
+			action(34, on ? flyIcon.glow() : flyIcon, () -> GuildFly.switchOnDenial(player), () -> GuildFly.toggle(player));
 		}
 		bottomBar(() -> new MainMenu(player, guild).show());
 	}

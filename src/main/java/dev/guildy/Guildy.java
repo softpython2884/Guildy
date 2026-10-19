@@ -8,6 +8,7 @@ import dev.guildy.config.ConfigHandle;
 import dev.guildy.config.ConfigManager;
 import dev.guildy.config.GuildyConfig;
 import dev.guildy.core.CoreLang;
+import dev.guildy.core.FlightGrants;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Lifecycle;
@@ -15,6 +16,7 @@ import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
 import dev.guildy.data.GuildManager;
 import dev.guildy.event.EventModule;
+import dev.guildy.fly.FlyModule;
 import dev.guildy.gui.GuildMenus;
 import dev.guildy.level.LevelLang;
 import dev.guildy.quest.QuestModule;
@@ -49,6 +51,7 @@ public final class Guildy implements ModInitializer {
 		GuildyServer.setConfigHandle(config);
 		CoreLang.register();
 		LevelLang.register();
+		FlightGrants.init(); // shared owner of the survival flight (guild fly, double jump): before the modules' login hooks
 
 		// Feature modules register their configs, lang defaults, events, commands and hooks here.
 		ClaimModule.init();
@@ -63,6 +66,7 @@ public final class Guildy implements ModInitializer {
 		UpgradeModule.init();
 		TradeModule.init();
 		EventModule.init(); // after the wave and trade modules (hooks into both)
+		FlyModule.init(); // /guild fly: flight inside the own territory, never during a horde
 		UniqueModule.init(); // unique weapons: implements the core UniqueDrops hook
 		ScrollModule.init(); // spell scrolls: implements the core ScrollDrops hook
 		RuinModule.init(); // ruins guarded by bosses + cartographer (uses the structure and villager modules)

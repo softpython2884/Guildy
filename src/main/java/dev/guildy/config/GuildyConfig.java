@@ -39,6 +39,9 @@ public final class GuildyConfig implements Validatable {
 	@Comment("Niveaux de guilde (XP gagnee via vagues et quetes)")
 	public Levels levels = new Levels();
 
+	@Comment("Vol dans le territoire de sa guilde (/guild fly), jamais pendant une horde")
+	public Fly fly = new Fly();
+
 	@Comment("Banniere / drapeau de guilde et affichage sur les cartes")
 	public Banners banners = new Banners();
 
@@ -218,6 +221,45 @@ public final class GuildyConfig implements Validatable {
 	}
 
 	@Json5.Section
+	public static final class Fly {
+		@Comment({
+				"Activer /guild fly : un membre qui l'active vole (comme en creatif, double saut pour decoller) dans les chunks",
+				"de sa guilde, en survie / aventure seulement. Permission 'guildy.fly' (accordee par defaut)"
+		})
+		public boolean enabled = true;
+		@Comment("Niveau de guilde minimum pour voler")
+		public int minGuildLevel = 1;
+		@Comment("Role minimum pour voler (MEMBER, OFFICER, LEADER)")
+		public String minRole = GuildRole.MEMBER.name();
+		@Comment({
+				"Couper le vol pendant les hordes de la guilde (nuit, vague de test, raid de pillards...).",
+				"false n'est PAS recommande : voler au-dessus de la horde la rend sans danger"
+		})
+		public boolean disableDuringWaves = true;
+		@Comment("Pas de vol pendant N secondes apres avoir ete blesse par un monstre (0 = desactive)")
+		public int combatCooldownSeconds = 0;
+		@Comment("Avertir (barre d'action) en vol a moins de N blocs du bord du territoire (0 = jamais, 16 au plus)")
+		public int borderWarningBlocks = 6;
+		@Comment({
+				"Vol coupe en l'air (bord du territoire, horde...) : la prochaine chute ne fait aucun degat si elle a lieu",
+				"dans les N secondes (5 a 120)"
+		})
+		public int fallProtectionSeconds = 30;
+
+		public GuildRole role() {
+			return GuildRole.parse(minRole, GuildRole.MEMBER);
+		}
+
+		void validate() {
+			minGuildLevel = Math.max(1, minGuildLevel);
+			minRole = role().name();
+			combatCooldownSeconds = Math.max(0, Math.min(600, combatCooldownSeconds));
+			borderWarningBlocks = Math.max(0, Math.min(16, borderWarningBlocks));
+			fallProtectionSeconds = Math.max(5, Math.min(120, fallProtectionSeconds));
+		}
+	}
+
+	@Json5.Section
 	public static final class Banners {
 		@Comment({
 				"false : la banniere se cree au METIER A TISSER avec de vrais colorants (on tisse le drapeau fondateur,",
@@ -368,6 +410,10 @@ public final class GuildyConfig implements Validatable {
 		}
 		LevelRewardRules.validate(levels.rewards);
 		levels.ranks = LevelRewardRules.cleanRanks(levels.ranks);
+		if (fly == null) {
+			fly = new Fly();
+		}
+		fly.validate();
 		if (rolePermissions == null) {
 			rolePermissions = defaultRolePermissions();
 		}
