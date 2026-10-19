@@ -53,6 +53,13 @@ public final class GuildyConfig implements Validatable {
 	@Comment("Divers")
 	public General general = new General();
 
+	@Comment({
+			"Raccourcis : commandes courtes au premier niveau, par ex. /home = /guild home, /g = /guild (menu + sous-commandes).",
+			"Un raccourci deja pris par Minecraft ou par un autre mod est ignore (jamais remplace), de meme qu'une cible absente.",
+			"Appliques au demarrage, avec /reload et avec /guild admin reload. Etat de chaque raccourci : /guild admin shortcuts"
+	})
+	public Shortcuts shortcuts = new Shortcuts();
+
 	@Json5.Section
 	public static final class Guilds {
 		@Comment("Longueur minimale / maximale du nom de guilde")
@@ -232,6 +239,31 @@ public final class GuildyConfig implements Validatable {
 		public int adminOpLevel = 2;
 	}
 
+	@Json5.Section
+	public static final class Shortcuts {
+		@Comment("Activer les raccourcis")
+		public boolean enabled = true;
+		@Comment({
+				"Raccourci -> sous-commande de /guild. Raccourci : minuscules, chiffres, _ et - (ni guild ni gld).",
+				"Cible : un ou plusieurs mots (ex. \"villagers storage\") ; \"guild\" = /guild lui-meme. Les arguments suivent",
+				"le raccourci comme avec /guild (/depot 5 si \"depot\": \"deposit\") ; les permissions restent celles de la cible."
+		})
+		public Map<String, String> aliases = defaultShortcuts();
+	}
+
+	/** Default shortcuts: what players type most, French names for the French subcommands, nothing for admins. */
+	public static Map<String, String> defaultShortcuts() {
+		Map<String, String> map = new LinkedHashMap<>();
+		map.put("g", "guild");
+		map.put("home", "home");
+		map.put("sethome", "sethome");
+		map.put("fly", "fly");
+		map.put("quetes", "quests");
+		map.put("villageois", "villagers");
+		map.put("bilan", "bilan");
+		return map;
+	}
+
 	public static Map<String, String> defaultRolePermissions() {
 		Map<String, String> map = new LinkedHashMap<>();
 		map.put(GuildPermission.BUILD.name(), GuildRole.MEMBER.name());
@@ -347,5 +379,13 @@ public final class GuildyConfig implements Validatable {
 		}
 		general.autosaveMinutes = Math.max(1, general.autosaveMinutes);
 		general.adminOpLevel = Math.max(0, Math.min(4, general.adminOpLevel));
+		if (shortcuts == null) {
+			shortcuts = new Shortcuts();
+		}
+		if (shortcuts.aliases == null) {
+			shortcuts.aliases = defaultShortcuts();
+		}
+		// Bad names stay in the file: they are reported by /guild admin shortcuts and in the log.
+		shortcuts.aliases.entrySet().removeIf(entry -> entry.getKey() == null || entry.getValue() == null);
 	}
 }
