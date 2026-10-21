@@ -65,6 +65,11 @@ public final class AlchemistConfig {
 	})
 	public Map<String, Double> scrolls = defaultScrolls();
 	@Comment({
+			"Parchemins par defaut deja proposes a ce fichier (gere automatiquement) : un nouveau parchemin par defaut d'une mise a",
+			"jour est ajoute une seule fois a 'scrolls' ; un parchemin retire de 'scrolls' n'y revient jamais"
+	})
+	public @Nullable List<String> knownScrolls;
+	@Comment({
 			"Ordre des travaux : books = livres enchantes, scrolls = parchemins (un parchemin a chaque travail a la table, avec",
 			"livre + papier), potions = potions et elixirs (alambic, voir alchemy.json5). L'alchimiste fait son travail prefere",
 			"(son role) ; s'il est impossible (pas de table, de livres, de papier, d'alambic, d'ingredients, plafond du jour,",
@@ -113,6 +118,10 @@ public final class AlchemistConfig {
 		epicScrollLevel = clamp(epicScrollLevel, 1, AlchemyRules.MAX_LEVEL);
 		for (String warning : cleanScrolls()) {
 			LOGGER.warn("[villagers.json5] {}", warning);
+		}
+		List<String> added = addNewScrolls();
+		if (!added.isEmpty()) {
+			LOGGER.info("[villagers.json5] new scrolls for the alchemist: {}", String.join(", ", added));
 		}
 		for (String warning : cleanJobs()) {
 			LOGGER.warn("[villagers.json5] {}", warning);
@@ -222,6 +231,32 @@ public final class AlchemistConfig {
 		return warnings;
 	}
 
+	/** Default scrolls of Guildy 1.11 and before: a file without knownScrolls has already been offered them. */
+	static final List<String> V1_SCROLLS = List.of("rappel", "benediction", "revelation", "blizzard", "seisme", "egide",
+			"tempete_de_foudre");
+
+	/**
+	 * Adds once the default scrolls this file has never been offered (the scrolls of an update), with their default weight;
+	 * a scroll the admin removed is never added back. Call after {@link #cleanScrolls} (pure).
+	 *
+	 * @return the ids added
+	 */
+	List<String> addNewScrolls() {
+		List<String> known = knownScrolls == null ? V1_SCROLLS : knownScrolls;
+		List<String> added = new ArrayList<>();
+		Map<String, Double> defaults = defaultScrolls();
+		if (scrolls != null) {
+			for (Map.Entry<String, Double> entry : defaults.entrySet()) {
+				if (!known.contains(entry.getKey()) && !scrolls.containsKey(entry.getKey())) {
+					scrolls.put(entry.getKey(), entry.getValue());
+					added.add(entry.getKey());
+				}
+			}
+		}
+		knownScrolls = new ArrayList<>(defaults.keySet());
+		return added;
+	}
+
 	/** Mostly the basic scrolls (Rappel first), rarely an epic one (needs a level-30 table by default). */
 	static Map<String, Double> defaultScrolls() {
 		Map<String, Double> map = new LinkedHashMap<>();
@@ -232,6 +267,11 @@ public final class AlchemistConfig {
 		map.put("seisme", 1.0);
 		map.put("egide", 1.0);
 		map.put("tempete_de_foudre", 1.0);
+		map.put("hate_du_vent", 5.0);
+		map.put("permutation", 4.0);
+		map.put("ralliement", 1.0);
+		map.put("banniere_de_guerre", 1.0);
+		map.put("fleau", 1.0);
 		return map;
 	}
 

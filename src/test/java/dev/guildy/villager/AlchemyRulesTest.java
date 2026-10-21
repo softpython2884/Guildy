@@ -341,4 +341,30 @@ class AlchemyRulesTest {
 		assertEquals(2, old.alchemist.maxScrollsPerDay);
 		assertEquals(5, old.alchemist.maxBooksPerDay);
 	}
+
+	@Test
+	void newDefaultScrollsAreAddedOnceToOldTables(@TempDir Path dir) throws Exception {
+		Path file = dir.resolve("villagers.json5");
+		// A 1.11 file: its own table (Séisme removed by the admin), no knownScrolls.
+		Files.writeString(file, "{ alchemist: { scrolls: { rappel: 12, benediction: 7, revelation: 6, blizzard: 1 } } }");
+		VillagerConfig old = Json5.read(file, VillagerConfig.class);
+		old.validate();
+		Map<String, Double> scrolls = old.alchemist.scrolls;
+		assertEquals(5.0, scrolls.get("hate_du_vent"), "the new scrolls are offered with their default weight: " + scrolls);
+		assertEquals(4.0, scrolls.get("permutation"));
+		assertTrue(scrolls.containsKey("ralliement") && scrolls.containsKey("banniere_de_guerre") && scrolls.containsKey("fleau"));
+		assertFalse(scrolls.containsKey("seisme"), "a scroll of 1.11 removed by the admin stays removed");
+		assertEquals(12.0, scrolls.get("rappel"), "existing weights kept");
+		assertEquals(List.copyOf(AlchemistConfig.defaultScrolls().keySet()), old.alchemist.knownScrolls);
+		// Once offered, a new scroll removed by the admin is not added back.
+		old.alchemist.scrolls.remove("permutation");
+		Json5.write(file, old);
+		VillagerConfig again = Json5.read(file, VillagerConfig.class);
+		again.validate();
+		assertFalse(again.alchemist.scrolls.containsKey("permutation"), "removed after the update: stays removed");
+		// A fresh file is not changed.
+		VillagerConfig fresh = new VillagerConfig();
+		fresh.validate();
+		assertEquals(AlchemistConfig.defaultScrolls(), fresh.alchemist.scrolls);
+	}
 }
