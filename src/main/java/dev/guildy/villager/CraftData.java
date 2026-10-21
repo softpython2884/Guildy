@@ -29,15 +29,29 @@ public class CraftData {
 	public long scrolls;
 	/** Scroll id of the last scroll written, "" before the first one. */
 	public String lastScroll = "";
-	/** Claim-level day of {@link #booksToday} and {@link #scrollsToday} (-1 = none yet). */
+	/** Potions and elixirs brewed (bottles). */
+	public long potions;
+	/** Product of the last batch ("healing", "elixir:arcanique"), "" before the first one. */
+	public String lastPotion = "";
+	/** Brews left from the fuel already burnt (a blaze powder gives {@code alchemist.brewsPerFuel}). */
+	public int brewFuel;
+	/** Role chosen in the menu ({@link AlchemyJob} id), "" = automatic (the guild's distribution). */
+	public String role = "";
+	/** Claim-level day of the daily counts (-1 = none yet). */
 	public long day = -1;
-	/** Works of that day: enchanted books and scrolls (the daily cap counts both). */
+	/** Enchanted books of that day (an older save counted the scrolls in it too). */
 	public int booksToday;
-	/** Scrolls of that day (their own cap, inside the one of {@link #booksToday}). */
+	/** Scrolls of that day (their own cap). */
 	public int scrollsToday;
+	/** Potion and elixir bottles of that day (their own cap). */
+	public int potionsToday;
 
-	/** Works done today (books and scrolls). */
+	/** Works done at the enchanting table today (books and scrolls). */
 	public int worksToday(long today) {
+		return booksToday(today) + scrollsToday(today);
+	}
+
+	public int booksToday(long today) {
 		return AlchemyRules.madeToday(day, booksToday, today);
 	}
 
@@ -45,13 +59,34 @@ public class CraftData {
 		return AlchemyRules.madeToday(day, scrollsToday, today);
 	}
 
-	/** Counts one finished work of {@code today} (both daily counts start over on a new day). */
+	public int potionsToday(long today) {
+		return AlchemyRules.madeToday(day, potionsToday, today);
+	}
+
+	/** Counts one finished book or scroll of {@code today} (every daily count starts over on a new day). */
 	public void countWork(long today, boolean scroll) {
-		int works = worksToday(today) + 1;
-		int written = scrollsToday(today) + (scroll ? 1 : 0);
-		booksToday = works;
-		scrollsToday = Math.min(written, works);
-		day = today;
+		rollDay(today);
+		if (scroll) {
+			scrollsToday++;
+		} else {
+			booksToday++;
+		}
+	}
+
+	/** Counts the bottles of a finished batch of {@code today}. */
+	public void countPotions(long today, int bottles) {
+		rollDay(today);
+		potionsToday += Math.max(0, bottles);
+		potions += Math.max(0, bottles);
+	}
+
+	private void rollDay(long today) {
+		if (day != today) {
+			booksToday = 0;
+			scrollsToday = 0;
+			potionsToday = 0;
+			day = today;
+		}
 	}
 
 	void sanitize() {
@@ -64,6 +99,15 @@ public class CraftData {
 		if (lastScroll == null) {
 			lastScroll = "";
 		}
+		if (lastPotion == null) {
+			lastPotion = "";
+		}
+		if (role == null || AlchemyJob.parse(role) == null) {
+			role = "";
+		}
+		potions = Math.max(0, potions);
+		potionsToday = Math.max(0, potionsToday);
+		brewFuel = Math.max(0, brewFuel);
 		scrolls = Math.max(0, scrolls);
 		scrollsToday = Math.max(0, scrollsToday);
 		repaired = Math.max(0, repaired);

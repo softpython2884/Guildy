@@ -196,8 +196,9 @@ public class CraftGameTests {
 	/**
 	 * The alchemist sometimes writes a spell scroll (chance 1 here) at a bare table: without paper it makes an enchanted
 	 * book ("Plus de papier"), then with paper in the storage one Rappel (the only rare scroll of the table: the epic
-	 * Blizzard needs a level-30 table) stored in the chest of its category, then a book (one scroll a day here) and nothing
-	 * more (three works a day here); books and paper are never lost or duplicated, the menu shows the statistics.
+	 * Blizzard needs a level-30 table) stored in the chest of its category, then books (one scroll a day here) and nothing
+	 * more once both daily caps are reached (three books, one scroll; no brewing stand for potions); books and paper are
+	 * never lost or duplicated, the menu shows the statistics.
 	 */
 	@GameTest(environment = "guildy-test:day", maxTicks = 7200)
 	public void alchemistWritesScrollsWithPaperWithinItsCaps(GameTestHelper helper) throws Exception {
@@ -298,11 +299,12 @@ public class CraftGameTests {
 					helper.assertTrue("rappel".equals(ScrollItems.idOf(stack)), "a bare table writes the rare Rappel, not " + ScrollItems.idOf(stack));
 				}
 			}
-			helper.assertTrue(made == 2 && seen[2], "waiting for a book after the daily scroll and the daily cap (books " + made + ")");
+			helper.assertTrue(made == 3 && seen[2], "waiting for the books after the daily scroll, then the daily caps (books " + made + ")");
 			helper.assertTrue(written == 1, "one scroll a day");
-			helper.assertTrue(count(chest, Items.BOOK) + carried(record, Items.BOOK) == 1, "the last book stays plain: three works a day");
-			helper.assertTrue(data != null && data.worksToday(AlchemyRules.day(level.getOverworldClockTime())) == 3
-					&& "rappel".equals(data.lastScroll), "daily count and last scroll");
+			helper.assertTrue(count(chest, Items.BOOK) + carried(record, Items.BOOK) == 0, "every book used: three books and one scroll a day");
+			long day = AlchemyRules.day(level.getOverworldClockTime());
+			helper.assertTrue(data != null && data.booksToday(day) == 3 && data.scrollsToday(day) == 1
+					&& "rappel".equals(data.lastScroll), "daily counts and last scroll");
 			Hooks.openVillagers.accept(leader, guild);
 			String lore = Lang.strip(lore(leader, 0));
 			helper.assertTrue(lore.contains("Parchemins écrits : 1") && lore.contains("Dernier parchemin : Rappel"),

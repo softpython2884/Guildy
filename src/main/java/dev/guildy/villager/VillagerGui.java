@@ -194,6 +194,7 @@ public final class VillagerGui {
 			lore.add(wishes);
 		}
 		lore.add(Lang.get("villager.gui.lore.status", statusText(record, villager)));
+		AlchemistGui.addLore(lore, guild, record);
 		WorkChunkLoader.addLore(lore, record);
 		GuardGui.addLore(lore, record, villager);
 		if (villager != null) {
@@ -323,6 +324,11 @@ public final class VillagerGui {
 		if (record.task.isExpedition()) {
 			// Expeditions use no work zone: their destination takes the button's place.
 			gui.setSlot(19, ExpeditionMenu.button(player, guild, record));
+		}
+		if (record.task == Task.ALCHEMIST) {
+			// No work zone either: its role and the guild's potion stocks.
+			gui.setSlot(19, AlchemistGui.roleButton(player, guild, record, () -> openDetail(player, guild, uuid)));
+			gui.setSlot(20, AlchemistGui.stockButton(player, guild, () -> openDetail(player, guild, uuid)));
 		}
 		if (WishlistMenu.supports(record.task)) {
 			gui.setSlot(20, WishlistMenu.villagerButton(player, guild, record));

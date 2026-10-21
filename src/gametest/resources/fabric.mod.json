@@ -41,6 +41,7 @@
 			"dev.guildy.test.VitalityGameTests",
 			"dev.guildy.test.PlantingGameTests",
 			"dev.guildy.test.CraftGameTests",
+			"dev.guildy.test.AlchemyGameTests",
 			"dev.guildy.test.FieldGameTests",
 			"dev.guildy.test.RuinGameTests",
 			"dev.guildy.test.RuinSummonGameTests",
