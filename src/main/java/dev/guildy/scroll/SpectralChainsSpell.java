@@ -90,17 +90,6 @@ final class SpectralChainsSpell extends SpellEffect {
 		return null;
 	}
 
-	/** Monsters held right now (tests). */
-	int held() {
-		int n = 0;
-		for (Prisoner prisoner : prisoners) {
-			if (!prisoner.released) {
-				n++;
-			}
-		}
-		return n;
-	}
-
 	@Override
 	Vec3 anchor() {
 		return center;
@@ -158,8 +147,11 @@ final class SpectralChainsSpell extends SpellEffect {
 				fx.burst(ParticleTypes.SOUL_FIRE_FLAME, target.getX(), target.getY(0.5), target.getZ(), 4, 0.3, 0.4, 0.3, 0.02);
 			}
 		}
-		target.setDeltaMovement(Vec3.ZERO);
-		target.syncVelocity = true;
+		if (target.getDeltaMovement().lengthSqr() > 1.0E-6) {
+			// No knockback, no leap: the velocity is cancelled (and sent only when there was one).
+			target.setDeltaMovement(Vec3.ZERO);
+			target.syncVelocity = true;
+		}
 		if (target instanceof Mob mob) {
 			mob.getNavigation().stop();
 		}
