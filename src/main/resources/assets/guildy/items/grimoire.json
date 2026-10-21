@@ -87,6 +87,48 @@
           "type": "minecraft:model",
           "model": "guildy:item/grimoire_rayon_arcanique"
         }
+      },
+      {
+        "when": "banniere_de_guerre",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_banniere_de_guerre"
+        }
+      },
+      {
+        "when": "fleau",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_fleau"
+        }
+      },
+      {
+        "when": "permutation",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_permutation"
+        }
+      },
+      {
+        "when": "ralliement",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_ralliement"
+        }
+      },
+      {
+        "when": "chaines_spectrales",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_chaines_spectrales"
+        }
+      },
+      {
+        "when": "hate_du_vent",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_hate_du_vent"
+        }
       }
     ],
     "fallback": {

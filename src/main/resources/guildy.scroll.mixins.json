@@ -6,6 +6,7 @@
 		"ItemStackGrimoireMixin",
 		"ItemStackScrollMixin",
 		"LivingEntityAccessor",
+		"LivingEntityVulnerabilityMixin",
 		"ServerGamePacketListenerGrimoireMixin"
 	],
 	"injectors": {

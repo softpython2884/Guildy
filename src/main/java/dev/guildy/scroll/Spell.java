@@ -80,7 +80,42 @@ public enum Spell {
 			p("length", 32, 8, 64, Unit.BLOCKS),
 			p("duration", 3, 1, 10, Unit.SECONDS),
 			p("damage", 8, 0, 100, Unit.HEARTS),
-			p("width", 0.9, 0.3, 3, Unit.BLOCKS));
+			p("width", 0.9, 0.3, 3, Unit.BLOCKS)),
+	WAR_BANNER("war_banner", 0xE0302A, 0xFFC94A, false,
+			p("radius", 8, 3, 16, Unit.BLOCKS),
+			p("duration", 20, 5, 60, Unit.SECONDS),
+			p("strengthLevel", 2, 1, 4, Unit.LEVEL),
+			p("hasteLevel", 2, 1, 4, Unit.LEVEL)),
+	SCOURGE("scourge", 0x9CFF3A, 0x4A1066, true,
+			p("range", 24, 0, 48, Unit.BLOCKS),
+			p("radius", 6, 3, 12, Unit.BLOCKS),
+			p("duration", 10, 3, 30, Unit.SECONDS),
+			p("vulnerability", 25, 0, DebuffRules.MAX_VULNERABILITY, Unit.PERCENT),
+			p("bossShare", 50, 0, 100, Unit.PERCENT),
+			p("weaknessLevel", 1, 1, 3, Unit.LEVEL),
+			p("slowLevel", 2, 1, 6, Unit.LEVEL)),
+	SWAP("swap", 0xB06BFF, 0x3FE0D0, false,
+			p("range", 32, 8, 64, Unit.BLOCKS),
+			p("stunSeconds", 2, 0, 10, Unit.SECONDS),
+			p("shieldSeconds", 3, 0, 20, Unit.SECONDS)),
+	RALLY("rally", 0xFFB13B, 0x3F8CFF, false,
+			p("range", 512, 32, 4096, Unit.BLOCKS),
+			p("maxAllies", 8, 1, 20, Unit.COUNT),
+			p("acceptSeconds", 30, 10, 120, Unit.SECONDS),
+			p("crossDimension", 0, 0, 1, Unit.FLAG)),
+	SPECTRAL_CHAINS("spectral_chains", 0xC8FFF4, 0x2E8C7A, true,
+			p("range", 32, 8, 64, Unit.BLOCKS),
+			p("radius", 4, 0, 10, Unit.BLOCKS),
+			p("count", 3, 1, 8, Unit.COUNT),
+			p("duration", 5, 1, 15, Unit.SECONDS),
+			p("bossShare", 50, 0, 100, Unit.PERCENT),
+			p("damage", 12, 0, 100, Unit.HEARTS)),
+	TAILWIND("tailwind", 0xA0B0FF, 0xF0F4FF, false,
+			p("radius", 8, 3, 20, Unit.BLOCKS),
+			p("duration", 30, 5, 120, Unit.SECONDS),
+			p("speedLevel", 2, 1, 4, Unit.LEVEL),
+			p("jumpLevel", 2, 1, 4, Unit.LEVEL),
+			p("noFall", 1, 0, 1, Unit.FLAG));
 
 	/** How a parameter is shown in the item description. */
 	public enum Unit {
@@ -95,13 +130,15 @@ public enum Spell {
 		MULTIPLIER,
 		/** 0 / 1. */
 		FLAG,
+		/** A whole percentage: "25 %" (never above the parameter's maximum, even from a cursed grimoire). */
+		PERCENT,
 		RAW
 	}
 
-	/** A tunable parameter: default value and bounds (integers for counts, levels and flags). */
+	/** A tunable parameter: default value and bounds (integers for counts, levels, flags and percentages). */
 	public record Param(String name, double defaultValue, double min, double max, Unit unit) {
 		public boolean integer() {
-			return unit == Unit.COUNT || unit == Unit.LEVEL || unit == Unit.FLAG;
+			return unit == Unit.COUNT || unit == Unit.LEVEL || unit == Unit.FLAG || unit == Unit.PERCENT;
 		}
 
 		/** Damage, heals and durations: multiplied by the power of a grimoire cast (never ranges, counts or levels). */
@@ -123,12 +160,13 @@ public enum Spell {
 			return integer() ? Math.rint(v) : v;
 		}
 
-		/** "5" / "2,5" / "×1,5" / "III" (lore value). */
+		/** "5" / "2,5" / "×1,5" / "III" / "25 %" (lore value). */
 		public String format(double value) {
 			return switch (unit) {
 				case HEARTS -> number(value / 2.0);
 				case LEVEL -> roman((int) Math.rint(value));
 				case MULTIPLIER -> "×" + number(value);
+				case PERCENT -> number(value) + " %";
 				default -> number(value);
 			};
 		}

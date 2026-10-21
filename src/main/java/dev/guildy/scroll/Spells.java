@@ -22,6 +22,9 @@ final class Spells {
 			case REVELATION -> RevelationSpell.anyMonster(ctx) ? null : "scroll.fail.no_monsters";
 			case RECALL -> RecallSpell.check(ctx);
 			case GUARDIANS -> GuardiansSpell.check(ctx);
+			case SWAP -> SwapSpell.check(ctx);
+			case RALLY -> RallySpell.check(ctx);
+			case SPECTRAL_CHAINS -> SpectralChainsSpell.firstTarget(ctx) == null ? "scroll.fail.no_target" : null;
 			default -> null;
 		};
 	}
@@ -67,6 +70,27 @@ final class Spells {
 			case REVELATION -> EffectRunner.start(new RevelationSpell(ctx));
 			case EARTHQUAKE -> EffectRunner.start(new EarthquakeSpell(ctx));
 			case ARCANE_RAY -> EffectRunner.start(new ArcaneRaySpell(ctx));
+			case WAR_BANNER -> EffectRunner.start(new WarBannerSpell(ctx));
+			case SCOURGE -> {
+				double range = ctx.p("range");
+				Vec3 center = range <= 0 ? ctx.caster.position() : SpellTargets.aimPoint(ctx, range);
+				EffectRunner.start(new ScourgeSpell(ctx, center));
+			}
+			case SWAP, RALLY -> {
+				String failure = ctx.spell == Spell.SWAP ? SwapSpell.cast(ctx) : RallySpell.cast(ctx);
+				if (failure == null) {
+					FightTracker.spellCast(ctx.caster);
+				}
+				return failure;
+			}
+			case SPECTRAL_CHAINS -> {
+				LivingEntity first = SpectralChainsSpell.firstTarget(ctx);
+				if (first == null) {
+					return "scroll.fail.no_target";
+				}
+				EffectRunner.start(new SpectralChainsSpell(ctx, first));
+			}
+			case TAILWIND -> EffectRunner.start(new TailwindSpell(ctx));
 		}
 		FightTracker.spellCast(ctx.caster);
 		return null;

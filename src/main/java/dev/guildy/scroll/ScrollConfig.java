@@ -39,8 +39,13 @@ public final class ScrollConfig implements Validatable {
 	 * Current file format. 2: the grimoire's channel follows each spell ({@code grimoire.channelFactor}), its minimum goes
 	 * from 0.4 s to 1 s when still at the old default. 3 (Guildy 1.10): stronger damage spells (spell damage ignores armor
 	 * and the default damage is raised): a scroll whose damage is still the old default of its spell gets the new one.
+	 * 4 (Guildy 1.12): six new spell scrolls ({@link #NEW_SCROLLS}) added once to the definitions, to the drop tables and to
+	 * the cursed grimoire's per-spell settings, only where absent.
 	 */
-	public static final int CURRENT_VERSION = 3;
+	public static final int CURRENT_VERSION = 4;
+	/** The scrolls of format 4, added once to older files (a definition or an entry removed afterwards stays removed). */
+	public static final List<String> NEW_SCROLLS = List.of("banniere_de_guerre", "fleau", "permutation", "ralliement", "chaines_spectrales",
+			"hate_du_vent");
 	/** Channel of the grimoire before format 2 (too short to see the circle form). */
 	static final double OLD_GRIMOIRE_CHANNEL = 0.4;
 	/** Default damage (health points) of the damage spells before format 3. */
@@ -101,7 +106,8 @@ public final class ScrollConfig implements Validatable {
 	@Comment({
 			"Parchemins : id (minuscules, chiffres, _), name, rarity (RARE, EPIC, LEGENDARY, MYTHIC), lore (histoire, codes &),",
 			"spell (meteor_shower, chain_storm, blizzard, solar_nova, singularity, aegis, recall, guardians, blessing, revelation,",
-			"earthquake, arcane_ray), params (reglages du sort ; degats et soins en points de vie : 2 = 1 coeur ; les parametres",
+			"earthquake, arcane_ray, war_banner, scourge, swap, rally, spectral_chains, tailwind), params (reglages du sort ;",
+			"degats et soins en points de vie : 2 = 1 coeur ; pourcentages : 25 = +25 % ; les parametres",
 			"absents prennent leur valeur par defaut, tous sont bornes), item (objet vanilla simple de base : papier, motif de",
 			"banniere...), glint (brillance), maxStack (1 a 64), channelSeconds (duree de l'incantation, 0.25 a 10), animation",
 			"(toot_horn, spyglass, bow, trident, brush, block...), cooldownGroup (les parchemins d'un meme groupe partagent la",
@@ -112,7 +118,7 @@ public final class ScrollConfig implements Validatable {
 
 	private transient Map<String, ScrollDef> byId = new LinkedHashMap<>();
 	private transient Set<String> disabledDimensions = Set.of();
-	/** Scrolls migrated by the last {@link #rebuild} ("id.damage"). */
+	/** What the last {@link #rebuild} migrated: damage of a scroll ("id.damage"), a new scroll added ("+id"). */
 	private transient List<String> migrations = new ArrayList<>();
 
 	// ================================================================== sections
@@ -414,7 +420,8 @@ public final class ScrollConfig implements Validatable {
 			Guildy.LOGGER.warn("[scrolls.json5] {}", warning);
 		}
 		if (!migrations.isEmpty()) {
-			Guildy.LOGGER.info("[scrolls.json5] new spell damage applied to the scrolls left on the old defaults: {}", String.join(", ", migrations));
+			Guildy.LOGGER.info("[scrolls.json5] migrated (new damage of the scrolls left on the old defaults, +new scrolls): {}",
+					String.join(", ", migrations));
 		}
 	}
 
@@ -441,7 +448,62 @@ public final class ScrollConfig implements Validatable {
 		if (configVersion < 2 && grimoire != null && Math.abs(grimoire.channelSeconds - OLD_GRIMOIRE_CHANNEL) < 1.0E-9) {
 			grimoire.channelSeconds = new Grimoire().channelSeconds;
 		}
-		migrations = configVersion < 3 ? migrateDamage(scrolls) : List.of();
+		migrations = configVersion < 3 ? migrateDamage(scrolls) : new ArrayList<>();
+		if (configVersion < 4) {
+			migrations = new ArrayList<>(migrations);
+			migrations.addAll(addNewScrolls());
+		}
+	}
+
+	/**
+	 * Format 4 (pure): the definitions of {@link #NEW_SCROLLS}, their weights in the existing drop tables and the cursed
+	 * grimoire's settings of their spells, each only where absent (admin edits are kept). @return what was added ("+id")
+	 */
+	List<String> addNewScrolls() {
+		List<String> added = new ArrayList<>();
+		if (scrolls != null) {
+			Set<String> present = new java.util.HashSet<>();
+			for (ScrollDef def : scrolls) {
+				if (def != null && def.id != null) {
+					present.add(def.id.trim().toLowerCase(Locale.ROOT));
+				}
+			}
+			for (ScrollDef def : defaultScrolls()) {
+				if (NEW_SCROLLS.contains(def.id) && !present.contains(def.id)) {
+					scrolls.add(def);
+					added.add("+" + def.id);
+				}
+			}
+		}
+		if (drops != null) {
+			Map<String, DropTable> defaults = defaultDrops();
+			for (Map.Entry<String, DropTable> entry : drops.entrySet()) {
+				DropTable table = entry.getValue();
+				DropTable reference = entry.getKey() == null ? null : defaults.get(entry.getKey().trim().toLowerCase(Locale.ROOT));
+				if (table == null || reference == null) {
+					continue;
+				}
+				if (table.items == null) {
+					table.items = new LinkedHashMap<>();
+				}
+				for (String id : NEW_SCROLLS) {
+					Double weight = reference.items.get(id);
+					if (weight != null) {
+						table.items.putIfAbsent(id, weight);
+					}
+				}
+			}
+		}
+		if (cursedGrimoire != null && cursedGrimoire.spells != null) {
+			Map<String, Map<String, Double>> defaults = defaultCursedSpells();
+			for (Spell spell : List.of(Spell.WAR_BANNER, Spell.SCOURGE, Spell.SWAP, Spell.RALLY, Spell.SPECTRAL_CHAINS, Spell.TAILWIND)) {
+				Map<String, Double> own = defaults.get(spell.id);
+				if (own != null && !cursedGrimoire.spells.containsKey(spell.id)) {
+					cursedGrimoire.spells.put(spell.id, new LinkedHashMap<>(own));
+				}
+			}
+		}
+		return added;
 	}
 
 	/**
@@ -821,6 +883,8 @@ public final class ScrollConfig implements Validatable {
 		map.put(Spell.REVELATION.id, params("radius", 1.25));
 		map.put(Spell.EARTHQUAKE.id, params("waves", 1.67, "lift", 1.3));
 		map.put(Spell.ARCANE_RAY.id, params("width", 1.5));
+		map.put(Spell.SCOURGE.id, params("vulnerability", 1.4));
+		map.put(Spell.SPECTRAL_CHAINS.id, params("bossShare", 1.3));
 		return map;
 	}
 
@@ -846,27 +910,37 @@ public final class ScrollConfig implements Validatable {
 		map.put("ruin_boss", new DropTable(0.6, 1, 2)
 				.add("tempete_de_foudre", 6).add("blizzard", 6).add("seisme", 6).add("egide", 5).add("rappel", 5).add("benediction", 5)
 				.add("revelation", 5).add("pluie_de_meteores", 4).add("nova_solaire", 4).add("gardiens", 3).add("rayon_arcanique", 3)
-				.add("singularite", 1));
+				.add("singularite", 1).add("banniere_de_guerre", 5).add("fleau", 5).add("permutation", 5).add("hate_du_vent", 5)
+				.add("ralliement", 4).add("chaines_spectrales", 4));
 		map.put("nether_ruin_boss", new DropTable(0.75, 1, 2)
 				.add("pluie_de_meteores", 6).add("nova_solaire", 6).add("rayon_arcanique", 5).add("egide", 4).add("seisme", 4)
 				.add("tempete_de_foudre", 4).add("rappel", 4).add("benediction", 4).add("gardiens", 3).add("singularite", 3)
-				.add("revelation", 3).add("blizzard", 1));
+				.add("revelation", 3).add("blizzard", 1).add("fleau", 5).add("banniere_de_guerre", 4).add("chaines_spectrales", 4)
+				.add("permutation", 4).add("ralliement", 3).add("hate_du_vent", 3));
 		map.put("boss", new DropTable(0.08, 1, 1)
 				.add("benediction", 8).add("revelation", 8).add("rappel", 8).add("seisme", 6).add("tempete_de_foudre", 5).add("blizzard", 5)
-				.add("egide", 4).add("nova_solaire", 2).add("pluie_de_meteores", 2).add("gardiens", 2).add("rayon_arcanique", 1));
+				.add("egide", 4).add("nova_solaire", 2).add("pluie_de_meteores", 2).add("gardiens", 2).add("rayon_arcanique", 1)
+				.add("hate_du_vent", 7).add("permutation", 6).add("ralliement", 5).add("banniere_de_guerre", 5).add("fleau", 4)
+				.add("chaines_spectrales", 1));
 		map.put("blood_boss", new DropTable(0.3, 1, 1)
 				.add("tempete_de_foudre", 5).add("blizzard", 5).add("seisme", 5).add("egide", 5).add("nova_solaire", 4)
-				.add("pluie_de_meteores", 4).add("benediction", 3).add("rayon_arcanique", 3).add("gardiens", 3).add("singularite", 1));
+				.add("pluie_de_meteores", 4).add("benediction", 3).add("rayon_arcanique", 3).add("gardiens", 3).add("singularite", 1)
+				.add("banniere_de_guerre", 5).add("fleau", 5).add("chaines_spectrales", 3).add("permutation", 3).add("hate_du_vent", 3)
+				.add("ralliement", 2));
 		map.put("legendary_quest", new DropTable(0.5, 1, 1)
 				.add("egide", 4).add("nova_solaire", 4).add("pluie_de_meteores", 4).add("gardiens", 4).add("tempete_de_foudre", 4)
-				.add("blizzard", 4).add("rayon_arcanique", 3).add("singularite", 1));
+				.add("blizzard", 4).add("rayon_arcanique", 3).add("singularite", 1).add("chaines_spectrales", 4).add("banniere_de_guerre", 3)
+				.add("fleau", 3));
 		map.put("quest", new DropTable(0.05, 1, 1)
-				.add("benediction", 10).add("revelation", 10).add("rappel", 10).add("seisme", 4).add("tempete_de_foudre", 3).add("blizzard", 3));
+				.add("benediction", 10).add("revelation", 10).add("rappel", 10).add("seisme", 4).add("tempete_de_foudre", 3).add("blizzard", 3)
+				.add("hate_du_vent", 8).add("permutation", 6).add("ralliement", 6).add("banniere_de_guerre", 3).add("fleau", 2));
 		map.put("expedition", new DropTable(0.03, 1, 1)
-				.add("rappel", 10).add("revelation", 8).add("benediction", 8).add("blizzard", 3).add("seisme", 3).add("tempete_de_foudre", 2));
+				.add("rappel", 10).add("revelation", 8).add("benediction", 8).add("blizzard", 3).add("seisme", 3).add("tempete_de_foudre", 2)
+				.add("hate_du_vent", 8).add("permutation", 6).add("ralliement", 6).add("banniere_de_guerre", 2));
 		map.put("trade", new DropTable(0.35, 1, 1)
 				.add("rappel", 8).add("benediction", 8).add("revelation", 8).add("seisme", 5).add("tempete_de_foudre", 5).add("blizzard", 5)
-				.add("egide", 4).add("nova_solaire", 2).add("pluie_de_meteores", 2).add("gardiens", 2));
+				.add("egide", 4).add("nova_solaire", 2).add("pluie_de_meteores", 2).add("gardiens", 2).add("hate_du_vent", 7)
+				.add("permutation", 6).add("ralliement", 6).add("banniere_de_guerre", 4).add("fleau", 4).add("chaines_spectrales", 2));
 		return map;
 	}
 
@@ -899,6 +973,20 @@ public final class ScrollConfig implements Validatable {
 		list.add(def("rayon_arcanique", "Rayon arcanique", UniqueRarity.LEGENDARY, Spell.ARCANE_RAY, "flow_banner_pattern", 0.75, "attaque",
 				25)
 				.story("Une seule ligne de runes,", "si dense qu'elle brûle le papier."));
+		list.add(def("banniere_de_guerre", "Bannière de guerre", UniqueRarity.EPIC, Spell.WAR_BANNER, "bordure_indented_banner_pattern", 1.25,
+				"soutien", 40)
+				.story("Cousue du fil des étendards", "qui n'ont jamais reculé."));
+		list.add(def("fleau", "Fléau", UniqueRarity.EPIC, Spell.SCOURGE, "skull_banner_pattern", 1.25, "attaque", 30)
+				.story("L'encre a la couleur du venin", "et l'odeur des marais maudits."));
+		list.add(def("permutation", "Permutation", UniqueRarity.RARE, Spell.SWAP, "flow_banner_pattern", 0.75, "permutation", 20)
+				.story("Deux sceaux jumeaux, un seul nom :", "celui qui lit prend la place de l'autre."));
+		list.add(def("ralliement", "Ralliement", UniqueRarity.EPIC, Spell.RALLY, "globe_banner_pattern", 4.0, "rappel", 90)
+				.story("Le vieux cor des guildes résonne", "jusqu'aux confins du monde."));
+		list.add(def("chaines_spectrales", "Chaînes spectrales", UniqueRarity.LEGENDARY, Spell.SPECTRAL_CHAINS, "creeper_banner_pattern", 1.0,
+				"attaque", 30)
+				.story("Forgées dans les limbes", "pour les âmes qui refusaient de partir."));
+		list.add(def("hate_du_vent", "Hâte du vent", UniqueRarity.RARE, Spell.TAILWIND, "guster_banner_pattern", 1.0, "soutien", 30)
+				.story("Une plume de brise cousue", "dans la reliure du parchemin."));
 		return list;
 	}
 

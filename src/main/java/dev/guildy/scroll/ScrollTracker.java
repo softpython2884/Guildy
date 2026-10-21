@@ -20,7 +20,8 @@ import java.util.List;
  * Light inventory scan (every second, players only, items with custom data only): scrolls and grimoires carrying only their
  * custom data (data pack loot tables) or built from an older definition are rebuilt in place. Also the lifecycle of the running
  * spells: logout and dimension change end the caster's effects, server stop ends everything, summoned guardians never
- * survive a reload of their chunk, and spell damage ignores invulnerability frames.
+ * survive a reload of their chunk, spell damage ignores invulnerability frames, and the wind of Hâte du vent cushions
+ * the falls of the allies it blessed.
  */
 final class ScrollTracker {
 	private ScrollTracker() {
@@ -43,12 +44,17 @@ final class ScrollTracker {
 				Safe.get("scroll.guardian.death", () -> GuardiansSpell.allowDeath(entity), true));
 		ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
 				Safe.get("scroll.allow_damage", () -> SpellTargets.allowDamage(entity, source), true));
+		ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
+				Safe.get("scroll.tailwind.fall", () -> TailwindSpell.allowDamage(entity, source), true));
 		Lifecycle.STARTED.add(server -> GuardiansSpell.clearAll());
 		Lifecycle.STOPPING.add(server -> {
 			EffectRunner.clear();
 			ScrollCasting.clear();
 			GuardiansSpell.clearAll();
 			MeteorShowerSpell.clearImpacts();
+			Vulnerability.clear();
+			RallySpell.clearAll();
+			TailwindSpell.clearAll();
 		});
 		Lifecycle.RELOADED.add(ScrollItems::clearSignatures);
 	}

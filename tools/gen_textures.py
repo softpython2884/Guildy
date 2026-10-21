@@ -853,10 +853,19 @@ GRIMOIRE_SIGILS = {
 	"revelation": [".......", ".#####.", "#..#..#", "#.###.#", "#..#..#", ".#####.", "......."],
 	"seisme": ["...#...", "...##..", "....#..", "...##..", "..#.#..", ".#...#.", "#######"],
 	"rayon_arcanique": ["...#...", "...#...", "#######", "...#...", "..#.#..", ".#...#.", "#.....#"],
+	"banniere_de_guerre": ["##.....", ".######", ".#####.", ".######", ".#.....", ".#.....", ".#....."],
+	"fleau": [".#####.", "#######", "#..#..#", "#..#..#", "###.###", ".#####.", ".#.#.#."],
+	"permutation": ["....#..", "######.", "....#..", ".......", "..#....", ".######", "..#...."],
+	"ralliement": ["...#...", "..###..", ".#####.", ".#####.", ".#####.", "#######", "...#..."],
+	"chaines_spectrales": [".##....", "#..#...", "#..#...", ".##.##.", "...#..#", "...#..#", "....##."],
+	"hate_du_vent": ["....##.", "#####.#", ".......", ".####..", "######.", ".....#.", "......."],
 }
 
-# Sigil colors that differ from the scroll palette (the earthy browns of the earthquake vanish on the dark panel).
-GRIMOIRE_GLOW = {"seisme": ["#f4c070", "#d8913e", "#a8662a", "#d8913e"]}
+# Sigil colors that differ from the scroll palette (the earthy browns of the earthquake vanish on the dark panel; the
+# spectral chains and the wind are drawn darker on the light parchment and glow pale on the cover).
+GRIMOIRE_GLOW = {"seisme": ["#f4c070", "#d8913e", "#a8662a", "#d8913e"],
+				 "chaines_spectrales": ["#e0fff8", "#7fe8d0", "#2e8c7a", "#7fe8d0"],
+				 "hate_du_vent": ["#dce4ff", "#a0b0ff", "#5c6cd8", "#a0b0ff"]}
 
 DORMANT_SIGIL = ["..###..", ".#...#.", "#.....#", "#..#..#", "#.....#", ".#...#.", "..###.."]
 
@@ -1744,6 +1753,55 @@ SCROLL_RUNES = {
 		"..#.#...",
 		".#...#..",
 	], ["#ff3edb", "#c020b0", "#2aa8d8", "#c020b0"], "#ffb000"),
+	# Guildy 1.12: war banner, scourge, permutation, rally, spectral chains, tailwind.
+	"banniere_de_guerre": ([
+		"##......",
+		".######.",
+		".#####..",
+		".######.",
+		".#......",
+		".#......",
+	], ["#ff5a3a", "#d8281e", "#ffc94a", "#d8281e"], "#c86bff"),
+	"fleau": ([
+		".#####..",
+		"#######.",
+		"#..#..#.",
+		"###.###.",
+		".#####..",
+		".#.#.#..",
+	], ["#c8ff6a", "#7ae030", "#3d9a18", "#7ae030"], "#c86bff"),
+	"permutation": ([
+		".....#..",
+		"#######.",
+		".....#..",
+		"..#.....",
+		".#######",
+		"..#.....",
+	], ["#d08bff", "#9a4ae0", "#2ac0b0", "#9a4ae0"], "#5aa0ff"),
+	"ralliement": ([
+		"...##...",
+		"..####..",
+		"..####..",
+		".######.",
+		"########",
+		"...##...",
+	], ["#ffd060", "#ff9a1a", "#3f8cff", "#ff9a1a"], "#c86bff"),
+	"chaines_spectrales": ([
+		".##.....",
+		"#..#....",
+		"#..###..",
+		".###..#.",
+		"...#..#.",
+		"....##..",
+	], ["#4fd0b8", "#2a9c88", "#1c5a6a", "#2a9c88"], "#ffb000"),
+	"hate_du_vent": ([
+		".....##.",
+		"######.#",
+		"........",
+		"..####..",
+		"#######.",
+		"......#.",
+	], ["#8a98ff", "#5c6cd8", "#3a46a0", "#5c6cd8"], "#5aa0ff"),
 }
 
 PARCHMENT = ("#fbf0d2", "#ecd6a4", "#c9a86c")

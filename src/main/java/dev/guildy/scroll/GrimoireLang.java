@@ -41,6 +41,8 @@ final class GrimoireLang {
 		m.put("grimoire.fail.interrupted", "&7Incantation interrompue.");
 		m.put("grimoire.fail.no_target", "&7Aucun monstre à portée.");
 		m.put("grimoire.fail.no_monsters", "&7Aucun monstre aux alentours.");
+		m.put("grimoire.fail.no_swap_target", "&7Visez un monstre ou un allié de la guilde (en vue).");
+		m.put("grimoire.fail.no_members", "&7Aucun membre de la guilde à appeler.");
 		// fusion
 		m.put("grimoire.fuse.added", "&d✦ &7{0} &7est relié au grimoire (page {1}/{2}).");
 		m.put("grimoire.fuse.duplicate", "&cLe grimoire contient déjà {0}&c.");

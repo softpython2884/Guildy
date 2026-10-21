@@ -15,7 +15,7 @@ import java.util.random.RandomGenerator;
 
 /**
  * Spell scrolls ("parchemins de sort"): single-use vanilla items (custom data + components) defined in
- * config/guildy/scrolls.json5, cast with a vanilla channel animation, twelve spells with long animated particle shows (PvE
+ * config/guildy/scrolls.json5, cast with a vanilla channel animation, eighteen spells with long animated particle shows (PvE
  * only, no block ever changed), drop tables per source and the admin commands; the grimoire binds up to four scrolls and
  * casts their spells for food, the cursed grimoire (dropped only by the cursed guardians of {@code cursedGrimoire.ruinDrops})
  * casts them much stronger for food and blood. Implements the core {@link ScrollDrops} hook used by the ruin bosses, the hordes, the quests,
@@ -40,6 +40,9 @@ public final class ScrollModule {
 		ScrollCasting.register();
 		EffectRunner.init();
 		ScrollTracker.init();
+		Vulnerability.init();
+		TailwindSpell.init();
+		RallySpell.registerCommand();
 		// Fight statistics: the hits of a summoned guardian count for its caster.
 		FightTracker.addOwnerResolver(GuardiansSpell::summoner);
 		ScrollDrops.roller = ScrollModule::roll;
@@ -127,6 +130,14 @@ public final class ScrollModule {
 			return ItemStack.EMPTY;
 		}
 		return GrimoireItems.create(GrimoireRules.Pages.EMPTY, true);
+	}
+
+	/**
+	 * The command of the newest open rally call addressed to this member (what its [Rejoindre] runs, without the slash), or
+	 * null when none is waiting for them (tests).
+	 */
+	public static @Nullable String pendingRally(UUID member) {
+		return RallySpell.pendingCommand(member);
 	}
 
 	/** Meteors of the meteor showers cast by this player that landed since the server started (statistics, tests). */
