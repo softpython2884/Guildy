@@ -2,6 +2,7 @@ package dev.guildy.scroll;
 
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Lang;
+import dev.guildy.core.MagicBoost;
 import dev.guildy.core.Msg;
 import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
@@ -118,7 +119,8 @@ public final class ScrollCasting {
 			return refuse(player, grimoire ? grimoireKey(problem) : problem);
 		}
 		if (grimoire && !affords(player, def, cursed)) {
-			return refuse(player, "grimoire.fail.hungry", GrimoireItems.foodCost(def, cursed), player.getFoodData().getFoodLevel());
+			return refuse(player, "grimoire.fail.hungry", MagicBoost.foodCost(player, GrimoireItems.foodCost(def, cursed)),
+					player.getFoodData().getFoodLevel());
 		}
 		if (cursed && !bleeds(player, def)) {
 			return refuse(player, "grimoire.cursed.fail.blood", GrimoireItems.hearts(GrimoireItems.bloodCost(def, true)),
@@ -128,6 +130,8 @@ public final class ScrollCasting {
 		if (!player.isUsingItem()) {
 			return refuse(player, "scroll.fail.unknown");
 		}
+		// A clairvoyance elixir shortens the incantation (core MagicBoost).
+		MagicBoost.shortenChannel(player);
 		String key = grimoire ? GrimoireItems.channelKey(stack) : def.id;
 		// The real length of the vanilla use (the item's consumable component): the circle is complete before it ends.
 		int configured = grimoire ? cfg.grimoire.channelTicks(def) : def.channelTicks();
@@ -177,7 +181,8 @@ public final class ScrollCasting {
 
 	/** Enough food for a grimoire (or cursed grimoire) cast of this spell (always in creative). */
 	private static boolean affords(ServerPlayer player, ScrollConfig.ScrollDef def, boolean cursed) {
-		return player.hasInfiniteMaterials() || GrimoireRules.canAfford(player.getFoodData().getFoodLevel(), GrimoireItems.foodCost(def, cursed));
+		return player.hasInfiniteMaterials()
+				|| GrimoireRules.canAfford(player.getFoodData().getFoodLevel(), MagicBoost.foodCost(player, GrimoireItems.foodCost(def, cursed)));
 	}
 
 	/** Enough health for the blood price of a cursed grimoire cast of this spell (always in creative). */
@@ -256,14 +261,15 @@ public final class ScrollCasting {
 		Identifier group = grimoire ? GrimoireItems.cooldownGroup(cursed) : ScrollItems.cooldownGroup(def);
 		if (!player.hasInfiniteMaterials() || cfg.casting.creativeCooldown) {
 			double seconds = grimoire ? GrimoireItems.cooldownSeconds(cursed) : def.cooldownSeconds;
-			player.getCooldowns().addCooldown(group, (int) Math.max(1, Math.round(seconds * 20)));
+			// Shortened by a clairvoyance elixir (core MagicBoost).
+			player.getCooldowns().addCooldown(group, (int) Math.max(1, Math.round(seconds * 20 * MagicBoost.cooldownMultiplier(player))));
 		} else {
 			undoPrediction(player, stack, false);
 		}
 		player.awardStat(Stats.ITEM_USED.get(stack.getItem()));
 		castFlash(player, def.spell(), phase(Scheduler.ticks() - channel.start()), cursed);
 		if (cursed) {
-			int cost = player.hasInfiniteMaterials() ? 0 : GrimoireItems.foodCost(def, true);
+			int cost = player.hasInfiniteMaterials() ? 0 : MagicBoost.foodCost(player, GrimoireItems.foodCost(def, true));
 			int blood = player.hasInfiniteMaterials() ? 0 : GrimoireItems.bloodCost(def, true);
 			eat(player, cost);
 			bleed(player, blood);
@@ -273,7 +279,7 @@ public final class ScrollCasting {
 			return stack;
 		}
 		if (grimoire) {
-			int cost = player.hasInfiniteMaterials() ? 0 : GrimoireItems.foodCost(def);
+			int cost = player.hasInfiniteMaterials() ? 0 : MagicBoost.foodCost(player, GrimoireItems.foodCost(def));
 			eat(player, cost);
 			Msg.actionBar(player, cost > 0 ? "grimoire.cast" : "scroll.cast", GrimoireItems.spellName(def), cost);
 			// The grimoire is never consumed: the client, which predicted it eaten, gets its hand back.

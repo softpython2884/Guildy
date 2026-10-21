@@ -5,14 +5,17 @@ import dev.guildy.data.GuildManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EnchantingTableBlock;
+import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import org.jspecify.annotations.Nullable;
 
@@ -22,7 +25,8 @@ import java.util.function.Predicate;
 
 /**
  * World reads of the blacksmith and alchemist (loaded chunks only, never loads one): armor stands and their damaged
- * equipment, anvils near a point, enchanting tables of a chunk and their bookshelves.
+ * equipment, anvils near a point, enchanting tables of a chunk and their bookshelves, brewing stands and the water near
+ * them.
  */
 final class CraftWorld {
 	/** Equipment slots of an armor stand, in repair order on equal damage. */
@@ -30,6 +34,7 @@ final class CraftWorld {
 			EquipmentSlot.FEET, EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND);
 	private static final Predicate<BlockState> ANVIL = state -> state.is(BlockTags.ANVIL);
 	private static final Predicate<BlockState> TABLE = state -> state.is(Blocks.ENCHANTING_TABLE);
+	private static final Predicate<BlockState> STAND = state -> state.is(Blocks.BREWING_STAND);
 
 	private CraftWorld() {
 	}
@@ -161,20 +166,84 @@ final class CraftWorld {
 
 	/** Enchanting tables of a chunk (sections without one are skipped through their palette). */
 	static List<BlockPos> enchantingTables(LevelChunk chunk) {
+		return blocks(chunk, TABLE);
+	}
+
+	/** Brewing stands of a chunk. */
+	static List<BlockPos> brewingStands(LevelChunk chunk) {
+		return blocks(chunk, STAND);
+	}
+
+	static boolean isStand(ServerLevel level, BlockPos pos) {
+		return level.isLoaded(pos) && STAND.test(level.getBlockState(pos));
+	}
+
+	/**
+	 * Nearest water to fill glass bottles from, within {@code radius} blocks of the stand (3 blocks up or down), in loaded
+	 * chunks: a water source block or a water cauldron.
+	 */
+	static @Nullable BlockPos water(ServerLevel level, BlockPos stand, int radius) {
+		BlockPos best = null;
+		double bestDist = Double.MAX_VALUE;
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		for (int dy = -3; dy <= 3; dy++) {
+			for (int dx = -radius; dx <= radius; dx++) {
+				for (int dz = -radius; dz <= radius; dz++) {
+					pos.set(stand.getX() + dx, stand.getY() + dy, stand.getZ() + dz);
+					double dist = dx * dx + dy * dy + dz * dz;
+					if (dist >= bestDist || !level.isLoaded(pos) || !isWater(level, pos)) {
+						continue;
+					}
+					best = pos.immutable();
+					bestDist = dist;
+				}
+			}
+		}
+		return best;
+	}
+
+	/** A water source block or a water cauldron (with water left). */
+	static boolean isWater(ServerLevel level, BlockPos pos) {
+		BlockState state = level.getBlockState(pos);
+		if (state.is(Blocks.WATER_CAULDRON)) {
+			return true;
+		}
+		FluidState fluid = state.getFluidState();
+		return fluid.is(FluidTags.WATER) && fluid.isSource();
+	}
+
+	/**
+	 * Fills one glass bottle at that water: a source block gives it for free, a cauldron loses one level like in vanilla.
+	 *
+	 * @return false when there is no water there any more
+	 */
+	static boolean drawWater(ServerLevel level, BlockPos pos) {
+		if (!level.isLoaded(pos) || !isWater(level, pos)) {
+			return false;
+		}
+		BlockState state = level.getBlockState(pos);
+		if (state.is(Blocks.WATER_CAULDRON)) {
+			LayeredCauldronBlock.lowerFillLevel(state, level, pos);
+		}
+		return true;
+	}
+
+	/** Blocks of a chunk matching {@code test} (sections without one are skipped through their palette). */
+	private static List<BlockPos> blocks(LevelChunk chunk, Predicate<BlockState> test) {
 		List<BlockPos> tables = new ArrayList<>();
 		int x0 = chunk.getPos().getMinBlockX();
 		int z0 = chunk.getPos().getMinBlockZ();
 		LevelChunkSection[] sections = chunk.getSections();
 		for (int i = 0; i < sections.length; i++) {
 			LevelChunkSection section = sections[i];
-			if (section == null || section.hasOnlyAir() || !section.maybeHas(TABLE)) {
+			if (section == null || section.hasOnlyAir() || !section.maybeHas(test)) {
 				continue;
 			}
 			int baseY = chunk.getSectionYFromSectionIndex(i) << 4;
 			for (int y = 0; y < 16; y++) {
 				for (int x = 0; x < 16; x++) {
 					for (int z = 0; z < 16; z++) {
-						if (TABLE.test(section.getBlockState(x, y, z))) {
+						if (test.test(section.getBlockState(x, y, z))) {
 							tables.add(new BlockPos(x0 + x, baseY + y, z0 + z));
 						}
 					}

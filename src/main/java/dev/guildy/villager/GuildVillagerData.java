@@ -30,6 +30,8 @@ public class GuildVillagerData {
 	/** Next zone / route ids (never reused, so a stale reference never points to a newer zone). */
 	public int nextZoneId = 1;
 	public int nextRouteId = 1;
+	/** Potion stock the alchemists keep (product of alchemy.json5 -> bottles); absent = the default of alchemy.json5. */
+	public Map<String, Integer> potionTargets = new LinkedHashMap<>();
 	/** Fanions of deleted / moved zones whose chunk was not loaded: removed (without drop) once loaded. */
 	public List<StaleFanion> staleFanions = new ArrayList<>();
 	/** Chest rooms (automatic chests). */
@@ -142,6 +144,10 @@ public class GuildVillagerData {
 		for (Map.Entry<UUID, VillagerRecord> entry : members.entrySet()) {
 			entry.getValue().sanitize(entry.getKey());
 		}
+		if (potionTargets == null) {
+			potionTargets = new LinkedHashMap<>();
+		}
+		potionTargets.entrySet().removeIf(entry -> entry.getKey() == null || entry.getValue() == null || entry.getValue() < 0);
 		if (chests == null) {
 			chests = new ArrayList<>();
 		}

@@ -1,5 +1,6 @@
 package dev.guildy;
 
+import dev.guildy.alchemy.AlchemyModule;
 import dev.guildy.claim.ClaimModule;
 import dev.guildy.command.GuildCommand;
 import dev.guildy.command.GuildCommands;
@@ -69,6 +70,7 @@ public final class Guildy implements ModInitializer {
 		FlyModule.init(); // /guild fly: flight inside the own territory, never during a horde
 		UniqueModule.init(); // unique weapons: implements the core UniqueDrops hook
 		ScrollModule.init(); // spell scrolls: implements the core ScrollDrops hook
+		AlchemyModule.init(); // potions and elixirs of the alchemists: implements the core MagicBoost hook
 		RuinModule.init(); // ruins guarded by bosses + cartographer (uses the structure and villager modules)
 
 		List<String> errors = ConfigManager.loadAll();

@@ -48,6 +48,24 @@ public record SpellPower(double power, double radius, double count, int levels, 
 		return new SpellPower(power, 1.0, 1.0, 0, Map.of(), false);
 	}
 
+	/**
+	 * This power with damage, heals and durations further multiplied by {@code factor} (the caster's magic elixirs, see
+	 * core MagicBoost), overrides of those units included; unchanged for a factor of 1.
+	 */
+	public SpellPower boosted(double factor, @Nullable Spell spell) {
+		if (!Double.isFinite(factor) || factor <= 0 || factor == 1.0) {
+			return this;
+		}
+		Map<String, Double> scaled = new java.util.HashMap<>(overrides);
+		for (Map.Entry<String, Double> entry : overrides.entrySet()) {
+			Spell.Param param = spell == null ? null : spell.param(entry.getKey());
+			if (param != null && (param.unit() == Spell.Unit.HEARTS || param.unit() == Spell.Unit.SECONDS) && entry.getValue() != null) {
+				scaled.put(entry.getKey(), entry.getValue() * factor);
+			}
+		}
+		return new SpellPower(power * factor, radius, count, levels, scaled, cursed);
+	}
+
 	/** Nothing is amplified (a scroll, or a grimoire at power 1). */
 	public boolean neutral() {
 		return power == 1.0 && radius == 1.0 && count == 1.0 && levels == 0 && overrides.isEmpty();

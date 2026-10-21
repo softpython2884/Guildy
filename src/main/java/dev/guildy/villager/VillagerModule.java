@@ -22,6 +22,7 @@ public final class VillagerModule {
 		PlantingLang.register();
 		CraftLang.register();
 		AlchemistScrolls.init();
+		AlchemistGui.init();
 		FieldLang.register();
 		Guards.init();
 		VillagerVitality.init();

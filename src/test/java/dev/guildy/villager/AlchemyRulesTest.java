@@ -256,7 +256,7 @@ class AlchemyRulesTest {
 		cfg.validate();
 		assertEquals(1.0, cfg.scrollChance);
 		assertEquals(0, cfg.scrollPaper);
-		assertEquals(3, cfg.maxScrollsPerDay, "inside the daily cap of books");
+		assertEquals(10, cfg.maxScrollsPerDay, "its own daily cap, beside the one of books");
 		assertEquals(30, cfg.epicScrollLevel);
 		cfg.scrollChance = Double.NaN;
 		cfg.maxScrollsPerDay = -4;

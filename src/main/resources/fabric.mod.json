@@ -26,7 +26,8 @@
 		"guildy.scroll.mixins.json",
 		"guildy.ruin.mixins.json",
 		"guildy.unique.mixins.json",
-		"guildy.stats.mixins.json"
+		"guildy.stats.mixins.json",
+		"guildy.alchemy.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.19.5",
