@@ -176,7 +176,7 @@ public class ScrollGameTests {
 	@GameTest(maxTicks = 80)
 	public void scrollsCarryTheirComponents(GameTestHelper helper) {
 		ScrollConfig cfg = ScrollModule.config();
-		helper.assertTrue(cfg.usable().size() == 12, "twelve default scrolls");
+		helper.assertTrue(cfg.usable().size() == 18, "eighteen default scrolls");
 		for (ScrollConfig.ScrollDef def : cfg.usable()) {
 			ItemStack stack = ScrollDrops.create(def.id, 3);
 			helper.assertTrue(def.id.equals(ScrollItems.idOf(stack)), def.id + ": custom_data guildy.kind=scroll, id");

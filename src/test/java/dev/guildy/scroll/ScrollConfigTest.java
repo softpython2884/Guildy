@@ -32,7 +32,7 @@ class ScrollConfigTest {
 		List<String> warnings = cfg.rebuild(id -> true);
 		assertTrue(warnings.isEmpty(), "scrolls.json5 defaults: " + warnings);
 		assertEquals(cfg.scrolls.size(), cfg.usable().size(), "every default scroll is usable");
-		assertEquals(12, cfg.usable().size(), "twelve scrolls");
+		assertEquals(18, cfg.usable().size(), "eighteen scrolls");
 		Set<Spell> spells = EnumSet.noneOf(Spell.class);
 		Set<UniqueRarity> rarities = EnumSet.noneOf(UniqueRarity.class);
 		for (ScrollConfig.ScrollDef def : cfg.usable()) {
@@ -222,6 +222,61 @@ class ScrollConfigTest {
 		assertTrue(again.rebuild(id -> true).isEmpty());
 		assertEquals(28.0, again.scroll("pluie_de_meteores").param("damage"));
 		assertTrue(again.migrations().isEmpty(), "migrated once");
+	}
+
+	@Test
+	void newScrollsAreAddedOnce() {
+		// A scrolls.json5 of Guildy 1.11 (format 3): the twelve old scrolls only, their drop tables (one weight edited by the
+		// admin), a cursed grimoire section without the new spells, the expedition table removed by the admin.
+		ScrollConfig written = new ScrollConfig();
+		written.configVersion = 3;
+		written.scrolls.removeIf(def -> ScrollConfig.NEW_SCROLLS.contains(def.id));
+		for (ScrollConfig.DropTable table : written.drops.values()) {
+			table.items.keySet().removeIf(ScrollConfig.NEW_SCROLLS::contains);
+		}
+		written.drops.get("boss").items.put("rappel", 99.0);
+		written.drops.remove("expedition");
+		written.cursedGrimoire.spells.remove(Spell.SCOURGE.id);
+		written.cursedGrimoire.spells.remove(Spell.SPECTRAL_CHAINS.id);
+		written.cursedGrimoire.spells.put(Spell.METEOR_SHOWER.id, new LinkedHashMap<>(Map.of("count", 1.1)));
+		assertEquals(12, written.scrolls.size());
+
+		ScrollConfig old = Json5.fromString(Json5.GSON.toJson(written), ScrollConfig.class);
+		assertTrue(old.rebuild(id -> true).isEmpty(), "migrated without warnings");
+		assertEquals(ScrollConfig.CURRENT_VERSION, old.configVersion);
+		assertEquals(18, old.usable().size(), "the six new scrolls are added");
+		for (String id : ScrollConfig.NEW_SCROLLS) {
+			assertNotNull(old.scroll(id), id + " added");
+			assertTrue(old.migrations().contains("+" + id), id + " reported: " + old.migrations());
+		}
+		ScrollConfig defaults = new ScrollConfig();
+		defaults.rebuild(id -> true);
+		for (String source : ScrollConfig.SOURCES) {
+			if (source.equals("expedition")) {
+				continue;
+			}
+			for (String id : ScrollConfig.NEW_SCROLLS) {
+				assertEquals(defaults.table(source).items.get(id), old.table(source).items.get(id), source + "." + id + ": default weight added");
+			}
+		}
+		assertEquals(99.0, old.table("boss").items.get("rappel"), "the admin's weight is kept");
+		assertNull(old.table("expedition"), "a table removed by the admin is not brought back");
+		assertEquals(Map.of("count", 1.1), old.cursedGrimoire.spells.get(Spell.METEOR_SHOWER.id), "the admin's cursed settings are kept");
+		assertEquals(defaults.cursedGrimoire.spells.get(Spell.SCOURGE.id), old.cursedGrimoire.spells.get(Spell.SCOURGE.id), "new cursed settings");
+		assertEquals(defaults.cursedGrimoire.spells.get(Spell.SPECTRAL_CHAINS.id), old.cursedGrimoire.spells.get(Spell.SPECTRAL_CHAINS.id));
+
+		// Once migrated, a scroll or an entry the admin removes stays removed.
+		ScrollConfig edited = Json5.fromString(Json5.GSON.toJson(old), ScrollConfig.class);
+		edited.scrolls.removeIf(def -> def.id.equals("fleau"));
+		for (ScrollConfig.DropTable table : edited.drops.values()) {
+			table.items.remove("fleau");
+		}
+		edited.drops.get("quest").items.remove("permutation");
+		ScrollConfig again = Json5.fromString(Json5.GSON.toJson(edited), ScrollConfig.class);
+		assertTrue(again.rebuild(id -> true).isEmpty());
+		assertNull(again.scroll("fleau"), "removed by the admin after the migration");
+		assertFalse(again.table("quest").items.containsKey("permutation"));
+		assertTrue(again.migrations().isEmpty(), "migrated once: " + again.migrations());
 	}
 
 	private static void check(List<String> missing, String path) throws Exception {

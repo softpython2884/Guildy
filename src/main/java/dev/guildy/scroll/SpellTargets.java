@@ -2,6 +2,7 @@ package dev.guildy.scroll;
 
 import dev.guildy.Guildy;
 import dev.guildy.data.Guild;
+import dev.guildy.quest.HordeMobs;
 import dev.guildy.ruin.RoomGuards;
 import dev.guildy.scroll.mixin.LivingEntityAccessor;
 import dev.guildy.villager.VillagerManager;
@@ -15,6 +16,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.monster.Enemy;
@@ -43,6 +46,8 @@ import java.util.Optional;
 final class SpellTargets {
 	/** Tag of the iron golems summoned by a scroll (Gardiens). */
 	static final String TAG_GUARDIAN = "guildy_scroll_guardian";
+	/** Entity tag of the ruin guardians (ruin.BossFactory.TAG_BOSS). */
+	private static final String RUIN_BOSS_TAG = "guildy_ruin_boss";
 	/** Spell damage types (the unique weapons' foudre / brasier / givre procs keep their own types, armor applies to them). */
 	static final ResourceKey<DamageType> ARCANE = key("arcane");
 	static final ResourceKey<DamageType> FOUDRE = key("sort_foudre");
@@ -119,6 +124,32 @@ final class SpellTargets {
 
 	/** The monster under the crosshair (within {@code range}, in sight), or null. */
 	static @Nullable LivingEntity aimedHostile(SpellContext ctx, double range) {
+		return aimed(ctx, range, e -> harmable(e, ctx.caster, ctx.guild));
+	}
+
+	/** The creature a permutation may swap with under the crosshair (a monster or a guild ally, in sight), or null. */
+	static @Nullable LivingEntity aimedSwappable(SpellContext ctx, double range) {
+		return aimed(ctx, range, e -> swappable(e, ctx.caster, ctx.guild));
+	}
+
+	static boolean swappable(Entity entity, ServerPlayer caster, @Nullable Guild guild) {
+		return entity instanceof LivingEntity && TargetRules.maySwap(facts(entity, caster, guild));
+	}
+
+	/**
+	 * A boss: a ruin guardian, a horde boss or a vanilla boss (wither, ender dragon, warden, elder guardian). Spells that hold
+	 * or weaken monsters only give them their {@code bossShare} of the effect.
+	 */
+	static boolean isBoss(Entity entity) {
+		if (entity.entityTags().contains(RUIN_BOSS_TAG) || HordeMobs.rank(entity) == HordeMobs.Rank.BOSS) {
+			return true;
+		}
+		EntityType<?> type = entity.getType();
+		return type == EntityTypes.WITHER || type == EntityTypes.ENDER_DRAGON || type == EntityTypes.WARDEN || type == EntityTypes.ELDER_GUARDIAN;
+	}
+
+	/** The nearest entity matching {@code filter} under the crosshair (within {@code range}, in sight), or null. */
+	private static @Nullable LivingEntity aimed(SpellContext ctx, double range, java.util.function.Predicate<LivingEntity> filter) {
 		ServerPlayer player = ctx.caster;
 		Vec3 eye = player.getEyePosition();
 		Vec3 look = player.getViewVector(1.0F);
@@ -126,7 +157,7 @@ final class SpellTargets {
 		AABB area = player.getBoundingBox().expandTowards(look.scale(range)).inflate(1.5);
 		LivingEntity best = null;
 		double bestDistance = Double.MAX_VALUE;
-		for (LivingEntity candidate : ctx.level.getEntitiesOfClass(LivingEntity.class, area, e -> harmable(e, ctx.caster, ctx.guild))) {
+		for (LivingEntity candidate : ctx.level.getEntitiesOfClass(LivingEntity.class, area, e -> e != player && filter.test(e))) {
 			Optional<Vec3> hit = candidate.getBoundingBox().inflate(0.6).clip(eye, end);
 			if (hit.isEmpty()) {
 				continue;

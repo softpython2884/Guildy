@@ -188,6 +188,8 @@ class CursedGrimoireRulesTest {
 		assertEquals("grimoire_maudit", c.model);
 
 		ScrollConfig bad = new ScrollConfig();
+		// A file already in the current format (no migration adds the settings of new spells).
+		bad.configVersion = ScrollConfig.CURRENT_VERSION;
 		ScrollConfig.CursedGrimoire b = bad.cursedGrimoire;
 		b.item = "Ender_Pearl";
 		b.powerMultiplier = 99;

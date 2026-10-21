@@ -117,4 +117,39 @@ class TargetRulesTest {
 		guildVillager.guildVillager = true;
 		assertFalse(TargetRules.mayRecall(guildVillager.build()), "villagers stay home");
 	}
+
+	@Test
+	void permutationSwapsMonstersAndGuildAllies() {
+		assertTrue(TargetRules.maySwap(monster()), "a monster pulled out of its corner");
+		F member = new F();
+		member.player = true;
+		member.member = true;
+		assertTrue(TargetRules.maySwap(member.build()), "a guild member to rescue");
+		F guildVillager = new F();
+		guildVillager.villager = true;
+		guildVillager.guildVillager = true;
+		assertTrue(TargetRules.maySwap(guildVillager.build()), "a guild villager to rescue");
+		F self = new F();
+		self.player = true;
+		self.caster = true;
+		assertFalse(TargetRules.maySwap(self.build()), "not with oneself");
+		F stranger = new F();
+		stranger.player = true;
+		assertFalse(TargetRules.maySwap(stranger.build()), "never a player of another guild");
+		F villager = new F();
+		villager.villager = true;
+		assertFalse(TargetRules.maySwap(villager.build()), "never a villager of no guild or a merchant");
+		F pet = new F();
+		pet.owned = true;
+		assertFalse(TargetRules.maySwap(pet.build()), "never a pet");
+		F guardian = new F();
+		guardian.summoned = true;
+		assertFalse(TargetRules.maySwap(guardian.build()), "never a summoned guardian");
+		F animal = new F();
+		assertFalse(TargetRules.maySwap(animal.build()), "never an animal");
+		F dead = new F();
+		dead.monster = true;
+		dead.alive = false;
+		assertFalse(TargetRules.maySwap(dead.build()));
+	}
 }

@@ -28,6 +28,7 @@ final class ScrollLang {
 		m.put("scroll.group.soutien", "Soutien");
 		m.put("scroll.group.rappel", "Rappel");
 		m.put("scroll.group.invocation", "Invocation");
+		m.put("scroll.group.permutation", "Permutation");
 		// spells
 		m.put("scroll.spell.meteor_shower.name", "Pluie de météores");
 		m.put("scroll.spell.meteor_shower.lore", "Fait pleuvoir {count} météores sur {radius} blocs\nautour du point visé (portée {range} blocs).\n"
@@ -64,6 +65,26 @@ final class ScrollLang {
 		m.put("scroll.spell.arcane_ray.name", "Rayon arcanique");
 		m.put("scroll.spell.arcane_ray.lore", "Un rayon jaillit de votre main pendant\n{duration} s et suit votre visée ({length} blocs) :\n"
 				+ "{damage} ❤ par contact, cinq fois par seconde.");
+		m.put("scroll.spell.war_banner.name", "Bannière de guerre");
+		m.put("scroll.spell.war_banner.lore", "Plante une bannière de guerre pour {duration} s :\nà {radius} blocs autour d'elle, vous, les membres et\n"
+				+ "les villageois de la guilde gagnez Force {strengthLevel}\net Célérité {hasteLevel} (attaques plus rapides).");
+		m.put("scroll.spell.scourge.name", "Fléau");
+		m.put("scroll.spell.scourge.lore", "Une nuée maudite s'abat sur la zone visée\n({radius} blocs) pendant {duration} s : les monstres\n"
+				+ "brillent, faiblissent (Faiblesse {weaknessLevel}, Lenteur\n{slowLevel}) et subissent +{vulnerability} de dégâts de toutes\n"
+				+ "sources (boss : {bossShare} de l'effet).");
+		m.put("scroll.spell.swap.name", "Permutation");
+		m.put("scroll.spell.swap.lore", "Échangez votre place avec la créature visée\n(en vue, {range} blocs) : un monstre est étourdi\n"
+				+ "{stunSeconds} s, un allié de la guilde est protégé\n{shieldSeconds} s (Résistance II). Jamais dans un mur,\n"
+				+ "dans la lave ou au-dessus du vide.");
+		m.put("scroll.spell.rally.name", "Ralliement");
+		m.put("scroll.spell.rally.lore", "Après une longue incantation, sonne le\nralliement : les membres de la guilde à {range}\n"
+				+ "blocs reçoivent [Rejoindre] pendant {acceptSeconds} s ;\nles {maxAllies} premiers qui cliquent vous rejoignent.");
+		m.put("scroll.spell.spectral_chains.name", "Chaînes spectrales");
+		m.put("scroll.spell.spectral_chains.lore", "Des chaînes jaillissent du sol et enchaînent\nle monstre visé et ses voisins ({count} au plus,\n"
+				+ "{radius} blocs) pendant {duration} s (boss : {bossShare}\ndu temps), puis se brisent ({damage} ❤).");
+		m.put("scroll.spell.tailwind.name", "Hâte du vent");
+		m.put("scroll.spell.tailwind.lore", "Un vent arrière se lève : pendant {duration} s,\nvous et la guilde à {radius} blocs gagnez\n"
+				+ "Vitesse {speedLevel} et Saut amélioré {jumpLevel}, et ne\nsubissez plus de dégâts de chute.");
 		// feedback
 		m.put("scroll.cast", "&d✦ &f{0} &d!");
 		m.put("scroll.fail.unknown", "&cCe parchemin est illisible (inconnu de scrolls.json5).");
@@ -79,7 +100,31 @@ final class ScrollLang {
 		m.put("scroll.fail.no_space", "&cPas assez de place autour de vous.");
 		m.put("scroll.fail.guardian_limit", "&cVous avez déjà trop de gardiens.");
 		m.put("scroll.fail.interrupted", "&7Incantation interrompue : le parchemin est intact.");
+		m.put("scroll.fail.no_swap_target", "&7Visez un monstre ou un allié de la guilde (en vue) : le parchemin est intact.");
+		m.put("scroll.fail.swap_blocked", "&cPas assez de place à l'arrivée : la permutation est annulée.");
+		m.put("scroll.fail.swap_hazard", "&cDestination dangereuse (lave, feu, cactus...) : la permutation est annulée.");
+		m.put("scroll.fail.swap_fall", "&cLe vide sous la cible : la permutation est annulée.");
+		m.put("scroll.fail.no_members", "&7Aucun membre de la guilde à appeler : le parchemin est intact.");
+		m.put("scroll.fail.rally_unsafe", "&cImpossible de sonner le ralliement ici (vide, lave ou feu sous vos pieds).");
 		m.put("scroll.recall.pulled", "&b{0}&3 vous ramène à la guilde !");
+		m.put("scroll.swap.swapped", "&d{0}&5 a échangé sa place avec vous !");
+		m.put("scroll.rally.invite", "&6⚑ &e{0}&6 sonne le ralliement de la guilde &7({1})&6 ! ");
+		m.put("scroll.rally.where.distance", "à {0} blocs");
+		m.put("scroll.rally.where.dimension", "dans une autre dimension");
+		m.put("scroll.rally.join", "&a&l[Rejoindre]");
+		m.put("scroll.rally.join.hover", "&7Cliquez pour être téléporté près de &e{0}\n&8Valable {1} s · {2} place(s)");
+		m.put("scroll.rally.called", "&6⚑ Ralliement : &e{0}&6 membre(s) appelé(s).");
+		m.put("scroll.rally.status", "&6⚑ Ralliement : &e{0}/{1}&6 ont rejoint · &e{2} s");
+		m.put("scroll.rally.joined", "&a{0}&2 rejoint le ralliement ! &7({1}/{2})");
+		m.put("scroll.rally.arrived", "&6⚑ Vous rejoignez &e{0}&6 !");
+		m.put("scroll.rally.fail.not_invited", "&cCet appel au ralliement ne vous est pas adressé.");
+		m.put("scroll.rally.fail.closed", "&7Cet appel au ralliement est terminé.");
+		m.put("scroll.rally.fail.expired", "&7Cet appel au ralliement a expiré.");
+		m.put("scroll.rally.fail.already", "&7Vous avez déjà rejoint ce ralliement.");
+		m.put("scroll.rally.fail.full", "&7Le ralliement est complet.");
+		m.put("scroll.rally.fail.dimension", "&cVous n'êtes plus dans la dimension du ralliement.");
+		m.put("scroll.rally.fail.unavailable", "&cImpossible de rejoindre le ralliement maintenant.");
+		m.put("scroll.rally.fail.unsafe", "&cLe point de ralliement n'est plus sûr : impossible de vous y téléporter.");
 		m.put("scroll.revelation.count", "&b{0} &3monstre(s) révélé(s).");
 		m.put("scroll.guardian.name", "&7Gardien de {0}");
 		// rewards

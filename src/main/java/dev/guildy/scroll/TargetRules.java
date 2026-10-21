@@ -44,4 +44,12 @@ public final class TargetRules {
 	public static boolean mayRecall(Facts facts) {
 		return facts.alive() && facts.player() && !facts.caster() && facts.guildMember();
 	}
+
+	/**
+	 * Swapped with the caster by a permutation: a monster (pulled out of a corner), or an ally to rescue (a member or a villager
+	 * of the caster's guild); never the caster, another player, another villager, a pet or a summoned guardian.
+	 */
+	public static boolean maySwap(Facts facts) {
+		return mayHarm(facts) || mayHelp(facts) && !facts.caster();
+	}
 }

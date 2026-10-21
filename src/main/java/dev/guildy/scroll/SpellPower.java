@@ -12,8 +12,9 @@ import java.util.Map;
  *
  * <p>Bounds of an amplified value: damage, heals and durations up to {@link #POWER_CEILING} times the parameter's maximum
  * (the old bound of the grimoire's power, never reached by it), ranges, radii and strengths up to {@link #REACH_CEILING}
- * times its maximum, counts, levels and flags never above the maximum (performance, golem limit, effect levels); never
- * below the parameter's minimum (damage, heals and durations never below zero).
+ * times its maximum, counts, levels, flags and percentages never above the maximum (performance, golem limit, effect
+ * levels, vulnerability); never below the parameter's minimum (damage, heals and durations never below zero). Percentages
+ * only change with a per-spell override.
  *
  * @param power     damage, heals and durations (hearts and seconds)
  * @param radius    ranges and radii (blocks)
@@ -88,7 +89,7 @@ public record SpellPower(double power, double radius, double count, int levels, 
 		double v = Double.isFinite(value) ? value : param.defaultValue();
 		return switch (param.unit()) {
 			case HEARTS, SECONDS -> Math.max(0, Math.min(param.max() * POWER_CEILING, v));
-			case COUNT, LEVEL, FLAG -> Math.max(param.min(), Math.min(param.max(), Math.round(v)));
+			case COUNT, LEVEL, FLAG, PERCENT -> Math.max(param.min(), Math.min(param.max(), Math.round(v)));
 			default -> Math.max(param.min(), Math.min(param.max() * REACH_CEILING, v));
 		};
 	}
