@@ -75,7 +75,11 @@ public final class ChestFilters {
 	}
 
 	/** Items seen in a container: an item id, its storage category and its number of stacks. */
-	public record Seen(String id, String category, int stacks) {
+	public record Seen(String id, String category, int stacks, List<String> parents) {
+		/** An item of a top-level category (no parent category). */
+		public Seen(String id, String category, int stacks) {
+			this(id, category, stacks, List.of());
+		}
 	}
 
 	/** Proposal of the scan for one container: a filter, a category (CATEGORY) or nothing. */
@@ -303,7 +307,9 @@ public final class ChestFilters {
 	/**
 	 * What the scan proposes for a container holding {@code seen} (first seen first): nothing inside = EMPTY; a filter
 	 * when one fits; else the main storage category when it holds at least {@code categoryPercent} % of the stacks (never
-	 * the fallback category); else MIXED.
+	 * the fallback category); else MIXED. An item also counts for the parent categories of its category
+	 * ({@link Seen#parents}, nearest first): the most precise category reaching the share wins (a chest of enchanted
+	 * books and paper is proposed as "Livres et enchantements" when neither sub-category reaches it).
 	 */
 	public static Proposal propose(List<Seen> seen, int maxItems, int categoryPercent, String fallback) {
 		if (seen.isEmpty()) {
@@ -318,17 +324,34 @@ public final class ChestFilters {
 			return new Proposal(Outcome.FILTER, filter, "");
 		}
 		Map<String, Integer> perCategory = new LinkedHashMap<>();
+		Map<String, Integer> depth = new LinkedHashMap<>();
 		int total = 0;
 		for (Seen item : seen) {
-			perCategory.merge(item.category(), Math.max(1, item.stacks()), Integer::sum);
-			total += Math.max(1, item.stacks());
+			int stacks = Math.max(1, item.stacks());
+			List<String> parents = item.parents() == null ? List.of() : item.parents();
+			perCategory.merge(item.category(), stacks, Integer::sum);
+			depth.merge(item.category(), parents.size(), Math::max);
+			for (int i = 0; i < parents.size(); i++) {
+				perCategory.merge(parents.get(i), stacks, Integer::sum);
+				depth.merge(parents.get(i), parents.size() - 1 - i, Math::max);
+			}
+			total += stacks;
 		}
 		String best = null;
 		int bestStacks = 0;
+		int bestDepth = -1;
 		for (Map.Entry<String, Integer> entry : perCategory.entrySet()) {
-			if (entry.getValue() > bestStacks) {
+			int stacks = entry.getValue();
+			int level = depth.getOrDefault(entry.getKey(), 0);
+			boolean reaches = stacks * 100L >= (long) categoryPercent * total && !entry.getKey().equalsIgnoreCase(fallback);
+			boolean bestReaches = best != null && bestStacks * 100L >= (long) categoryPercent * total && !best.equalsIgnoreCase(fallback);
+			// The most precise category reaching the share; without one, the biggest (reported as MIXED below).
+			boolean better = reaches ? !bestReaches || level > bestDepth || (level == bestDepth && stacks > bestStacks)
+					: !bestReaches && stacks > bestStacks;
+			if (better) {
 				best = entry.getKey();
-				bestStacks = entry.getValue();
+				bestStacks = stacks;
+				bestDepth = level;
 			}
 		}
 		if (best != null && !best.isBlank() && !best.equalsIgnoreCase(fallback) && bestStacks * 100L >= (long) categoryPercent * total) {

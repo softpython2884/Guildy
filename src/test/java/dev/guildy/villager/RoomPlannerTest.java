@@ -183,4 +183,24 @@ class RoomPlannerTest {
 		assertEquals(14, RoomPlanner.need(10, SETTINGS));
 		assertEquals(125, RoomPlanner.need(100, SETTINGS));
 	}
+
+	/** A room reserved to the enchanted books: one line at once (even empty), no fallback, the rest in reserve. */
+	@Test
+	void reservedRoomKeepsALinePerCategoryWithoutFallback() {
+		Result first = RoomPlanner.plan(lines(4), Map.of(), List.of("Livres enchantés"), "", Map.of(), Set.of(), SETTINGS, false,
+				Set.of("Livres enchantés"));
+		assertEquals(List.of("Livres enchantés", RoomPlanner.FREE, RoomPlanner.FREE, RoomPlanner.FREE), perLine(first, 4));
+		// Its books grow it (60 stacks need 75 slots: two lines of 54).
+		Result grown = RoomPlanner.plan(lines(4), current("Livres enchantés", "", "", ""), List.of("Livres enchantés"), "",
+				Map.of("Livres enchantés", 60), Set.of(), SETTINGS, false, Set.of("Livres enchantés"));
+		assertEquals(List.of("Livres enchantés", "Livres enchantés", RoomPlanner.FREE, RoomPlanner.FREE), perLine(grown, 4));
+		// An idle line of a reserved category is never its last one.
+		Result idle = RoomPlanner.plan(lines(2), current("Livres enchantés", ""), List.of("Livres enchantés"), "", Map.of(), Set.of(0),
+				SETTINGS, false, Set.of("Livres enchantés"));
+		assertEquals(List.of("Livres enchantés", RoomPlanner.FREE), perLine(idle, 2));
+		// Reserved to two categories, the second one empty: still a line each, in menu order.
+		Result two = RoomPlanner.plan(lines(3), Map.of(), List.of("Livres enchantés", "Potions"), "", Map.of("Potions", 3), Set.of(), SETTINGS,
+				false, Set.of("Livres enchantés", "Potions"));
+		assertEquals(List.of("Livres enchantés", "Potions", RoomPlanner.FREE), perLine(two, 3));
+	}
 }

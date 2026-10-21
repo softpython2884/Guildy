@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -19,8 +20,11 @@ import java.util.function.Function;
 public class GuildVillagerData {
 	/** Accepted guild villagers by entity UUID. */
 	public Map<UUID, VillagerRecord> members = new LinkedHashMap<>();
-	/** Assigned storage chests (deposit + sorted categories). */
-	public List<StorageChest> chests = new ArrayList<>();
+	/**
+	 * Assigned storage chests (deposit + sorted categories). A {@link ChestList}: its modification counter tells the
+	 * {@link StorageIndex} when to rebuild (Gson reads a plain list, converted at the first use).
+	 */
+	public List<StorageChest> chests = new ChestList();
 	/** Villagers that left the guild while their chunk was unloaded: despawned when they load. */
 	public Set<UUID> leaving = new LinkedHashSet<>();
 	/** Work zones (fanions). */
@@ -39,6 +43,40 @@ public class GuildVillagerData {
 	public String storageOrder = "";
 	/** Layout inside each chest: "columns" or "rows" ("" = the default of villagers.json5, storage.defaultChestLayout). */
 	public String chestLayout = "";
+	/** Index of the registered containers (not saved), see {@link StorageIndex}. */
+	transient @Nullable StorageIndex storageIndex;
+	/** Bumped when a registered container changes role, category, filter, room or position ({@link Storage#changed}). */
+	transient int storageVersion;
+
+	/** The chest list, counting its modifications. */
+	public static final class ChestList extends ArrayList<StorageChest> {
+		public ChestList() {
+		}
+
+		public ChestList(Collection<StorageChest> chests) {
+			super(chests);
+		}
+
+		/** Structural modifications so far (additions, removals...). */
+		int modifications() {
+			return modCount;
+		}
+	}
+
+	/** {@link #chests} as a {@link ChestList} (a plain list read by Gson or set by hand is converted once). */
+	ChestList chestList() {
+		if (chests instanceof ChestList list) {
+			return list;
+		}
+		ChestList list = new ChestList(chests == null ? List.of() : chests);
+		chests = list;
+		return list;
+	}
+
+	/** A registered container changed (role, category, filter, room, position): the storage index is rebuilt. */
+	public void storageChanged() {
+		storageVersion++;
+	}
 
 	/** A fanion block to remove later; only removed if the banner there still carries {@link #name}. */
 	public static class StaleFanion {
@@ -59,12 +97,7 @@ public class GuildVillagerData {
 	}
 
 	public @Nullable StorageChest chestAt(BlockPos pos) {
-		for (StorageChest chest : chests) {
-			if (pos.equals(chest.pos)) {
-				return chest;
-			}
-		}
-		return null;
+		return StorageIndex.of(this).at(pos);
 	}
 
 	public @Nullable ChestRoom room(int id) {
@@ -142,9 +175,7 @@ public class GuildVillagerData {
 		for (Map.Entry<UUID, VillagerRecord> entry : members.entrySet()) {
 			entry.getValue().sanitize(entry.getKey());
 		}
-		if (chests == null) {
-			chests = new ArrayList<>();
-		}
+		chestList();
 		chests.removeIf(chest -> chest == null || chest.pos == null);
 		for (StorageChest chest : chests) {
 			chest.sanitize();

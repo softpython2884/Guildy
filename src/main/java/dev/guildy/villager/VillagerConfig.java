@@ -24,7 +24,13 @@ public final class VillagerConfig implements Validatable {
 	 * Current file format; older files get their untouched old defaults migrated in {@link #validate()} (each step:
 	 * {@code if (configVersion < N) {...}}, only values still equal to the old default are changed).
 	 */
-	public static final int CURRENT_VERSION = 7;
+	public static final int CURRENT_VERSION = 8;
+	/**
+	 * Initial value of the storage limits whose 0 changed meaning in version 8 (0 = disabled before, unlimited now): a
+	 * file without the key keeps it, so that only a 0 written in an older file is read as "disabled"; replaced by the
+	 * default (0) in {@link #validate()}.
+	 */
+	static final int UNSET = -1;
 
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int configVersion = 0;
@@ -628,7 +634,17 @@ public final class VillagerConfig implements Validatable {
 				"quartz, roche noire et basalte dans Nether, mais les minerais du Nether dans Minerais et le bois du Nether dans",
 				"Bois ; boutons, plaques de pression et rails dans Redstone ; dalles, escaliers et murets suivent leur matiere",
 				"(pierre, bois, Nether, End...), sinon Blocs de construction. Un coffre dont la categorie n'existe plus sert de",
-				"coffre 'Divers'."
+				"coffre 'Divers'.",
+				"parent (facultatif) : \"\" = categorie principale ; le nom d'une autre categorie = sous-categorie : elle ne prend",
+				"  que des objets de sa categorie parente, choisis par ses propres regles (ex. 'Livres enchantes' dans 'Livres et",
+				"  enchantements') ; \"*\" = categorie transversale : ses regles s'appliquent a tous les objets, quelle que soit",
+				"  leur categorie (ex. 'Equipement enchante' : @enchanted).",
+				"Ou va un objet (le trieur prend le premier coffre qui a de la place, le plus proche d'abord a egalite) :",
+				"  1. coffre filtre qui liste l'objet ; 2. coffre filtre de sa matiere ('diorite') ; 3. coffre filtre de son type",
+				"  ('laine') ; 4. coffre d'une categorie transversale qui le prend ; 5. coffre de sa sous-categorie la plus precise,",
+				"  puis de la categorie parente... jusqu'a la categorie principale ; 6. coffre 'Divers' ; 7. il reste au depot.",
+				"  Sans coffre 'Livres enchantes', un livre enchante va donc dans les coffres 'Livres et enchantements', sinon",
+				"  'Divers' : les coffres existants continuent de recevoir leurs objets."
 		})
 		public LinkedHashMap<String, StorageCategory> categories = defaultCategories();
 		@Comment({
@@ -636,8 +652,22 @@ public final class VillagerConfig implements Validatable {
 				"pas de coffre dedie (ou dont les coffres sont pleins). Sans coffre 'Divers', ces objets restent au depot."
 		})
 		public String fallbackCategory = "Divers";
-		@Comment("Nombre maximum de conteneurs enregistres par guilde hors des salles des coffres (voir maxRoomChests)")
-		public int maxChests = 48;
+		@Comment({
+				"Categories par defaut deja proposees a ce fichier (gere automatiquement) : une categorie ajoutee aux valeurs",
+				"par defaut d'une version suivante de Guildy est ajoutee ici une seule fois ; supprimee ensuite, elle ne revient pas"
+		})
+		public List<String> knownCategories = new ArrayList<>();
+		@Comment({
+				"Nombre maximum de conteneurs enregistres par guilde hors des salles des coffres et des coffres filtres",
+				"(0 = illimite). Les trieurs ne lisent que les coffres utiles a chaque objet : des milliers de coffres restent legers."
+		})
+		public int maxChests = 0;
+		@Comment({
+				"Un groupe de plus de N coffres (une categorie dans une salle, ou hors des salles) est range par parties de N",
+				"coffres au plus, consecutives dans l'ordre de lecture : chaque partie est parfaitement rangee, sans melanger",
+				"les parties. Garde le cout d'une verification de rangement borne (0 = jamais de parties ; 16 a 100000)"
+		})
+		public int maxGroupChests = 128;
 		@Comment("Nommer les conteneurs enregistres (titre affiche a l'ouverture : 'Depot', 'Minerais et lingots'...)")
 		public boolean labelChests = true;
 		@Comment("Duree (secondes) du bouton 'Afficher les coffres' (particules visibles par le joueur seul)")
@@ -656,11 +686,10 @@ public final class VillagerConfig implements Validatable {
 				"l'ordre de lecture (rangee par rangee)."
 		})
 		public String defaultChestLayout = "columns";
-		@Comment({
-				"Coffres filtres (contenu impose : une famille comme 'diorite' ou 'laine', ou une liste d'objets) : nombre",
-				"maximum par guilde (en plus de maxChests et maxRoomChests ; 0 = desactive)"
-		})
-		public int maxFilterChests = 256;
+		@Comment("Coffres filtres (contenu impose : une famille comme 'diorite' ou 'laine', ou une liste d'objets) : actives")
+		public boolean filterChests = true;
+		@Comment("Coffres filtres : nombre maximum par guilde (en plus de maxChests et maxRoomChests ; 0 = illimite)")
+		public int maxFilterChests = UNSET;
 		@Comment({
 				"Filtre d'apres le contenu d'un coffre : une liste exacte d'objets est proposee jusqu'a N objets differents",
 				"(au-dela, sans famille commune, le coffre devient un coffre de categorie ou reste tel quel) (1 a 54)"
@@ -671,24 +700,27 @@ public final class VillagerConfig implements Validatable {
 				"categorie principale si elle represente au moins N % de ses piles (50 a 100)"
 		})
 		public int scanCategoryPercent = 75;
-		@Comment("Commande scan : rayon maximum (chunks) autour du joueur (1 a 16)")
-		public int scanMaxChunks = 8;
+		@Comment("Commande scan : rayon maximum (chunks) autour du joueur (1 a 32)")
+		public int scanMaxChunks = 16;
 		@Comment("Commande scan : chunks lus par tick (le scan est reparti sur plusieurs ticks) (1 a 64)")
 		public int scanChunksPerTick = 4;
-		@Comment("Commande scan : nombre maximum de conteneurs lus par scan (16 a 4096)")
-		public int scanMaxContainers = 1024;
+		@Comment("Commande scan : nombre maximum de conteneurs lus par scan (16 a 65536)")
+		public int scanMaxContainers = 4096;
 		@Comment("Commande scan : duree (secondes) de validite de l'apercu avant [Appliquer] (30 a 900)")
 		public int scanPreviewSeconds = 120;
 		@Comment({
 				"Salles des coffres (menu Stockage) : tous les coffres de la zone entre deux coffres-coins deviennent automatiques ;",
 				"les trieurs leur donnent une categorie par colonnes (ou rangees) entieres, dans l'ordre des categories ci-dessus,",
-				"'Divers' a la fin, le reste en reserve. Nombre maximum de salles par guilde (0 = desactive)"
+				"'Divers' a la fin, le reste en reserve. Une salle peut etre reservee a quelques categories (menu de la salle) :",
+				"elle ne recoit alors que celles-ci. Salles des coffres actives"
 		})
-		public int maxRooms = 4;
-		@Comment("Salles des coffres : nombre maximum de coffres automatiques par guilde (en plus de maxChests)")
-		public int maxRoomChests = 192;
-		@Comment("Salles des coffres : cote maximum (blocs) de la zone entre les deux coins")
-		public int maxRoomSize = 32;
+		public boolean chestRooms = true;
+		@Comment("Salles des coffres : nombre maximum de salles par guilde (0 = illimite)")
+		public int maxRooms = UNSET;
+		@Comment("Salles des coffres : nombre maximum de coffres automatiques par guilde (en plus de maxChests ; 0 = illimite)")
+		public int maxRoomChests = UNSET;
+		@Comment("Salles des coffres : cote maximum (blocs) de la zone entre les deux coins (2 a 256)")
+		public int maxRoomSize = 64;
 		@Comment("Salles des coffres : marge (%) ajoutee a ce que contient une categorie pour choisir son nombre de colonnes")
 		public int roomHeadroomPercent = 25;
 		@Comment("Salles des coffres : une categorie recoit une colonne de plus quand il reste moins de N emplacements libres dans les siennes")
@@ -1103,24 +1135,38 @@ public final class VillagerConfig implements Validatable {
 			alchemist = new AlchemistConfig();
 		}
 		alchemist.validate();
-		// Step 3: the untouched older default categories are replaced by the new set.
-		StorageDefaults.validate(storage, configVersion);
-		storage.maxChests = clamp(storage.maxChests, 1, 256);
+		// Step 3: the untouched older default categories are replaced by the new set; step 8 (and any later version):
+		// default categories the file does not know yet are added once.
+		List<String> storageNotes = new ArrayList<>();
+		StorageDefaults.validate(storage, configVersion, storageNotes);
+		if (!storageNotes.isEmpty()) {
+			org.slf4j.LoggerFactory.getLogger("Guildy").info("[villagers.json5] {}", String.join("; ", storageNotes));
+		}
+		if (configVersion < 8) {
+			// Storage at scale: the old untouched limits become unlimited (0); an old 0 meant "disabled".
+			migrateStorageLimits(storage);
+		}
+		// Not in the file (or a new file): the default, unlimited.
+		storage.maxFilterChests = storage.maxFilterChests == UNSET ? 0 : storage.maxFilterChests;
+		storage.maxRooms = storage.maxRooms == UNSET ? 0 : storage.maxRooms;
+		storage.maxRoomChests = storage.maxRoomChests == UNSET ? 0 : storage.maxRoomChests;
+		storage.maxChests = clamp(storage.maxChests, 0, 1_000_000);
+		storage.maxGroupChests = storage.maxGroupChests <= 0 ? 0 : clamp(storage.maxGroupChests, 16, 100_000);
 		storage.showSeconds = clamp(storage.showSeconds, 3, 120);
 		ChestOrder.Mode order = ChestOrder.Mode.parse(storage.defaultOrder);
 		storage.defaultOrder = (order == null ? ChestOrder.Mode.COLUMNS : order).id();
 		StorageLayout.Fill fill = StorageLayout.Fill.parse(storage.defaultChestLayout);
 		storage.defaultChestLayout = (fill == null ? StorageLayout.Fill.COLUMNS : fill).id();
-		storage.maxFilterChests = clamp(storage.maxFilterChests, 0, 1024);
+		storage.maxFilterChests = clamp(storage.maxFilterChests, 0, 1_000_000);
 		storage.filterMaxItems = clamp(storage.filterMaxItems, 1, 54);
 		storage.scanCategoryPercent = clamp(storage.scanCategoryPercent, 50, 100);
-		storage.scanMaxChunks = clamp(storage.scanMaxChunks, 1, 16);
+		storage.scanMaxChunks = clamp(storage.scanMaxChunks, 1, 32);
 		storage.scanChunksPerTick = clamp(storage.scanChunksPerTick, 1, 64);
-		storage.scanMaxContainers = clamp(storage.scanMaxContainers, 16, 4096);
+		storage.scanMaxContainers = clamp(storage.scanMaxContainers, 16, 65536);
 		storage.scanPreviewSeconds = clamp(storage.scanPreviewSeconds, 30, 900);
-		storage.maxRooms = clamp(storage.maxRooms, 0, 16);
-		storage.maxRoomChests = clamp(storage.maxRoomChests, 0, 1024);
-		storage.maxRoomSize = clamp(storage.maxRoomSize, 2, 64);
+		storage.maxRooms = clamp(storage.maxRooms, 0, 100_000);
+		storage.maxRoomChests = clamp(storage.maxRoomChests, 0, 1_000_000);
+		storage.maxRoomSize = clamp(storage.maxRoomSize, 2, 256);
 		storage.roomHeadroomPercent = clamp(storage.roomHeadroomPercent, 0, 300);
 		storage.roomGrowFreeSlots = clamp(storage.roomGrowFreeSlots, 1, 54);
 		storage.roomNewCategoryStacks = clamp(storage.roomNewCategoryStacks, 1, 1000);
@@ -1140,6 +1186,41 @@ public final class VillagerConfig implements Validatable {
 			}
 		}
 		configVersion = CURRENT_VERSION;
+	}
+
+	/**
+	 * Migration step 8 of the storage limits: values still at the old defaults become the new ones (unlimited, bigger
+	 * rooms and scans); an old 0 written in the file meant "disabled" for the filter chests and the chest rooms, now a
+	 * switch ({@link #UNSET}: the key was not in the file, nothing to read).
+	 */
+	static void migrateStorageLimits(Storage storage) {
+		if (storage.maxChests == 48) {
+			storage.maxChests = 0;
+		}
+		if (storage.maxFilterChests == 256) {
+			storage.maxFilterChests = 0;
+		} else if (storage.maxFilterChests == 0) {
+			storage.filterChests = false;
+		}
+		if (storage.maxRooms == 4) {
+			storage.maxRooms = 0;
+		} else if (storage.maxRooms == 0) {
+			storage.chestRooms = false;
+		}
+		if (storage.maxRoomChests == 192) {
+			storage.maxRoomChests = 0;
+		} else if (storage.maxRoomChests == 0) {
+			storage.chestRooms = false;
+		}
+		if (storage.maxRoomSize == 32) {
+			storage.maxRoomSize = 64;
+		}
+		if (storage.scanMaxChunks == 8) {
+			storage.scanMaxChunks = 16;
+		}
+		if (storage.scanMaxContainers == 1024) {
+			storage.scanMaxContainers = 4096;
+		}
 	}
 
 	private static void validateGuard(Guard guard) {

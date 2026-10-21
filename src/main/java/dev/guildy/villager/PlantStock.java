@@ -3,6 +3,7 @@ package dev.guildy.villager;
 import dev.guildy.core.ItemUtil;
 import dev.guildy.data.GuildManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -109,8 +110,15 @@ final class PlantStock {
 	 * halves of a double chest are read once.
 	 */
 	static List<ChestView> chests(WorkContext ctx, Predicate<Item> plantable, Set<BlockPos> excluded) {
+		// Only the chests that may give one of the plantable items are read (their givers in the storage index).
+		List<ItemStack> wanted = new ArrayList<>();
+		for (Item item : BuiltInRegistries.ITEM) {
+			if (plantable.test(item)) {
+				wanted.add(new ItemStack(item));
+			}
+		}
 		List<StorageChest> usable = new ArrayList<>();
-		for (StorageChest chest : ctx.guild.villagers.chests) {
+		for (StorageChest chest : Storage.index(ctx.guild).givers(wanted)) {
 			if (!excluded.contains(chest.pos) && Storage.usable(ctx.level, ctx.guild, chest)) {
 				usable.add(chest);
 			}

@@ -796,11 +796,11 @@ public final class VillagerManager {
 
 	/** Unloaded villager leaving: its items go to a loaded deposit chest if possible (otherwise they are lost). */
 	private static void stashCarried(ServerLevel level, Guild guild, VillagerRecord record) {
-		for (StorageChest chest : guild.villagers.chests) {
+		for (StorageChest chest : Storage.index(guild).deposits()) {
 			if (record.carried.isEmpty()) {
 				break;
 			}
-			if (!chest.isDeposit() || !Storage.usable(level, guild, chest)) {
+			if (!Storage.usable(level, guild, chest)) {
 				continue;
 			}
 			Container container = Storage.container(level, chest.pos);

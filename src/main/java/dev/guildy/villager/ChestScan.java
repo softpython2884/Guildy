@@ -286,8 +286,12 @@ final class ChestScan {
 		VillagerConfig.Storage config = VillagerModule.config().storage;
 		List<ItemSeen> items = contents(container);
 		List<ChestFilters.Seen> seen = new ArrayList<>(items.size());
+		StorageCategories categories = Storage.categories();
 		for (ItemSeen item : items) {
-			seen.add(new ChestFilters.Seen(Storage.itemId(item.prototype()), Storage.categoryOf(item.prototype()), item.stacks()));
+			String category = Storage.categoryOf(item.prototype());
+			List<String> ancestors = categories.ancestors(category);
+			List<String> parents = ancestors.size() <= 1 ? List.of() : ancestors.subList(1, ancestors.size());
+			seen.add(new ChestFilters.Seen(Storage.itemId(item.prototype()), category, item.stacks(), parents));
 		}
 		ChestFilters.Proposal proposal = ChestFilters.propose(seen, config.filterMaxItems, config.scanCategoryPercent, Storage.categories().fallback());
 		// The registration stays on the half that was registered (a double chest registered on its other half).
@@ -539,6 +543,11 @@ final class ChestScan {
 		int skipped = 0;
 		int limited = 0;
 		List<StorageChest> touched = new ArrayList<>();
+		// New registrations are added together at the end (the index used by the lookups is not rebuilt for each one);
+		// the counters of the limits follow them.
+		List<StorageChest> fresh = new ArrayList<>();
+		StorageIndex index = Storage.index(guild);
+		int[] counts = {index.manualCount(), index.filterCount(), index.roomChestCount()};
 		for (Found found : session.found) {
 			ChestFilters.Proposal proposal = found.proposal();
 			if (proposal.outcome() != ChestFilters.Outcome.FILTER && proposal.outcome() != ChestFilters.Outcome.CATEGORY) {
@@ -557,13 +566,20 @@ final class ChestScan {
 			boolean filter = proposal.outcome() == ChestFilters.Outcome.FILTER;
 			ChestRoom room = roomAt(guild, pos);
 			if (chest == null) {
-				if (!room(guild, filter, room)) {
+				if (!room(filter, room, counts)) {
 					limited++;
 					continue;
 				}
 				chest = new StorageChest(pos, StorageChest.Role.CATEGORY, "");
 				chest.room = room == null ? 0 : room.id;
-				guild.villagers.chests.add(chest);
+				fresh.add(chest);
+				counts[filter ? 1 : room == null ? 0 : 2]++;
+			} else if (filter && chest.role != StorageChest.Role.FILTER) {
+				if (!room(true, room, counts)) {
+					limited++;
+					continue;
+				}
+				counts[1]++;
 			}
 			// A role chosen through the scan is manual (never reassigned by a chest room).
 			chest.auto = false;
@@ -580,6 +596,7 @@ final class ChestScan {
 			}
 			touched.add(chest);
 		}
+		guild.villagers.chests.addAll(fresh);
 		for (StorageChest chest : touched) {
 			// Never over a name given by a player.
 			StorageLabels.sync(level, guild, chest);
@@ -617,32 +634,26 @@ final class ChestScan {
 
 	/** True when the guild may register one more container of this kind (filter / category, in a room or not). */
 	static boolean room(Guild guild, boolean filter, @Nullable ChestRoom room) {
+		StorageIndex index = Storage.index(guild);
+		return room(filter, room, new int[]{index.manualCount(), index.filterCount(), index.roomChestCount()});
+	}
+
+	/** Same with the counters {manual, filter, room chests} at hand (switches and limits of villagers.json5, 0 = unlimited). */
+	private static boolean room(boolean filter, @Nullable ChestRoom room, int[] counts) {
 		VillagerConfig.Storage config = VillagerModule.config().storage;
 		if (filter) {
-			return filterCount(guild) < config.maxFilterChests;
+			return config.filterChests && !Storage.limitReached(counts[1], config.maxFilterChests);
 		}
-		return room != null ? ChestRooms.roomChestCount(guild) < config.maxRoomChests : manualCount(guild) < config.maxChests;
+		return room != null ? !Storage.limitReached(counts[2], config.maxRoomChests) : !Storage.limitReached(counts[0], config.maxChests);
 	}
 
 	/** Filter chests of the guild (their budget: storage.maxFilterChests). */
 	static int filterCount(Guild guild) {
-		int count = 0;
-		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.role == StorageChest.Role.FILTER) {
-				count++;
-			}
-		}
-		return count;
+		return Storage.index(guild).filterCount();
 	}
 
 	/** Containers outside the chest rooms, filter chests aside (their budget: storage.maxChests). */
 	static int manualCount(Guild guild) {
-		int count = 0;
-		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.room <= 0 && chest.role != StorageChest.Role.FILTER) {
-				count++;
-			}
-		}
-		return count;
+		return Storage.index(guild).manualCount();
 	}
 }

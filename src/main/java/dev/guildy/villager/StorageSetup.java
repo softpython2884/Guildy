@@ -67,6 +67,7 @@ final class StorageSetup {
 				String replacement = StorageDefaults.legacyRename(chest.category, categories);
 				if (replacement != null) {
 					chest.category = replacement;
+					Storage.changed(guild);
 					renamed++;
 				}
 			}

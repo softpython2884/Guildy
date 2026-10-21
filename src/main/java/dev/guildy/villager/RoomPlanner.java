@@ -23,6 +23,9 @@ import java.util.TreeSet;
  * empty for long ({@code idleLines}) goes back to the reserve when its category does not need it. A growing category
  * takes the free line next to its block, else the blocks between it and the nearest free line move by one line when
  * they are at most {@code maxShift}, else it takes the nearest free line.</li>
+ * <li>Categories to keep ({@code keep}: the fallback of an ordinary room, every category of a room reserved to a few
+ * categories) always have a line, even empty; a room reserved to some categories has no fallback unless it is one of
+ * them.</li>
  * </ul>
  */
 public final class RoomPlanner {
@@ -57,6 +60,12 @@ public final class RoomPlanner {
 	 */
 	public static Result planRoom(List<RoomChest> chests, ChestOrder.Mode mode, Map<Integer, String> current, List<String> categories,
 			String fallback, Map<String, Integer> demand, Set<Integer> idleChests, Settings settings, boolean fresh) {
+		return planRoom(chests, mode, current, categories, fallback, demand, idleChests, settings, fresh, keepFallback(fallback));
+	}
+
+	/** Same as the other {@code planRoom} with the categories always given a line ({@code keep}). */
+	public static Result planRoom(List<RoomChest> chests, ChestOrder.Mode mode, Map<Integer, String> current, List<String> categories,
+			String fallback, Map<String, Integer> demand, Set<Integer> idleChests, Settings settings, boolean fresh, Set<String> keep) {
 		Map<Integer, RoomChest> byId = new HashMap<>();
 		List<ChestOrder.Unit> units = new ArrayList<>();
 		for (RoomChest chest : chests) {
@@ -90,7 +99,11 @@ public final class RoomPlanner {
 				lines.add(new Line(autos, capacity));
 			}
 		}
-		return plan(lines, automatic, categories, fallback, demand, idle, settings, fresh);
+		return plan(lines, automatic, categories, fallback, demand, idle, settings, fresh, keep);
+	}
+
+	private static Set<String> keepFallback(String fallback) {
+		return fallback == null || fallback.isBlank() ? Set.of() : Set.of(fallback);
 	}
 
 	/**
@@ -104,13 +117,33 @@ public final class RoomPlanner {
 	 */
 	public static Result plan(List<Line> lines, Map<Integer, String> current, List<String> categories, String fallback,
 			Map<String, Integer> demand, Set<Integer> idleLines, Settings settings, boolean fresh) {
+		return plan(lines, current, categories, fallback, demand, idleLines, settings, fresh, keepFallback(fallback));
+	}
+
+	/**
+	 * Same as the other {@code plan}; {@code fallback} may be blank (no fallback line: a room reserved to some
+	 * categories), {@code keep} = categories that always get one line.
+	 */
+	public static Result plan(List<Line> lines, Map<Integer, String> current, List<String> categories, String fallback,
+			Map<String, Integer> demand, Set<Integer> idleLines, Settings settings, boolean fresh, Set<String> keep) {
+		boolean hasFallback = fallback != null && !fallback.isBlank();
+		fallback = hasFallback ? fallback : FREE;
 		List<String> order = new ArrayList<>();
 		for (String category : categories) {
 			if (category != null && !category.isBlank() && !category.equalsIgnoreCase(fallback) && index(order, category) < 0) {
 				order.add(category);
 			}
 		}
-		order.add(fallback);
+		if (hasFallback) {
+			order.add(fallback);
+		}
+		Set<String> kept = new LinkedHashSet<>();
+		for (String category : keep) {
+			String name = canonical(order, category);
+			if (!name.equals(FREE)) {
+				kept.add(name);
+			}
+		}
 		Map<String, Integer> held = new HashMap<>();
 		for (Map.Entry<String, Integer> entry : demand.entrySet()) {
 			String name = canonical(order, entry.getKey());
@@ -127,17 +160,21 @@ public final class RoomPlanner {
 		}
 		List<String> unplaced = new ArrayList<>();
 		if (!anyAssigned) {
-			initial(lines, cat, order, held, settings, unplaced);
+			initial(lines, cat, order, fallback, kept, held, settings, unplaced);
 		} else {
-			shrink(lines, cat, fallback, held, idleLines, settings);
-			grow(lines, cat, order, fallback, held, settings, unplaced);
+			shrink(lines, cat, fallback, kept, held, idleLines, settings);
+			grow(lines, cat, order, fallback, kept, held, settings, unplaced);
 		}
 		Map<Integer, String> assignment = new LinkedHashMap<>();
 		Set<Integer> changed = new TreeSet<>();
 		for (int i = 0; i < n; i++) {
 			for (int chest : lines.get(i).chests()) {
 				assignment.put(chest, cat[i]);
-				if (!canonical(order, current.get(chest)).equals(cat[i])) {
+				// Compared with the name actually saved: a category the room no longer plans (removed, or outside the
+				// categories a room is reserved to) changes too, even into the reserve.
+				String before = current.get(chest);
+				boolean same = before == null || before.isBlank() ? cat[i].equals(FREE) : before.trim().equalsIgnoreCase(cat[i]);
+				if (!same) {
 					changed.add(chest);
 				}
 			}
@@ -156,24 +193,30 @@ public final class RoomPlanner {
 
 	// ------------------------------------------------------------------ first plan
 
-	private static void initial(List<Line> lines, String[] cat, List<String> order, Map<String, Integer> held, Settings settings,
-			List<String> unplaced) {
+	private static void initial(List<Line> lines, String[] cat, List<String> order, String fallback, Set<String> keep,
+			Map<String, Integer> held, Settings settings, List<String> unplaced) {
 		int n = lines.size();
-		String fallback = order.getLast();
 		List<String> wanted = new ArrayList<>();
 		for (String category : order) {
-			if (category.equals(fallback) || held.getOrDefault(category, 0) > 0) {
+			if (keep.contains(category) || held.getOrDefault(category, 0) > 0) {
 				wanted.add(category);
 			}
 		}
 		if (wanted.size() > n) {
-			// Short of lines: the fallback, then the categories holding the most.
+			// Short of lines: the categories to keep (the fallback first), then the categories holding the most.
 			List<String> byDemand = new ArrayList<>(wanted);
-			byDemand.remove(fallback);
+			byDemand.removeAll(keep);
 			byDemand.sort((a, b) -> Integer.compare(held.getOrDefault(b, 0), held.getOrDefault(a, 0)));
 			Set<String> kept = new LinkedHashSet<>();
-			if (n > 0) {
+			if (n > 0 && keep.contains(fallback)) {
 				kept.add(fallback);
+			}
+			for (String category : wanted) {
+				if (keep.contains(category) && kept.size() < n) {
+					kept.add(category);
+				} else if (keep.contains(category) && !kept.contains(category)) {
+					unplaced.add(category);
+				}
 			}
 			for (String category : byDemand) {
 				if (kept.size() >= n) {
@@ -212,8 +255,8 @@ public final class RoomPlanner {
 	// ------------------------------------------------------------------ later plans
 
 	/** Long-empty lines go back to the reserve when their category does not need them (one fallback line is kept). */
-	private static void shrink(List<Line> lines, String[] cat, String fallback, Map<String, Integer> held, Set<Integer> idleLines,
-			Settings settings) {
+	private static void shrink(List<Line> lines, String[] cat, String fallback, Set<String> keep, Map<String, Integer> held,
+			Set<Integer> idleLines, Settings settings) {
 		List<Integer> idle = new ArrayList<>(new TreeSet<>(idleLines));
 		for (int k = idle.size() - 1; k >= 0; k--) {
 			int i = idle.get(k);
@@ -229,7 +272,7 @@ public final class RoomPlanner {
 					capacity += lines.get(j).capacity();
 				}
 			}
-			if (category.equals(fallback) && count <= 1) {
+			if (keep.contains(category) && count <= 1) {
 				continue;
 			}
 			int holds = holds(cat, category, fallback, held);
@@ -240,8 +283,8 @@ public final class RoomPlanner {
 	}
 
 	/** One more line for each category running out of room (or holding enough items to deserve its first line). */
-	private static void grow(List<Line> lines, String[] cat, List<String> order, String fallback, Map<String, Integer> held,
-			Settings settings, List<String> unplaced) {
+	private static void grow(List<Line> lines, String[] cat, List<String> order, String fallback, Set<String> keep,
+			Map<String, Integer> held, Settings settings, List<String> unplaced) {
 		for (String category : order) {
 			int holds = holds(cat, category, fallback, held);
 			int capacity = 0;
@@ -256,7 +299,8 @@ public final class RoomPlanner {
 			}
 			boolean wants;
 			if (first < 0) {
-				wants = category.equals(fallback) ? holds > 0 : holds >= Math.max(1, settings.newCategoryStacks());
+				// The fallback of an ordinary room once it holds something; a category of a reserved room at once.
+				wants = keep.contains(category) ? holds > 0 || !category.equals(fallback) : holds >= Math.max(1, settings.newCategoryStacks());
 			} else {
 				wants = holds > 0 && capacity - holds < Math.max(1, settings.growFreeSlots());
 			}

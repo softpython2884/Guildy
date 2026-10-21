@@ -254,6 +254,25 @@ class ChestFiltersTest {
 		assertEquals(Outcome.MIXED, ChestFilters.propose(misc, 9, 75, "Divers").outcome());
 	}
 
+	@Test
+	void scanProposesTheMostPreciseCategoryReachingTheShare() {
+		List<String> books = List.of("Livres et enchantements");
+		// Ten kinds of enchanted books (different ids of a mod) only: the sub-category.
+		List<Seen> enchanted = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			enchanted.add(new Seen("mod:tome_" + i, "Livres enchantés", 2, books));
+		}
+		assertEquals("Livres enchantés", ChestFilters.propose(enchanted, 9, 75, "Divers").category());
+		// Half enchanted books, half paper and books: no sub-category reaches 75 %, their parent does.
+		List<Seen> mixed = new ArrayList<>(enchanted.subList(0, 5));
+		for (int i = 0; i < 5; i++) {
+			mixed.add(new Seen("mod:page_" + i, "Livres et papier", 2, books));
+		}
+		Proposal parent = ChestFilters.propose(mixed, 9, 75, "Divers");
+		assertEquals(Outcome.CATEGORY, parent.outcome());
+		assertEquals("Livres et enchantements", parent.category());
+	}
+
 	// ================================================================ names
 
 	@Test

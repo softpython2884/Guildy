@@ -123,12 +123,18 @@ final class Tidier {
 	static void touched(Guild guild, StorageChest chest) {
 		GuildState state = STATES.get(guild.id);
 		if (state != null && !chest.isDeposit() && !chest.isFree()) {
-			state.status.remove(StorageGroups.keyOf(chest));
+			// The group, or every part of a big group.
+			String key = StorageGroups.keyOf(chest);
+			state.status.keySet().removeIf(k -> StorageGroups.baseKey(k).equals(key));
 		}
 	}
 
-	/** Forgets the audits of a guild (categories reassigned, order changed): everything is checked again. */
+	/**
+	 * Forgets the audits of a guild (categories reassigned, order changed): everything is checked again. The storage
+	 * index is rebuilt too (every caller just changed a registered container or a setting of the groups).
+	 */
 	static void invalidate(Guild guild) {
+		Storage.changed(guild);
 		GuildState state = STATES.get(guild.id);
 		if (state != null) {
 			state.status.clear();
@@ -285,9 +291,10 @@ final class Tidier {
 
 	/**
 	 * Marks the keys to take out of the group: items with a better destination with room elsewhere
-	 * ({@link StorageRouting}: a filter chest accepting them before the chests of their category, their category before
-	 * the fallback). Items a filter group refuses may go back to a deposit when no other chest takes them; items of
-	 * another category in a category group stay when they have no other destination.
+	 * ({@link StorageRouting}: a filter chest accepting them before the chests of their categories, a transversal or
+	 * sub-category before its parent, a category before the fallback). Items a filter group refuses may go back to a
+	 * deposit when no other chest takes them; items of another category in a category group stay when they have no other
+	 * destination. Uses the routing index: only the chests of each item's better tiers are looked at.
 	 */
 	private static void markOut(ServerLevel level, Guild guild, Audit a) {
 		StorageGroups.Group group = a.group;
@@ -304,26 +311,19 @@ final class Tidier {
 		for (StorageChest chest : group.chests()) {
 			members.add(chest.pos);
 		}
-		// The other chests, to know without reading them whether a better destination could exist at all.
-		List<StorageRouting.Target> others = new ArrayList<>();
-		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.pos != null && !members.contains(chest.pos)) {
-				others.add(Storage.target(chest));
-			}
-		}
+		StorageIndex index = Storage.index(guild);
+		StorageRouting.Index routing = index.routing();
 		Vec3 from = a.chests.isEmpty() ? Vec3.ZERO : Vec3.atCenterOf(a.chests.getFirst().pos);
 		for (int k = 0; k < a.keys.size(); k++) {
 			ItemStack stack = a.keys.get(k);
 			String id = Storage.itemId(stack);
-			String category = Storage.categoryOf(stack);
-			int homeTier = StorageRouting.tier(home, id, category);
+			List<String> chain = Storage.chain(stack);
+			int homeTier = StorageRouting.tier(home, id, chain);
 			if (homeTier == 0) {
 				continue;
 			}
-			int possible = StorageRouting.NONE;
-			for (StorageRouting.Target other : others) {
-				possible = Math.min(possible, StorageRouting.tier(other, id, category));
-			}
+			// Without reading any chest: could a better destination exist at all (a chest of a better tier outside the group)?
+			int possible = routing.bestTier(id, chain, Math.min(maxTier, homeTier - 1), target -> !members.contains(index.chest(target).pos));
 			if (possible >= homeTier || possible > maxTier) {
 				continue;
 			}
@@ -381,6 +381,7 @@ final class Tidier {
 	static Next next(WorkContext ctx) {
 		VillagerConfig.Sorter config = ctx.config.sorter;
 		List<StorageGroups.Group> groups = StorageGroups.groups(ctx.level, ctx.guild);
+		StorageIndex index = Storage.index(ctx.guild);
 		GuildState state = state(ctx.guild);
 		Set<String> keys = new HashSet<>();
 		for (StorageGroups.Group group : groups) {
@@ -433,7 +434,7 @@ final class Tidier {
 			audited += Math.max(1, audit.chests.size());
 			state.status.put(group.key(), new Status(audit.tidy, audit.anyBusy(), ctx.now));
 			if (group != priority) {
-				state.cursor = groups.indexOf(group) + 1;
+				state.cursor = index.groupPosition(group.key()) + 1;
 			} else if (audit.tidy) {
 				state.priority = null;
 			}
@@ -910,7 +911,12 @@ final class Tidier {
 		if (a.group.filter() != null) {
 			return a.group.filter().accepts(Storage.itemId(stack));
 		}
-		return Storage.categoryOf(stack).equalsIgnoreCase(a.group.category());
+		for (String category : Storage.chain(stack)) {
+			if (category.equalsIgnoreCase(a.group.category())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Leftover carried stacks take the slots of the section's extra items (into the bag in exchange). */

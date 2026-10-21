@@ -22,6 +22,7 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.Weapon;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.equipment.Equippable;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -36,12 +37,19 @@ import java.util.Set;
 /**
  * What the storage categories know about an item ({@link StorageCategories.Facts}): its id, its tags (with their size),
  * its properties read from the item components (food, armor, tool, weapon, potion, stored enchantments...) and the
- * creative inventory tabs that show it (built once on the server, like a client builds them). Facts and categories are
- * cached per item for stacks without component changes; {@link #invalidate()} after a data pack reload.
+ * creative inventory tabs that show it (built once on the server, like a client builds them). Facts are cached per item
+ * for stacks without component changes; resolutions (routing chain and category, {@link StorageCategories#resolve}) per
+ * item and per distinct stack (enchanted books, potions...; bounded); {@link #invalidate()} after a data pack reload.
  */
 public final class ItemClassifier {
 	private static final Map<Item, StorageCategories.Facts> FACTS = new HashMap<>();
-	private static final Map<Item, String> CATEGORIES = new HashMap<>();
+	private static final Map<Item, StorageCategories.Resolution> RESOLUTIONS = new HashMap<>();
+	/** Resolutions of stacks with components (same item, same components), cleared when it grows too big. */
+	private static final Object2ObjectOpenCustomHashMap<ItemStack, StorageCategories.Resolution> VARIANTS =
+			new Object2ObjectOpenCustomHashMap<>(StorageSort.SAME_ITEM);
+	private static final Map<String, StorageCategories.Resolution> MAGIC = new HashMap<>();
+	private static final int VARIANTS_LIMIT = 4096;
+	private static @Nullable List<ItemStack> equipment;
 	private static @Nullable StorageCategories cachedFor;
 	private static @Nullable Map<String, Integer> tagSizes;
 	private static @Nullable Map<Item, Set<String>> tabs;
@@ -57,48 +65,100 @@ public final class ItemClassifier {
 	private ItemClassifier() {
 	}
 
-	/** Storage category of a stack (with the current villagers.json5 categories). */
+	/**
+	 * Storage category of a stack (with the current villagers.json5 categories): its deepest category of the tree, the
+	 * fallback when none (transversal categories aside: see {@link #chain}).
+	 */
 	public static String categoryOf(ItemStack stack) {
-		StorageCategories categories = categories();
-		String kind = GuildyItems.kind(stack);
-		if (kind != null && MAGIC_KINDS.contains(kind)) {
-			// Spell scrolls, grimoires and incantation scrolls are banner patterns or books underneath: they are sorted
-			// with the enchanted books.
-			return categoryOf(new ItemStack(Items.ENCHANTED_BOOK));
-		}
-		boolean plain = stack.getComponentsPatch().isEmpty();
-		if (plain) {
-			String cached = CATEGORIES.get(stack.getItem());
-			if (cached != null) {
-				return cached;
-			}
-		}
-		String category = categories.match(facts(stack)).category();
-		if (plain) {
-			CATEGORIES.put(stack.getItem(), category);
-		}
-		return category;
+		return resolve(stack).category();
+	}
+
+	/**
+	 * Routing chain of a stack, most specific first: the transversal categories it matches, then its deepest
+	 * category, its parent... its top-level category (empty: only the fallback).
+	 */
+	public static List<String> chain(ItemStack stack) {
+		return resolve(stack).chain();
 	}
 
 	/** Category of a stack and the rule that chose it. */
 	public static StorageCategories.Match match(ItemStack stack) {
-		return categories().match(facts(stack));
+		return resolve(stack).home();
+	}
+
+	/** Where the stack belongs (cached). */
+	public static StorageCategories.Resolution resolve(ItemStack stack) {
+		StorageCategories categories = categories();
+		if (stack.getComponentsPatch().isEmpty()) {
+			StorageCategories.Resolution cached = RESOLUTIONS.get(stack.getItem());
+			if (cached == null) {
+				cached = categories.resolve(facts(stack));
+				RESOLUTIONS.put(stack.getItem(), cached);
+			}
+			return cached;
+		}
+		String kind = GuildyItems.kind(stack);
+		if (kind != null && MAGIC_KINDS.contains(kind)) {
+			// Spell scrolls, grimoires and incantation scrolls are banner patterns or books underneath: an enchanted book
+			// chooses their top-level category, the magic item itself (id "guildy:<kind>", property @magic) the rest.
+			StorageCategories.Resolution magic = MAGIC.get(kind);
+			if (magic == null) {
+				StorageCategories.Facts detail = new StorageCategories.Facts("guildy:" + kind, Map.of(), Set.of("magic"));
+				magic = categories.resolve(facts(new ItemStack(Items.ENCHANTED_BOOK)), detail);
+				MAGIC.put(kind, magic);
+			}
+			return magic;
+		}
+		StorageCategories.Resolution known = VARIANTS.get(stack);
+		if (known == null) {
+			known = categories.resolve(facts(stack));
+			if (VARIANTS.size() >= VARIANTS_LIMIT) {
+				VARIANTS.clear();
+			}
+			VARIANTS.put(stack.copyWithCount(1), known);
+		}
+		return known;
 	}
 
 	private static StorageCategories categories() {
 		StorageCategories categories = Storage.categories();
 		if (categories != cachedFor) {
-			CATEGORIES.clear();
+			RESOLUTIONS.clear();
+			VARIANTS.clear();
+			MAGIC.clear();
+			equipment = null;
 			cachedFor = categories;
 			warnUnknownRules();
 		}
 		return categories;
 	}
 
+	/**
+	 * One plain stack of every item a guard may wear or wield (armor pieces, shields, elytra, weapons), for the chests
+	 * worth searching ({@link StorageIndex#equipmentGivers}).
+	 */
+	static List<ItemStack> equipmentSamples() {
+		categories();
+		if (equipment == null) {
+			List<ItemStack> samples = new ArrayList<>();
+			for (Item item : BuiltInRegistries.ITEM) {
+				ItemStack stack = item.getDefaultInstance();
+				if (!stack.isEmpty() && (isArmor(stack) || isWeapon(stack))) {
+					samples.add(stack);
+				}
+			}
+			equipment = List.copyOf(samples);
+		}
+		return equipment;
+	}
+
 	/** Forgets the cached facts, tags and tabs (data pack reload, server start). */
 	public static void invalidate() {
 		FACTS.clear();
-		CATEGORIES.clear();
+		RESOLUTIONS.clear();
+		VARIANTS.clear();
+		MAGIC.clear();
+		equipment = null;
 		cachedFor = null;
 		tagSizes = null;
 		tabs = null;

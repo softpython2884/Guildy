@@ -21,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.jspecify.annotations.Nullable;
@@ -155,14 +156,15 @@ final class StorageCommands {
 
 	/**
 	 * Makes the container a filter chest accepting what it holds (family or exact items; registered if needed, its
-	 * previous role replaced); messages to the player.
+	 * previous role replaced); an empty container takes the item held in the main hand (one click for a chest of
+	 * enchanted books: hold one); messages to the player.
 	 *
 	 * @return true when done
 	 */
 	static boolean setFromContents(ServerPlayer player, Guild guild, ServerLevel level, BlockPos pos) {
 		VillagerConfig.Storage config = VillagerModule.config().storage;
-		if (config.maxFilterChests <= 0) {
-			Msg.send(player, "villager.storage.filter.disabled");
+		if (!config.filterChests) {
+			Msg.send(player, "villager.storage.filter.off");
 			return false;
 		}
 		Container container = Storage.container(level, pos);
@@ -171,13 +173,17 @@ final class StorageCommands {
 			return false;
 		}
 		List<ChestScan.ItemSeen> items = ChestScan.contents(container);
-		if (items.isEmpty()) {
-			Msg.send(player, "villager.storage.filter.empty");
-			return false;
-		}
 		List<String> ids = new ArrayList<>(items.size());
 		for (ChestScan.ItemSeen item : items) {
 			ids.add(Storage.itemId(item.prototype()));
+		}
+		if (ids.isEmpty()) {
+			ItemStack held = player.getMainHandItem();
+			if (held.isEmpty()) {
+				Msg.send(player, "villager.storage.filter.empty_hand");
+				return false;
+			}
+			ids.add(Storage.itemId(held));
 		}
 		ChestFilter filter = ChestFilters.infer(ids, config.filterMaxItems);
 		if (filter == null) {
@@ -185,7 +191,7 @@ final class StorageCommands {
 			return false;
 		}
 		StorageChest chest = Storage.registered(level, guild, pos);
-		if ((chest == null || chest.role != StorageChest.Role.FILTER) && ChestScan.filterCount(guild) >= config.maxFilterChests) {
+		if ((chest == null || chest.role != StorageChest.Role.FILTER) && Storage.limitReached(ChestScan.filterCount(guild), config.maxFilterChests)) {
 			Msg.send(player, "villager.storage.filter.limit", config.maxFilterChests);
 			return false;
 		}

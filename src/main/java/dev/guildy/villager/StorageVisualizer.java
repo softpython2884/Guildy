@@ -157,7 +157,8 @@ final class StorageVisualizer {
 			return chest.room > 0 && filter.equals(ROOM + chest.room);
 		}
 		if (filter.startsWith(GROUP)) {
-			return !chest.isDeposit() && !chest.isFree() && filter.substring(GROUP.length()).equals(StorageGroups.keyOf(chest));
+			// A part of a big group shows the whole group.
+			return !chest.isDeposit() && !chest.isFree() && StorageGroups.baseKey(filter.substring(GROUP.length())).equals(StorageGroups.keyOf(chest));
 		}
 		if (filter.equals(FILTERS)) {
 			return chest.isFilter();

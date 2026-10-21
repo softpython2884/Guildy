@@ -35,7 +35,9 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Guard equipment taken from the guild's registered storage chests: armor pieces in the four armor slots (vanilla
@@ -235,11 +237,15 @@ final class GuardEquipment {
 		return cfg.weaponsFromChests && bestWeapon(ctx, container, role) >= 0;
 	}
 
-	/** Nearest usable registered chest holding something better than what the guard wears, or null. */
+	/**
+	 * Nearest usable registered chest holding something better than what the guard wears, or null. Only the chests that
+	 * may hold equipment are read ({@link StorageIndex#equipmentGivers}: deposits, fallback, filter and category chests
+	 * of armor and weapons, transversal categories).
+	 */
 	static @Nullable BlockPos findUpgradeChest(WorkContext ctx, GuardRole role) {
 		BlockPos best = null;
 		double bestDist = Double.MAX_VALUE;
-		for (StorageChest chest : ctx.guild.villagers.chests) {
+		for (StorageChest chest : Storage.index(ctx.guild).equipmentGivers()) {
 			if (!Storage.usable(ctx.level, ctx.guild, chest)) {
 				continue;
 			}
@@ -415,16 +421,32 @@ final class GuardEquipment {
 			return ItemStack.EMPTY;
 		}
 		ItemStack rest = stack.copy();
-		List<StorageChest> order = new ArrayList<>(guild.villagers.chests);
-		order.removeIf(chest -> !Storage.usable(level, guild, chest));
-		order.sort(Comparator.<StorageChest>comparingInt(chest -> Storage.tier(chest, stack))
-				.thenComparingDouble(chest -> from.distanceToSqr(Vec3.atCenterOf(chest.pos))));
+		// The sorters' destinations first (routing index), each chest at most once.
+		Set<BlockPos> tried = new HashSet<>();
+		while (!rest.isEmpty()) {
+			StorageChest chest = Storage.route(level, guild, from, rest, tried, StorageRouting.DEPOSIT_TIER);
+			if (chest == null) {
+				break;
+			}
+			tried.add(chest.pos);
+			Container container = Storage.container(level, chest.pos);
+			if (container != null) {
+				rest = Storage.insert(container, rest);
+			}
+		}
+		if (rest.isEmpty()) {
+			return rest;
+		}
+		// Every destination full: any registered chest with room, nearest first.
+		List<StorageChest> order = new ArrayList<>(Storage.index(guild).chests());
+		order.removeIf(chest -> tried.contains(chest.pos) || !Storage.usable(level, guild, chest));
+		order.sort(Comparator.comparingDouble(chest -> from.distanceToSqr(Vec3.atCenterOf(chest.pos))));
 		for (StorageChest chest : order) {
 			if (rest.isEmpty()) {
 				break;
 			}
 			Container container = Storage.container(level, chest.pos);
-			if (container != null && Storage.spaceFor(container, rest) > 0) {
+			if (container != null && Storage.hasSpaceFor(container, rest)) {
 				rest = Storage.insert(container, rest);
 			}
 		}
