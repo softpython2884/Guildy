@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "dev.guildy.alchemy.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"ConsumableElixirMixin",
+		"LivingEntityUseAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

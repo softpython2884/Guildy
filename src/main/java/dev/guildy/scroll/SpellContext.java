@@ -1,5 +1,6 @@
 package dev.guildy.scroll;
 
+import dev.guildy.core.MagicBoost;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import net.minecraft.server.level.ServerLevel;
@@ -29,7 +30,8 @@ final class SpellContext {
 		this.def = def;
 		this.spell = def.spell();
 		this.guild = GuildManager.of(caster);
-		this.power = power == null ? SpellPower.NONE : power;
+		// The caster's magic elixirs (core MagicBoost) add their power on top of the scroll's or the grimoire's.
+		this.power = (power == null ? SpellPower.NONE : power).boosted(MagicBoost.powerMultiplier(caster), spell);
 	}
 
 	/** A parameter of the spell for this cast (the scroll's value through the power of the cast). */
