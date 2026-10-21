@@ -38,6 +38,7 @@
 			"dev.guildy.test.StorageGameTests",
 			"dev.guildy.test.TidyGameTests",
 			"dev.guildy.test.FilterGameTests",
+			"dev.guildy.test.StorageScaleGameTests",
 			"dev.guildy.test.ChunkLoadGameTests",
 			"dev.guildy.test.VitalityGameTests",
 			"dev.guildy.test.PlantingGameTests",

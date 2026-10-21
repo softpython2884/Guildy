@@ -158,8 +158,10 @@ public class CraftGameTests {
 		// Plain books in a registered "Livres et enchantements" chest; the enchanted books go back to that category.
 		BlockPos bookChest = ground.offset(4, 1, 4);
 		level.setBlockAndUpdate(bookChest, Blocks.CHEST.defaultBlockState());
-		String books = ItemClassifier.categoryOf(new ItemStack(Items.BOOK));
-		helper.assertTrue(books.equals(ItemClassifier.categoryOf(new ItemStack(Items.ENCHANTED_BOOK))), "books and enchanted books share a category");
+		// The top-level category of the books ("Livres et enchantements"): it takes the books and the enchanted books while
+		// no chest of their sub-categories exists.
+		String books = ItemClassifier.chain(new ItemStack(Items.BOOK)).getLast();
+		helper.assertTrue(books.equals(ItemClassifier.chain(new ItemStack(Items.ENCHANTED_BOOK)).getLast()), "books and enchanted books share a category");
 		guild.villagers.chests.add(new StorageChest(bookChest, StorageChest.Role.CATEGORY, books));
 		Container chest = (Container) level.getBlockEntity(bookChest);
 		chest.setItem(0, new ItemStack(Items.BOOK, 3));
@@ -237,8 +239,8 @@ public class CraftGameTests {
 
 		BlockPos bookChest = ground.offset(4, 1, 4);
 		level.setBlockAndUpdate(bookChest, Blocks.CHEST.defaultBlockState());
-		String books = ItemClassifier.categoryOf(new ItemStack(Items.BOOK));
-		helper.assertTrue(books.equals(ItemClassifier.categoryOf(new ItemStack(Items.PAPER))), "paper is stored with the books");
+		String books = ItemClassifier.chain(new ItemStack(Items.BOOK)).getLast();
+		helper.assertTrue(books.equals(ItemClassifier.chain(new ItemStack(Items.PAPER)).getLast()), "paper is stored with the books");
 		guild.villagers.chests.add(new StorageChest(bookChest, StorageChest.Role.CATEGORY, books));
 		Container chest = (Container) level.getBlockEntity(bookChest);
 		chest.setItem(0, new ItemStack(Items.BOOK, 1));

@@ -182,9 +182,34 @@ public class StorageGameTests {
 				wrong.add(entry.getKey() + " (unknown item)");
 				continue;
 			}
+			// The expectations name top-level categories: the last category of the routing chain (sub-categories refine it).
 			StorageCategories.Match match = ItemClassifier.match(new ItemStack(item));
-			if (!match.category().equals(entry.getValue())) {
-				wrong.add(entry.getKey() + " -> " + match.category() + " (" + match.kind() + " " + match.rule() + "), expected " + entry.getValue());
+			List<String> chain = ItemClassifier.chain(new ItemStack(item));
+			String top = chain.isEmpty() ? match.category() : chain.getLast();
+			if (!top.equals(entry.getValue())) {
+				wrong.add(entry.getKey() + " -> " + top + " (" + match.kind() + " " + match.rule() + "), expected " + entry.getValue());
+			}
+		}
+		// Sub-categories and transversal categories: the first category of the chain.
+		Map<String, String> first = new java.util.LinkedHashMap<>();
+		first.put("enchanted_book", "Livres enchantés");
+		first.put("paper", "Livres et papier");
+		first.put("bookshelf", "Livres et enchantements");
+		first.put("potion", "Potions");
+		first.put("wheat", "Cultures");
+		first.put("white_wool", "Laine et tapis");
+		first.put("glass_pane", "Verre");
+		first.put("white_concrete", "Béton et terre cuite");
+		first.put("lantern", "Éclairage");
+		first.put("music_disc_cat", "Objets rares");
+		first.put("totem_of_undying", "Objets rares");
+		first.put("ghast_tear", "Ingrédients d'alchimie");
+		first.put("blaze_powder", "Ingrédients d'alchimie");
+		for (Map.Entry<String, String> entry : first.entrySet()) {
+			Item item = BuiltInRegistries.ITEM.getValue(Identifier.withDefaultNamespace(entry.getKey()));
+			List<String> chain = ItemClassifier.chain(new ItemStack(item));
+			if (chain.isEmpty() || !chain.getFirst().equals(entry.getValue())) {
+				wrong.add(entry.getKey() + " -> chain " + chain + ", expected first " + entry.getValue());
 			}
 		}
 		if (!wrong.isEmpty()) {

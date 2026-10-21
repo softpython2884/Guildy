@@ -32,9 +32,11 @@ import java.util.UUID;
 /**
  * Storage menus: the registered containers ("Stockage": left click = change the role, right click = remove; tool row:
  * categories, chest groups, chest rooms, storage order, add a chest, show, held item, help), the storage categories
- * (icon, examples, chests; click = show them), the chest groups (state, fill, "Réorganiser maintenant", the chests of a
- * group in reading order), the chest rooms (add / show / rescan / remove) and the role picker shown after selecting a
- * container. Every button re-checks the VILLAGERS permission.
+ * (icon, examples, chests; click = show them; sub-categories after their parent, then the transversal ones), the chest
+ * groups (state, fill, "Réorganiser maintenant", the chests of a group in reading order), the chest rooms (one menu
+ * per room: show, add the new chests, categories the room is reserved to, remove) and the role picker shown after
+ * selecting a container. Long lists are paged (shift + arrow: 10 pages). Every button re-checks the VILLAGERS
+ * permission.
  */
 final class StorageGui {
 	private static final int PER_PAGE = 45;
@@ -130,7 +132,7 @@ final class StorageGui {
 			if (!VillagerGui.checkPermission(player, guild)) {
 				return;
 			}
-			if (manualCount(guild) >= config.maxChests) {
+			if (Storage.limitReached(manualCount(guild), config.maxChests)) {
 				Msg.send(player, "villager.storage.limit", config.maxChests);
 				GuiUtil.errorSound(player);
 				return;
@@ -154,7 +156,7 @@ final class StorageGui {
 			openStorage(player, guild, current);
 		}));
 		gui.setSlot(43, GuiUtil.item(Items.PAPER, Lang.get("villager.gui.help"),
-				GuiUtil.lines("villager.gui.storage.help.text", categories.fallback())));
+				GuiUtil.lines("villager.gui.storage.help.text.v2", categories.fallback())));
 		StorageLayout.Fill fill = StorageGroups.fill(guild);
 		StorageLayout.Fill otherFill = fill == StorageLayout.Fill.COLUMNS ? StorageLayout.Fill.ROWS : StorageLayout.Fill.COLUMNS;
 		gui.setSlot(44, GuiUtil.item(fill == StorageLayout.Fill.COLUMNS ? Items.CHISELED_QUARTZ_BLOCK : Items.SMOOTH_QUARTZ,
@@ -169,14 +171,7 @@ final class StorageGui {
 					openStorage(player, guild, current);
 				}));
 		gui.setSlot(45, GuiUtil.back(() -> VillagerGui.openList(player, guild, 0)));
-		if (current > 0) {
-			gui.setSlot(46, GuiUtil.item(Items.ARROW, Lang.get("gui.page.prev"), List.of(Lang.get("gui.page", current + 1, pages)))
-					.setCallback((slot, type, action, g) -> openStorage(player, guild, current - 1)));
-		}
-		if (current < pages - 1) {
-			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), List.of(Lang.get("gui.page", current + 1, pages)))
-					.setCallback((slot, type, action, g) -> openStorage(player, guild, current + 1)));
-		}
+		pagination(gui, current, pages, p -> openStorage(player, guild, p));
 		gui.setSlot(53, GuiUtil.close());
 		GuiUtil.fill(gui);
 		gui.open();
@@ -243,13 +238,24 @@ final class StorageGui {
 		if (held.isEmpty()) {
 			return GuiUtil.item(Items.COMPASS, Lang.get("villager.gui.storage.held"), GuiUtil.lines("villager.gui.storage.held.none"));
 		}
-		StorageCategories.Match match = ItemClassifier.match(held);
+		StorageCategories.Resolution resolution = ItemClassifier.resolve(held);
+		StorageCategories.Match match = resolution.home();
 		List<Component> lore = new ArrayList<>();
 		// The item name is translated by the client (French for French players).
 		lore.add(Lang.get("villager.gui.storage.held.item").append(held.getHoverName()));
 		lore.add(Lang.get("villager.gui.storage.held.category", match.category()));
 		lore.add(Lang.get("villager.gui.storage.held.rule", ruleText(match)));
-		lore.add(Lang.get("villager.gui.storage.held.chests", counts(guild).getOrDefault(match.category().toLowerCase(Locale.ROOT), 0)));
+		Map<String, Integer> counts = counts(guild);
+		lore.add(Lang.get("villager.gui.storage.held.chests", counts.getOrDefault(match.category().toLowerCase(Locale.ROOT), 0)));
+		if (resolution.chain().size() > 1 || (resolution.chain().size() == 1 && !resolution.chain().getFirst().equalsIgnoreCase(match.category()))) {
+			// The order the sorter follows: each category of the chain (with its number of chests), then the fallback.
+			List<String> steps = new ArrayList<>();
+			for (String category : resolution.chain()) {
+				steps.add(category + " (" + counts.getOrDefault(category.toLowerCase(Locale.ROOT), 0) + ")");
+			}
+			steps.add(Storage.categories().fallback());
+			lore.addAll(wrap(Lang.raw("villager.gui.storage.held.route", String.join(" → ", steps))));
+		}
 		int filters = 0;
 		for (StorageChest chest : guild.villagers.chests) {
 			if (Storage.accepts(chest, held)) {
@@ -282,7 +288,6 @@ final class StorageGui {
 		int pages = GuiUtil.pages(options.size(), PER_PAGE);
 		int current = Math.max(0, Math.min(page, pages - 1));
 		Map<String, Integer> counts = counts(guild);
-		String fallback = Storage.categories().fallback();
 		SimpleGui gui = VillagerGui.chest(player, 6, Lang.get("villager.gui.categories.title"));
 		for (int i = 0; i < PER_PAGE; i++) {
 			int index = current * PER_PAGE + i;
@@ -292,9 +297,10 @@ final class StorageGui {
 			Option option = options.get(index);
 			int count = counts.getOrDefault(option.category().toLowerCase(Locale.ROOT), 0);
 			List<Component> lore = new ArrayList<>(description(option));
+			lore.addAll(treeLines(option));
 			lore.add(Component.empty());
 			lore.add(count > 0 ? Lang.get("villager.gui.category.chests", count) : Lang.get("villager.gui.category.no_chest",
-					option.fallback() ? Lang.raw("villager.storage.role.deposit") : fallback));
+					option.fallback() ? Lang.raw("villager.storage.role.deposit") : nextDestination(option.category(), counts)));
 			if (count > 0) {
 				lore.add(Lang.get("villager.gui.category.show"));
 			}
@@ -357,6 +363,9 @@ final class StorageGui {
 		List<Component> lore = new ArrayList<>();
 		ChestRoom room = guild.villagers.room(group.room());
 		lore.add(room == null ? Lang.get("villager.gui.group.outside") : Lang.get("villager.gui.group.room", room.name));
+		if (group.parts() > 1) {
+			lore.addAll(GuiUtil.lines("villager.gui.group.part", group.part(), group.parts(), VillagerModule.config().storage.maxGroupChests));
+		}
 		lore.add(Lang.get("villager.gui.group.chests", group.chests().size()));
 		int[] fill = fill(level, group.chests());
 		lore.add(Lang.get("villager.gui.group.fill", fill[1] == 0 ? 0 : Math.round(100.0f * fill[0] / fill[1]), fill[0], fill[1]));
@@ -485,7 +494,7 @@ final class StorageGui {
 				break;
 			}
 			ChestRoom room = rooms.get(index);
-			gui.setSlot(i, roomIcon(level, guild, room).setCallback((slot, type, action, g) -> {
+			gui.setSlot(i, roomListIcon(level, guild, room).setCallback((slot, type, action, g) -> {
 				if (!VillagerGui.checkPermission(player, guild)) {
 					return;
 				}
@@ -493,37 +502,18 @@ final class StorageGui {
 					openRooms(player, guild, current);
 					return;
 				}
-				ServerLevel world = GuildyServer.claimLevel();
+				GuiUtil.clickSound(player);
 				if (type.isRight) {
-					GuiUtil.clickSound(player);
 					confirmRemoveRoom(player, guild, room, current);
-				} else if (type.shift && world != null) {
-					int added = ChestRooms.scan(world, guild, room);
-					if (added < 0) {
-						Msg.send(player, "villager.storage.room.unloaded");
-						GuiUtil.errorSound(player);
-						return;
-					}
-					ChestRooms.plan(world, guild, room, false, Scheduler.ticks());
-					for (StorageChest chest : ChestRooms.chests(guild, room)) {
-						StorageLabels.sync(world, guild, chest);
-					}
-					Tidier.invalidate(guild);
-					Msg.send(player, "villager.storage.room.rescanned", added, room.name);
-					GuiUtil.successSound(player);
-					openRooms(player, guild, current);
-				} else if (StorageVisualizer.show(player, guild, StorageVisualizer.ROOM + room.id) > 0) {
-					g.close();
-					GuiUtil.successSound(player);
 				} else {
-					GuiUtil.errorSound(player);
+					openRoom(player, guild, room);
 				}
 			}));
 		}
 		if (rooms.isEmpty()) {
 			gui.setSlot(22, GuiUtil.item(Items.STRUCTURE_VOID, Lang.get("villager.gui.rooms.none"), List.of()));
 		}
-		List<Component> addLore = config.maxRooms <= 0 ? List.of(Lang.get("villager.gui.rooms.disabled"))
+		List<Component> addLore = !config.chestRooms ? List.of(Lang.get("villager.gui.rooms.disabled"))
 				: GuiUtil.lines("villager.gui.rooms.add.lore", VillagerInteractions.ROOM_SELECTION_SECONDS, config.maxRoomSize,
 				Storage.categories().fallback());
 		gui.setSlot(49, GuiUtil.item(Items.CHEST, Lang.get("villager.gui.rooms.add"), addLore).glow()
@@ -531,12 +521,17 @@ final class StorageGui {
 					if (!VillagerGui.checkPermission(player, guild)) {
 						return;
 					}
-					if (guild.villagers.rooms.size() >= config.maxRooms) {
+					if (!config.chestRooms) {
+						Msg.send(player, "villager.storage.room.disabled");
+						GuiUtil.errorSound(player);
+						return;
+					}
+					if (Storage.limitReached(guild.villagers.rooms.size(), config.maxRooms)) {
 						Msg.send(player, "villager.storage.room.limit", config.maxRooms);
 						GuiUtil.errorSound(player);
 						return;
 					}
-					if (ChestRooms.roomChestCount(guild) >= config.maxRoomChests) {
+					if (Storage.limitReached(ChestRooms.roomChestCount(guild), config.maxRoomChests)) {
 						Msg.send(player, "villager.storage.room.chest_limit", config.maxRoomChests);
 						GuiUtil.errorSound(player);
 						return;
@@ -545,7 +540,7 @@ final class StorageGui {
 					GuiUtil.clickSound(player);
 					VillagerInteractions.startRoomSelection(player, guild);
 				}));
-		gui.setSlot(51, GuiUtil.item(Items.PAPER, Lang.get("villager.gui.help"), GuiUtil.lines("villager.gui.rooms.help.text")));
+		gui.setSlot(51, GuiUtil.item(Items.PAPER, Lang.get("villager.gui.help"), GuiUtil.lines("villager.gui.rooms.help.text.v2")));
 		gui.setSlot(45, GuiUtil.back(() -> openStorage(player, guild, 0)));
 		pagination(gui, current, pages, p -> openRooms(player, guild, p));
 		gui.setSlot(53, GuiUtil.close());
@@ -576,6 +571,10 @@ final class StorageGui {
 			lore.add(Lang.get("villager.gui.room.lines", Lang.raw(columns ? "villager.gui.room.lines.columns" : "villager.gui.room.lines.rows"),
 					ChestRooms.lines(level, guild, room)));
 		}
+		List<String> theme = ChestRooms.themeNames(room);
+		if (!theme.isEmpty()) {
+			lore.addAll(wrap(Lang.raw("villager.gui.room.reserved", String.join(", ", theme))));
+		}
 		if (!categories.isEmpty()) {
 			lore.addAll(wrap(Lang.raw("villager.gui.room.categories", String.join(", ", categories))));
 		}
@@ -583,9 +582,159 @@ final class StorageGui {
 		if (!unplaced.isEmpty()) {
 			lore.addAll(wrap(Lang.raw("villager.gui.room.unplaced", String.join(", ", unplaced))));
 		}
-		lore.add(Component.empty());
-		lore.addAll(GuiUtil.lines("villager.gui.room.click"));
-		return GuiUtil.item(Items.CHEST, Lang.get("villager.gui.room.name", room.name), lore);
+		return GuiUtil.item(room.themed() ? Items.ENDER_CHEST : Items.CHEST, Lang.get("villager.gui.room.name", room.name), lore);
+	}
+
+	/** Same lore as {@link #roomIcon} plus the clicks of the rooms list. */
+	private static GuiElementBuilder roomListIcon(@Nullable ServerLevel level, Guild guild, ChestRoom room) {
+		GuiElementBuilder icon = roomIcon(level, guild, room);
+		icon.addLoreLine(Component.empty());
+		for (Component line : GuiUtil.lines("villager.gui.room.click.menu")) {
+			icon.addLoreLine(line);
+		}
+		return icon;
+	}
+
+	/** One room: its state, show its chests, add the new chests of its box, the categories it is reserved to, remove. */
+	static void openRoom(ServerPlayer player, Guild guild, ChestRoom room) {
+		if (!guild.villagers.rooms.contains(room)) {
+			openRooms(player, guild, 0);
+			return;
+		}
+		ServerLevel level = GuildyServer.claimLevel();
+		SimpleGui gui = VillagerGui.chest(player, 3, Lang.get("villager.gui.room.title", room.name));
+		gui.setSlot(4, roomIcon(level, guild, room));
+		gui.setSlot(10, GuiUtil.item(Items.SPYGLASS, Lang.get("villager.gui.room.show"),
+				GuiUtil.lines("villager.gui.group.show.lore", VillagerModule.config().storage.showSeconds))
+				.setCallback((slot, type, action, g) -> {
+					if (StorageVisualizer.show(player, guild, StorageVisualizer.ROOM + room.id) > 0) {
+						g.close();
+						GuiUtil.successSound(player);
+					} else {
+						GuiUtil.errorSound(player);
+					}
+				}));
+		gui.setSlot(12, GuiUtil.item(Items.CHEST, Lang.get("villager.gui.room.rescan"), GuiUtil.lines("villager.gui.room.rescan.lore"))
+				.setCallback((slot, type, action, g) -> {
+					ServerLevel world = GuildyServer.claimLevel();
+					if (!VillagerGui.checkPermission(player, guild) || world == null || !guild.villagers.rooms.contains(room)) {
+						return;
+					}
+					int added = ChestRooms.scan(world, guild, room);
+					if (added < 0) {
+						Msg.send(player, "villager.storage.room.unloaded");
+						GuiUtil.errorSound(player);
+						return;
+					}
+					ChestRooms.plan(world, guild, room, false, Scheduler.ticks());
+					for (StorageChest chest : ChestRooms.chests(guild, room)) {
+						StorageLabels.sync(world, guild, chest);
+					}
+					Tidier.invalidate(guild);
+					Msg.send(player, "villager.storage.room.rescanned", added, room.name);
+					GuiUtil.successSound(player);
+					openRoom(player, guild, room);
+				}));
+		List<String> theme = ChestRooms.themeNames(room);
+		List<Component> themeLore = theme.isEmpty() ? GuiUtil.lines("villager.gui.room.theme.lore.all")
+				: new ArrayList<>(wrap(Lang.raw("villager.gui.room.theme.lore.some", String.join(", ", theme))));
+		if (!theme.isEmpty()) {
+			themeLore.addAll(GuiUtil.lines("villager.gui.room.theme.lore.change"));
+		}
+		gui.setSlot(14, GuiUtil.item(Items.BOOKSHELF, Lang.get("villager.gui.room.theme"), themeLore).setCallback((slot, type, action, g) -> {
+			GuiUtil.clickSound(player);
+			openRoomTheme(player, guild, room, 0);
+		}));
+		gui.setSlot(16, GuiUtil.item(Items.BARRIER, Lang.get("villager.gui.room.remove"), GuiUtil.lines("villager.gui.room.remove.lore"))
+				.setCallback((slot, type, action, g) -> {
+					GuiUtil.clickSound(player);
+					confirmRemoveRoom(player, guild, room, 0);
+				}));
+		gui.setSlot(18, GuiUtil.back(() -> openRooms(player, guild, 0)));
+		gui.setSlot(26, GuiUtil.close());
+		GuiUtil.fill(gui);
+		gui.open();
+	}
+
+	/**
+	 * Categories a room is reserved to: every category (sub-categories and transversal ones included) and the fallback,
+	 * click = add / remove; "Toutes les catégories" = an ordinary room again. The room is planned again at once.
+	 */
+	static void openRoomTheme(ServerPlayer player, Guild guild, ChestRoom room, int page) {
+		if (!guild.villagers.rooms.contains(room)) {
+			openRooms(player, guild, 0);
+			return;
+		}
+		StorageCategories categories = Storage.categories();
+		List<String> names = new ArrayList<>(categories.menuOrder());
+		names.add(categories.fallback());
+		int pages = GuiUtil.pages(names.size(), PER_PAGE);
+		int current = Math.max(0, Math.min(page, pages - 1));
+		Set<String> chosen = new LinkedHashSet<>();
+		for (String name : ChestRooms.themeNames(room)) {
+			chosen.add(name.toLowerCase(Locale.ROOT));
+		}
+		SimpleGui gui = VillagerGui.chest(player, 6, Lang.get("villager.gui.room.theme.title", room.name));
+		for (int i = 0; i < PER_PAGE; i++) {
+			int index = current * PER_PAGE + i;
+			if (index >= names.size()) {
+				break;
+			}
+			String name = names.get(index);
+			boolean fallback = index == names.size() - 1;
+			boolean in = chosen.contains(name.toLowerCase(Locale.ROOT));
+			Option option = new Option(StorageChest.Role.CATEGORY, name, fallback);
+			List<Component> lore = new ArrayList<>(description(option));
+			lore.addAll(treeLines(option));
+			lore.add(Component.empty());
+			lore.add(Lang.get(in ? "villager.gui.room.theme.in" : "villager.gui.room.theme.out"));
+			lore.add(Lang.get("villager.gui.room.theme.toggle"));
+			GuiElementBuilder button = GuiUtil.item(optionIcon(option),
+					Lang.get(fallback ? "villager.gui.category.fallback" : "villager.gui.category.name", name), lore);
+			if (in) {
+				button.glow();
+			}
+			gui.setSlot(i, button.setCallback((slot, type, action, g) -> {
+				if (!VillagerGui.checkPermission(player, guild) || !guild.villagers.rooms.contains(room)) {
+					return;
+				}
+				List<String> next = new ArrayList<>(ChestRooms.themeNames(room));
+				if (!next.removeIf(n -> n.equalsIgnoreCase(name))) {
+					next.add(name);
+				}
+				setTheme(player, guild, room, next);
+				openRoomTheme(player, guild, room, current);
+			}));
+		}
+		gui.setSlot(45, GuiUtil.back(() -> openRoom(player, guild, room)));
+		gui.setSlot(48, GuiUtil.item(Items.CHEST, Lang.get("villager.gui.room.theme.all"),
+				GuiUtil.lines("villager.gui.room.theme.all.lore", categories.fallback())).setCallback((slot, type, action, g) -> {
+			if (!VillagerGui.checkPermission(player, guild) || !guild.villagers.rooms.contains(room)) {
+				return;
+			}
+			setTheme(player, guild, room, List.of());
+			openRoomTheme(player, guild, room, current);
+		}));
+		gui.setSlot(50, GuiUtil.item(Items.PAPER, Lang.get("villager.gui.help"), GuiUtil.lines("villager.gui.room.theme.help", categories.fallback())));
+		pagination(gui, current, pages, p -> openRoomTheme(player, guild, room, p));
+		gui.setSlot(53, GuiUtil.close());
+		GuiUtil.fill(gui);
+		gui.open();
+	}
+
+	/** Reserves the room to these categories (empty = every category) and plans it again. */
+	private static void setTheme(ServerPlayer player, Guild guild, ChestRoom room, List<String> categories) {
+		room.categories = new ArrayList<>(categories);
+		ServerLevel level = GuildyServer.claimLevel();
+		if (level != null) {
+			ChestRooms.plan(level, guild, room, false, Scheduler.ticks());
+		}
+		Tidier.invalidate(guild);
+		GuildManager.markDirty();
+		List<String> theme = ChestRooms.themeNames(room);
+		Msg.send(player, "villager.storage.room.theme.changed", room.name,
+				theme.isEmpty() ? Lang.raw("villager.storage.room.theme.every") : String.join(", ", theme));
+		GuiUtil.successSound(player);
 	}
 
 	private static void confirmRemoveRoom(ServerPlayer player, Guild guild, ChestRoom room, int page) {
@@ -622,14 +771,18 @@ final class StorageGui {
 					&& (option.role() == StorageChest.Role.DEPOSIT || Storage.effectiveCategory(existing).equalsIgnoreCase(option.category())));
 			List<Component> lore = new ArrayList<>(description(option));
 			if (option.role() == StorageChest.Role.CATEGORY && !option.auto()) {
+				lore.addAll(treeLines(option));
 				lore.add(Component.empty());
 				lore.add(Lang.get("villager.gui.category.chests", counts.getOrDefault(option.category().toLowerCase(Locale.ROOT), 0)));
+				if (option.fallback()) {
+					lore.addAll(GuiUtil.lines("villager.gui.role.fallback.warning"));
+				}
 			}
 			lore.add(Component.empty());
 			lore.add(isCurrent && option.role() != StorageChest.Role.FILTER ? Lang.get("villager.gui.role.current")
 					: Lang.get(switch (option.role()) {
 						case DEPOSIT -> "villager.gui.role.choose_deposit";
-						case FILTER -> "villager.gui.role.choose_filter";
+						case FILTER -> "villager.gui.role.choose_filter_hand";
 						case CATEGORY -> "villager.gui.role.choose";
 					}));
 			Component name = option.auto() ? Lang.get("villager.gui.role.auto")
@@ -698,7 +851,7 @@ final class StorageGui {
 				player.closeContainer();
 				return;
 			}
-			if (manualCount(guild) >= VillagerModule.config().storage.maxChests) {
+			if (Storage.limitReached(manualCount(guild), VillagerModule.config().storage.maxChests)) {
 				Msg.send(player, "villager.storage.limit", VillagerModule.config().storage.maxChests);
 				player.closeContainer();
 				return;
@@ -720,15 +873,53 @@ final class StorageGui {
 		void open(int page);
 	}
 
+	/** Previous / next page arrows; shift + click jumps 10 pages (lists of thousands of containers). */
 	private static void pagination(SimpleGui gui, int current, int pages, PageOpener opener) {
+		List<Component> lore = pages > 10 ? List.of(Lang.get("gui.page", current + 1, pages), Lang.get("villager.gui.page.jump"))
+				: List.of(Lang.get("gui.page", current + 1, pages));
 		if (current > 0) {
-			gui.setSlot(46, GuiUtil.item(Items.ARROW, Lang.get("gui.page.prev"), List.of(Lang.get("gui.page", current + 1, pages)))
-					.setCallback((slot, type, action, g) -> opener.open(current - 1)));
+			gui.setSlot(46, GuiUtil.item(Items.ARROW, Lang.get("gui.page.prev"), lore)
+					.setCallback((slot, type, action, g) -> opener.open(Math.max(0, current - (type.shift ? 10 : 1)))));
 		}
 		if (current < pages - 1) {
-			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), List.of(Lang.get("gui.page", current + 1, pages)))
-					.setCallback((slot, type, action, g) -> opener.open(current + 1)));
+			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), lore)
+					.setCallback((slot, type, action, g) -> opener.open(Math.min(pages - 1, current + (type.shift ? 10 : 1)))));
 		}
+	}
+
+	/**
+	 * Where the items of a category go while it has no chest: the next category of the tree that has chests (its
+	 * parent...), "their usual category" for a transversal category, else the fallback.
+	 */
+	private static String nextDestination(String category, Map<String, Integer> counts) {
+		StorageCategories categories = Storage.categories();
+		if (categories.isTransversal(category)) {
+			return Lang.raw("villager.gui.category.usual");
+		}
+		List<String> ancestors = categories.ancestors(category);
+		for (int i = 1; i < ancestors.size(); i++) {
+			if (counts.getOrDefault(ancestors.get(i).toLowerCase(Locale.ROOT), 0) > 0) {
+				return ancestors.get(i);
+			}
+		}
+		return categories.fallback();
+	}
+
+	/** "Sous-catégorie de ..." / "Transversale ..." lines of a category option (none for the others). */
+	private static List<Component> treeLines(Option option) {
+		if (option.role() != StorageChest.Role.CATEGORY || option.auto() || option.fallback()) {
+			return List.of();
+		}
+		StorageCategories categories = Storage.categories();
+		String parent = categories.parent(option.category());
+		if (parent != null) {
+			return GuiUtil.lines("villager.gui.category.sub", parent, option.category());
+		}
+		if (categories.isTransversal(option.category())) {
+			return GuiUtil.lines("villager.gui.category.transversal", option.category());
+		}
+		List<String> children = categories.children(option.category());
+		return children.isEmpty() ? List.of() : wrap(Lang.raw("villager.gui.category.children", String.join(", ", children)));
 	}
 
 	/** "par colonnes" / "par rangées". */
@@ -754,21 +945,16 @@ final class StorageGui {
 
 	/** Containers outside the chest rooms, filter chests aside (their budget: storage.maxChests). */
 	private static int manualCount(Guild guild) {
-		return ChestScan.manualCount(guild);
+		return Storage.index(guild).manualCount();
 	}
 
 	private static int autoCount(Guild guild) {
-		int count = 0;
-		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.auto) {
-				count++;
-			}
-		}
-		return count;
+		return Storage.index(guild).autoCount();
 	}
 
 	/**
-	 * Deposit (role picker only), every category in config order, the fallback, then "Automatique" (role picker of a
+	 * Deposit (role picker only), every category in menu order (each top-level category followed by its
+	 * sub-categories, then the transversal ones), the fallback, the filter chest, then "Automatique" (role picker of a
 	 * chest of a room).
 	 */
 	private static List<Option> options(boolean withDeposit, boolean withAuto) {
@@ -777,11 +963,11 @@ final class StorageGui {
 			options.add(new Option(StorageChest.Role.DEPOSIT, "", false));
 		}
 		StorageCategories categories = Storage.categories();
-		for (String name : categories.names()) {
+		for (String name : categories.menuOrder()) {
 			options.add(new Option(StorageChest.Role.CATEGORY, name, false));
 		}
 		options.add(new Option(StorageChest.Role.CATEGORY, categories.fallback(), true));
-		if (withDeposit && VillagerModule.config().storage.maxFilterChests > 0) {
+		if (withDeposit && VillagerModule.config().storage.filterChests) {
 			options.add(new Option(StorageChest.Role.FILTER, "", false));
 		}
 		if (withAuto) {
@@ -812,7 +998,7 @@ final class StorageGui {
 			return GuiUtil.lines("villager.gui.role.deposit.lore");
 		}
 		if (option.role() == StorageChest.Role.FILTER) {
-			return GuiUtil.lines("villager.gui.role.filter.lore");
+			return GuiUtil.lines("villager.gui.role.filter.hand.lore");
 		}
 		String text;
 		if (option.fallback()) {
@@ -831,7 +1017,7 @@ final class StorageGui {
 		return item == null ? Items.CHEST : item;
 	}
 
-	/** Number of registered CATEGORY chests per effective category (lower case), deposits under "". */
+	/** Number of registered CATEGORY chests per effective category (lower case), deposits under "" (one pass, menus only). */
 	private static Map<String, Integer> counts(Guild guild) {
 		Map<String, Integer> counts = new HashMap<>();
 		for (StorageChest chest : guild.villagers.chests) {

@@ -15,6 +15,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -35,7 +36,8 @@ import java.util.function.Predicate;
 
 /**
  * Guild storage: container access (double chests combined), insertion with proper stacking, item categories and
- * routing of items between deposit / filter / category / fallback chests.
+ * routing of items between deposit / filter / category / fallback chests. Lookups go through the guild's
+ * {@link StorageIndex}: their cost depends on the chests of the item's tiers, not on the number of chests.
  */
 final class Storage {
 	private static @Nullable StorageCategories cachedCategories;
@@ -49,15 +51,45 @@ final class Storage {
 	static StorageCategories categories() {
 		VillagerConfig config = VillagerModule.config();
 		if (cachedCategories == null || cachedFor != config) {
-			cachedCategories = new StorageCategories(StorageDefaults.rules(config.storage.categories), config.storage.fallbackCategory);
+			cachedCategories = new StorageCategories(StorageDefaults.rules(config.storage.categories),
+					StorageDefaults.parents(config.storage.categories), config.storage.fallbackCategory);
 			cachedFor = config;
 		}
 		return cachedCategories;
 	}
 
-	/** Storage category of a stack (ids, tags, patterns, item properties, creative tabs: see {@link ItemClassifier}). */
+	/**
+	 * Storage category of a stack: its deepest category of the tree (ids, tags, patterns, item properties, creative
+	 * tabs: see {@link ItemClassifier}), transversal categories aside.
+	 */
 	static String categoryOf(ItemStack stack) {
 		return ItemClassifier.categoryOf(stack);
+	}
+
+	/**
+	 * Routing chain of a stack, most specific first: the transversal categories it matches, its deepest category... its
+	 * top-level category (empty: only the fallback).
+	 */
+	static List<String> chain(ItemStack stack) {
+		return ItemClassifier.chain(stack);
+	}
+
+	/** Index of the guild's registered containers. */
+	static StorageIndex index(Guild guild) {
+		return StorageIndex.of(guild.villagers);
+	}
+
+	/**
+	 * A registered container changed role, category, filter, room or position (additions and removals are seen by
+	 * themselves): the index is rebuilt at its next use.
+	 */
+	static void changed(Guild guild) {
+		guild.villagers.storageChanged();
+	}
+
+	/** True when {@code count} reached a limit of villagers.json5 ({@code max} 0 = unlimited). */
+	static boolean limitReached(int count, int max) {
+		return max > 0 && count >= max;
 	}
 
 	/** Namespaced id of the item of a stack ("minecraft:diorite"). */
@@ -116,7 +148,8 @@ final class Storage {
 
 	/**
 	 * May the chest give this stack to a worker looking for it (crafts, plantations)? Deposit and fallback chests,
-	 * filter chests accepting it, and the chests of its category.
+	 * filter chests accepting it, and the chests of the categories of its routing chain (its category, the parent
+	 * categories, a transversal category that takes it).
 	 */
 	static boolean gives(StorageChest chest, ItemStack stack) {
 		if (chest.isDeposit() || isFallback(chest)) {
@@ -125,7 +158,16 @@ final class Storage {
 		if (chest.role == StorageChest.Role.FILTER) {
 			return accepts(chest, stack);
 		}
-		return !chest.isFree() && effectiveCategory(chest).equalsIgnoreCase(categoryOf(stack));
+		if (chest.isFree()) {
+			return false;
+		}
+		String category = effectiveCategory(chest);
+		for (String link : chain(stack)) {
+			if (link.equalsIgnoreCase(category)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// ------------------------------------------------------------------ routing
@@ -136,7 +178,7 @@ final class Storage {
 			return StorageRouting.Target.deposit();
 		}
 		if (chest.isFree() || (chest.role == StorageChest.Role.FILTER && !chest.isFilter())) {
-			return new StorageRouting.Target(StorageRouting.Kind.RESERVE, null, "");
+			return StorageRouting.Target.reserve();
 		}
 		if (chest.isFilter()) {
 			return StorageRouting.Target.filter(chest.filter);
@@ -146,7 +188,7 @@ final class Storage {
 
 	/** Tier of a chest for a stack ({@link StorageRouting#tier}). */
 	static int tier(StorageChest chest, ItemStack stack) {
-		return StorageRouting.tier(target(chest), itemId(stack), categoryOf(stack));
+		return StorageRouting.tier(target(chest), itemId(stack), chain(stack));
 	}
 
 	// ------------------------------------------------------------------ containers
@@ -212,7 +254,8 @@ final class Storage {
 			if (!(level.getBlockEntity(half) instanceof Container part)) {
 				continue;
 			}
-			if (!part.getEntitiesWithContainerOpen().isEmpty()) {
+			// The entity search of the vanilla openers only when the container counts an opener (cheap check first).
+			if (mayBeOpen(level, half, part) && !part.getEntitiesWithContainerOpen().isEmpty()) {
 				return true;
 			}
 			for (Container container : shown) {
@@ -222,6 +265,21 @@ final class Storage {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * False when the container surely has no vanilla opener: a chest counting none, a closed barrel (its OPEN state is
+	 * set by the openers counter). Other containers (shulker boxes...) are checked the slow way.
+	 */
+	private static boolean mayBeOpen(ServerLevel level, BlockPos pos, Container part) {
+		if (part instanceof ChestBlockEntity) {
+			return ChestBlockEntity.getOpenCount(level, pos) > 0;
+		}
+		if (part instanceof BarrelBlockEntity) {
+			BlockState state = level.getBlockState(pos);
+			return !state.hasProperty(BarrelBlock.OPEN) || state.getValue(BarrelBlock.OPEN);
+		}
+		return true;
 	}
 
 	/** Containers shown by the open menus of the players (their own inventories aside), each once. */
@@ -256,6 +314,22 @@ final class Storage {
 			return false;
 		}
 		return !(container instanceof WorldlyContainer worldly) || worldly.canPlaceItemThroughFace(slot, stack, Direction.UP);
+	}
+
+	/** True when the container can accept at least one item of this kind (stops at the first free place). */
+	static boolean hasSpaceFor(Container container, ItemStack stack) {
+		for (int i = 0; i < container.getContainerSize(); i++) {
+			ItemStack current = container.getItem(i);
+			if (current.isEmpty()) {
+				if (container.getMaxStackSize(stack) > 0 && canPlace(container, i, stack)) {
+					return true;
+				}
+			} else if (ItemStack.isSameItemSameComponents(current, stack)
+					&& Math.min(container.getMaxStackSize(current), current.getMaxStackSize()) > current.getCount() && canPlace(container, i, stack)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** How many items of this kind the container can still accept. */
@@ -355,12 +429,7 @@ final class Storage {
 	}
 
 	static boolean hasDeposit(Guild guild) {
-		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.isDeposit()) {
-				return true;
-			}
-		}
-		return false;
+		return !index(guild).deposits().isEmpty();
 	}
 
 	/** Nearest usable deposit chest (not excluded) able to take the first carried stack. */
@@ -368,12 +437,12 @@ final class Storage {
 		ItemStack first = ctx.record.carried.isEmpty() ? ItemStack.EMPTY : ctx.record.carried.getFirst();
 		StorageChest best = null;
 		double bestDist = Double.MAX_VALUE;
-		for (StorageChest chest : ctx.guild.villagers.chests) {
-			if (!chest.isDeposit() || excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
+		for (StorageChest chest : index(ctx.guild).deposits()) {
+			if (excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
 				continue;
 			}
 			Container container = container(ctx.level, chest.pos);
-			if (container == null || (!first.isEmpty() && spaceFor(container, first) <= 0)) {
+			if (container == null || (!first.isEmpty() && !hasSpaceFor(container, first))) {
 				continue;
 			}
 			double dist = ctx.distSq(chest.pos);
@@ -400,27 +469,23 @@ final class Storage {
 		return route(level, guild, from, stack, excluded, allowDeposit ? StorageRouting.DEPOSIT_TIER : StorageRouting.FALLBACK_TIER);
 	}
 
-	/** Best usable chest with room for the stack among the tiers up to {@code maxTier}, nearest first, or null. */
+	/**
+	 * Best usable chest with room for the stack among the tiers up to {@code maxTier}, nearest first, or null. Only the
+	 * chests of the item's tiers are read ({@link StorageRouting.Index}), one tier at a time.
+	 */
 	static @Nullable StorageChest route(ServerLevel level, Guild guild, Vec3 from, ItemStack stack, Set<BlockPos> excluded, int maxTier) {
-		List<StorageChest> chests = new ArrayList<>();
-		List<StorageRouting.Target> targets = new ArrayList<>();
-		for (StorageChest chest : guild.villagers.chests) {
-			if (chest.pos != null && !excluded.contains(chest.pos)) {
-				chests.add(chest);
-				targets.add(target(chest));
-			}
+		if (stack.isEmpty()) {
+			return null;
 		}
-		double[] dist = new double[chests.size()];
-		for (int i = 0; i < dist.length; i++) {
-			dist[i] = from.distanceToSqr(Vec3.atBottomCenterOf(chests.get(i).pos));
-		}
-		for (int index : StorageRouting.candidates(targets, dist, itemId(stack), categoryOf(stack), maxTier)) {
-			StorageChest chest = chests.get(index);
-			if (!usable(level, guild, chest)) {
+		StorageIndex index = index(guild);
+		StorageRouting.Cursor cursor = index.routing().cursor(itemId(stack), chain(stack), maxTier, from.x, from.y, from.z);
+		for (int target = cursor.next(); target >= 0; target = cursor.next()) {
+			StorageChest chest = index.chest(target);
+			if (excluded.contains(chest.pos) || !usable(level, guild, chest)) {
 				continue;
 			}
 			Container container = container(level, chest.pos);
-			if (container != null && spaceFor(container, stack) > 0) {
+			if (container != null && hasSpaceFor(container, stack)) {
 				return chest;
 			}
 		}
@@ -445,8 +510,8 @@ final class Storage {
 		StorageChest best = null;
 		double bestDist = Double.MAX_VALUE;
 		Map<Item, Boolean> memo = new HashMap<>();
-		for (StorageChest chest : ctx.guild.villagers.chests) {
-			if (!isSortSource(chest) || excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
+		for (StorageChest chest : index(ctx.guild).sources()) {
+			if (excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
 				continue;
 			}
 			Container container = container(ctx.level, chest.pos);
@@ -516,11 +581,12 @@ final class Storage {
 
 	/** Registered chest at pos, also matching the other half of a double chest. */
 	static @Nullable StorageChest registered(ServerLevel level, Guild guild, BlockPos pos) {
-		StorageChest chest = guild.villagers.chestAt(pos);
-		if (chest == null) {
+		StorageIndex index = index(guild);
+		StorageChest chest = index.at(pos);
+		if (chest == null && level.isLoaded(pos)) {
 			BlockPos other = otherHalf(level, pos);
 			if (other != null) {
-				chest = guild.villagers.chestAt(other);
+				chest = index.at(other);
 			}
 		}
 		return chest;

@@ -80,11 +80,14 @@ final class CraftStock {
 		return count;
 	}
 
-	/** Nearest usable registered chest (not excluded) that gives at least one plain item of that kind. */
+	/**
+	 * Nearest usable registered chest (not excluded) that gives at least one plain item of that kind. Only the chests
+	 * that may give it are read ({@link StorageIndex#givers}).
+	 */
 	static @Nullable BlockPos nearestWith(WorkContext ctx, Item item, Set<BlockPos> excluded) {
 		BlockPos best = null;
 		double bestDist = Double.MAX_VALUE;
-		for (StorageChest chest : ctx.guild.villagers.chests) {
+		for (StorageChest chest : Storage.index(ctx.guild).givers(new ItemStack(item))) {
 			if (excluded.contains(chest.pos) || !Storage.usable(ctx.level, ctx.guild, chest)) {
 				continue;
 			}

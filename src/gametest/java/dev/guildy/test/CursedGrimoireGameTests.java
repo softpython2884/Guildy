@@ -117,7 +117,8 @@ public class CursedGrimoireGameTests {
 		helper.assertTrue(lore.indexOf("25 météores") >= 0, "the lore shows the amplified meteors: " + lore);
 		helper.assertTrue(lore.indexOf("sang") >= 0 && lore.indexOf("faim") >= 0 && lore.indexOf("{") < 0, "food and blood price: " + lore);
 		helper.assertTrue(ScrollModule.tradePrice(blank, 9) == 0, "never sold at the trade hub");
-		helper.assertTrue(ItemClassifier.categoryOf(written).equals(ItemClassifier.categoryOf(new ItemStack(Items.ENCHANTED_BOOK))),
+		// Same top-level category as the enchanted books (the magic items have their own sub-category of it).
+		helper.assertTrue(ItemClassifier.chain(written).getLast().equals(ItemClassifier.chain(new ItemStack(Items.ENCHANTED_BOOK)).getLast()),
 				"stored with the enchanted books");
 		// Pages, page turning and the menu are the grimoire's: fusing keeps the curse.
 		GrimoireItems.apply(written, GrimoireItems.pages(written).select(1));

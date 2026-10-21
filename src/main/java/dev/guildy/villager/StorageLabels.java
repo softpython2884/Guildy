@@ -41,13 +41,19 @@ import java.util.Objects;
  * a double chest (else unregisters it).
  */
 final class StorageLabels {
+	/** Every registered container is checked about once per this many ticks (spread over the ticks). */
 	private static final int SYNC_TICKS = 100;
+	/** Containers checked per tick at least. */
+	private static final int MIN_PER_TICK = 8;
+	/** Round robin over the guilds and their containers. */
+	private static int guildCursor;
+	private static int chestCursor;
 
 	private StorageLabels() {
 	}
 
 	static void init() {
-		Scheduler.every("villager.storage.labels", SYNC_TICKS, 37, StorageLabels::sync);
+		Scheduler.every("villager.storage.labels", 1, 0, StorageLabels::syncStep);
 		PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
 			Safe.run("villager.storage.break", () -> beforeBreak(level, pos));
 			return true;
@@ -129,9 +135,44 @@ final class StorageLabels {
 			return;
 		}
 		for (Guild guild : GuildManager.all()) {
-			for (StorageChest chest : guild.villagers.chests) {
+			for (StorageChest chest : List.copyOf(guild.villagers.chests)) {
 				sync(level, guild, chest);
 			}
+		}
+	}
+
+	/**
+	 * One tick of the periodic pass: about 1/{@link #SYNC_TICKS} of all the registered containers (at least
+	 * {@link #MIN_PER_TICK}), in turn: thousands of chests never cost one big tick.
+	 */
+	private static void syncStep() {
+		ServerLevel level = GuildyServer.claimLevel();
+		if (level == null) {
+			return;
+		}
+		List<Guild> guilds = new ArrayList<>(GuildManager.all());
+		if (guilds.isEmpty()) {
+			return;
+		}
+		int total = 0;
+		for (Guild guild : guilds) {
+			total += guild.villagers.chests.size();
+		}
+		int budget = Math.max(MIN_PER_TICK, (total + SYNC_TICKS - 1) / SYNC_TICKS);
+		for (int visited = 0; budget > 0 && visited <= guilds.size(); ) {
+			if (guildCursor >= guilds.size()) {
+				guildCursor = 0;
+			}
+			Guild guild = guilds.get(guildCursor);
+			List<StorageChest> chests = guild.villagers.chests;
+			if (chestCursor >= chests.size()) {
+				guildCursor++;
+				chestCursor = 0;
+				visited++;
+				continue;
+			}
+			sync(level, guild, chests.get(chestCursor++));
+			budget--;
 		}
 	}
 
@@ -205,6 +246,7 @@ final class StorageLabels {
 		if (other != null && Storage.isStorageBlock(serverLevel.getBlockEntity(other)) && guild.villagers.chestAt(other) == null) {
 			// The other half of the double chest stays registered (and keeps its name).
 			chest.pos = other.immutable();
+			Storage.changed(guild);
 		} else {
 			guild.villagers.chests.remove(chest);
 			if (player != null) {

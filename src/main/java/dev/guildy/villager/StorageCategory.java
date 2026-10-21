@@ -12,31 +12,52 @@ import java.util.List;
 
 /**
  * One storage category of villagers.json5 ({@code storage.categories}: name → category): its menu icon, a short text
- * listing examples (lore of the menus) and its sorting rules (see {@link StorageCategories}). Pure data, free of
- * Minecraft classes.
+ * listing examples (lore of the menus), its sorting rules (see {@link StorageCategories}) and its parent: "" for a
+ * top-level category, the name of another category for a sub-category (it only takes items of its parent, refined by its
+ * own rules), {@link #TRANSVERSAL} ("*") for a transversal category (it takes its items from every category, before
+ * them). Pure data, free of Minecraft classes.
  * <p>
  * The older format (a plain list of rules, before configVersion 3) is still accepted: it becomes a category without
  * icon nor description (the icon is then the first item id of its rules).
  */
 @JsonAdapter(StorageCategory.Adapter.class)
 public final class StorageCategory {
+	/** Parent value of a transversal category. */
+	public static final String TRANSVERSAL = "*";
+
 	/** Item shown in the menus ("minecraft:oak_log"); empty = the first item id of the rules, else a chest. */
 	public String icon = "";
 	/** Examples shown in the menus ("Bûches, planches..."); '&' colour codes allowed. */
 	public String description = "";
 	public List<String> rules = new ArrayList<>();
+	/** "" = top-level category; a category name = sub-category of it; "*" = transversal category. */
+	public String parent = "";
 
 	public StorageCategory() {
 	}
 
 	public StorageCategory(String icon, String description, List<String> rules) {
+		this(icon, description, "", rules);
+	}
+
+	public StorageCategory(String icon, String description, String parent, List<String> rules) {
 		this.icon = icon == null ? "" : icon;
 		this.description = description == null ? "" : description;
+		this.parent = parent == null ? "" : parent.trim();
 		this.rules = new ArrayList<>(rules);
 	}
 
 	public StorageCategory copy() {
-		return new StorageCategory(icon, description, rules);
+		return new StorageCategory(icon, description, parent, rules);
+	}
+
+	public boolean isTransversal() {
+		return TRANSVERSAL.equals(parent);
+	}
+
+	/** Sub-category of another category (neither top-level nor transversal). */
+	public boolean isChild() {
+		return parent != null && !parent.isBlank() && !isTransversal();
 	}
 
 	/** The icon, or the first plain item id of the rules, or "" (the menus then show a chest). */
@@ -55,6 +76,7 @@ public final class StorageCategory {
 	void sanitize() {
 		icon = icon == null ? "" : icon.trim();
 		description = description == null ? "" : description.trim();
+		parent = parent == null ? "" : parent.trim();
 		List<String> clean = new ArrayList<>();
 		if (rules != null) {
 			for (String rule : rules) {
@@ -66,7 +88,7 @@ public final class StorageCategory {
 		rules = clean;
 	}
 
-	/** Writes {icon, description, rules}; reads that object or a plain list of rules (older files). */
+	/** Writes {icon, description, [parent,] rules}; reads that object or a plain list of rules (older files). */
 	static final class Adapter extends TypeAdapter<StorageCategory> {
 		@Override
 		public void write(JsonWriter out, StorageCategory value) throws IOException {
@@ -77,6 +99,9 @@ public final class StorageCategory {
 			out.beginObject();
 			out.name("icon").value(value.icon == null ? "" : value.icon);
 			out.name("description").value(value.description == null ? "" : value.description);
+			if (value.parent != null && !value.parent.isBlank()) {
+				out.name("parent").value(value.parent);
+			}
 			out.name("rules").beginArray();
 			if (value.rules != null) {
 				for (String rule : value.rules) {
@@ -111,6 +136,7 @@ public final class StorageCategory {
 				switch (name) {
 					case "icon" -> category.icon = readString(in);
 					case "description" -> category.description = readString(in);
+					case "parent" -> category.parent = readString(in);
 					case "rules" -> category.rules = in.peek() == JsonToken.BEGIN_ARRAY ? readRules(in) : skip(in);
 					default -> in.skipValue();
 				}

@@ -61,6 +61,44 @@ final class StorageLang {
 		m.put("villager.gui.role.info", "&6&lConteneur en {0} {1} {2}");
 		m.put("villager.gui.role.info.current", "&7Rôle actuel : &f{0}");
 		m.put("villager.gui.role.info.new", "&7Pas encore enregistré : choisissez\n&7son rôle (il en prendra le nom).");
+		// sub-categories, transversal categories, routing order (1.12)
+		m.put("villager.gui.category.sub", "&8Sous-catégorie de « {0} » : sans coffre\n&8« {1} », ces objets vont dans les\n&8coffres « {0} ».");
+		m.put("villager.gui.category.transversal", "&dTransversale : prend ces objets dans\n&dtoutes les catégories, avant elles. Sans\n&dcoffre « {0} », ils vont dans leur\n&dcatégorie habituelle.");
+		m.put("villager.gui.category.children", "&8Sous-catégories : {0}");
+		m.put("villager.gui.category.usual", "leur catégorie habituelle");
+		m.put("villager.gui.role.fallback.warning", "&c⚠ Reçoit TOUT ce qui n'a pas d'autre\n&ccoffre : ne le choisissez pas pour une\n&ccollection (livres, potions...) : prenez sa\n&ccatégorie ou un coffre filtré.");
+		m.put("villager.gui.role.filter.hand.lore", "&7N'accepte que les objets qu'il contient\n&7déjà, ou leur famille (« diorite » : diorite,\n&7diorite polie, dalles, escaliers, murets...).\n&7Conteneur vide : l'objet tenu en main\n&7(un livre enchanté → un coffre de livres\n&7enchantés). Les trieurs y rangent ces\n&7objets avant leur coffre de catégorie.");
+		m.put("villager.gui.role.choose_filter_hand", "&eClic : filtrer d'après son contenu\n&e(vide : d'après l'objet en main)");
+		m.put("villager.gui.storage.held.route", "&7Ordre du trieur : &f{0}");
+		m.put("villager.gui.page.jump", "&8Shift + clic : 10 pages");
+		m.put("villager.gui.group.part", "&7Partie &f{0}&7/&f{1} &8(plus de {2} coffres :\n&8chaque partie est rangée à part)");
+		m.put("villager.gui.storage.help.text.v2", "&7Les travailleurs déposent leur récolte dans\n&7les coffres de &bdépôt&7. Le trieur (tâche\n&7« Ranger la base ») range chaque objet dans\n&7le coffre le plus précis qui a de la place :\n&dcoffre filtré&7, catégorie &dtransversale&7\n&7(« Objets rares »...), &esous-catégorie&7\n&7(« Livres enchantés »), sa catégorie\n&7(« Livres et enchantements »), sinon un\n&7coffre « {0} », sinon il reste au dépôt.\n&7Puis il re-range les coffres d'une même\n&7catégorie : piles fusionnées, ordre de\n&7l'inventaire créatif, coffre 1 rempli avant\n&7le coffre 2 (ordre de lecture du mur).\n&7Chaque coffre prend le nom de son rôle.\n&f/guild stockage scan <chunks>&7 propose des\n&7rôles d'après le contenu des coffres.");
+		m.put("villager.gui.rooms.help.text.v2", "&7Une salle des coffres range toute seule :\n&7chaque catégorie reçoit des colonnes\n&7entières à sa taille (plus une marge),\n&7les colonnes libres restent en réserve.\n&7Une catégorie qui se remplit gagne une\n&7colonne ; une colonne vide longtemps\n&7revient à la réserve. Un coffre dont vous\n&7choisissez le rôle n'est jamais réattribué.\n&6Une salle peut être réservée à quelques\n&6catégories (menu de la salle) : un\n&6bâtiment des livres enchantés, des\n&6potions... ne reçoit alors rien d'autre.");
+		// filter chests and limits (1.12)
+		m.put("villager.storage.filter.off", "&cCoffres filtrés désactivés sur ce serveur (storage.filterChests = false).");
+		m.put("villager.storage.filter.empty_hand", "&cCe conteneur est vide : rangez-y les objets qu'il doit accepter, ou tenez l'un d'eux en main.");
+		m.put("villager.storage.room.disabled", "&cSalles des coffres désactivées sur ce serveur (storage.chestRooms = false).");
+		// chest room menu and reserved rooms (1.12)
+		m.put("villager.gui.room.click.menu", "&eClic gauche : ouvrir la salle\n&cClic droit : supprimer la salle");
+		m.put("villager.gui.room.title", "Salle « {0} »");
+		m.put("villager.gui.room.show", "&b&lAfficher ses coffres");
+		m.put("villager.gui.room.rescan", "&a&lAjouter les nouveaux coffres");
+		m.put("villager.gui.room.rescan.lore", "&7Enregistre les conteneurs posés depuis\n&7dans la zone de la salle.");
+		m.put("villager.gui.room.theme", "&6&lCatégories de la salle");
+		m.put("villager.gui.room.theme.lore.all", "&7Toutes les catégories (salle ordinaire).\n&eClic : réserver la salle à quelques\n&ecatégories (bâtiment des livres...)");
+		m.put("villager.gui.room.theme.lore.some", "&7Réservée à : &f{0}");
+		m.put("villager.gui.room.theme.lore.change", "&eClic : changer");
+		m.put("villager.gui.room.remove", "&c&lSupprimer la salle");
+		m.put("villager.gui.room.reserved", "&6Réservée à : &f{0}");
+		m.put("villager.gui.room.theme.title", "Catégories de « {0} »");
+		m.put("villager.gui.room.theme.in", "&a✔ Dans la salle");
+		m.put("villager.gui.room.theme.out", "&7Pas dans la salle");
+		m.put("villager.gui.room.theme.toggle", "&eClic : ajouter / retirer");
+		m.put("villager.gui.room.theme.all", "&f&lToutes les catégories");
+		m.put("villager.gui.room.theme.all.lore", "&7La salle reçoit toutes les catégories\n&7principales, « {0} » à la fin.\n&eClic : salle ordinaire");
+		m.put("villager.gui.room.theme.help", "&7Une salle réservée ne reçoit que ses\n&7catégories : chacune y garde au moins\n&7une colonne, même vide. Sans « {0} »,\n&7les autres objets vont ailleurs.\n&7Exemple : « Livres enchantés » seule =\n&7le bâtiment des enchantements.");
+		m.put("villager.storage.room.theme.changed", "&aSalle « {0} » : {1}.");
+		m.put("villager.storage.room.theme.every", "toutes les catégories");
 		Lang.addDefaults(m);
 	}
 }

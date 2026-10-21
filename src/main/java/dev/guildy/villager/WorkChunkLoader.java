@@ -245,20 +245,15 @@ public final class WorkChunkLoader {
 			}
 			if (!record.carried.isEmpty() && (task.isGatherer() || task.isExpedition())) {
 				// Deposit trips: the deposit chests must be loaded to be chosen at all.
-				for (StorageChest chest : guild.villagers.chests) {
-					if (chest.isDeposit() && chest.pos != null) {
-						add(anchors, heart, id, ChunkLoadPlanner.Kind.DESTINATION, chest.pos, 0);
-					}
+				for (StorageChest chest : Storage.index(guild).deposits()) {
+					add(anchors, heart, id, ChunkLoadPlanner.Kind.DESTINATION, chest.pos, 0);
 				}
 			}
 			zoneAnchor(anchors, guild, record, pos, config);
 			if (task == Task.SORTER || task == Task.ALCHEMIST) {
 				// One anchor per chunk of storage (a chest room holds many chests in a few chunks).
-				Set<Long> chunks = new HashSet<>();
-				for (StorageChest chest : guild.villagers.chests) {
-					if (chest.pos != null && chunks.add(ChunkKey.ofBlock(chest.pos.getX(), chest.pos.getZ()))) {
-						add(anchors, heart, id, ChunkLoadPlanner.Kind.STORAGE, chest.pos, 0);
-					}
+				for (BlockPos anchor : Storage.index(guild).chunkAnchors()) {
+					add(anchors, heart, id, ChunkLoadPlanner.Kind.STORAGE, anchor, 0);
 				}
 			}
 		}
