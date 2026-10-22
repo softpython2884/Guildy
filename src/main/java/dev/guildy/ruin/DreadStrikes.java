@@ -809,7 +809,9 @@ final class DreadStrikes {
 		}
 
 		static @Nullable Dive cast(DreadAbilityDef def, Context ctx, int telegraph, String style) {
-			if (ctx.targets.isEmpty() || !ctx.boss.onGround() && !"jade".equals(style)) {
+			// A leap starts from the floor (the serpent dives from wherever it flies): a guardian in mid-air waits.
+			boolean airborne = !ctx.boss.onGround() && ctx.boss.getY() - ctx.feet().y > 0.5;
+			if (ctx.targets.isEmpty() || airborne && !"jade".equals(style)) {
 				return null;
 			}
 			Dive dive = new Dive(def, style, telegraph);
