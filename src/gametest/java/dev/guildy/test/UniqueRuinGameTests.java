@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.random.RandomGenerator;
 
 /**
- * The seven uniques of the ruins: their components, the collection of 21, the favourite weapon of a guardian (context of a
+ * The seven uniques of the ruins: their components, the collection of 33, the favourite weapon of a guardian (context of a
  * ruin roll), and each power through the real game paths on a zombie, next to a survival player and a guild villager that
  * are never hurt (nor slowed, frozen, poisoned or pushed).
  */
@@ -132,10 +132,10 @@ public class UniqueRuinGameTests {
 	// ================================================================== items, collection, drops
 
 	@GameTest(environment = "guildy-test:day", maxTicks = 200)
-	public void ruinUniquesCompleteACollectionOfTwentyOne(GameTestHelper helper) {
+	public void ruinUniquesCompleteACollectionOfThirtyThree(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		UniqueConfig cfg = UniqueModule.config();
-		helper.assertTrue(cfg.usable().size() == 21, "21 uniques configured, got " + cfg.usable().size());
+		helper.assertTrue(cfg.usable().size() == 33, "33 uniques configured (12 set pieces), got " + cfg.usable().size());
 		for (String id : UniqueConfig.RUIN_UNIQUES) {
 			ItemStack stack = UniqueDrops.create(id);
 			helper.assertTrue(id.equals(UniqueItems.idOf(stack)), id + " created");
@@ -159,25 +159,25 @@ public class UniqueRuinGameTests {
 		ServerPlayer steve = TestSupport.survivor(helper, ground, TestSupport.uniqueName("Coll"));
 		Guild guild = GuildManager.create(TestSupport.uniqueName("UqColl"), steve);
 		UniqueDrops.Recipient recipient = UniqueDrops.Recipient.of(steve, guild);
-		// The guardian of the Grand Temple favours the jaguar spear: the same dice give it there, and the cloak elsewhere.
-		// (The module's roller itself: another test may stub UniqueDrops.roller meanwhile.)
-		ItemStack favourite = UniqueDrops.recipientRoller.roll("ruin_boss@grand_temple_maya", sequence(0.0, 0.9), recipient);
+		// The guardian of the Grand Temple favours the jaguar spear (and the jaguar warrior set, after it in its table): the
+		// middle of its table is the spear. (The module's roller itself: another test may stub UniqueDrops.roller meanwhile.)
+		ItemStack favourite = UniqueDrops.recipientRoller.roll("ruin_boss@grand_temple_maya", sequence(0.0, 0.45), recipient);
 		helper.assertTrue("lance_du_jaguar_celeste".equals(UniqueItems.idOf(favourite)), "the grand temple's favourite, got " + favourite);
 		helper.assertTrue("ruin_boss".equals(GuildyItems.data(favourite).getStringOr("announce", "")), "announced under its plain source");
 		helper.assertTrue("ruin_boss".equals(UniqueRegistry.ledger().copy(UniqueItems.serialOf(favourite)).source), "registered under it");
 		ItemStack plain = UniqueDrops.recipientRoller.roll("ruin_boss", sequence(0.0, 0.9), recipient);
 		helper.assertTrue("plastron_du_serpent".equals(UniqueItems.idOf(plain)), "plain ruin table, got " + plain);
 
-		// Every unique given to the guild: the collection of 21 is complete and announced.
+		// Every unique given to the guild: the collection of 33 is complete and announced.
 		TestSupport.console(level, "guild admin unique list");
 		for (UniqueConfig.UniqueDef def : cfg.usable()) {
 			if (!UniqueRegistry.ledger().obtainedBy(guild.id).contains(def.id)) {
 				TestSupport.console(level, "execute as " + steve.getStringUUID() + " run guild admin unique give @s " + def.id);
 			}
 		}
-		helper.assertTrue(UniqueRegistry.ledger().obtainedBy(guild.id).size() == 21, "21 uniques in the collection, got "
+		helper.assertTrue(UniqueRegistry.ledger().obtainedBy(guild.id).size() == 33, "33 uniques in the collection, got "
 				+ UniqueRegistry.ledger().obtainedBy(guild.id).size());
-		helper.assertTrue(TestSupport.chat(steve).stream().anyMatch(line -> line.contains("21 armes uniques")),
+		helper.assertTrue(TestSupport.chat(steve).stream().anyMatch(line -> line.contains("33 armes uniques")),
 				"collection announced: " + TestSupport.chat(steve));
 		steve.getInventory().clearContent();
 		GuildManager.disband(guild);
