@@ -577,7 +577,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Exploration</td><td>Part vers la destination choisie (forêt, désert, village, temples…) et revient quelques minutes plus tard avec son butin. <a href="#destinations">Destinations</a> <span class="pill red">5 à 25 % de risque de perte</span></td><td>Le bureau d'accueil (sinon il part du cœur)</td></tr>
 						<tr><td>Expédition au Nether</td><td>Passe par votre portail vers la destination choisie (forteresse, bastion, forêts…) et revient avec son butin. <span class="pill red">10 à 22 % de risque de perte</span></td><td>Un portail du Nether dans le territoire</td></tr>
 						<tr><td>Forgeron <span class="pill gold">Niveau 3</span></td><td>Répare peu à peu l'équipement abîmé posé sur vos porte-armures, en usant l'enclume la plus proche. <a href="#artisans">Détails</a></td><td>Des porte-armures et une enclume à moins de 12 blocs, dans le territoire</td></tr>
-						<tr><td>Alchimiste <span class="pill gold">Niveau 5</span></td><td>Transforme les livres du stockage en livres enchantés à votre table d'enchantement. <a href="#artisans">Détails</a></td><td>Une table d'enchantement (avec des bibliothèques) et des livres dans un coffre enregistré</td></tr>
+						<tr><td>Alchimiste <span class="pill gold">Niveau 5</span></td><td>Livres enchantés et parchemins à votre table d'enchantement, potions et élixirs à votre alambic, selon les stocks que vous choisissez ; s'il ne peut pas faire son travail, il passe au suivant. <a href="#artisans">Détails</a></td><td>Une table d'enchantement et/ou un alambic, des livres, du papier, des fioles d'eau et des ingrédients dans un coffre enregistré</td></tr>
 						<tr><td>Cartographe</td><td>Travaille aux recherches de ruines de la guilde. <a href="#ruines">Ruines</a></td><td>L'Atelier du cartographe</td></tr>
 					</tbody>
 				</table></div>
@@ -680,7 +680,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<h3 id="artisans">Forgeron et alchimiste</h3>
 				<div class="cards">
 					<div class="card"><h3>Forgeron (niveau 3)</h3><p>Posez vos armures, armes ou outils abîmés sur des <strong>porte-armures</strong> du territoire, avec une <strong>enclume</strong> à moins de 12 blocs. Il rend 10 % de durabilité toutes les 8 secondes au plus abîmé, sans rien retirer du porte-armure. Chaque réparation peut user l'enclume, comme en vanilla : ébréchée, endommagée, puis brisée.</p></div>
-					<div class="card"><h3>Alchimiste (niveau 5)</h3><p>Avec une <strong>table d'enchantement</strong> et des <strong>livres</strong> dans un coffre enregistré, il fabrique des livres enchantés rangés dans « Livres et enchantements ». Avec 15 bibliothèques autour de la table, chaque livre est au niveau 30. 6 secondes par niveau, 8 livres par jour au plus. Parfois (15 %), avec 2 papiers en plus, il écrit un <a href="#parchemins">parchemin</a> : surtout des Rappels.</p></div>
+					<div class="card"><h3>Alchimiste (niveau 5)</h3><p>Trois travaux : <strong>livres enchantés</strong> et <strong>parchemins</strong> à la table d'enchantement (15 bibliothèques = niveau 30), <strong>potions et élixirs</strong> à l'alambic (fioles d'eau, verrue du Nether, ingrédients, poudre de blaze ; 20 s par brassage, 3 fioles à la fois). Il prépare d'abord ce qui manque le plus dans vos <strong>stocks de potions</strong> (menu de l'alchimiste). Si son travail est impossible (pas de livres, plafond du jour…), il passe au suivant : Livres &gt; Parchemins &gt; Potions. Avec plusieurs alchimistes, la guilde répartit les rôles (5 : 2 livres, 1 parchemins, 2 potions) ; le bouton Rôle impose le sien.</p></div>
+					<div class="card"><h3>Élixirs</h3><p>Une potion vanilla + un ingrédient rare. Colosse (force II + résistance), Bête (force, vitesse, saut), Ombre (invisibilité, vision nocturne, vitesse), Titan (+4 cœurs, absorption), Phénix (résistance au feu, régénération II), Abysses (respiration, force des conduits, dauphin). Les élixirs <strong>magiques</strong> renforcent vos sorts : <strong>arcanique</strong> (+25 % de dégâts, soins et durées, 5 min), <strong>clairvoyance</strong> (recharges et incantations -30 %, 5 min), <strong>satiété mystique</strong> (faim du grimoire -50 %, 6 min). Une barre violette montre le temps restant.</p></div>
 				</div>
 				<h3 id="distance">Travail à distance</h3>
 				<p>Un villageois au travail garde chargés ses alentours, sa destination et sa zone : il <strong>continue de travailler quand vous êtes loin</strong>, dès qu'un membre de la guilde est connecté. Rien n'est chargé pour un villageois sans tâche, en expédition ou couché. Les cultures y poussent, aucun monstre n'y apparaît. Le menu Villageois (« Chunks des villageois ») indique combien de chunks sont gardés chargés.</p>
@@ -745,7 +746,13 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Colorants</td><td>les 16 colorants</td></tr>
 					</tbody>
 				</table></div>
-				<p class="hint">Dans le menu Stockage : clic gauche sur un coffre pour changer son rôle, clic droit pour le retirer. « Afficher les coffres » les signale en particules colorées pendant 20 s ; « Où ranger l'objet en main ? » indique sa catégorie.</p>
+				<p class="hint">Dans le menu Stockage : clic gauche sur un coffre pour changer son rôle, clic droit pour le retirer. « Afficher les coffres » les signale en particules colorées pendant 20 s ; « Où ranger l'objet en main ? » montre l'ordre suivi par le trieur.</p>
+				<div class="note good"><p><strong>Autant de coffres que vous voulez :</strong> plus de limite de 48 coffres ; par défaut, autant de coffres, de salles et de coffres filtrés que vous voulez (l'admin peut fixer une limite).</p></div>
+				<div class="cards">
+					<div class="card"><h3>Sous-catégories</h3><p>« Livres enchantés », « Parchemins et grimoires », « Livres et papier », « Potions », « Cultures », « Laine et tapis », « Verre », « Béton et terre cuite », « Éclairage » affinent leur catégorie. Sans coffre de la sous-catégorie, ses objets vont dans la catégorie parente.</p></div>
+					<div class="card"><h3>Catégories transversales</h3><p>« Objets rares », « Équipement enchanté », « Ingrédients d'alchimie » attrapent leurs objets quelle que soit leur catégorie, avant elle.</p></div>
+					<div class="card"><h3>Bâtiment spécialisé</h3><p>Coffres « Livres enchantés », salle des coffres réservée (menu de la salle → Catégories de la salle) ou coffre filtré d'un clic (coffre vide + objet en main). <strong>Jamais « Divers »</strong> pour une collection : « Divers » reçoit tout ce qui n'a pas de coffre.</p></div>
+				</div>
 				<h3 id="filtres">Coffres filtrés</h3>
 				<p>Rangez à la main quelques objets par coffre (de la diorite ici, du blé et des graines là…), puis <button class="cmd" type="button">/guild stockage scan 3</button> → [Appliquer] : chaque coffre devient un <strong>coffre filtré</strong> à son nom (« Diorite », « Chêne », « Blé et graines »), servi en priorité par vos trieurs et rangé par colonnes. <button class="cmd" type="button">/guild stockage filtre ici</button> filtre le coffre que vous regardez.</p>
 				<h3 id="bien-range">Coffres bien rangés</h3>
@@ -756,8 +763,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="card"><h3>Groupes de coffres</h3><p>Menu Stockage → Groupes de coffres : « Rangé » ou « À ranger », remplissage, « Afficher » et « Réorganiser maintenant ».</p></div>
 				</div>
 				<h3 id="salle-des-coffres">Salle des coffres</h3>
-				<p>Menu Stockage → Salles des coffres → « Ajouter une salle des coffres », puis clic droit sur le coffre d'un coin et sur celui du coin opposé (32 blocs de côté au plus). Tous les coffres entre les deux deviennent <strong>automatiques</strong> : les trieurs donnent à chaque catégorie des <strong>colonnes entières</strong> à sa taille, avec de la marge, « Divers » à la fin et le reste en réserve. Une catégorie qui se remplit gagne une colonne voisine ; une colonne vide depuis 30 minutes retourne à la réserve. Un coffre dont vous choisissez le rôle devient manuel et n'est plus réattribué.</p>
-				<p class="hint">Shift + clic sur une salle dans le menu ajoute les coffres posés depuis sa création ; clic droit la supprime (les objets restent dans les coffres).</p>
+				<p>Menu Stockage → Salles des coffres → « Ajouter une salle des coffres », puis clic droit sur le coffre d'un coin et sur celui du coin opposé (64 blocs de côté au plus). Tous les coffres entre les deux deviennent <strong>automatiques</strong> : les trieurs donnent à chaque catégorie des <strong>colonnes entières</strong> à sa taille, avec de la marge, « Divers » à la fin et le reste en réserve. Une catégorie qui se remplit gagne une colonne voisine ; une colonne vide depuis 30 minutes retourne à la réserve. Un coffre dont vous choisissez le rôle devient manuel et n'est plus réattribué.</p>
+				<p class="hint">Clic gauche sur une salle dans le menu l'ouvre : afficher ses coffres, ajouter ceux posés depuis, <strong>catégories de la salle</strong> (une salle réservée à « Livres enchantés » devient le bâtiment des enchantements), supprimer. Clic droit la supprime (les objets restent dans les coffres).</p>
 				<div class="note"><p>La nuit et pendant les hordes, les travailleurs vont se coucher (statut « Repos »), et les gardes restent dehors. Un villageois peut <strong>mourir</strong> dans une horde : équipez vos gardes et posez des lits près du cœur.</p></div>
 			</section>
 
@@ -833,7 +840,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="parchemins">
 				<div class="eyebrow">Butin</div>
 				<h2>Parchemins de sort</h2>
-				<p>Des rouleaux à <strong>usage unique</strong> qui lancent des sorts bien plus puissants que les pouvoirs des armes uniques. <strong>Maintenez le clic droit</strong> : un cercle runique se dessine à vos pieds, puis le sort part dans un grand spectacle de particules. Le parchemin n'est consommé que si le sort réussit. Chaque parchemin a une recharge partagée avec son groupe (Attaque, Soutien, Rappel, Invocation).</p>
+				<p>Des rouleaux à <strong>usage unique</strong> qui lancent des sorts bien plus puissants que les pouvoirs des armes uniques. <strong>Maintenez le clic droit</strong> : un cercle runique se dessine à vos pieds, puis le sort part dans un grand spectacle de particules. Le parchemin n'est consommé que si le sort réussit. Chaque parchemin a une recharge partagée avec son groupe (Attaque, Soutien, Rappel, Invocation, Permutation).</p>
 				<div class="table-wrap"><table>
 					<thead><tr><th>Parchemin</th><th>Rareté</th><th>Effet</th></tr></thead>
 					<tbody>
@@ -849,9 +856,16 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Révélation</td><td><span class="pill sky">Rare</span></td><td>Les monstres à 64 blocs brillent 30 s, même à travers les murs</td></tr>
 						<tr><td>Séisme</td><td><span class="pill void">Épique</span></td><td>3 ondes de choc de 8 ❤, monstres projetés en l'air</td></tr>
 						<tr><td>Rayon arcanique</td><td><span class="pill gold">Légendaire</span></td><td>Rayon de 32 blocs pendant 3 s qui suit votre visée, 4 ❤ par contact</td></tr>
+						<tr><td>Bannière de guerre</td><td><span class="pill void">Épique</span></td><td>Bannière plantée 20 s : Force II et attaques plus rapides pour vous, vos membres et vos villageois à 8 blocs</td></tr>
+						<tr><td>Fléau</td><td><span class="pill void">Épique</span></td><td>Nuée maudite de 10 s : monstres affaiblis, ralentis, révélés, +25 % de dégâts subis (boss : +12,5 %)</td></tr>
+						<tr><td>Permutation</td><td><span class="pill sky">Rare</span></td><td>Échangez votre place avec le monstre ou l'allié visé (32 blocs), jamais vers un danger</td></tr>
+						<tr><td>Ralliement</td><td><span class="pill void">Épique</span></td><td>Les membres de la guilde reçoivent [Rejoindre] pendant 30 s : ceux qui cliquent vous rejoignent</td></tr>
+						<tr><td>Chaînes spectrales</td><td><span class="pill gold">Légendaire</span></td><td>Enchaîne le monstre visé et ses voisins 5 s, puis les chaînes se brisent (6 ❤)</td></tr>
+						<tr><td>Hâte du vent</td><td><span class="pill sky">Rare</span></td><td>Vitesse II, saut amélioré et plus de dégâts de chute pendant 30 s pour la guilde autour de vous</td></tr>
 					</tbody>
 				</table></div>
 				<div class="note good"><p><strong>Magie contre armure :</strong> les sorts ignorent l'armure des monstres, même celle des gardiens en netherite. Une Pluie de météores sur un gardien : ses sbires tombent d'abord, puis les météores le poursuivent lui. Gardez-la pour le gros combat !</p></div>
+				<div class="note"><p><strong>Ralliement :</strong> il ne téléporte personne sans son accord : chaque membre appelé clique sur [Rejoindre] dans le chat.</p></div>
 				<p>Les sorts ne touchent que les monstres : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est modifié. On trouve les parchemins surtout sur les <a href="#ruines">boss des ruines</a>, plus rarement sur les boss des hordes (bien plus pendant une nuit de sang), en récompense de quête ou de contrat légendaire, au retour des expéditions, chez le marchand du Carrefour commercial, et votre <a href="#artisans">alchimiste</a> en écrit parfois (surtout des Rappels).</p>
 							<h3 id="grimoire">Le grimoire</h3>
 				<p>Un livre ancien qui <strong>relie jusqu'à 4 parchemins</strong> et relance leurs sorts sans les consommer.</p>
@@ -1025,7 +1039,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.11.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
+				<p>Installation : <code>guildy-1.12.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1073,10 +1087,11 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><code>structures.json5</code></td><td>Plans, coûts et niveaux des constructions</td></tr>
 							<tr><td><code>quests.json5</code></td><td>Modèles de quêtes et récompenses</td></tr>
 							<tr><td><code>shop.json5</code></td><td>Catalogue de la boutique</td></tr>
-							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches (dont <code>blacksmith</code>, <code>alchemist</code>, travaux des champs), expéditions, mine réelle (<code>realMining</code>), catégories de rangement</td></tr>
+							<tr><td><code>villagers.json5</code></td><td>Arrivées, tâches (dont <code>blacksmith</code>, <code>alchemist</code>, travaux des champs), expéditions, mine réelle (<code>realMining</code>), catégories et sous-catégories de rangement, limites du stockage (0 = illimité)</td></tr>
 							<tr><td><code>upgrades.json5</code></td><td>Arbre d'évolution</td></tr>
 							<tr><td><code>events.json5</code></td><td>Événements : chances, délais, effets (dont <code>randomEvents</code> pour tout couper)</td></tr>
 							<tr><td><code>trade.json5</code></td><td>Carrefour commercial : paliers, visites, tables d'offres</td></tr>
+							<tr><td><code>alchemy.json5</code></td><td>Potions et élixirs : recettes, stocks par défaut, élixirs, bonus magiques</td></tr>
 							<tr><td><code>scrolls.json5</code></td><td>Parchemins de sort : sorts, recharges, chances de butin, limites d'effets ; grimoire et grimoire maudit</td></tr>
 							<tr><td><code>ruins.json5</code></td><td>Ruines : gardiens, escortes, capacités, retour, récompenses ; recherches du cartographe et statues du Jaguar céleste</td></tr>
 							<tr><td><code>uniques.json5</code></td><td>Armes uniques : objets, pouvoirs, chances de butin par source, favorites des gardiens, apparence (<code>customModels</code>)</td></tr>
@@ -1088,7 +1103,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.11.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.12.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

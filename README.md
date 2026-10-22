@@ -28,8 +28,8 @@ ou à héberger pour les joueurs.
 - **Quêtes** : 17 types (chasse, minage, livraison, artisanat, pêche, élevage, exploration, boss…), contrats légendaires,
   cartes au trésor.
 - **Économie** : boutique de guilde, carrefour commercial à 3 paliers avec marchands de passage.
-- **Villageois** : rangement des coffres (piles fusionnées et triées en ordre de lecture, **salle des coffres**
-  automatique), **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier
+- **Villageois** : rangement des coffres (**sans limite de coffres**, catégories et sous-catégories, piles fusionnées et
+  triées, **salles des coffres** automatiques ou réservées), **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier
   (qui peut transformer toute une zone en champs), garde avec parcours de ronde, **forgeron**, **alchimiste**,
   **cartographe**, expéditions (exploration, Nether), zones de travail par fanions et leurs autorisations, missions.
 - **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
@@ -38,7 +38,8 @@ ou à héberger pour les joueurs.
   10 enchantements inédits, textures animées facultatives.
 - **Armes uniques vraiment uniques** : numéro de série, une guilde ne reçoit jamais une arme qu'elle a déjà, collection
   de guilde X / 21.
-- **Parchemins de sort** : 12 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel…)
+- **Parchemins de sort** : 18 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel,
+  bannière de guerre, fléau, permutation, ralliement de la guilde…)
   avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture
   (et sa version **maudite**, bien plus puissante, sur l'Archimage déchu maudit).
 - **Ruines et boss** : 8 ruines (6 dans l'Overworld, dont le Grand Temple du Jaguar céleste et sa balise visible de
@@ -239,7 +240,7 @@ villageois : s'il est loin, sa dernière position est chargée un instant, « Ap
 | **Exploration** | part vers la **destination** choisie (biome ou construction, voir « Destinations d'expédition ») : il quitte vraiment la base et revient quelques minutes plus tard avec le butin du lieu — risque de ne pas revenir |
 | **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** vers la destination choisie (forteresse, bastion, forêts…) — risque plus élevé |
 | **Forgeron** (guilde niv. 3) | répare peu à peu l'équipement abîmé posé sur les **porte-armures** du territoire, à l'**enclume** la plus proche, qu'il use (voir « Forgeron et alchimiste ») |
-| **Alchimiste** (guilde niv. 5) | transforme les **livres** du stockage en **livres enchantés** à la **table d'enchantement** du territoire (voir « Forgeron et alchimiste ») |
+| **Alchimiste** (guilde niv. 5) | livres enchantés et parchemins à la **table d'enchantement**, **potions** et **élixirs** à l'**alambic** du territoire, selon les stocks voulus ; passe au travail suivant quand le sien est impossible (voir « Forgeron et alchimiste ») |
 | **Cartographe** | travaille à l'**Atelier du cartographe** sur les recherches de ruines de la guilde (voir § 13) |
 
 #### Zones de travail (fanions)
@@ -429,20 +430,68 @@ d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas s
   les 8 s, le plus abîmé d'abord) **sans jamais les retirer du porte-armure**. Chaque réparation use l'enclume comme en
   vanilla (12 % de chance) : ébréchée, endommagée, puis brisée ; il passe alors à l'enclume suivante. Les objets
   incassables (armes uniques) ne sont pas concernés. Plusieurs forgerons se répartissent les porte-armures.
-- **Alchimiste** (guilde niveau 5) : avec une **table d'enchantement** dans le territoire et des **livres** dans le
-  stockage, il fabrique des **livres enchantés** qu'il range dans le coffre « Livres et enchantements ». Il choisit la
-  table qui a le plus de bibliothèques (règle vanilla, 15 au plus) : avec 15 bibliothèques, chaque livre est enchanté au
-  niveau 30 ; une table seule donne des enchantements faibles. Comptez 6 s par niveau, 8 livres par jour et par
-  alchimiste au plus ; pas de lapis par défaut (`alchemist.lapisPerBook`). Comme à la table vanilla, Raccommodage et les
-  autres enchantements « trésor » ne sortent jamais.
-- **Parchemins de l'alchimiste** : de temps en temps (15 % des travaux), l'alchimiste écrit un **parchemin de sort** au
-  lieu d'un livre enchanté. Il lui faut le même livre et **2 feuilles de papier**, prises au stockage ; sans papier, il
-  fait un livre enchanté. Ce sont surtout des parchemins simples : **Rappel** le plus souvent, puis Bénédiction et
-  Révélation ; avec une table entourée de **15 bibliothèques**, rarement un épique (Blizzard, Séisme, Égide, Tempête de
-  foudre) ; jamais de légendaire ni de mythique. 2 parchemins par jour au plus, compris dans ses 8 travaux du jour
-  (`alchemist.scrollChance`, `scrollPaper`, `maxScrollsPerDay`, `epicScrollLevel`, `scrolls`).
+- **Alchimiste** (guilde niveau 5) : trois travaux, tous rangés au stockage.
+  - **Livres** : avec une **table d'enchantement** dans le territoire et des **livres** dans le stockage, il fabrique des
+    **livres enchantés** (coffre « Livres enchantés », sinon « Livres et enchantements »). Il choisit la table qui a le
+    plus de bibliothèques (règle vanilla, 15 au plus) : avec 15 bibliothèques, chaque livre est enchanté au niveau 30 ; une
+    table seule donne des enchantements faibles. 6 s par niveau, **8 livres par jour** et par alchimiste au plus ; pas de
+    lapis par défaut (`alchemist.lapisPerBook`). Comme à la table vanilla, Raccommodage et les autres enchantements
+    « trésor » ne sortent jamais. De temps en temps (15 % des livres), avec **2 feuilles de papier**, le livre devient un
+    **parchemin de sort**.
+  - **Parchemins** : le même travail à la table, mais chaque livre devient un **parchemin de sort** (livre + 2 papiers).
+    Surtout des parchemins simples : **Rappel** le plus souvent, puis Bénédiction, Révélation, Hâte du vent et
+    Permutation ; avec une table entourée de **15 bibliothèques**, rarement un épique (Blizzard, Séisme, Égide, Tempête de
+    foudre, Ralliement, Bannière de guerre, Fléau) ; jamais de légendaire ni de mythique. **2 parchemins par jour** au plus,
+    en plus des livres (`scrollChance`, `scrollPaper`, `maxScrollsPerDay`, `epicScrollLevel`, `scrolls`).
+  - **Potions** : avec un **alambic** dans le territoire, il prépare les **potions** et **élixirs** qui manquent au
+    stockage. Il part de **fioles d'eau** prises au stockage (ou de **fioles vides** qu'il remplit à une source d'eau ou un
+    chaudron d'eau à moins de 6 blocs de l'alambic), puis enchaîne les brassages vanilla : **verrue du Nether** (potion
+    étrange), l'ingrédient de l'effet (pastèque scintillante = soin, poudre de blaze = force, crème de magma = résistance
+    au feu…), **redstone** pour la version longue, **poudre lumineuse** pour la version forte, **poudre à canon** pour une
+    potion jetable, **souffle de dragon** pour une persistante. Chaque brassage dure **20 s**, transforme **3 fioles** avec
+    **1 ingrédient** et brûle 1/20 de **poudre de blaze** ; **18 fioles par jour** et par alchimiste au plus. Les potions
+    vont au coffre « Potions » (sinon « Potions et alchimie »).
+- **Stocks de potions** (menu d'un alchimiste → « Stocks de potions ») : pour chaque potion et élixir, le nombre de fioles
+  que la guilde veut garder (clic gauche +1, droit -1, Maj ±8 ; « Remettre par défaut »). Les alchimistes préparent
+  d'abord le produit le plus en dessous de son stock. Par défaut : 6 potions de soin, 3 de soin II, 3 jetables de soin,
+  4 de force, 4 de résistance au feu, 2 de régénération, de rapidité, de vision nocturne, de respiration aquatique, de
+  chute lente, de force II… et quelques élixirs courants ; les élixirs aux ingrédients très rares restent à 0 (à
+  demander). Les stocks se comptent dans tous les coffres du stockage, fioles en route comprises.
+- **Élixirs de Guildy** : des potions à boire comme les autres, avec leurs propres effets, leur couleur et leur nom,
+  préparées par l'alchimiste à partir d'une potion vanilla et d'un **ingrédient rare** :
+
+  | Élixir | Recette (base + ingrédient) | Effets | Durée |
+  |---|---|---|---|
+  | Élixir du colosse | Potion de force II + écaille de tatou | Force II, Résistance I | 3:00 |
+  | Élixir de la bête | Potion de force + patte de lapin | Force I, Vitesse I, Saut I | 3:00 |
+  | Élixir de l'ombre | Potion d'invisibilité + membrane de Phantom | Invisibilité, Vision nocturne, Vitesse I | 4:00 |
+  | Élixir du titan | Potion de soin II + pomme dorée | Boost de vie II (+4 cœurs), Absorption II | 4:00 |
+  | Élixir du phénix | Potion de résistance au feu + larme de Ghast | Résistance au feu 4:00, Régénération II 0:45 | 4:00 |
+  | Élixir des abysses | Potion de respiration aquatique + cœur de la mer | Respiration aquatique, Force des conduits, Grâce du dauphin | 8:00 |
+  | **Élixir arcanique** | Potion étrange + éclat d'améthyste | **Sorts +25 %** (dégâts, soins, durées) | 5:00 |
+  | **Élixir de clairvoyance** | Potion de vision nocturne + éclat d'écho | **Recharges -30 %**, **incantations -30 %**, Vision nocturne | 5:00 |
+  | **Élixir de satiété mystique** | Potion étrange + baies lumineuses | **Faim du grimoire -50 %** | 6:00 |
+
+  Les bonus magiques (parchemins, grimoire, grimoire maudit) commencent à la fin de la gorgée et s'affichent dans une
+  **barre violette** en haut de l'écran avec leur temps restant ; ils se gardent à la déconnexion (le temps ne s'écoule
+  qu'en ligne) mais disparaissent à la mort, comme les effets de potion. Boire le même élixir relance sa durée (sans la
+  cumuler) ; deux élixirs différents s'additionnent, plafonnés (sorts +100 %, recharges et incantations -75 %, faim du
+  grimoire -100 %).
+- **Repli** : un alchimiste tente toujours son **travail préféré**, puis les autres dans l'ordre **Livres > Parchemins >
+  Potions** (`alchemist.jobOrder`), et travaille au premier possible. Un travail est impossible sans table ou alambic,
+  sans livres / lapis / papier / fioles / ingrédients / poudre de blaze au stockage, quand son plafond du jour est atteint,
+  quand aucun parchemin n'est possible à la table ou quand tous les stocks de potions sont pleins. Son menu affiche la
+  raison (« ↪ Livres : pas de livres → Potions ») ; quand rien n'est possible, son statut liste les raisons de chaque
+  travail. Après chaque livre, parchemin ou fournée, il revient à son travail préféré s'il est redevenu possible.
+- **Plusieurs alchimistes** se répartissent les rôles (`alchemist.distribution: balanced`) pour avoir un peu de tout en
+  même temps : parts 2 livres / 1 parchemins / 2 potions (`roleWeights`) parmi les travaux possibles pour la guilde
+  (5 alchimistes : 2 livres, 1 parchemins, 2 potions ; 3 alchimistes : un de chaque ; sans alambic, livres et parchemins
+  seulement), revue toutes les minutes, chacun gardant son rôle tant qu'il a sa place. Le bouton **Rôle** du menu d'un
+  alchimiste (Auto / Livres / Parchemins / Potions) impose son travail préféré (il passe quand même aux autres quand le sien
+  est impossible, sauf `manualRoleFallback: false`). `distribution: priority` = tous préfèrent le premier travail de
+  `jobOrder`.
 - Leur menu affiche leurs statistiques (objets réparés, enclumes usées ; livres faits, meilleur enchantement, parchemins
-  écrits).
+  écrits, potions préparées, dernière potion), et pour l'alchimiste son rôle et la raison d'un repli.
 
 #### Travail à distance (chunks chargés)
 Un villageois au travail garde chargés ses alentours, l'endroit où il se rend (coffre de dépôt, lit le soir, retour
@@ -496,6 +545,12 @@ Le trieur (tâche « Ranger la base ») vide les coffres de **dépôt** et range
 **catégorie** ; un objet sans coffre de sa catégorie va dans un coffre « **Divers** », sinon il reste au dépôt.
 Quasiment tous les objets du jeu sont reconnus.
 
+**Autant de coffres que vous voulez** : par défaut, plus aucune limite au nombre de conteneurs enregistrés (coffres,
+tonneaux, boîtes de Shulker), de salles des coffres ni de coffres filtrés ; l'admin peut en fixer une dans
+`villagers.json5 > storage` (0 = illimité). Des milliers de coffres restent légers : pour chaque objet, le trieur ne lit
+que les coffres qui peuvent le recevoir, le plus proche d'abord ; un très grand groupe (plus de 128 coffres d'une même
+catégorie au même endroit) est rangé par parties.
+
 | Catégorie | Exemples |
 |---|---|
 | Bois | bûches, planches, dalles / escaliers / barrières / portes / trappes / panneaux en bois, bâtons, bols |
@@ -518,11 +573,48 @@ Quasiment tous les objets du jeu sont reconnus.
 | End | pierre de l'End, purpur, chorus, barres de l'End, œil de l'Ender, cristal de l'End, boîtes de Shulker, œuf de dragon |
 | Colorants | les 16 colorants |
 
+**Sous-catégories** (elles ne prennent que des objets de leur catégorie parente ; sans coffre de la sous-catégorie, ses
+objets vont dans la parente) :
+
+| Catégorie parente | Sous-catégorie | Ce qui y va |
+|---|---|---|
+| Blocs de construction | **Laine et tapis** | laine, tapis, dalles et escaliers en laine |
+| | **Verre** | verre, verre teinté, vitres |
+| | **Béton et terre cuite** | béton, béton en poudre, terre cuite, terre cuite émaillée |
+| Mobilier et décoration | **Éclairage** | torches, lanternes, bougies, feux de camp, lanternes aquatiques, citrouilles-lanternes, champilampes |
+| Livres et enchantements | **Livres enchantés** | les livres enchantés seulement |
+| | **Parchemins et grimoires** | parchemins de sort, grimoires, parchemins d'incantation |
+| | **Livres et papier** | livres, livres et plumes, livres écrits, papier |
+| Potions et alchimie | **Potions** | potions, potions jetables et persistantes, fioles sinistres, élixirs |
+| Nourriture | **Cultures** | blé, carottes, pommes de terre, betteraves, pastèques, citrouilles, baies, bottes de foin |
+
+**Catégories transversales** (elles prennent leurs objets avant leur catégorie habituelle) : **Équipement enchanté**
+(outils, armes et armures enchantés), **Objets rares** (disques, têtes et crânes, totems, étoiles du Nether, cœurs de la
+mer, élytres, œuf de dragon, modèles de forge, pommes dorées enchantées, balises, conduits), **Ingrédients d'alchimie**
+(poudre de blaze, verrues du Nether, larmes de ghast, crème de magma, yeux d'araignée, melon scintillant, pattes de lapin,
+membranes de phantom, souffle de dragon, fioles vides).
+
+**Où va un objet** : dans le premier coffre de cette liste qui a de la place (le plus proche d'abord) : un coffre filtré
+qui liste l'objet, puis un coffre filtré de sa matière, puis de son type ; un coffre d'une catégorie transversale qui le
+prend ; un coffre de sa sous-catégorie la plus précise, puis de sa catégorie parente ; un coffre « Divers » ; sinon il
+reste au dépôt. Créer un coffre « Livres enchantés » ne casse rien : le trieur y déplace ensuite les livres enchantés
+rangés ailleurs. Le bouton « Où ranger l'objet en main ? » du menu Stockage affiche cet ordre pour l'objet tenu.
+
+**Un bâtiment des livres enchantés** (ou un atelier d'alchimie) : choisissez « **Livres enchantés** » pour ses coffres
+(juste après « Livres et enchantements » dans la liste), ou faites-en une **salle des coffres réservée** (menu de la salle
+→ Catégories de la salle → « Livres enchantés »), ou un **coffre filtré d'un clic** (coffre vide, un livre enchanté en main,
+« Coffre filtré »). ⚠ Ne choisissez **pas « Divers »** pour un bâtiment spécialisé : « Divers » reçoit tout ce qui n'a pas
+d'autre coffre (le menu l'indique en rouge).
+
+Admins : une catégorie de `villagers.json5` peut avoir un `parent` (`""` = principale, le nom d'une autre catégorie =
+sous-catégorie, `"*"` = transversale) ; propriété de règle `@magic` (objets magiques de Guildy). Les catégories par défaut
+d'une nouvelle version sont ajoutées une seule fois aux anciens fichiers (`storage.knownCategories`).
+
 Menu Villageois → **Stockage** → « Ajouter un coffre », puis clic droit sur un coffre du territoire et choisissez son
 rôle (chaque catégorie montre son icône et des exemples) : le coffre **prend le nom de son rôle**, affiché quand on
 l'ouvre. Dans le menu Stockage : clic gauche sur un coffre pour changer son rôle, clic droit pour le retirer ;
 « **Afficher les coffres** » les signale par des particules colorées pendant 20 s ; « **Où ranger l'objet en main ?** »
-indique où ira l'objet que vous tenez. Les catégories (règles : objets, tags, propriétés) se règlent dans
+montre l'ordre suivi par le trieur pour l'objet que vous tenez. Les catégories (règles : objets, tags, propriétés) se règlent dans
 `villagers.json5`.
 
 #### Coffres filtrés
@@ -563,15 +655,18 @@ rangement » du menu Stockage, par colonnes par défaut. Un coffre double compte
 
 #### Salle des coffres
 Menu Stockage → **Salles des coffres** → « Ajouter une salle des coffres », puis clic droit sur le coffre d'un coin et sur
-celui du coin opposé (dans les 60 s, 32 blocs de côté au plus, 192 coffres, 4 salles) : tous les conteneurs du territoire
+celui du coin opposé (dans les 60 s, 64 blocs de côté au plus ; salles et coffres sans limite par défaut) : tous les conteneurs du territoire
 entre les deux deviennent **automatiques**. Les trieurs donnent à chaque catégorie un bloc de **colonnes entières** (ou de
 rangées) à sa taille, plus une marge, dans l'ordre des catégories, « Divers » à la fin ; le reste reste en **Réserve**.
 Ensuite la salle bouge peu : une catégorie qui se remplit gagne une colonne voisine, une catégorie qui n'a que quelques
 piles reste dans « Divers » plutôt que de tout déplacer, et une colonne vide depuis 30 minutes retourne à la réserve.
 Quand un coffre change de catégorie, il change de nom et le trieur déplace ses objets. Un coffre dont vous choisissez le
 rôle devient manuel et n'est plus jamais réattribué ; le rôle « Automatique » le rend à la salle. Dans le menu des salles :
-clic gauche pour afficher les coffres, Shift + clic pour ajouter les coffres posés depuis, clic droit pour supprimer la
-salle (les objets restent dans les coffres).
+clic gauche ouvre la salle (afficher ses coffres, ajouter les coffres posés depuis, **catégories de la salle**, supprimer),
+clic droit la supprime (les objets restent dans les coffres). **Salle réservée** : cochez une ou plusieurs catégories
+(« Livres enchantés » pour un bâtiment des enchantements, « Potions » + « Ingrédients d'alchimie » pour un atelier) :
+la salle ne reçoit plus que celles-ci, le reste de ses coffres en réserve. Les listes longues ont des pages (shift + clic
+= 10 pages).
 
 La nuit, les travailleurs dorment ; les gardes restent dehors. Les villageois peuvent encore **mourir** (gardes au
 combat, flèches perdues) : posez des lits près du cœur et équipez vos gardes. Seuls les membres peuvent commercer avec eux.
@@ -743,7 +838,8 @@ De vieux rouleaux couverts de runes, **à usage unique**, qui libèrent des sort
 armes uniques. **Maintenez le clic droit** pour lire le parchemin : un cercle runique se dessine à vos pieds, puis le sort
 part dans un grand spectacle de particules visible de loin. Le parchemin n'est consommé que si le sort réussit (aucun
 monstre à portée, incantation interrompue ou recharge en cours : il reste intact ; jamais consommé en créatif).
-Chaque parchemin a une **recharge partagée** avec son groupe (Attaque, Soutien, Rappel, Invocation).
+Chaque parchemin a une **recharge partagée** avec son groupe (Attaque, Soutien, Rappel, Invocation, Permutation ; le
+Ralliement partage celle du Rappel).
 Les sorts ne touchent que les **monstres** : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est
 modifié. Les bienfaits vont au lanceur, aux membres de sa guilde et à ses villageois. Les dégâts des sorts **ignorent
 l'armure** (comme la magie des potions vanilla) : un gardien en netherite les prend en plein (la Résistance de sa rage
@@ -763,12 +859,30 @@ les réduit encore). Les deux tiers des météores d'une Pluie **suivent un mons
 | **Révélation** | Rare | les monstres à 64 blocs brillent 30 s (visibles à travers les murs) |
 | **Séisme** | Épique | 3 ondes de choc jusqu'à 10 blocs, **8 ❤** chacune, monstres projetés en l'air |
 | **Rayon arcanique** | Légendaire | rayon de 32 blocs pendant 3 s qui suit votre visée, **4 ❤** par contact, cinq fois par seconde |
+| **Bannière de guerre** | Épique | plante une bannière de guerre pendant 20 s : à 8 blocs autour, vous, vos membres et vos villageois gagnez **Force II** et **Célérité II** (attaques plus rapides) |
+| **Fléau** | Épique | nuée maudite de 10 s sur 6 blocs au point visé : les monstres brillent, Faiblesse I, Lenteur II et **+25 % de dégâts** de toutes sources (boss : +12,5 %) |
+| **Permutation** | Rare | échangez votre place avec le monstre ou l'allié de la guilde visé (en vue, 32 blocs) : monstre étourdi 2 s, allié protégé 3 s (Résistance II) ; jamais dans un mur, la lave ou au-dessus du vide |
+| **Ralliement** | Épique | 4 s d'incantation, puis les membres de la guilde à 512 blocs reçoivent **[Rejoindre]** dans le chat pendant 30 s : les 8 premiers qui cliquent sont téléportés près de vous |
+| **Chaînes spectrales** | Légendaire | enchaîne le monstre visé et 2 voisins (4 blocs) sur place pendant 5 s (boss : 2,5 s), puis les chaînes se brisent (**6 ❤**) |
+| **Hâte du vent** | Rare | pendant 30 s, vous et la guilde à 8 blocs gagnez **Vitesse II**, **Saut amélioré II** et ne subissez plus de dégâts de chute |
+
+**Sorts tactiques.** La **Bannière de guerre** reste plantée où vous l'avez lue : ses tambours battent chaque seconde et
+ses bienfaits durent tant qu'on reste dans son cercle (et une seconde après). Le **Fléau** rend les monstres plus fragiles
+face à tout (vos armes, vos golems, les autres sorts) ; deux Fléaux ne s'additionnent pas, et les boss n'en reçoivent que
+la moitié. La **Permutation** demande de viser directement la créature (un monstre pour le sortir d'un coin, un membre ou
+un villageois de la guilde pour le tirer d'affaire) : si l'arrivée est dangereuse (mur, lave, feu, vide sous une cible
+volante à plus de 3 blocs), le parchemin reste intact ; un gardien de ruine peut être permuté, mais sa laisse d'arène le
+ramène chez lui. Le **Ralliement** ne téléporte **personne sans son accord** : chaque membre appelé clique sur
+[Rejoindre] (ou l'ignore) ; l'appel s'arrête si vous vous déconnectez ou changez de dimension. Il fonctionne aussi pendant
+une horde (pour défendre la base) et vers ou depuis un combat de ruine. Les **Chaînes spectrales** clouent les monstres
+sur place (ni marche, ni saut, ni recul, ni téléportation), mais ils frappent encore ce qui passe à leur portée.
 
 **Où les trouver** : surtout sur les **boss des ruines** (60 %, 75 % dans le Nether, 1 ou 2 parchemins), plus rarement sur
 les boss des hordes (8 %, 30 % pendant une nuit de sang), en récompense de quête (5 %) ou de contrat légendaire (50 %), au
 retour des expéditions (3 %), chez le marchand du Carrefour commercial (palier II ; palier III pour les plus rares), et
-l'**alchimiste** de votre guilde en écrit parfois (surtout des Rappels) ; les gardiens maudits en donnent plusieurs, dont un
-garanti. Ils se rangent avec les livres enchantés.
+l'**alchimiste** de votre guilde en écrit (surtout des Rappels) ; les gardiens maudits en donnent plusieurs, dont un
+garanti. Ils se rangent dans « Parchemins et grimoires » (sinon avec les livres). Les **élixirs arcanique, de
+clairvoyance et de satiété** de l'alchimiste renforcent vos sorts pendant quelques minutes.
 Le pack de ressources facultatif leur donne des textures animées (comme aux armes uniques).
 
 #### Le grimoire
@@ -793,8 +907,9 @@ manie exactement comme le grimoire (4 pages reliées depuis des parchemins, clic
 pour changer de page, accroupi + F ou `/guild grimoire` pour les pages), mais **ses sorts sont bien plus puissants** :
 dégâts, soins et durées ×1,75, portées ×1,35, plus de cibles, effets d'un niveau de plus. Avec lui, la **Pluie de
 météores** fait tomber **25 météores** au lieu de 10 sur une zone bien plus large, la **Tempête de foudre** frappe **20
-monstres** avec des bonds de 15 blocs, la **Singularité** aspire à **16 blocs**, le **Séisme** lance 5 ondes et les
-**Gardiens** sont 3. Chaque sort se lance dans un pentagramme de sang, au milieu des âmes et des ténèbres.
+monstres** avec des bonds de 15 blocs, la **Singularité** aspire à **16 blocs**, le **Séisme** lance 5 ondes, les
+**Gardiens** sont 3, le **Fléau** fait subir **+35 %** de dégâts pendant 17,5 s, les **Chaînes spectrales** retiennent
+**5 monstres** (les boss 65 % du temps) et le **Ralliement** appelle jusqu'à **12 membres**. Chaque sort se lance dans un pentagramme de sang, au milieu des âmes et des ténèbres.
 - **Son prix** : plus de faim (Rare 4, Épique 7, Légendaire 9, Mythique 12) et **un peu de sang** (½ ❤ pour les sorts
   rares et épiques, 1 ❤ pour les légendaires et mythiques). Il ne vous laisse jamais sous **3 ❤** : en dessous, le sort
   ne part pas. Recharge 5 s. Gratuit en créatif.
@@ -984,6 +1099,7 @@ affiche les raccourcis disponibles (cliquables).
 | `/guild trade` | Carrefour commercial : palier, marchands présents, échanges possibles, amélioration |
 | `/guild uniques` | Collection d'armes uniques de la guilde |
 | `/guild grimoire` | Menu des pages du grimoire tenu en main |
+| `/guild ralliement <id>` | Rejoindre un appel au Ralliement (la commande du bouton [Rejoindre], inutile de la taper) |
 | `/guild bilan` · `bilan detail` | Dernier bilan de combat de ruine (chat ou menu détaillé) |
 | `/guild stockage scan <chunks> [remplacer]` · `stockage filtre ici\|retirer` · `stockage rangement colonnes\|lignes` | Coffres filtrés : analyser les coffres autour de soi et les enregistrer, filtrer le coffre regardé ; rangement dans les coffres (aussi `/guild villagers storage …`) |
 
@@ -1010,6 +1126,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
 | `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme (un doublon est signalé) |
 | `/guild admin unique registry [id]` · `unique free <id> [guilde]` | Registre des exemplaires (numéros, détenteurs, doublons) ; marquer une arme comme perdue pour qu'elle puisse retomber |
+| `/guild admin elixir list` · `elixir give <joueur> <id> [nombre]` · `elixir boosts <joueur> [clear]` | Élixirs : liste, donner, bonus magiques actifs d'un joueur (les effacer) |
 | `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` · `scroll grimoire <joueur> [cursed] [ids]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins, donner un grimoire (avec des pages déjà écrites si des ids sont donnés ; `cursed` = grimoire maudit) ; `scroll give <joueur> incantation\|incantation_maudit [nombre]` donne aussi les parchemins d'incantation |
 | `/guild admin ruin list` · `info` · `awaken` · `reset` | Ruines : liste, ruine la plus proche, réveiller / rendormir son gardien |
 | `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
@@ -1037,13 +1154,16 @@ hordes, délai après un coup, avertissement de bord, protection de chute), racc
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), niveau de calcul au-delà de 10 (`levelScalingAbove10`, `maxScalingLevel`), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
-| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite, forgeron (`blacksmith`) et alchimiste (`alchemist`), travaux des champs
+| `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite, forgeron (`blacksmith`) et alchimiste (`alchemist` : ordre des travaux, répartition des rôles, plafonds par jour,
+potions à l'alambic), travaux des champs, stockage (`storage` : limites, 0 = illimité ; sous-catégories `parent` ; salles
+réservées ; parties des grands groupes `maxGroupChests`)
 (`farmer.fieldWork`, `farmer.irrigation`), re-rangement (`sorter.tidy`, portée, réservations), rangement par colonnes (`storage.defaultChestLayout`), coffres filtrés et
 analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 (`storage.maxRooms`, marge, seuils de réattribution) |
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
+| `alchemy.json5` | Potions et élixirs des alchimistes : étapes de brassage (recettes vanilla), stocks par défaut, élixirs (base, ingrédient, effets, bonus magiques), plafonds et affichage des bonus magiques |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit
 (`cursedGrimoire` : multiplicateurs de puissance / portée / nombre, niveaux en plus, surcharges par sort, faim, sang,
 vie minimale, recharge, chance par ruine maudite), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
@@ -1162,6 +1282,18 @@ Formules par défaut (modifiables) :
 - Raccourcis : un mod qui enregistre le même nom après Guildy prend le dessus (signalé « remplacé » dans
   `/guild admin shortcuts`) ; un raccourci ne peut pas préremplir une valeur d'argument (`"deposit all"` marche,
   `"deposit 5"` non) ; noms sans accents ; pas de permission propre (il hérite de la commande cible).
+
+- Stockage : un audit de rangement lit tout un groupe (≈ 3 ms pour 128 coffres pleins) ; les parties d'un très grand
+  groupe ne s'échangent pas d'objets (une même pierre peut se retrouver dans deux parties) ; les gardes ne cherchent leur
+  équipement que dans les coffres qui peuvent en contenir ; les salles ordinaires ne donnent des colonnes qu'aux catégories
+  principales (les sous-catégories y entrent si la salle leur est réservée).
+- Alchimiste : le brassage est simulé (les emplacements et les bulles de l'alambic ne bougent pas) ; une recette de
+  datapack doit être ajoutée à `alchemy.json5` ; deux alchimistes peuvent viser le même ingrédient rare (le second
+  change de fournée sous 30 s) ; la description de la tâche ne change sur un serveur existant qu'en supprimant la clé
+  `villager.task.alchemist.desc` de `lang.json`.
+- Nouveaux sorts : les marques du Fléau et la protection de chute de la Hâte du vent sont perdues au redémarrage ; le
+  Ralliement n'appelle que les membres en ligne au lancement ; les monstres enchaînés peuvent encore frapper ou tirer ;
+  la Bannière (20 s) et le Ralliement (30 s) occupent un des 3 sorts actifs par joueur pendant toute leur durée.
 
 ---
 

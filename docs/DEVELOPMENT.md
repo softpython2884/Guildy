@@ -79,6 +79,8 @@ villager/     VillagerManager (arrivées, candidats, départs), TaskEngine + *Ta
               (pur), StorageDefaults, StorageLabels, StorageGui), DepthLoot (pur), VillagerGui, ZoneGui, VillagerConfig
 upgrade/      UpgradeTree/UpgradeRules/UpgradeMath/UpgradeEffects (purs, testés), Upgrades (bonus lus par les autres
               modules), UpgradeService (déblocage atomique), UpgradeMenu, UpgradeBuffs, UpgradeConfig
+alchemy/      AlchemyModule, AlchemyConfig (alchemy.json5), BrewBook (pur : étapes de brassage), Brews, Elixirs,
+              ElixirDrinks, MagicBoosts + MagicBoostRules (pur) → core/MagicBoost (bonus des sorts), AlchemyCommands
 fly/          FlyModule, GuildFly (vol de guilde), FlyRules (pur, testé), FlyLang ; core/FlightOwnership (pur) +
               FlightGrants : propriété partagée de `mayfly` (vol de guilde, double saut)
 level/        LevelCurve, LevelScaling, LevelRewardRules (purs, testés), LevelUps (montées de niveau, récompenses,
@@ -496,6 +498,41 @@ schématiques) : `tools/ruins/`.
     dispatcher (`WeakHashMap`, `/reload` reconstruit) ; nœud fusionné ensuite par un autre mod = `OVERRIDDEN`.
     `/guild admin reload` reconstruit en place (retrait par réflexion sur `children/literals/arguments` de `CommandNode`,
     échec → warn) et renvoie l'arbre aux joueurs (`Commands.sendCommands`, aussi après `END_DATA_PACK_RELOAD`).
+
+64. **Stockage à grande échelle et catégories fines** : limites `storage.max*` à 0 = illimité (`filterChests` /
+    `chestRooms` remplacent l'ancien 0 = désactivé ; étape de migration 8 pour les valeurs restées par défaut).
+    `StorageIndex` (par guilde, jamais sauvegardé) : position → coffre, dépôts, sources, compteurs des limites, une ancre
+    par chunk, groupes en ordre de lecture, `StorageRouting.Index` (pur : coffres par catégorie / clé de filtre / Divers /
+    dépôt, réponses des filtres mémorisées, `Cursor` qui ne trie que le palier atteint) ; reconstruit quand la liste change
+    (`ChestList`, compteur de modifications), sur `Storage.changed` et au plus tard toutes les 100 ticks. Groupe de plus de
+    `maxGroupChests` (128) coffres coupé en parties consécutives. `route`, `findSortSource`, `markOut`, `CraftStock`,
+    `PlantStock`, `GuardEquipment` passent par l'index ; salles planifiées une par appel ; noms des coffres vérifiés 1/100
+    par tick ; guilds.json : un conteneur = une ligne compacte. Catégories : `StorageCategory.parent` ("" / parent / "*") ;
+    `StorageCategories.resolve` → chaîne (transversales, puis la plus profonde... la principale) ; palier = 3 + position
+    dans la chaîne (Divers 11, dépôt 12) ; 12 catégories par défaut ajoutées une fois (`knownCategories`) ; salles
+    réservées (`ChestRoom.categories`) ; filtre d'un coffre vide = l'objet en main ; avertissement sur « Divers ».
+65. **Alchimiste : potions, élixirs, repli et rôles** (`villager/AlchemistTask`, `AlchemyJob`, `AlchemyRoles` pur,
+    `AlchemyGuild`, `PotionPlanner` ; module `alchemy/`, `alchemy.json5`) : trois travaux (`jobOrder` books > scrolls >
+    potions), le rôle puis l'ordre, le premier possible gagne (raisons dans le menu), réévalué après chaque cycle ; rôle
+    manuel (`CraftData.role`) sinon répartition `balanced` (`roleWeights` parmi les travaux possibles) ou `priority` ;
+    plafonds séparés (livres, parchemins, `maxPotionsPerDay`). `AlchemyGuild` (runtime) : un scan des tables et alambics
+    pour tous, inventaire du stockage rafraîchi, fournées réservées. Brassage simulé : `BrewBook` (recettes de
+    `alchemy.json5`, fioles jetables / persistantes, une étape par élixir), produit le plus en dessous de son stock
+    (`GuildVillagerData.potionTargets`), fioles vides remplies près de l'alambic. Élixirs = potions vanilla (effets,
+    couleur, nom, `custom_data` kind `elixir`). `core/MagicBoost` lu aux seuls points de calcul de `scroll/`
+    (`SpellPower.boosted`, recharge, coût en faim, `shortenChannel`) ; état = pièce jointe Fabric persistante
+    `guildy:magic_boosts`, barre violette, début à la fin de la gorgée (mixin `Consumable.onConsume`) ; `MagicBoostRules`
+    (pur) : même élixir = durée relancée, élixirs différents additionnés et plafonnés. Nouveaux parchemins proposés une
+    fois aux tables existantes de l'alchimiste (`alchemist.knownScrolls`).
+66. **Sorts tactiques** (scrolls.json5 format 4) : `banniere_de_guerre`, `fleau`, `permutation`, `ralliement`,
+    `chaines_spectrales`, `hate_du_vent`, ajoutés une fois (`ScrollConfig.NEW_SCROLLS` : définitions, poids des tables
+    existantes, réglages maudits). `Spell.Unit.PERCENT` (borné au max, seulement par surcharge maudite). Fléau :
+    `Vulnerability` (marques en mémoire) lue par `LivingEntityVulnerabilityMixin` (HEAD de `actuallyHurt`) ; `DebuffRules`
+    (pur) : +100 % max, jamais cumulé, boss = `bossShare`. Permutation : `TargetRules.maySwap`, `SwapRules` (pur : place,
+    lave, blocs dangereux, sol sous une cible volante) ; refus = parchemin gardé. Ralliement : `RallyRules` (pur) +
+    `RallySpell` (appels en mémoire, `/guild ralliement <id>` derrière [Rejoindre], fermé si le lanceur part). Chaînes :
+    prisonniers remis à leur ancre, `guildy:arcane` à la rupture. Hâte du vent : chutes annulées par ALLOW_DAMAGE.
+    Textures dans `tools/gen_textures.py` (`SCROLL_RUNES` / `GRIMOIRE_SIGILS`).
 
 ## Notes API Minecraft 26.3
 
