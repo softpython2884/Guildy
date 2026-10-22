@@ -239,6 +239,11 @@ public final class Encounters {
 		return encounter == null || encounter.dreadFight == null ? List.of() : encounter.dreadFight.zones();
 	}
 
+	/** Errors thrown by the dread attacks since the server started (logged; tests expect none). */
+	public static int dreadErrors() {
+		return DreadEncounter.errors();
+	}
+
 	/** The red sky of an Avatar fight is shown to this player. */
 	public static boolean redSky(RuinRecord ruin, ServerPlayer player) {
 		Encounter encounter = ACTIVE.get(ruin.key);

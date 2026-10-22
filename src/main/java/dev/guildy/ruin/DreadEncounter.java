@@ -40,6 +40,8 @@ final class DreadEncounter {
 	private final SplittableRandom random = new SplittableRandom();
 	/** Attacks started (statistics, tests). */
 	int started;
+	/** Errors thrown by the dread attacks since the server started (logged; tests expect none). */
+	private static int errors;
 
 	DreadEncounter(List<DreadAbilityDef> abilities, long now, double firstSeconds) {
 		this.abilities = List.copyOf(abilities);
@@ -112,7 +114,7 @@ final class DreadEncounter {
 		Iterator<DreadAttacks.Running> it = running.iterator();
 		while (it.hasNext()) {
 			DreadAttacks.Running attack = it.next();
-			boolean keep = Safe.get("ruin.dread.attack", () -> attack.tick(ctx), false);
+			boolean keep = guarded("ruin.dread.attack." + attack.def.type, () -> attack.tick(ctx), false);
 			attack.age++;
 			if (!keep) {
 				Safe.run("ruin.dread.stop", () -> attack.stop(ctx));
@@ -127,7 +129,7 @@ final class DreadEncounter {
 			return;
 		}
 		DreadAbilityDef def = abilities.get(index);
-		DreadAttacks.Running attack = Safe.get("ruin.dread.cast." + def.type, () -> DreadAttacks.start(def, ctx, telegraph(cfg)), null);
+		DreadAttacks.Running attack = guarded("ruin.dread.cast." + def.type, () -> DreadAttacks.start(def, ctx, telegraph(cfg)), null);
 		if (attack == null) {
 			// Not now (no target in reach, no room...): retried a little later.
 			readyAt[index] = now + 40;
@@ -218,7 +220,7 @@ final class DreadEncounter {
 			return false;
 		}
 		DreadAbilityDef chosen = def;
-		DreadAttacks.Running attack = Safe.get("ruin.dread.force." + type, () -> DreadAttacks.start(chosen, ctx, telegraph(cfg)), null);
+		DreadAttacks.Running attack = guarded("ruin.dread.force." + type, () -> DreadAttacks.start(chosen, ctx, telegraph(cfg)), null);
 		fx.flush();
 		if (attack == null) {
 			return false;
@@ -226,6 +228,22 @@ final class DreadEncounter {
 		running.add(attack);
 		started++;
 		return true;
+	}
+
+	/** Like {@link Safe#get}, counting the errors ({@link #errors()}). */
+	private static <T> T guarded(String context, java.util.function.Supplier<T> action, T fallback) {
+		try {
+			return action.get();
+		} catch (Throwable t) {
+			errors++;
+			Safe.log(context, t);
+			return fallback;
+		}
+	}
+
+	/** Errors thrown by the dread attacks since the server started. */
+	static int errors() {
+		return errors;
 	}
 
 	/** Types of the running attacks (tests, admin info). */

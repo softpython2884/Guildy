@@ -35,6 +35,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -43,7 +44,8 @@ import java.util.Set;
  * form (effective health x2.5 shown on the bar, +50 % damage on the players after their armour, its telegraphed dread
  * abilities: grasping graves warn, then root and hurt), at Menace VI nothing of it; a cursed ritual with a Nether star in the
  * circle consumes it and awakens the Avatar (red bar, red sky, its health floor), without the star the cursed guardian, and a
- * normal ritual leaves the star alone; the Avatar's Nether rifts let Nether mobs out.
+ * normal ritual leaves the star alone; the Avatar's Nether rifts let Nether mobs out; every one of the 29 dread attacks
+ * starts telegraphed and runs to its end without an error.
  */
 @SuppressWarnings("removal")
 public class RuinDreadGameTests {
@@ -260,6 +262,69 @@ public class RuinDreadGameTests {
 					Encounters.reset(ruin);
 				})
 				.thenSucceed();
+	}
+
+	// ================================================================== every dread attack
+
+	/** The 29 dread attacks, by groups of attacks that may run together. */
+	private static final List<List<String>> GROUPS = List.of(
+			List.of("grasping_graves", "bone_spikes", "arcane_barrage", "quicksand"),
+			List.of("bone_prison", "gravity_well", "mummy_curse", "ice_spikes"),
+			List.of("sandstorm", "frozen_ground", "feather_storm", "poison_rain"),
+			List.of("dive_bomb", "stunning_roar", "lava_geysers", "molten_ring"),
+			List.of("blizzard_dome", "solar_beam", "magma_meteors", "soul_chains"),
+			List.of("pounce_chain", "wither_aura", "soul_eruption", "soul_pillars"),
+			List.of("wither_skulls", "ghast_rain", "collapsing_ring", "nether_rifts"),
+			List.of("mirror_clones"));
+
+	@GameTest(maxTicks = 3200)
+	public void everyDreadAttackIsTelegraphedAndRunsCleanly(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		RuinRecord ruin = ruin(helper, 1);
+		RuinConfig.RuinDef def = guardian();
+		ServerPlayer player = target(helper, ruin, true);
+		player.getAttribute(Attributes.MAX_HEALTH).addOrReplacePermanentModifier(new AttributeModifier(BOOST, 200, AttributeModifier.Operation.ADD_VALUE));
+		player.setHealth(player.getMaxHealth());
+		Set<String> types = new java.util.HashSet<>();
+		GROUPS.forEach(types::addAll);
+		helper.assertTrue(types.equals(RuinConfig.DREAD_TYPES), "every dread type is tried: " + types.size() + " of " + RuinConfig.DREAD_TYPES.size());
+		Mob[] boss = new Mob[1];
+		int[] errors = new int[1];
+		Vec3 post = player.position();
+		var sequence = helper.startSequence()
+				.thenExecute(() -> helper.assertTrue(Encounters.awaken(level, ruin, def, false) == null, "guardian awakened"))
+				.thenWaitUntil(() -> {
+					boss[0] = Encounters.boss(ruin);
+					helper.assertTrue(boss[0] != null, "waiting for the guardian");
+				})
+				.thenExecute(() -> {
+					boss[0].setNoAi(true);
+					errors[0] = Encounters.dreadErrors();
+				});
+		for (List<String> group : GROUPS) {
+			sequence = sequence
+					.thenExecute(() -> {
+						player.teleportTo(level, post.x, post.y, post.z, Set.of(), 0, 0, true);
+						player.setDeltaMovement(Vec3.ZERO);
+						player.setHealth(player.getMaxHealth());
+						for (String type : group) {
+							helper.assertTrue(Encounters.forceDread(ruin, type), type + " can be used");
+							helper.assertTrue(Boolean.TRUE.equals(Encounters.dreadWarning(ruin, type)), type + " is telegraphed first");
+						}
+					})
+					.thenWaitUntil(() -> {
+						List<String> running = Encounters.dreadRunning(ruin);
+						helper.assertTrue(group.stream().noneMatch(running::contains), "waiting for the end of " + group + ", running " + running);
+					})
+					.thenExecute(() -> {
+						helper.assertTrue(Encounters.isActive(ruin) && player.isAlive(), "the fight goes on");
+						helper.assertTrue(Encounters.dreadErrors() == errors[0], "no error in " + group);
+					});
+		}
+		sequence.thenExecute(() -> {
+			away(level, player, ruin);
+			Encounters.reset(ruin);
+		}).thenSucceed();
 	}
 
 	// ================================================================== the Avatar

@@ -46,7 +46,7 @@ import java.util.Set;
 
 /**
  * {@code /guild admin ruin list | info | awaken | reset | locate <id> | map <player> <id> | incantation <player> [count] |
- * ability <type> [style] | threat <level> | guards [clear] | research <guild> finish | statues <player> | statues list} (the
+ * ability <type> [style] | dread <type> | threat <level> | guards [clear] | research <guild> finish | statues <player> | statues list} (the
  * admin node is already permission-gated).
  * "Nearest" = nearest known ruin in the dimension of the command source. {@code awaken} is instant (no scroll, no ritual).
  */
