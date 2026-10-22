@@ -816,8 +816,15 @@ fonctionne. Guildy fournit aussi des **textures originales** 16×16 dans la dire
 **animées** (éclairs, givre, néant, cœur en fusion, filon, lave, abysses, âmes, vent, flammes, lentille de l'arbalète et
 ses états de chargement), ainsi que celles des parchemins, du grimoire (un dessin par sort, livre endormi sinon) et du
 parchemin d'incantation. Aperçus : [`tools/previews/textures.png`](tools/previews/textures.png) et
-`textures_animated.png` (PNG animé, à ouvrir dans un navigateur). Elles ne sont utilisées que lorsqu'un pack est garanti
-(réglage `customModels` d'`uniques.json5`) :
+`textures_animated.png` (PNG animé, à ouvrir dans un navigateur). Avec le pack, les **armures uniques ont aussi leur
+apparence portée** : la Couronne du Roi de givre devient une couronne de cristaux de glace sur un cercle d'argent givré,
+le Plastron du Serpent à plumes un plastron d'écailles de jade avec un masque de serpent doré, un serpent d'or dans le
+dos et des mantelets de plumes de quetzal, les Bottes de Zéphyr des bottes blanc nuage et or aux chevilles ailées, les
+Bottes du Coursier de hautes bottes de cavalier en cuir vert à revers fauves et boucles de laiton. L'**Égide des Âmes**
+a un vrai **modèle 3D en main** (écu à pointe, crâne en relief aux yeux luisants, flammes d'âmes animées, poignée au
+dos), placé exactement comme le bouclier vanilla, y compris en parade. Aperçu :
+[`tools/previews/armor_worn.png`](tools/previews/armor_worn.png) (face, profil, dos, trois-quarts). Ces textures ne sont
+utilisées que lorsqu'un pack est garanti (réglage `customModels` d'`uniques.json5`) :
 
 - **Avec Polymer** (`customModels: "auto"`, par défaut) : installez [Polymer](https://modrinth.com/mod/polymer)
   (`polymer-resource-pack`, et `polymer-autohost` pour l'envoyer automatiquement aux joueurs : `"enabled": true` dans
@@ -1246,9 +1253,11 @@ Formules par défaut (modifiables) :
 - Les livres enchantés de l'alchimiste ne comptent pas pour les quêtes « Enchanter ».
 - Armes uniques : une arme rangée dans une boîte de Shulker garde son dernier détenteur connu ; `/clear`, la poubelle du
   mode créatif ou un monstre qui disparaît avec l'arme ne sont pas détectés (`/guild admin unique free`).
-- Le trident unique reste une image plate en main ; lancé, il garde le modèle 3D vanilla. Portés, la Couronne du Roi
-  de givre et le Plastron du Serpent à plumes gardent l'apparence vanilla ; l'Égide des Âmes n'a sa texture que dans
-  les menus. Pendant la recharge de la Lance du Jaguar céleste, sa charge est bloquée. Les sceaux de la Lame du Pacte
+- Le trident unique reste une image plate en main ; lancé, il garde le modèle 3D vanilla. Les textures portées des
+  armures uniques ne sont pas animées (Minecraft n'anime pas les textures d'équipement) et les pointes de la Couronne ne
+  dépassent guère du crâne (le casque n'est qu'un pixel plus grand que la tête) ; un bébé monstre qui en porte une garde
+  l'apparence vanilla. Avec le pack, le cuir des armures uniques ne se reteint plus (le dessin remplace la teinture) et
+  l'Égide des Âmes ne montre plus ses motifs de bannière en main (ils restent visibles sans pack). Pendant la recharge de la Lance du Jaguar céleste, sa charge est bloquée. Les sceaux de la Lame du Pacte
   sont perdus au redémarrage ; le Souffle de jade n'empoisonne pas les morts-vivants.
 - Statues du Jaguar céleste : une statue regarde la direction cardinale la plus proche de la suivante (la traînée de
   lumière, elle, est exacte) ; la carte marque les points prévus (la statue peut être 20 à 40 blocs à côté).

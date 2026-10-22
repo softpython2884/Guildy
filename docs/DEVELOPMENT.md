@@ -438,7 +438,7 @@ schématiques) : `tools/ruins/`.
     (`startUsingItem` + son KINETIC_WEAPON). `DefensePowers` sur AFTER_DAMAGE du joueur (Égide si `blocked`, plastron
     sous le seuil). Sceaux en mémoire bornée (256). Faille 1 bloc/tick suivant le sol. Dégâts `indirectMagic` +
     invulnérabilité remise à zéro. `UniqueDef.banner` → BASE_COLOR + BANNER_PATTERNS. Pack : lance = définition des lances
-    vanilla (`select display_context`, `spear_in_hand` 32×32), bouclier : icône des menus seulement. `/guild version`
+    vanilla (`select display_context`, `spear_in_hand` 32×32), bouclier : icône des menus, modèle 3D en main (décision 67). `/guild version`
     (`FabricLoader` + `SharedConstants.getCurrentVersion()`).
 
 59. **Niveaux au-delà de 10** (`level/`, section `levels` de config.json5 v3) : `LevelCurve` (pur) = seuils explicites
@@ -533,6 +533,20 @@ schématiques) : `tools/ruins/`.
     `RallySpell` (appels en mémoire, `/guild ralliement <id>` derrière [Rejoindre], fermé si le lanceur part). Chaînes :
     prisonniers remis à leur ancre, `guildy:arcane` à la rupture. Hâte du vent : chutes annulées par ALLOW_DAMAGE.
     Textures dans `tools/gen_textures.py` (`SCROLL_RUNES` / `GRIMOIRE_SIGILS`).
+
+67. **Apparence portée des armures uniques** (`unique/UniqueEquipment` pur et testé, `UniqueItems.syncVisuals`) : en 26.3
+    l'apparence portée vient du composant `equippable` (`asset_id` → `assets/<ns>/equipment/<id>.json`, couches
+    `humanoid` / `humanoid_leggings` / `humanoid_baby`, textures `textures/entity/equipment/<couche>/<texture>.png` 64×32 ;
+    un asset absent côté client = armure invisible). Même règle que `item_model` (Polymer ou `customModels: "on"`) : copie
+    de l'`equippable` de l'objet de base (emplacement, sons, autres champs) avec `asset_id guildy:<model>` si
+    `UniqueEquipment.ASSETS` livre ce modèle pour l'emplacement de l'objet de base ; sinon l'`equippable` vanilla ;
+    exemplaires en circulation mis à jour par le même scan d'inventaire (emplacements d'armure compris). Couches non
+    teintables, `humanoid_baby` → texture vanilla du matériau de base, mêmes `trim_overrides` que le matériau de base. Pas
+    d'animation (textures d'équipement hors atlas). Égide en main : modèle à éléments au lieu du rendu spécial
+    `minecraft:shield`, dans les bornes de la boîte vanilla (plaque et poignée), transformations copiées de `item/shield`
+    et `item/shield_blocking` (`condition using_item`), texture 32×32 animée ; GUI = icône 2D. Textures dans
+    `tools/gen_textures.py` (`WORN_ARMORS`), aperçu `tools/previews/armor_worn.png` ; `resourcePackZip` vérifie que le zip
+    contient tous les assets.
 
 ## Notes API Minecraft 26.3
 
