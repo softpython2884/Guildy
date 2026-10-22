@@ -17,7 +17,7 @@ final class CraftLang {
 		Map<String, String> m = new LinkedHashMap<>();
 		// tasks
 		m.put("villager.task.blacksmith", "Forgeron");
-		m.put("villager.task.blacksmith.desc", "&7Répare peu à peu les &farmures et objets&7 posés\n&7sur les &fporte-armures&7 du territoire, à l'enclume\n&7la plus proche du porte-armure. L'objet reste\n&7sur le porte-armure ; chaque réparation use\n&7l'enclume comme en vanilla.");
+		m.put("villager.task.blacksmith.desc", "&7Répare peu à peu les &farmures et objets&7 posés\n&7sur les &fporte-armures&7 du territoire, à l'enclume\n&7la plus proche du porte-armure. L'objet reste\n&7sur le porte-armure ; chaque réparation use\n&7l'enclume comme en vanilla.\n&7Grave parfois une &drune&7 sur les armures\n&7(retirée par une meule).");
 		m.put("villager.task.alchemist", "Alchimiste");
 		m.put("villager.task.alchemist.desc", "&7Trois travaux, rangés au stockage :\n&d• Livres&7 : livres enchantés à la &dtable\n&7d'enchantement&7 (plus de bibliothèques = mieux).\n&d• Parchemins&7 : parchemins de sort (livre + papier).\n&d• Potions&7 : potions et &délixirs&7 à un &dalambic&7\n&7(fioles d'eau, ingrédients, poudre de blaze).\n&7Si son travail est impossible, il passe au suivant ;\n&7plusieurs alchimistes se répartissent les rôles.");
 		// guild level requirement
@@ -38,6 +38,13 @@ final class CraftLang {
 		m.put("villager.smith.anvil.chipped", "enclume ébréchée");
 		m.put("villager.smith.anvil.damaged", "enclume endommagée");
 		m.put("villager.smith.anvil_destroyed", "&7L'enclume en &f{0} {1} {2}&7 s'est brisée sous les coups de &e{3}&7.");
+		// blacksmith: runes
+		m.put("villager.status.smith.going_inspect", "&eVa à l'enclume pour examiner les armures d'un porte-armure");
+		m.put("villager.status.smith.inspecting", "&dExamine les armures du porte-armure pour y graver une rune ({0} %) — {1}");
+		m.put("villager.status.smith.inscribed", "&dA gravé la {0}&d sur {1} !");
+		m.put("villager.status.smith.no_rune", "&7Aucune rune ne prend cette fois");
+		m.put("villager.status.smith.fetch_material", "&eVa chercher {0} au stockage pour graver des runes");
+		m.put("villager.status.smith.no_material", "&7Rien à réparer &8· &7plus de {0} au stockage pour graver des runes");
 		// alchemist
 		m.put("villager.status.alchemy.scanning", "&7Cherche une table d'enchantement &8({0}/{1})");
 		m.put("villager.status.alchemy.no_table", "&cAucune table d'enchantement dans le territoire");
@@ -63,6 +70,8 @@ final class CraftLang {
 		// statistics (villager menu)
 		m.put("villager.gui.lore.stat.repaired", "&7Objets réparés : &f{0} &8(durabilité rendue : {1})");
 		m.put("villager.gui.lore.stat.anvils", "&7Enclumes usées : &f{0}");
+		m.put("villager.gui.lore.stat.runes", "&7Runes gravées : &d{0} &8(aujourd'hui : {1}/{2})");
+		m.put("villager.gui.lore.stat.last_rune", "&7Dernière rune : {0}");
 		m.put("villager.gui.lore.stat.books", "&7Livres enchantés : &f{0} &8(aujourd'hui : {1}/{2})");
 		m.put("villager.gui.lore.stat.best_enchant", "&7Meilleur enchantement : &d{0}");
 		m.put("villager.gui.lore.stat.last_book", "&7Dernier livre : &d{0}");

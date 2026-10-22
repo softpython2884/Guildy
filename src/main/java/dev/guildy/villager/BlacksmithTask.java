@@ -3,12 +3,16 @@ package dev.guildy.villager;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Msg;
 import dev.guildy.data.GuildManager;
+import dev.guildy.rune.RuneConfig;
+import dev.guildy.rune.RuneForge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.AnvilBlock;
 import net.minecraft.world.level.block.Block;
@@ -20,8 +24,10 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -32,16 +38,22 @@ import java.util.UUID;
  * chance, anvil → chipped → damaged → destroyed, vanilla level events); a destroyed anvil is replaced by the next one.
  * Incremental search over the loaded chunks of the territory ({@link TerritoryScan}), repeated every
  * {@code blacksmith.scanIntervalSeconds}; two blacksmiths never work on the same stand (transient leases).
+ * <p>
+ * Runes ({@link BlacksmithRunes}): an armor piece repaired up to its full durability is one chance to inscribe a rune on
+ * it; with nothing to repair, the blacksmith inspects the stands whose armor may receive a rune (once per
+ * {@code inspectionMinutes} each) at their anvil, one more chance each, after fetching the rune material from the storage.
  */
 final class BlacksmithTask extends TaskHandler {
 	private enum Phase {
 		SCAN,
 		SELECT,
+		FETCH,
 		GO,
 		WORK
 	}
 
-	private record Candidate(UUID stand, BlockPos pos, double ratio) {
+	/** A stand to repair (most damaged first), or to inspect for a rune (after every repair). */
+	private record Candidate(UUID stand, BlockPos pos, double ratio, boolean inspect) {
 	}
 
 	private record Lease(UUID villager, long until) {
@@ -52,6 +64,8 @@ final class BlacksmithTask extends TaskHandler {
 	/** A lease not renewed for this long (game ticks) is free again. */
 	private static final long LEASE_TICKS = 100;
 	private static final long DEPOSIT_RETRY_TICKS = 60 * 20L;
+	/** No rune material in the storage: inspections wait this long before looking again. */
+	private static final long MATERIAL_RETRY_TICKS = 60 * 20L;
 	/** Stand UUID → blacksmith working on it. */
 	private static final Map<UUID, Lease> LEASES = new HashMap<>();
 
@@ -63,9 +77,18 @@ final class BlacksmithTask extends TaskHandler {
 	private @Nullable String idleKey;
 	private @Nullable UUID stand;
 	private @Nullable BlockPos anvil;
+	/** The current stand is inspected for a rune (not repaired). */
+	private boolean inspecting;
 	private long progress;
 	private final DepositFlow deposit = new DepositFlow();
 	private long depositRetryAt;
+	/** Runes possible for the scan in progress (level, daily cap). */
+	private boolean scanRunes;
+	/** Inspections skipped because the storage has no rune material. */
+	private boolean noMaterial;
+	private long materialMissingUntil;
+	private @Nullable BlockPos fetchFrom;
+	private final Set<BlockPos> fetchSkip = new HashSet<>();
 
 	@Override
 	void tick(WorkContext ctx) {
@@ -74,9 +97,9 @@ final class BlacksmithTask extends TaskHandler {
 			phase = Phase.SCAN;
 			return;
 		}
-		if (phase != Phase.WORK && !ctx.record.carried.isEmpty() && ctx.now >= depositRetryAt) {
-			// Items of a former task: brought to a deposit chest first (the blacksmith carries nothing itself).
-			DepositFlow.State state = deposit.tick(ctx);
+		if (phase != Phase.WORK && phase != Phase.FETCH && !ctx.record.carried.isEmpty() && ctx.now >= depositRetryAt) {
+			// Items of a former task: brought to a deposit chest first (only the rune material stays in the bag).
+			DepositFlow.State state = deposit.tick(ctx, BlacksmithRunes::isMaterial);
 			if (state == DepositFlow.State.WORKING) {
 				return;
 			}
@@ -87,6 +110,7 @@ final class BlacksmithTask extends TaskHandler {
 		switch (phase) {
 			case SCAN -> scanStep(ctx);
 			case SELECT -> selectStep(ctx);
+			case FETCH -> fetchStep(ctx);
 			case GO -> goStep(ctx);
 			case WORK -> workStep(ctx);
 		}
@@ -117,15 +141,23 @@ final class BlacksmithTask extends TaskHandler {
 			scan = running;
 			candidates.clear();
 			anyWithoutAnvil = false;
+			noMaterial = false;
+			fetchSkip.clear();
+			scanRunes = BlacksmithRunes.canInscribe(ctx);
 		}
 		for (int i = 0; i < CHUNKS_PER_STEP; i++) {
 			LevelChunk chunk = running.next(ctx);
 			if (chunk == null) {
 				break;
 			}
-			for (ArmorStand found : CraftWorld.damagedStands(ctx.level, chunk)) {
-				if (ctx.inTerritory(found.blockPosition())) {
-					candidates.add(new Candidate(found.getUUID(), found.blockPosition(), CraftWorld.worstRatio(found)));
+			for (ArmorStand found : CraftWorld.stands(ctx.level, chunk)) {
+				if (!ctx.inTerritory(found.blockPosition())) {
+					continue;
+				}
+				if (CraftWorld.mostDamaged(found) != null) {
+					candidates.add(new Candidate(found.getUUID(), found.blockPosition(), CraftWorld.worstRatio(found), false));
+				} else if (scanRunes && BlacksmithRunes.inspectable(ctx, found)) {
+					candidates.add(new Candidate(found.getUUID(), found.blockPosition(), 1.0, true));
 				}
 			}
 		}
@@ -140,8 +172,9 @@ final class BlacksmithTask extends TaskHandler {
 			idle(ctx);
 			return;
 		}
-		// The most damaged items first, then the nearest stands.
-		candidates.sort(Comparator.comparingDouble(Candidate::ratio).thenComparingDouble(c -> ctx.distSq(c.pos())));
+		// The repairs first (most damaged items first, then the nearest stands), then the inspections (nearest first).
+		candidates.sort(Comparator.comparing(Candidate::inspect).thenComparingDouble(Candidate::ratio)
+				.thenComparingDouble(c -> ctx.distSq(c.pos())));
 		phase = Phase.SELECT;
 		selectStep(ctx);
 	}
@@ -150,14 +183,35 @@ final class BlacksmithTask extends TaskHandler {
 		int radius = ctx.config.blacksmith.anvilRadius;
 		for (int i = 0; i < SELECT_PER_STEP; i++) {
 			if (candidates.isEmpty()) {
-				idleKey = anyWithoutAnvil ? "villager.status.smith.no_anvil" : "villager.status.smith.nothing";
+				idleKey = anyWithoutAnvil ? "villager.status.smith.no_anvil"
+						: noMaterial ? "villager.status.smith.no_material" : "villager.status.smith.nothing";
 				phase = Phase.SCAN;
 				idle(ctx);
 				return;
 			}
 			Candidate candidate = candidates.removeFirst();
 			ArmorStand found = stand(ctx, candidate.stand());
-			if (found == null || CraftWorld.mostDamaged(found) == null || leasedByOther(ctx, candidate.stand())) {
+			if (found == null || leasedByOther(ctx, candidate.stand())) {
+				continue;
+			}
+			if (candidate.inspect()) {
+				if (!BlacksmithRunes.canInscribe(ctx) || !BlacksmithRunes.inspectable(ctx, found)) {
+					continue;
+				}
+				if (!BlacksmithRunes.hasMaterial(ctx)) {
+					BlockPos chest = ctx.now < materialMissingUntil ? null : materialChest(ctx);
+					if (chest == null) {
+						noMaterial = true;
+						continue;
+					}
+					// Material first, then this stand.
+					candidates.addFirst(candidate);
+					fetchFrom = chest;
+					phase = Phase.FETCH;
+					fetchStep(ctx);
+					return;
+				}
+			} else if (CraftWorld.mostDamaged(found) == null) {
 				continue;
 			}
 			BlockPos nearest = CraftWorld.nearestAnvil(ctx.level, ctx.guild, found.blockPosition(), radius);
@@ -167,6 +221,7 @@ final class BlacksmithTask extends TaskHandler {
 			}
 			stand = candidate.stand();
 			anvil = nearest;
+			inspecting = candidate.inspect();
 			progress = 0;
 			lease(ctx);
 			phase = Phase.GO;
@@ -179,8 +234,53 @@ final class BlacksmithTask extends TaskHandler {
 		String key = idleKey == null ? "villager.status.smith.nothing" : idleKey;
 		if (key.equals("villager.status.smith.no_anvil")) {
 			ctx.status(key, ctx.config.blacksmith.anvilRadius);
+		} else if (key.equals("villager.status.smith.no_material")) {
+			Item material = BlacksmithRunes.material();
+			ctx.status(key, material == null ? "?" : CraftNames.item(new ItemStack(material)));
 		} else {
 			ctx.status(key);
+		}
+	}
+
+	// ------------------------------------------------------------------ rune material
+
+	/** Nearest storage chest giving the rune material, or null (then no new look for a minute). */
+	private @Nullable BlockPos materialChest(WorkContext ctx) {
+		Item material = BlacksmithRunes.material();
+		BlockPos chest = material == null ? null : CraftStock.nearestWith(ctx, material, fetchSkip);
+		if (chest == null) {
+			materialMissingUntil = ctx.now + MATERIAL_RETRY_TICKS;
+		}
+		return chest;
+	}
+
+	private void fetchStep(WorkContext ctx) {
+		BlockPos from = fetchFrom;
+		Item material = BlacksmithRunes.material();
+		if (from == null || material == null) {
+			fetchFrom = null;
+			phase = Phase.SELECT;
+			return;
+		}
+		switch (Movement.moveTo(ctx, from, 2.5, ctx.config.work.walkTimeoutSeconds)) {
+			case UNREACHABLE -> {
+				fetchSkip.add(from);
+				fetchFrom = null;
+				phase = Phase.SELECT;
+			}
+			case MOVING -> ctx.status("villager.status.smith.fetch_material", CraftNames.item(new ItemStack(material)));
+			case ARRIVED -> {
+				int moved = CraftStock.fetch(ctx, from, material, BlacksmithRunes.wanted(ctx));
+				if (moved > 0) {
+					Movement.hold(ctx, from);
+					WorldUtil.swing(ctx.villager);
+					WorldUtil.playSound(ctx.level, ctx.villager, SoundEvents.ITEM_PICKUP, 0.6f, 0.9f);
+				} else {
+					fetchSkip.add(from);
+				}
+				fetchFrom = null;
+				phase = Phase.SELECT;
+			}
 		}
 	}
 
@@ -196,8 +296,12 @@ final class BlacksmithTask extends TaskHandler {
 			case UNREACHABLE -> drop(ctx);
 			case MOVING -> {
 				lease(ctx);
-				EquipmentSlot slot = CraftWorld.mostDamaged(target);
-				ctx.status("villager.status.smith.going", slot == null ? "?" : CraftNames.item(target.getItemBySlot(slot)));
+				if (inspecting) {
+					ctx.status("villager.status.smith.going_inspect");
+				} else {
+					EquipmentSlot slot = CraftWorld.mostDamaged(target);
+					ctx.status("villager.status.smith.going", slot == null ? "?" : CraftNames.item(target.getItemBySlot(slot)));
+				}
 			}
 			case ARRIVED -> {
 				phase = Phase.WORK;
@@ -217,8 +321,8 @@ final class BlacksmithTask extends TaskHandler {
 			goStep(ctx);
 			return;
 		}
-		EquipmentSlot slot = CraftWorld.mostDamaged(target);
-		if (slot == null) {
+		EquipmentSlot slot = inspecting ? null : CraftWorld.mostDamaged(target);
+		if (!inspecting && slot == null) {
 			finished(ctx);
 			return;
 		}
@@ -231,6 +335,18 @@ final class BlacksmithTask extends TaskHandler {
 			level.sendParticles(ParticleTypes.ELECTRIC_SPARK, at.getX() + 0.5, at.getY() + 1.1, at.getZ() + 0.5, 3, 0.15, 0.05, 0.15, 0.2);
 		}
 		progress += 20;
+		if (inspecting) {
+			// Glyphs drift from the stand to the anvil while the blacksmith studies the armor.
+			level.sendParticles(ParticleTypes.ENCHANT, target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ(), 6, 0.3, 0.4, 0.3, 0.6);
+			long needed = ctx.workTicks(RuneForge.settings().secondsPerInspection);
+			if (progress >= needed) {
+				progress = 0;
+				inspect(ctx, target);
+				return;
+			}
+			ctx.status("villager.status.smith.inspecting", Math.min(99, progress * 100 / Math.max(1, needed)), anvilName(ctx));
+			return;
+		}
 		ItemStack item = target.getItemBySlot(slot);
 		if (progress >= ctx.workTicks(ctx.config.blacksmith.secondsPerRepair)) {
 			progress = 0;
@@ -261,8 +377,29 @@ final class BlacksmithTask extends TaskHandler {
 		useAnvil(ctx);
 		if (done) {
 			ctx.status("villager.status.smith.repaired", CraftNames.item(item));
+			if (slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
+				// A piece repaired up to the end: one chance for a rune.
+				inscribedStatus(ctx, target, BlacksmithRunes.attempt(ctx, target, slot));
+			}
 		} else if (anvil != null) {
 			status(ctx, item);
+		}
+	}
+
+	/** End of an inspection: one chance for a rune on a piece of the stand. */
+	private void inspect(WorkContext ctx, ArmorStand target) {
+		BlacksmithRunes.Inscribed inscribed = BlacksmithRunes.attempt(ctx, target, null);
+		if (inscribed == null) {
+			ctx.status("villager.status.smith.no_rune");
+		}
+		inscribedStatus(ctx, target, inscribed);
+		finished(ctx);
+	}
+
+	private static void inscribedStatus(WorkContext ctx, ArmorStand target, BlacksmithRunes.@Nullable Inscribed inscribed) {
+		if (inscribed != null) {
+			RuneConfig.RuneDef rune = inscribed.rune();
+			ctx.status("villager.status.smith.inscribed", rune.tier().color + rune.name, CraftNames.item(target.getItemBySlot(inscribed.slot())));
 		}
 	}
 
@@ -310,15 +447,18 @@ final class BlacksmithTask extends TaskHandler {
 		}
 	}
 
-	private void status(WorkContext ctx, ItemStack item) {
+	private String anvilName(WorkContext ctx) {
 		BlockPos at = anvil;
-		String anvilName = at == null ? "?" : Lang.raw("villager.smith.anvil." + switch (CraftWorld.stage(ctx.level.getBlockState(at))) {
+		return at == null ? "?" : Lang.raw("villager.smith.anvil." + switch (CraftWorld.stage(ctx.level.getBlockState(at))) {
 			case INTACT -> "intact";
 			case CHIPPED -> "chipped";
 			default -> "damaged";
 		});
+	}
+
+	private void status(WorkContext ctx, ItemStack item) {
 		ctx.status("villager.status.smith.repairing", CraftNames.item(item),
-				ForgeRules.durabilityPercent(item.getDamageValue(), item.getMaxDamage()), anvilName);
+				ForgeRules.durabilityPercent(item.getDamageValue(), item.getMaxDamage()), anvilName(ctx));
 	}
 
 	/** Stand finished: the next candidate (or a new search once they are all done). */
@@ -326,6 +466,7 @@ final class BlacksmithTask extends TaskHandler {
 		release(ctx);
 		stand = null;
 		anvil = null;
+		inspecting = false;
 		progress = 0;
 		phase = Phase.SELECT;
 		if (candidates.isEmpty()) {
@@ -334,12 +475,15 @@ final class BlacksmithTask extends TaskHandler {
 		}
 	}
 
-	/** The current stand (alive, loaded, in the territory, still damaged) and anvil, or null (target dropped). */
+	/** The current stand (alive, loaded, in the territory, still with work to do) and anvil, or null (target dropped). */
 	private @Nullable ArmorStand validTarget(WorkContext ctx) {
 		UUID id = stand;
 		BlockPos at = anvil;
 		ArmorStand target = id == null ? null : stand(ctx, id);
-		if (target == null || CraftWorld.mostDamaged(target) == null) {
+		boolean work = target != null && (inspecting
+				? BlacksmithRunes.canInscribe(ctx) && BlacksmithRunes.inspectable(ctx, target)
+				: CraftWorld.mostDamaged(target) != null);
+		if (!work) {
 			if (target != null) {
 				finished(ctx);
 			} else {
@@ -365,6 +509,7 @@ final class BlacksmithTask extends TaskHandler {
 		release(ctx);
 		stand = null;
 		anvil = null;
+		inspecting = false;
 		progress = 0;
 		phase = Phase.SELECT;
 	}

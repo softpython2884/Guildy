@@ -55,7 +55,8 @@
 			"dev.guildy.test.RuinStatsGameTests",
 			"dev.guildy.test.RuinJaguarGameTests",
 			"dev.guildy.test.RuinStatueGameTests",
-			"dev.guildy.test.ShortcutGameTests"
+			"dev.guildy.test.ShortcutGameTests",
+			"dev.guildy.test.RuneGameTests"
 		]
 	},
 	"depends": {
