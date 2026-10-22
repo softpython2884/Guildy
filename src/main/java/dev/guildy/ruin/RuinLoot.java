@@ -37,7 +37,7 @@ import java.util.random.RandomGenerator;
  * scroll (rare, protected drops), guild XP split between the guilds of the participants. The ruin's threat level adds gold,
  * XP and a chance of extra unique / scroll rolls; a guardian defeated in its risen form gives bonus rolls on top. A group
  * fight (see {@link GroupScaling}) gives more gold and XP, the gold being shared: one pile per participant, that only they
- * can pick up.
+ * can pick up. The dread form (Menace VII and more) and the Avatar multiply the gold and the XP and add rolls.
  */
 final class RuinLoot {
 	static final String SOURCE_OVERWORLD = "ruin_boss";
@@ -90,7 +90,8 @@ final class RuinLoot {
 				encounter.cursed != null ? "cursed" : "");
 		int uniqueRolls = rolls(bonus.extraUniqueChance(), bonus.bonusUniqueRolls(), random);
 		// A cursed guardian gets many attempts, but never more than maxUniques weapons.
-		int uniqueCap = encounter.cursed != null ? RuinModule.config().cursed.rewards.maxUniques : Integer.MAX_VALUE;
+		int uniqueCap = encounter.avatar != null ? RuinModule.config().cursed.avatar.rewards.maxUniques
+				: encounter.cursed != null ? RuinModule.config().cursed.rewards.maxUniques : Integer.MAX_VALUE;
 		int uniques = 0;
 		for (int i = 0; i < uniqueRolls && uniques < uniqueCap; i++) {
 			int n = protectedDrop(level, boss, UniqueDrops.roll(source, random, UniqueDrops.Recipient.topDamager(boss)));
@@ -142,13 +143,19 @@ final class RuinLoot {
 		return dropped;
 	}
 
-	/** Reward multipliers of the fight: threat level of the ruin, risen guardian, cursed guardian (the group is apart). */
+	/**
+	 * Reward multipliers of the fight: threat level of the ruin, risen guardian, dread form, cursed guardian, Avatar (the group
+	 * is apart).
+	 */
 	static ThreatRules.Rewards bonus(Encounter encounter) {
 		RuinConfig cfg = RuinModule.config();
 		// The final form of a cursed guardian is part of its fight: no risen bonus on top of the curse (unless configured).
 		boolean risenBonus = CursedRules.risenBonus(encounter.cursed != null, encounter.risen, cfg.cursed.finalForm.risenRewards);
-		ThreatRules.Rewards rewards = ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, risenBonus);
-		return encounter.cursed != null ? CursedRules.rewards(rewards, cfg.cursed.rewards) : rewards;
+		ThreatRules.Rewards rewards = DreadRules.rewards(ThreatRules.rewards(cfg.escalation, cfg.resurrection, encounter.threat, risenBonus), encounter.dread);
+		if (encounter.cursed != null) {
+			rewards = CursedRules.rewards(rewards, cfg.cursed.rewards);
+		}
+		return encounter.avatar != null ? AvatarRules.rewards(rewards, cfg.cursed.avatar.rewards) : rewards;
 	}
 
 	/** One roll, one more with {@code extraChance}, plus the guaranteed bonus rolls. */

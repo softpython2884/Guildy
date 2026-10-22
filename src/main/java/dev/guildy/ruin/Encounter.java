@@ -63,6 +63,17 @@ final class Encounter {
 	boolean risen;
 	/** The curse of a cursed fight (cursed incantation scroll): phases, attacks, rewards; null for a normal fight. */
 	@Nullable CursedEncounter cursed;
+	/** Its dread form (from {@code escalation.dreadThreshold}): NONE below the threshold. */
+	DreadRules.Stats dread = DreadRules.Stats.NONE;
+	/** Effective health beyond the vanilla cap of 1024: every hit it takes (and every heal) is divided by this (1 = none). */
+	double vitality = 1.0;
+	/** Damage factor on the players hit by the mobs of this fight (after their armour), and the share of their health it may reach. */
+	double playerDamage = 1.0;
+	double maxHitRatio;
+	/** The dread abilities of its dread form (and the Avatar's attacks), null without any. */
+	@Nullable DreadEncounter dreadFight;
+	/** The Avatar (a cursed guardian summoned with a Nether star in the circle), null otherwise. */
+	@Nullable AvatarEncounter avatar;
 	/** Cooldown factor, extra damage, scale and speed of the risen guardian (re-applied after a conversion). */
 	double risenCooldown = 1.0;
 	double risenDamage;
@@ -109,9 +120,10 @@ final class Encounter {
 		nextAbilityTick = now + firstAbilitySeconds * 20L;
 	}
 
-	/** Factor of the ability cooldowns: threat level, halved by the enrage, the risen guardian's factor, the curse. */
+	/** Factor of the ability cooldowns: threat level, halved by the enrage, the risen guardian's factor, the curse, the dread form. */
 	double cooldownFactor() {
-		return scaling.cooldownFactor() * (enraged ? 0.5 : 1.0) * (risen ? risenCooldown : 1.0) * (cursed != null ? cursed.cooldownFactor() : 1.0);
+		return scaling.cooldownFactor() * (enraged ? 0.5 : 1.0) * (risen ? risenCooldown : 1.0) * (cursed != null ? cursed.cooldownFactor() : 1.0)
+				* (dread.active() ? dread.cooldown() : 1.0);
 	}
 
 	/** Factor of the ability damage: threat level, group, the risen guardian's bonus, the curse (and its phase). */
@@ -122,7 +134,8 @@ final class Encounter {
 
 	/** Cap of the living escort (the threat level, the group and the curse add mobs). */
 	int maxAlive() {
-		return Math.min(48, def.minions.maxAlive + scaling.extraMinions() + party.extraMinions() + (cursed != null ? cursed.extraAlive() : 0));
+		return Math.min(48, def.minions.maxAlive + scaling.extraMinions() + party.extraMinions() + (cursed != null ? cursed.extraAlive() : 0)
+				+ (avatar != null ? avatar.extraAlive() : 0));
 	}
 
 	/** Remembers where an escort mob died (bounded). */

@@ -52,7 +52,8 @@ import java.util.UUID;
  * a ritual nobody feeds any more (everyone left, died or disconnected), or stopped by the server, is cancelled and the
  * scroll goes back to its reader. A cursed incantation scroll ({@link CursedItems}) is read the same way and starts a
  * {@link CursedRitual} whose climax awakens the guardian cursed. While room guards still hold the arena, the reading is
- * sealed ({@link Seals}): the circle starts to form under the reader, then breaks; the scroll is kept.
+ * sealed ({@link Seals}): the circle starts to form under the reader, then breaks; the scroll is kept. A Nether star lying in
+ * the circle when a cursed ritual reaches its climax is consumed and the guardian rises as its Avatar ({@link AvatarRules}).
  */
 public final class Incantations {
 	private static final Map<UUID, Channel> CHANNELS = new HashMap<>();
@@ -369,7 +370,10 @@ public final class Incantations {
 		RitualFx fx = new RitualFx(level, ritual.ground, Math.max(600, ritual.cursed() ? cfg.cursed.attacks.particleBudget : cfg.summon.particleBudget),
 				cfg.summon.viewDistance);
 		ritual.climaxFx(level, fx);
-		String error = Encounters.awaken(level, ritual.ruin, null, false, ritual.cursed());
+		// A Nether star lying in the circle of a cursed ritual: the guardian rises as its Avatar (never for a normal ritual).
+		ItemEntity star = ritual.cursed() ? AvatarEncounter.star(level, ritual.ground, cfg.summon.arenaRadius) : null;
+		boolean avatar = AvatarRules.summons(cfg.cursed.avatar.enabled, cfg.cursed.enabled, ritual.cursed(), star != null);
+		String error = Encounters.awaken(level, ritual.ruin, null, false, ritual.cursed(), avatar);
 		if (error != null) {
 			Guildy.LOGGER.warn("[ruins] the ritual of {} could not awaken its guardian: {}", ritual.ruin.key, error);
 			fx.flush();
@@ -384,6 +388,11 @@ public final class Incantations {
 			ritual.materialize(level, fx, boss, Encounters.minions(ritual.ruin));
 		}
 		fx.flush();
+		if (avatar && star != null) {
+			// The star is consumed only once the Avatar stands (a failed awakening keeps it).
+			Vec3 into = boss != null ? boss.position().add(0, boss.getBbHeight() / 2, 0) : ritual.ground.add(0, 1.5, 0);
+			AvatarEncounter.consume(level, star, into, ritual.participants);
+		}
 	}
 
 	/**

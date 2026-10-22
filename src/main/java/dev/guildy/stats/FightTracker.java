@@ -37,8 +37,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Creative and spectator players are never counted. Server thread only; every hook is isolated by {@link Safe}.
  */
 public final class FightTracker {
-	/** A monster of a session and what it is there. */
-	public record Hit(FightSession session, FightKind kind) {
+	/**
+	 * A monster of a session and what it is there; {@code scale} turns the health it really lost into the damage counted (a
+	 * guardian whose effective health is beyond the vanilla cap loses less health per hit: 1 for every other monster).
+	 */
+	public record Hit(FightSession session, FightKind kind, double scale) {
+		public Hit(FightSession session, FightKind kind) {
+			this(session, kind, 1.0);
+		}
 	}
 
 	/** Tells which monsters belong to which open session (opening one lazily if it wants). */
@@ -194,7 +200,7 @@ public final class FightTracker {
 		ServerPlayer attacker = attacker(source);
 		FightTally tally = attacker == null ? null : tally(hit.session(), attacker);
 		if (tally != null) {
-			tally.addDamage(hit.kind(), amount);
+			tally.addDamage(hit.kind(), amount * Math.max(1.0, hit.scale()));
 		}
 	}
 

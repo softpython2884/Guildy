@@ -23,8 +23,9 @@ import java.util.Locale;
 
 /**
  * Admin commands of the cursed guardians, merged into {@code /guild admin ruin} (Brigadier merges nodes of the same name):
- * {@code incantation <player> [count] cursed}, {@code awaken cursed} (nearest ruin, no ritual), {@code cursed phase} (the
- * next phase now) and {@code cursed attack <attack>} (a cursed attack now, cooldowns ignored).
+ * {@code incantation <player> [count] cursed}, {@code awaken cursed [avatar]} (nearest ruin, no ritual, no star), {@code cursed
+ * phase} (the next phase now), {@code cursed attack <attack>} (a cursed attack now, cooldowns ignored) and {@code avatar attack
+ * <attack>} (an attack of the Avatar now).
  */
 final class CursedCommands {
 	private CursedCommands() {
@@ -38,7 +39,13 @@ final class CursedCommands {
 								.then(Commands.argument("count", IntegerArgumentType.integer(1, 256))
 										.then(Commands.literal("cursed").executes(ctx -> give(ctx, IntegerArgumentType.getInteger(ctx, "count")))))))
 				.then(Commands.literal("awaken")
-						.then(Commands.literal("cursed").executes(ctx -> Safe.get("ruin.admin.cursed.awaken", () -> awaken(ctx), 0))))
+						.then(Commands.literal("cursed").executes(ctx -> Safe.get("ruin.admin.cursed.awaken", () -> awaken(ctx, false), 0))
+								.then(Commands.literal("avatar").executes(ctx -> Safe.get("ruin.admin.avatar.awaken", () -> awaken(ctx, true), 0)))))
+				.then(Commands.literal("avatar")
+						.then(Commands.literal("attack")
+								.then(Commands.argument("attack", StringArgumentType.word())
+										.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(avatarAttacks(), builder))
+										.executes(ctx -> Safe.get("ruin.admin.avatar.attack", () -> avatarAttack(ctx), 0)))))
 				.then(Commands.literal("cursed")
 						.then(Commands.literal("phase").executes(ctx -> Safe.get("ruin.admin.cursed.phase", () -> phase(ctx), 0)))
 						.then(Commands.literal("attack")
@@ -75,19 +82,55 @@ final class CursedCommands {
 		}, 0);
 	}
 
-	/** Awakens the guardian of the nearest ruin cursed, at once (no scroll, no ritual). */
-	private static int awaken(CommandContext<CommandSourceStack> ctx) {
+	/** Awakens the guardian of the nearest ruin cursed (its Avatar when {@code avatar}), at once (no scroll, no ritual, no star). */
+	private static int awaken(CommandContext<CommandSourceStack> ctx, boolean avatar) {
 		RuinRecord ruin = nearest(ctx);
 		if (ruin == null) {
 			return 0;
 		}
-		String error = Encounters.awaken(ctx.getSource().getLevel(), ruin, null, true, true);
+		String error = Encounters.awaken(ctx.getSource().getLevel(), ruin, null, true, true, avatar);
 		if (error != null) {
 			ctx.getSource().sendFailure(Msg.prefixed(Lang.get(error)));
 			return 0;
 		}
 		RuinDef def = Encounters.def(ruin);
-		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.cursed.admin.awakened", Lang.colorize(def.boss.name), Lang.colorize(def.name))), true);
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get(avatar ? "ruin.admin.avatar.awakened" : "ruin.cursed.admin.awakened",
+				Lang.colorize(def.boss.name), Lang.colorize(def.name))), true);
+		return 1;
+	}
+
+	/** Every attack type of the Avatar (its Nether attacks first, then every dread ability). */
+	private static List<String> avatarAttacks() {
+		List<String> ids = new ArrayList<>();
+		for (RuinConfig.DreadAbilityDef def : RuinModule.config().cursed.avatar.attacks) {
+			if (!ids.contains(def.type)) {
+				ids.add(def.type);
+			}
+		}
+		for (String type : RuinConfig.DREAD_TYPES) {
+			if (!ids.contains(type)) {
+				ids.add(type);
+			}
+		}
+		return ids;
+	}
+
+	/** An attack of the Avatar of the nearest ruin, now (cooldowns and phases ignored). */
+	private static int avatarAttack(CommandContext<CommandSourceStack> ctx) {
+		RuinRecord ruin = nearest(ctx);
+		if (ruin == null) {
+			return 0;
+		}
+		if (!Encounters.isAvatar(ruin)) {
+			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("ruin.admin.avatar.not")));
+			return 0;
+		}
+		String id = StringArgumentType.getString(ctx, "attack").toLowerCase(Locale.ROOT);
+		if (!Encounters.forceDread(ruin, id)) {
+			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("ruin.admin.dread.failed", id, String.join(", ", avatarAttacks()))));
+			return 0;
+		}
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.dread.used", id)), false);
 		return 1;
 	}
 

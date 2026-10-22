@@ -24,6 +24,8 @@ import java.util.Map;
  * Version 3 (Guildy 1.10, balance): about three times more gold from every guardian; the gold range of a default ruin is
  * migrated as a pair (both bounds still on their 1.9 defaults), so that a range changed by the admin is never mixed with a
  * new bound.
+ * <p>
+ * Version 4 (Guildy 1.14, the dread form from Menace VII): the default ruins get their dread abilities.
  */
 final class RuinMigration {
 	/** Gold ranges {min, max} of the default ruins up to Guildy 1.9 (format 2), in the order of the file. */
@@ -57,7 +59,24 @@ final class RuinMigration {
 		if (fromVersion < 3) {
 			moreGold(ruins, changed);
 		}
+		if (fromVersion < 4) {
+			dreadAbilities(ruins, changed);
+		}
 		return changed;
+	}
+
+	/**
+	 * Version 4: every default ruin without dread abilities (a file written before they existed) gets those of its guardian;
+	 * a list already filled by the admin is kept.
+	 */
+	private static void dreadAbilities(Map<String, RuinDef> ruins, List<String> changed) {
+		for (String id : RuinDefaults.ruins().keySet()) {
+			RuinDef def = ruins.get(id);
+			if (def != null && (def.dreadAbilities == null || def.dreadAbilities.isEmpty())) {
+				def.dreadAbilities = RuinDefaults.dreadOf(id);
+				changed.add(id + ".dreadAbilities");
+			}
+		}
 	}
 
 	/** Version 3: the gold range of each default ruin still on its 1.9 defaults becomes the new one. */

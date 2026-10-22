@@ -130,8 +130,10 @@ final class RuinFightStats {
 	private static void deliver(FightSession session, Encounter encounter, FightReport.Outcome outcome, double bossHealthLeft, List<ServerPlayer> present) {
 		long now = Scheduler.ticks();
 		long fightStart = session.fightStartTick() >= 0 ? session.fightStartTick() : encounter.startedTick;
-		FightReport.Header header = new FightReport.Header(Lang.colorize(encounter.def.name), Lang.colorize(encounter.def.boss.name),
-				Encounters.threatLabel(encounter.threat), encounter.cursed != null, encounter.risen, outcome, now - fightStart, now - session.openedTick,
+		String boss = encounter.avatar != null ? AvatarEncounter.name(Lang.colorize(encounter.def.boss.name), false).getString()
+				: encounter.dread.active() ? Lang.raw("ruin.dread.name", Lang.colorize(encounter.def.boss.name)) : Lang.colorize(encounter.def.boss.name);
+		FightReport.Header header = new FightReport.Header(Lang.colorize(encounter.def.name), boss,
+				Encounters.threatLine(encounter), encounter.cursed != null, encounter.risen, outcome, now - fightStart, now - session.openedTick,
 				session.guardsPosted(), session.killedCount(FightKind.GUARD), session.killedCount(FightKind.ESCORT), bossHealthLeft);
 		List<UUID> there = new ArrayList<>();
 		for (ServerPlayer player : present) {
@@ -160,7 +162,9 @@ final class RuinFightStats {
 				return null;
 			}
 			session.fightStarted(encounter.startedTick);
-			return new FightTracker.Hit(session, uuid.equals(encounter.boss) ? FightKind.BOSS : FightKind.ESCORT);
+			boolean boss = uuid.equals(encounter.boss);
+			// The effective health of a dread guardian / an Avatar: its damage counted as the players dealt it.
+			return new FightTracker.Hit(session, boss ? FightKind.BOSS : FightKind.ESCORT, boss ? encounter.vitality : 1.0);
 		}
 		RuinRecord ruin = RuinIndex.get(RoomGuards.ruinKeyOf(uuid));
 		if (ruin != null) {
