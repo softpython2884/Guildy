@@ -31,6 +31,9 @@ class UniqueEquipmentTest {
 		assertEquals("bottes_de_zephyr", UniqueEquipment.assetFor("bottes_de_zephyr", "feet"));
 		assertEquals("bottes_du_coursier", UniqueEquipment.assetFor(" Bottes_du_Coursier ", "feet"), "normalized like the config");
 		assertNull(UniqueEquipment.assetFor("couronne_du_roi_de_givre", "feet"), "a crown drawn on boots would show nothing");
+		assertEquals("jambieres_hiver_eternel", UniqueEquipment.assetFor("jambieres_hiver_eternel", "legs"), "leggings of a set");
+		assertNull(UniqueEquipment.assetFor("jambieres_hiver_eternel", "feet"));
+		assertEquals("masque_guerrier_jaguar", UniqueEquipment.assetFor("masque_guerrier_jaguar", "head"));
 		assertNull(UniqueEquipment.assetFor("plastron_du_serpent", "mainhand"));
 		assertNull(UniqueEquipment.assetFor("foudrelame", "mainhand"), "weapons keep their equippable (none)");
 		assertNull(UniqueEquipment.assetFor("", "head"), "no model: vanilla look");
@@ -67,5 +70,7 @@ class UniqueEquipmentTest {
 		assertEquals("assets/guildy/textures/entity/equipment/humanoid/couronne_du_roi_de_givre.png",
 				UniqueEquipment.texturePath("couronne_du_roi_de_givre", "head"));
 		assertEquals("assets/guildy/textures/entity/equipment/humanoid_leggings/x.png", UniqueEquipment.texturePath("x", "legs"));
+		assertEquals("assets/guildy/textures/entity/equipment/humanoid_leggings/greves_brasier_des_ames.png",
+				UniqueEquipment.texturePath("greves_brasier_des_ames", UniqueEquipment.ASSETS.get("greves_brasier_des_ames")));
 	}
 }

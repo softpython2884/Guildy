@@ -34,9 +34,9 @@ class UniqueRuinUniquesTest {
 	}
 
 	@Test
-	void sevenNewUniquesMakeACollectionOfTwentyOne() {
+	void sevenNewUniquesJoinTheCollection() {
 		UniqueConfig cfg = defaults();
-		assertEquals(21, cfg.usable().size(), "14 + 7 uniques");
+		assertEquals(33, cfg.usable().size(), "14 + 7 uniques + 12 set pieces");
 		assertEquals(7, UniqueConfig.RUIN_UNIQUES.size());
 		Map<UniqueRarity, Integer> rarities = new EnumMap<>(UniqueRarity.class);
 		Set<UniquePower> powers = new HashSet<>();
@@ -100,20 +100,21 @@ class UniqueRuinUniquesTest {
 		assertEquals(0.12 * 2 / 54.5, plain, EPSILON);
 		UniqueConfig.DropTable jaguar = cfg.effectiveTable("ruin_boss@grand_temple_maya");
 		assertEquals(base.chance, jaguar.chance, "the table's chance does not change");
-		assertEquals(0.12 * 27 / 79.5, UniqueRolls.probability(jaguar, "lance_du_jaguar_celeste", key -> true), EPSILON);
-		assertEquals(0.12 * 6 / 79.5, UniqueRolls.probability(jaguar, "croc_de_givre", key -> true), EPSILON, "the others weigh less");
+		// 54.5 + 25 (its spear) + 4 x 15 (the jaguar warrior set).
+		assertEquals(0.12 * 27 / 139.5, UniqueRolls.probability(jaguar, "lance_du_jaguar_celeste", key -> true), EPSILON);
+		assertEquals(0.12 * 6 / 139.5, UniqueRolls.probability(jaguar, "croc_de_givre", key -> true), EPSILON, "the others weigh less");
 		assertEquals(2.0, base.items.get("lance_du_jaguar_celeste"), "the base table is never modified");
 
 		// Cursed guardians favour the cursed blade, on top of their own ruin's favourite.
 		UniqueConfig.DropTable cursed = cfg.effectiveTable("ruin_boss@bastion_de_givre,cursed");
-		assertEquals(0.12 * 30.5 / 109.5, UniqueRolls.probability(cursed, "lame_du_pacte", key -> true), EPSILON);
-		assertEquals(0.12 * 28 / 109.5, UniqueRolls.probability(cursed, "couronne_du_roi_de_givre", key -> true), EPSILON);
+		assertEquals(0.12 * 30.5 / 169.5, UniqueRolls.probability(cursed, "lame_du_pacte", key -> true), EPSILON);
+		assertEquals(0.12 * 28 / 169.5, UniqueRolls.probability(cursed, "couronne_du_roi_de_givre", key -> true), EPSILON);
 		double plainBlade = UniqueRolls.probability(base, "lame_du_pacte", key -> true);
-		assertTrue(UniqueRolls.probability(cursed, "lame_du_pacte", key -> true) > 20 * plainBlade, "the blade of the cursed guardians");
+		assertTrue(UniqueRolls.probability(cursed, "lame_du_pacte", key -> true) > 15 * plainBlade, "the blade of the cursed guardians");
 		UniqueConfig.DropTable netherCursed = cfg.effectiveTable("nether_ruin_boss@cursed");
 		assertTrue(UniqueRolls.probability(netherCursed, "lame_du_pacte", key -> true) > 0.08, "Nether cursed guardians too");
 		assertTrue(UniqueRolls.probability(cfg.effectiveTable("nether_ruin_boss@citadelle_des_ames"), "egide_des_ames", key -> true)
-				> 4 * UniqueRolls.probability(cfg.table("nether_ruin_boss"), "egide_des_ames", key -> true), "the soul citadel's shield");
+				> 2.5 * UniqueRolls.probability(cfg.table("nether_ruin_boss"), "egide_des_ames", key -> true), "the soul citadel's shield");
 
 		// No favourite for this context, or another source: the plain table.
 		assertSame(base, cfg.effectiveTable("ruin_boss@crypte_oubliee"));
@@ -142,7 +143,7 @@ class UniqueRuinUniquesTest {
 		old.drops.remove("legendary_quest");
 		old.rebuild(id -> true);
 		assertEquals(UniqueConfig.CURRENT_VERSION, old.configVersion);
-		assertEquals(21, old.usable().size(), "the seven definitions added");
+		assertEquals(33, old.usable().size(), "the seven definitions added (the set pieces were kept)");
 		assertEquals(9.0, old.table("ruin_boss").items.get("foudrelame"), "existing weights untouched");
 		assertEquals(25.0, old.favorites.get("ruin_boss@grand_temple_maya").get("lance_du_jaguar_celeste"), "favourites (new section)");
 		UniqueConfig reference = defaults();
@@ -169,7 +170,7 @@ class UniqueRuinUniquesTest {
 		twice.rebuild(id -> true);
 		twice.configVersion = 3;
 		twice.rebuild(id -> true);
-		assertEquals(21, twice.items.size(), "no duplicate definition");
+		assertEquals(33, twice.items.size(), "no duplicate definition");
 	}
 
 	@Test
@@ -190,7 +191,7 @@ class UniqueRuinUniquesTest {
 		assertFalse(text.contains("\"id\": \"lance_du_jaguar_celeste\""), "a 1.8 file");
 		UniqueConfig read = Json5.read(file, UniqueConfig.class);
 		read.rebuild(id -> true);
-		assertEquals(21, read.usable().size());
+		assertEquals(33, read.usable().size());
 		assertNotNull(read.favorites.get("ruin_boss@cursed"), "default favourites for a file without the section");
 		assertTrue(read.table("nether_ruin_boss").items.containsKey("egide_des_ames"));
 		assertTrue(read.table("legendary_quest").items.containsKey("lame_du_pacte"));

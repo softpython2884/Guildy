@@ -40,6 +40,7 @@ public final class UniqueModule {
 		UniqueVisuals.init();
 		UniqueCommands.register();
 		UniquePowers.register();
+		SetBonuses.init();
 		UniqueRegistry.init();
 		UniqueDamage.init();
 		UniqueTracker.init();

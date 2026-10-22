@@ -1,0 +1,22 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "guildy:heaume_brasier_des_ames"
+      }
+    ],
+    "humanoid_baby": [
+      {
+        "texture": "minecraft:netherite"
+      }
+    ]
+  },
+  "trim_overrides": [
+    {
+      "palette": "minecraft:trim/netherite_darker",
+      "when": {
+        "material": "minecraft:netherite"
+      }
+    }
+  ]
+}

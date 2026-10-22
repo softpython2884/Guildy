@@ -26,6 +26,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -85,6 +86,7 @@ final class UniqueTracker {
 	static void scan(ServerPlayer player, UniqueRegistry.Pass pass, boolean rescanMenu) {
 		Inventory inventory = player.getInventory();
 		boolean changed = false;
+		Set<String> worn = null;
 		for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
 			ItemStack stack = inventory.getItem(slot);
 			if (stack.isEmpty() || !stack.has(DataComponents.CUSTOM_DATA)) {
@@ -96,6 +98,13 @@ final class UniqueTracker {
 			}
 			UniqueConfig.UniqueDef def = UniqueModule.config().item(id);
 			changed |= UniqueItems.syncVisuals(stack, def);
+			if (def != null && !def.set.isEmpty()) {
+				// Set pieces carried: their lore ticks the pieces worn.
+				if (worn == null) {
+					worn = SetBonuses.worn(player);
+				}
+				changed |= UniqueItems.syncSetLore(stack, def, worn);
+			}
 			String source = UniqueItems.takeAnnounce(stack);
 			if (source != null) {
 				changed = true;
@@ -135,10 +144,17 @@ final class UniqueTracker {
 			}
 			String id = UniqueItems.idOf(stack);
 			if (id != null) {
+				changed |= neutralSetLore(stack, id);
 				changed |= UniqueRegistry.see(stack, id, player, carried, pass, where);
 			}
 		}
 		return changed;
+	}
+
+	/** A set piece stored away (ender chest, chest): its lore no longer ticks the pieces of a wearer. */
+	private static boolean neutralSetLore(ItemStack stack, String id) {
+		UniqueConfig.UniqueDef def = UniqueModule.config().item(id);
+		return def != null && !def.set.isEmpty() && UniqueItems.syncSetLore(stack, def, null);
 	}
 
 	/** The container a player opened (its own inventory and ender chest excluded: already scanned). */
@@ -152,7 +168,7 @@ final class UniqueTracker {
 				continue;
 			}
 			String id = UniqueItems.idOf(stack);
-			if (id != null && UniqueRegistry.see(stack, id, player, false, pass, Lang.raw("unique.where.container"))) {
+			if (id != null && (neutralSetLore(stack, id) | UniqueRegistry.see(stack, id, player, false, pass, Lang.raw("unique.where.container")))) {
 				slot.setChanged();
 			}
 		}

@@ -29,6 +29,7 @@
 			"dev.guildy.test.UniqueGameTests",
 			"dev.guildy.test.UniqueRegistryGameTests",
 			"dev.guildy.test.UniqueRuinGameTests",
+			"dev.guildy.test.UniqueSetGameTests",
 			"dev.guildy.test.ScrollGameTests",
 			"dev.guildy.test.GrimoireGameTests",
 			"dev.guildy.test.CursedGrimoireGameTests",
