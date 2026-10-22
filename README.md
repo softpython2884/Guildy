@@ -34,10 +34,12 @@ ou à héberger pour les joueurs.
   **cartographe**, expéditions (exploration, Nether), zones de travail par fanions et leurs autorisations, missions.
 - **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
 - **Armes uniques** : 21 armes et outils à pouvoirs (foudre, givre, téléportation, double saut, minage 3×3, bond du
-  jaguar, faille infernale…),
-  10 enchantements inédits, textures animées facultatives.
+  jaguar, faille infernale…) et **3 panoplies** de 4 pièces (casque, plastron, jambières, bottes) dont les bonus
+  d'ensemble s'éveillent à 2 puis 4 pièces portées ; 10 enchantements inédits, textures animées facultatives.
+- **Runes du forgeron** : gravées sur les armures des porte-armures, petits bonus, petits pouvoirs, et deux runes
+  mythiques (Phénix, Dragon) sur les plastrons en netherite.
 - **Armes uniques vraiment uniques** : numéro de série, une guilde ne reçoit jamais une arme qu'elle a déjà, collection
-  de guilde X / 21.
+  de guilde X / 33.
 - **Parchemins de sort** : 18 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel,
   bannière de guerre, fléau, permutation, ralliement de la guilde…)
   avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture
@@ -239,7 +241,7 @@ villageois : s'il est loin, sa dernière position est chargée un instant, « Ap
 | **Garde** | **épéiste** ou **archer** ; patrouille dans sa zone ou sur son **parcours de garde**, sinon défend le cœur ; toujours au cœur pendant les hordes ; s'équipe dans les coffres et se replie pour se soigner (voir « Gardes ») |
 | **Exploration** | part vers la **destination** choisie (biome ou construction, voir « Destinations d'expédition ») : il quitte vraiment la base et revient quelques minutes plus tard avec le butin du lieu — risque de ne pas revenir |
 | **Expédition au Nether** | passe par un **portail du Nether construit dans le territoire** vers la destination choisie (forteresse, bastion, forêts…) — risque plus élevé |
-| **Forgeron** (guilde niv. 3) | répare peu à peu l'équipement abîmé posé sur les **porte-armures** du territoire, à l'**enclume** la plus proche, qu'il use (voir « Forgeron et alchimiste ») |
+| **Forgeron** (guilde niv. 3) | répare peu à peu l'équipement abîmé posé sur les **porte-armures** du territoire, à l'**enclume** la plus proche, qu'il use ; à partir du niveau 5, grave parfois une **rune** sur les armures (voir « Forgeron et alchimiste ») |
 | **Alchimiste** (guilde niv. 5) | livres enchantés et parchemins à la **table d'enchantement**, **potions** et **élixirs** à l'**alambic** du territoire, selon les stocks voulus ; passe au travail suivant quand le sien est impossible (voir « Forgeron et alchimiste ») |
 | **Cartographe** | travaille à l'**Atelier du cartographe** sur les recherches de ruines de la guilde (voir § 13) |
 
@@ -430,6 +432,49 @@ d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas s
   les 8 s, le plus abîmé d'abord) **sans jamais les retirer du porte-armure**. Chaque réparation use l'enclume comme en
   vanilla (12 % de chance) : ébréchée, endommagée, puis brisée ; il passe alors à l'enclume suivante. Les objets
   incassables (armes uniques) ne sont pas concernés. Plusieurs forgerons se répartissent les porte-armures.
+- **Runes du forgeron** (guilde niveau 5) : quand le forgeron travaille sur une **armure** posée sur un porte-armure, il
+  peut y **graver une rune**. Chaque pièce d'armure qu'il finit de réparer est une occasion ; quand il n'a rien à
+  réparer, il **examine** à son enclume les armures intactes des porte-armures (20 s, chaque porte-armure au plus une
+  fois toutes les 15 min). À chaque occasion : **15 % de chances**. Une rune coûte **1 éclat d'améthyste** pris au
+  stockage ; **2 runes par jour** au plus et par forgeron. Glyphes d'enchantement qui convergent vers la pièce, spirales,
+  éclair de lumière, son d'enclume ; la guilde est prévenue. **Une seule rune par pièce**, jamais sur un objet unique.
+- **Trois rangs** : surtout des runes **communes** (80 %), parfois des **rares** (18 %), et très rarement une **mythique**
+  (2 %, **uniquement sur un plastron en netherite**, annoncée à tout le serveur). La rune apparaît dans la description de
+  l'objet (vert, bleu, violet) avec un éclat d'enchantement ; ses bonus ne comptent que **portée**.
+
+  | Rang | Rune | Pièces | Effet |
+  |---|---|---|---|
+  | Commune | Rempart | toutes | +1 armure |
+  | Commune | Bastion | plastron, jambières | +2 armure |
+  | Commune | Acier | toutes | +1 robustesse |
+  | Commune | Roc | plastron, jambières | +10 % résistance au recul |
+  | Commune | Vitalité | plastron, jambières | +2 points de vie (1 ❤) |
+  | Commune | Célérité | bottes | +5 % vitesse |
+  | Commune | Trèfle | casque | +1 chance (butin, pêche) |
+  | Commune | Fureur | plastron | +0,5 dégâts d'attaque |
+  | Commune | Abysses | casque | +1 souffle sous l'eau |
+  | Commune | Ondine | bottes | +25 % aisance dans l'eau |
+  | Commune | Plume | bottes | +2 blocs de chute sans dégâts |
+  | Commune | Chamois | jambières | +10 % force de saut |
+  | Commune | Mineur | casque | +10 % vitesse de minage |
+  | Commune | Salamandre | jambières | −30 % durée des brûlures |
+  | Commune | Chat | jambières | accroupi plus rapide |
+  | Commune | Allonge | plastron | +1 bloc de portée |
+  | Rare | Étincelles | plastron, jambières | un monstre qui vous frappe au corps à corps prend une gerbe d'étincelles (1 ❤, recharge 3 s) |
+  | Rare | Braise | plastron | un monstre qui vous frappe a 35 % de chances de prendre feu |
+  | Rare | Lueur | casque | quand un monstre vous frappe, les monstres à 12 blocs brillent 6 s |
+  | Rare | Écho | casque, bottes | accroupi et immobile 2 s : une onde révèle les monstres à 24 blocs |
+  | Rare | Renard | jambières | les objets au sol à 5 blocs volent vers vous |
+  | Rare | Rebond | bottes | −50 % dégâts de chute, et un rebond après une grande chute |
+  | **Mythique** | **Phénix** | plastron en netherite | **Renaissance** : un coup mortel vous relève de vos cendres à demi-vie, sans effets néfastes, avec Résistance au feu et Régénération II, dans une colonne de flammes ; l'explosion brûle (3 ❤) et repousse les monstres à 6 blocs. Recharge **20 min** ; passe avant un totem (épargné) ; jamais contre `/kill` ni le vide |
+  | **Mythique** | **Dragon** | plastron en netherite | **Ailes du Dragon** : le plastron **plane comme des élytres**, avec des ailes spectrales violettes ; **accroupi + saut** : souffle du dragon en cône (9 blocs, 3 ❤, monstres embrasés et repoussés ; recharge 20 s) |
+
+  Les pouvoirs ne touchent **que les monstres** et ne marchent que pour le **joueur** qui **porte** la pièce.
+- **Retirer une rune** : posez la pièce **seule dans une meule** : elle ressort **sans sa rune** mais avec ses
+  **enchantements**, son nom et sa durabilité (pas d'expérience). Repassez-la à la meule pour retirer ensuite les
+  enchantements comme en vanilla. Une pièce sans rune peut en recevoir une nouvelle (pour retenter une mythique). La rune
+  résiste à l'enclume, à la réparation par le forgeron et à l'amélioration en netherite. Une pièce gravée n'est pas un
+  objet « simple » (ni vendue, ni livrée, ni prise par les gardes).
 - **Alchimiste** (guilde niveau 5) : trois travaux, tous rangés au stockage.
   - **Livres** : avec une **table d'enchantement** dans le territoire et des **livres** dans le stockage, il fabrique des
     **livres enchantés** (coffre « Livres enchantés », sinon « Livres et enchantements »). Il choisit la table qui a le
@@ -668,6 +713,22 @@ clic droit la supprime (les objets restent dans les coffres). **Salle réservée
 la salle ne reçoit plus que celles-ci, le reste de ses coffres en réserve. Les listes longues ont des pages (shift + clic
 = 10 pages).
 
+**Salle filtrée** : menu de la salle → **Mode de la salle** → « en faire une salle filtrée ». Chaque coffre automatique de
+la salle ne reçoit plus que les **sortes d'objets qu'il contient déjà** (une ou plusieurs : un coffre qui contient de la
+diorite et du granite reçoit les deux), et un **coffre vide ne reçoit rien**. Pour qu'un coffre accepte un nouvel objet,
+mettez-en un à la main : quelques secondes plus tard, les trieurs y rangent cet objet ; si vous en retirez la dernière
+pile, il ne le reçoit plus. Rien n'est déplacé au moment de la conversion.
+- Priorité : un coffre de salle filtrée qui contient l'objet passe en premier (même rang qu'un coffre filtré qui liste
+  l'objet, le plus proche d'abord), avant les familles, les catégories, « Divers » et le dépôt ; les trieurs y rapportent
+  aussi les objets de cette sorte rangés ailleurs.
+- Les trieurs ne sortent **jamais** rien d'un coffre de salle filtrée : ils fusionnent seulement les piles à l'intérieur
+  de chaque coffre. Les villageois qui puisent dans le stockage y laissent toujours au moins un objet de chaque sorte.
+- « Même objet » : le même objet quels que soient son nom, son usure ou ses enchantements ; pour les potions, le même
+  effet (versions longue et renforcée comprises) ; tous les livres enchantés ensemble. Réglable :
+  `storage.filteredRoomPotions` (`type`, `exact`, `item`) et `storage.filteredRoomBooks` (`item`, `enchantments`).
+- Menu de la salle → **Coffres de la salle** : ce que reçoit chaque coffre au survol (« Reçoit : Diorite, Granite +2 »)
+  ou « Vide : ne reçoit rien ». « Repasser en salle automatique » remet les coffres en réserve et replanifie la salle.
+
 La nuit, les travailleurs dorment ; les gardes restent dehors. Les villageois peuvent encore **mourir** (gardes au
 combat, flèches perdues) : posez des lits près du cœur et équipez vos gardes. Seuls les membres peuvent commercer avec eux.
 
@@ -751,8 +812,8 @@ sort** à la place. Une arme **détruite** (lave, feu, cactus, vide, disparue au
 admins peuvent passer à « un seul exemplaire sur tout le serveur » (`uniqueness: "server"`) ou retirer la limite
 (`"none"`). Les armes déjà en circulation reçoivent leur numéro dès qu'un joueur les porte.
 
-**Collection.** Le bouton « Armes uniques » du menu de guilde (ou `/guild uniques`) montre les 21 armes : celles déjà
-obtenues avec leur détenteur actuel, les autres en « ??? » avec leur rareté et où les trouver. Le compteur indique X / 21,
+**Collection.** Le bouton « Armes uniques » du menu de guilde (ou `/guild uniques`) montre les 33 objets uniques (21 armes et outils, 12 pièces de panoplie) : ceux déjà
+obtenues avec leur détenteur actuel, les autres en « ??? » avec leur rareté et où les trouver. Le compteur indique X / 33,
 et tout le serveur est prévenu quand une guilde les a toutes réunies.
 
 | Arme | Rareté | Base | Pouvoir |
@@ -784,6 +845,29 @@ bien plus souvent (`favorites` dans `uniques.json5`) : Lance du Jaguar céleste 
 du Serpent à plumes (Temple du Serpent à plumes), Couronne du Roi de givre (Bastion de givre), Masse du Zénith (Ziggourat
 des sables), Égide des Âmes (Citadelle des âmes), Hache du Seigneur de guerre (Autel infernal). La **Lame du Pacte** est la
 favorite des **gardiens maudits**. On les trouve aussi, rarement, dans une quête légendaire ; elles ne se vendent jamais.
+
+#### Panoplies
+Trois **armures complètes**, du casque aux bottes, gardées par les gardiens des ruines. Chaque pièce est une vraie arme
+unique (numéro de série, une par guilde, collection) et une bonne armure à elle seule, **sans pouvoir propre** : le
+pouvoir vient de l'ensemble. Portez **2 pièces différentes** d'une même panoplie pour un bonus passif, **les 4** pour son
+pouvoir (les paliers s'additionnent). Retirer une pièce retire aussitôt le palier perdu.
+
+| Panoplie | Pièces | 2 pièces | 4 pièces | Où la trouver |
+|---|---|---|---|---|
+| **Hiver éternel** (Épique) | Heaume, Cuirasse, Jambières, Solerets (diamant) | **Sang-froid** : robustesse +2, vous ne gelez jamais | **Cœur de l'hiver** : +2 ❤ max, insensible à la lenteur ; sous 30 % de vie après un coup, une **nova de givre** gèle et repousse les monstres à 6 blocs (3 ❤) et vous donne Résistance II et Absorption II ; recharge 60 s | gardien du **Bastion de givre** |
+| **Guerrier jaguar** (Épique) | Masque, Pectoral, Jambières, Sandales (or incassable) | **Agilité du jaguar** : vitesse +10 %, chutes amorties | **Embuscade du jaguar** : dégâts +1 ; accroupi 1,5 s (0,5 s dans le feuillage), vous êtes **camouflé** (les monstres perdent votre trace, jamais les boss) ; votre coup suivant est une **embuscade** : bond, +5 ❤, griffes autour (3 ❤) ; recharge 12 s | **Grand Temple du Jaguar céleste**, **Temple du Serpent à plumes** |
+| **Brasier des âmes** (Légendaire) | Heaume, Cuirasse, Grèves, Bottes (netherite) | **Flamme d'âme** : +2 ❤ max, brûle deux fois moins longtemps | **Bûcher des âmes** : robustesse +2 ; toutes les 2 s, une **aura** arrache l'âme des 4 monstres les plus proches (1 ❤ chacun) et vous soigne ; en courant, une **traînée de feu d'âme** embrase les monstres | **Citadelle des âmes**, **Autel infernal** |
+
+Les pièces ne tombent **que** des gardiens de leurs ruines (maudits compris) et, rarement, d'une **quête légendaire** ;
+jamais vendues. Une guilde ne reçoit jamais une pièce qu'elle a déjà. La description de chaque pièce liste la panoplie,
+coche les pièces portées et montre les bonus atteints ; gagner ou perdre un palier s'affiche au-dessus de la barre
+d'action.
+
+**Protection minimale.** Toute armure unique (les 12 pièces de panoplie comme la Couronne du Roi de givre, le Plastron du
+Serpent à plumes, les Bottes de Zéphyr et les Bottes du Coursier) protège **au moins comme la pièce en netherite** du même
+emplacement (armure 3/8/6/3, robustesse 3, résistance au recul 10 %) ; ce qui manque est ajouté, une valeur plus haute
+est gardée, et les exemplaires déjà obtenus sont mis à niveau dès qu'un joueur les a dans son inventaire. Réglage
+`armorFloor` d'`uniques.json5` (`"netherite"` par défaut, `"none"`).
 
 Les pouvoirs ne touchent **que les monstres** (jamais les joueurs, villageois, animaux ou familiers) et ont tous une
 recharge (affichée sur l'objet comme celle d'une perle de l'Ender pour les pouvoirs au clic droit). La foudre est
@@ -823,7 +907,8 @@ dos et des mantelets de plumes de quetzal, les Bottes de Zéphyr des bottes blan
 Bottes du Coursier de hautes bottes de cavalier en cuir vert à revers fauves et boucles de laiton. L'**Égide des Âmes**
 a un vrai **modèle 3D en main** (écu à pointe, crâne en relief aux yeux luisants, flammes d'âmes animées, poignée au
 dos), placé exactement comme le bouclier vanilla, y compris en parade. Aperçu :
-[`tools/previews/armor_worn.png`](tools/previews/armor_worn.png) (face, profil, dos, trois-quarts). Ces textures ne sont
+[`tools/previews/armor_worn.png`](tools/previews/armor_worn.png) (face, profil, dos, trois-quarts). Les **trois panoplies** ont aussi leurs icônes animées et leur apparence portée,
+jambières comprises. Ces textures ne sont
 utilisées que lorsqu'un pack est garanti (réglage `customModels` d'`uniques.json5`) :
 
 - **Avec Polymer** (`customModels: "auto"`, par défaut) : installez [Polymer](https://modrinth.com/mod/polymer)
@@ -869,9 +954,16 @@ les réduit encore). Les deux tiers des météores d'une Pluie **suivent un mons
 | **Bannière de guerre** | Épique | plante une bannière de guerre pendant 20 s : à 8 blocs autour, vous, vos membres et vos villageois gagnez **Force II** et **Célérité II** (attaques plus rapides) |
 | **Fléau** | Épique | nuée maudite de 10 s sur 6 blocs au point visé : les monstres brillent, Faiblesse I, Lenteur II et **+25 % de dégâts** de toutes sources (boss : +12,5 %) |
 | **Permutation** | Rare | échangez votre place avec le monstre ou l'allié de la guilde visé (en vue, 32 blocs) : monstre étourdi 2 s, allié protégé 3 s (Résistance II) ; jamais dans un mur, la lave ou au-dessus du vide |
-| **Ralliement** | Épique | 4 s d'incantation, puis les membres de la guilde à 512 blocs reçoivent **[Rejoindre]** dans le chat pendant 30 s : les 8 premiers qui cliquent sont téléportés près de vous |
+| **Ralliement** | Épique | 4 s d'incantation, puis **tous les membres de la guilde en ligne**, où qu'ils soient (autres dimensions comprises), reçoivent **[Rejoindre]** dans le chat pendant 30 s : les 8 premiers qui cliquent sont téléportés près de vous |
 | **Chaînes spectrales** | Légendaire | enchaîne le monstre visé et 2 voisins (4 blocs) sur place pendant 5 s (boss : 2,5 s), puis les chaînes se brisent (**6 ❤**) |
 | **Hâte du vent** | Rare | pendant 30 s, vous et la guilde à 8 blocs gagnez **Vitesse II**, **Saut amélioré II** et ne subissez plus de dégâts de chute |
+
+**Un sort ne fait pas tout.** Chaque nouveau coup d'un même sort sur une même cible fait un peu moins mal (−25 % à chaque
+coup, jamais moins de 20 %) : les 25 météores d'une Pluie maudite écrasent toujours une horde, mais ne s'acharnent plus
+sur un seul monstre coriace. Les sorts continus (Blizzard, Rayon arcanique, Égide) ne comptent qu'un coup toutes les 5 s.
+Surtout, **un boss** (gardiens des ruines, formes maudites comprises, boss des hordes, Wither, Ender Dragon, Warden) ne
+perd jamais plus de **4 %** de sa vie maximale par sort lancé d'un parchemin ou d'un grimoire, et **7 %** avec le grimoire
+maudit : les sorts entament un boss, ce sont les combattants qui l'achèvent. Les monstres ordinaires n'ont pas de limite.
 
 **Sorts tactiques.** La **Bannière de guerre** reste plantée où vous l'avez lue : ses tambours battent chaque seconde et
 ses bienfaits durent tant qu'on reste dans son cercle (et une seconde après). Le **Fléau** rend les monstres plus fragiles
@@ -879,8 +971,11 @@ face à tout (vos armes, vos golems, les autres sorts) ; deux Fléaux ne s'addit
 la moitié. La **Permutation** demande de viser directement la créature (un monstre pour le sortir d'un coin, un membre ou
 un villageois de la guilde pour le tirer d'affaire) : si l'arrivée est dangereuse (mur, lave, feu, vide sous une cible
 volante à plus de 3 blocs), le parchemin reste intact ; un gardien de ruine peut être permuté, mais sa laisse d'arène le
-ramène chez lui. Le **Ralliement** ne téléporte **personne sans son accord** : chaque membre appelé clique sur
-[Rejoindre] (ou l'ignore) ; l'appel s'arrête si vous vous déconnectez ou changez de dimension. Il fonctionne aussi pendant
+ramène chez lui. Le **Ralliement** appelle **tous les membres en ligne**, à n'importe quelle distance et dans n'importe
+quelle dimension (un membre du Nether ou de l'End qui clique arrive à côté de vous), sauf ceux déjà à moins de 8 blocs
+et ceux qui dorment, sont morts ou spectateurs ; il ne téléporte **personne sans son accord** (chaque membre clique sur
+[Rejoindre]) ; l'appel s'arrête si vous vous déconnectez ou changez de dimension. Si personne ne peut être appelé, le
+parchemin reste intact et le message dit **pourquoi** (aucun autre membre en ligne, tous déjà près de vous, endormis…). Il fonctionne aussi pendant
 une horde (pour défendre la base) et vers ou depuis un combat de ruine. Les **Chaînes spectrales** clouent les monstres
 sur place (ni marche, ni saut, ni recul, ni téléportation), mais ils frappent encore ce qui passe à leur portée.
 
@@ -916,7 +1011,8 @@ dégâts, soins et durées ×1,75, portées ×1,35, plus de cibles, effets d'un 
 météores** fait tomber **25 météores** au lieu de 10 sur une zone bien plus large, la **Tempête de foudre** frappe **20
 monstres** avec des bonds de 15 blocs, la **Singularité** aspire à **16 blocs**, le **Séisme** lance 5 ondes, les
 **Gardiens** sont 3, le **Fléau** fait subir **+35 %** de dégâts pendant 17,5 s, les **Chaînes spectrales** retiennent
-**5 monstres** (les boss 65 % du temps) et le **Ralliement** appelle jusqu'à **12 membres**. Chaque sort se lance dans un pentagramme de sang, au milieu des âmes et des ténèbres.
+**5 monstres** (les boss 65 % du temps) et le **Ralliement** appelle jusqu'à **12 membres**. Contre un boss, un sort du grimoire maudit lui retire au plus
+**7 %** de sa vie maximale : quatre Pluies maudites laissent un Archimage déchu maudit à la Menace X à environ 70 % de sa vie. Chaque sort se lance dans un pentagramme de sang, au milieu des âmes et des ténèbres.
 - **Son prix** : plus de faim (Rare 4, Épique 7, Légendaire 9, Mythique 12) et **un peu de sang** (½ ❤ pour les sorts
   rares et épiques, 1 ❤ pour les légendaires et mythiques). Il ne vous laisse jamais sous **3 ❤** : en dessous, le sort
   ne part pas. Recharge 5 s. Gratuit en créatif.
@@ -1133,6 +1229,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin trade tier <guilde> <palier>` | Fixe le palier du Carrefour commercial |
 | `/guild admin unique list` · `unique give <joueur> <id>` | Armes uniques : liste (rareté, pouvoir, chances par source ; clic sur un nom = préparer le `give`), donner une arme (un doublon est signalé) |
 | `/guild admin unique registry [id]` · `unique free <id> [guilde]` | Registre des exemplaires (numéros, détenteurs, doublons) ; marquer une arme comme perdue pour qu'elle puisse retomber |
+| `/guild admin rune list` · `rune inscribe <joueur> <id>` · `rune remove <joueur>` | Runes : liste, graver une rune sur la pièce d'armure tenue (règles respectées), retirer la rune de l'objet tenu |
 | `/guild admin elixir list` · `elixir give <joueur> <id> [nombre]` · `elixir boosts <joueur> [clear]` | Élixirs : liste, donner, bonus magiques actifs d'un joueur (les effacer) |
 | `/guild admin scroll list` · `scroll give <joueur> <id> [nombre]` · `scroll grimoire <joueur> [cursed] [ids]` | Parchemins de sort : liste (clic sur un nom = préparer le `give`), donner des parchemins, donner un grimoire (avec des pages déjà écrites si des ids sont donnés ; `cursed` = grimoire maudit) ; `scroll give <joueur> incantation\|incantation_maudit [nombre]` donne aussi les parchemins d'incantation |
 | `/guild admin ruin list` · `info` · `awaken` · `reset` | Ruines : liste, ruine la plus proche, réveiller / rendormir son gardien |
@@ -1163,7 +1260,7 @@ hordes, délai après un coup, avertissement de bord, protection de chute), racc
 | `shop.json5` | Catégories et articles (lot, prix d'achat, prix de vente, niveau requis) |
 | `villagers.json5` | Arrivées, limites, réglages des tâches, zones de travail et parcours de garde (nombre, rayon, distance au cœur, recherche automatique, marge des objectifs prioritaires, pauses, laisse), gardes (rôles, arc, repli, soins, équipement pris dans les coffres, équipement de base par niveau), vie et refuge de nuit (`vitality`, `night`), plantation (bûcheron, fermier), chunks gardés chargés (`chunkLoading`), candidats en groupe, destinations d'expédition, catégories de rangement (règles), tables de minage simulé par objectif, minage réel (`realMining` : mode par défaut, vitesse, profondeurs par objectif, escalier, galeries, salles, filons, torches, remontée du soir, listes de blocs naturels / minerais / blocs de remplissage), catégories de rangement, départs après défaite, forgeron (`blacksmith`) et alchimiste (`alchemist` : ordre des travaux, répartition des rôles, plafonds par jour,
 potions à l'alambic), travaux des champs, stockage (`storage` : limites, 0 = illimité ; sous-catégories `parent` ; salles
-réservées ; parties des grands groupes `maxGroupChests`)
+réservées ; parties des grands groupes `maxGroupChests` ; salles filtrées `filteredRooms`, `filteredRoomPotions`, `filteredRoomBooks`)
 (`farmer.fieldWork`, `farmer.irrigation`), re-rangement (`sorter.tidy`, portée, réservations), rangement par colonnes (`storage.defaultChestLayout`), coffres filtrés et
 analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 (`storage.maxRooms`, marge, seuils de réattribution) |
@@ -1171,13 +1268,14 @@ analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `alchemy.json5` | Potions et élixirs des alchimistes : étapes de brassage (recettes vanilla), stocks par défaut, élixirs (base, ingrédient, effets, bonus magiques), plafonds et affichage des bonus magiques |
+| `runes.json5` | Runes du forgeron : gravure (niveau de guilde, chance, plafond par jour, examens, matériau, annonce), poids des rangs, objets des runes mythiques, définitions des runes (nom, rang, pièces, poids, bonus d'attributs, pouvoir), réglages des pouvoirs |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit
 (`cursedGrimoire` : multiplicateurs de puissance / portée / nombre, niveaux en plus, surcharges par sort, faim, sang,
-vie minimale, recharge, chance par ruine maudite), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules) |
+vie minimale, recharge, chance par ruine maudite), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules, rendement décroissant des coups répétés `repeatHitDecay` / `repeatHitFloor`, part maximale de la vie d'un boss par sort `bossCastCap` et `cursedGrimoire.bossCastCap`) |
 | `ruins.json5` | Ruines : bilan du combat (`stats`), sentinelles (`guards`, annonce à l'écran désactivée), rituel scellé (`summon.sealSeconds`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) et légende du Jaguar céleste
 (`cartography.statues` : niveau, coûts, nombre et espacement des statues, distance de la dernière au temple, sol,
 guidage, carte) |
-| `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), armes favorites des gardiens (`favorites`), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
+| `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), armes favorites des gardiens (`favorites`), panoplies (`sets` : bonus par nombre de pièces portées ; champ `set` des pièces ; pouvoirs `winterHeart`, `jaguarAmbush`, `soulPyre`), protection minimale des armures (`armorFloor`), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
 | `lang.json` | **Tous les textes** affichés aux joueurs (français par défaut, codes couleur `&`, `{0}` = paramètres) |
 
 Une copie des fichiers par défaut (commentés) se trouve dans [`docs/default-config/`](docs/default-config/).
@@ -1303,6 +1401,17 @@ Formules par défaut (modifiables) :
 - Nouveaux sorts : les marques du Fléau et la protection de chute de la Hâte du vent sont perdues au redémarrage ; le
   Ralliement n'appelle que les membres en ligne au lancement ; les monstres enchaînés peuvent encore frapper ou tirer ;
   la Bannière (20 s) et le Ralliement (30 s) occupent un des 3 sorts actifs par joueur pendant toute leur durée.
+
+- Runes : les runes déjà gravées gardent les valeurs de leur gravure (seuls les réglages des pouvoirs suivent la config) ;
+  la Rune du Dragon n'a que des ailes en particules (le plastron garde son apparence) et les feux d'artifice la propulsent
+  comme des élytres ; réparer deux pièces dans la grille d'artisanat perd la rune, comme le nom.
+- Panoplies : la vie bonus est rendue à la connexion après le chargement de la vie (comme pour les objets vanilla) ;
+  pendant la recharge d'un pouvoir de panoplie, ses pièces ne s'équipent pas d'un clic droit (le glisser-déposer marche) ;
+  le camouflage du jaguar est une invisibilité vanilla (l'armure portée reste visible).
+- Sorts contre les boss : la vie maximale d'un monstre est plafonnée par le jeu à 1024 points, ce qui écrase en partie les
+  multiplicateurs de menace, de malédiction et de groupe au-delà ; le plafond par sort suit cette vie réelle.
+- Salles filtrées : un objet ajouté ou retiré à la main est vu en une seconde environ (quelques secondes pour des milliers
+  de coffres) ; une épée simple dans un coffre fait aussi accepter les épées enchantées (avant « Équipement enchanté »).
 
 ---
 
