@@ -5,6 +5,7 @@ import dev.guildy.alchemy.AlchemyModule;
 import dev.guildy.alchemy.BrewBook;
 import dev.guildy.alchemy.Brews;
 import dev.guildy.alchemy.PotionKey;
+import dev.guildy.alchemy.SimpleBrewing;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Lang;
 import dev.guildy.core.Lifecycle;
@@ -110,6 +111,13 @@ final class AlchemistGui {
 	/** "Stocks de potions" button. */
 	static GuiElementBuilder stockButton(ServerPlayer player, Guild guild, Runnable back) {
 		List<Component> lore = new ArrayList<>(GuiUtil.lines("villager.gui.alchemy.stock.lore"));
+		AlchemyConfig.Brewing brewing = AlchemyModule.config().brewing;
+		if (brewing.simple()) {
+			// Simple brewing: what a batch needs.
+			lore.add(Component.empty());
+			lore.addAll(GuiUtil.lines("villager.gui.alchemy.stock.simple", VillagerModule.config().alchemist.bottlesPerBrew,
+					AlchemistLang.itemName(brewing.item), brewing.maxElixirsPerDay));
+		}
 		lore.add(Component.empty());
 		lore.add(Lang.get("villager.gui.alchemy.stock.click"));
 		return GuiUtil.item(Items.BREWING_STAND, Lang.get("villager.gui.alchemy.stock"), lore).setCallback((slot, type, action, g) -> {
@@ -195,8 +203,17 @@ final class AlchemistGui {
 		gui.open();
 	}
 
-	/** Shortest recipe from a water bottle: "eau → verrue du Nether → poudre lumineuse". */
+	/**
+	 * Shortest recipe from a water bottle: "eau → verrue du Nether → poudre lumineuse"; in simple mode, the cost of a batch:
+	 * "1 × poudre de blaze · 20 s par fournée".
+	 */
 	private static Component recipe(BrewBook book, String product) {
+		AlchemyConfig config = AlchemyModule.config();
+		if (config.brewing.simple()) {
+			SimpleBrewing.Cost cost = SimpleBrewing.cost(product, config);
+			return cost == null ? Lang.get("villager.gui.stock.no_recipe")
+					: Lang.get("villager.gui.stock.cost", cost.blaze(), AlchemistLang.itemName(config.brewing.item), cost.seconds());
+		}
 		List<List<BrewBook.Step>> chains = book.chains(product, Set.of(PotionKey.WATER.text()), BrewBook.MAX_STEPS);
 		if (chains.isEmpty()) {
 			return Lang.get("villager.gui.stock.no_recipe");
@@ -215,6 +232,10 @@ final class AlchemistGui {
 			return;
 		}
 		lore.add(Lang.get("villager.gui.lore.stat.potions", data.potions, data.potionsToday(today), VillagerModule.config().alchemist.maxPotionsPerDay));
+		AlchemyConfig.Brewing brewing = AlchemyModule.config().brewing;
+		if (brewing.simple() && data.elixirsToday(today) > 0) {
+			lore.add(Lang.get("villager.gui.lore.stat.elixirs", data.elixirsToday(today), brewing.maxElixirsPerDay));
+		}
 		if (!data.lastPotion.isEmpty()) {
 			lore.add(Lang.get("villager.gui.lore.stat.last_potion", Brews.name(data.lastPotion)));
 		}

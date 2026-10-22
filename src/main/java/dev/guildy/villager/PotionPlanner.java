@@ -1,9 +1,11 @@
 package dev.guildy.villager;
 
+import dev.guildy.alchemy.AlchemyConfig;
 import dev.guildy.alchemy.AlchemyModule;
 import dev.guildy.alchemy.BrewBook;
 import dev.guildy.alchemy.Brews;
 import dev.guildy.alchemy.PotionKey;
+import dev.guildy.alchemy.SimpleBrewing;
 import dev.guildy.data.Guild;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
@@ -22,7 +24,7 @@ import java.util.UUID;
  * What an alchemist can brew with what it carries and what the storage holds ({@link BrewBook#choose} on the
  * Minecraft side): the bottles it may start from (water bottles, glass bottles to fill when there is water near a
  * stand, bottles it carries, bottles the storage holds beyond their own stock target), the reagents of a chain and the
- * fuel of its brews.
+ * fuel of its brews. In simple mode ({@link SimpleBrewing#choose}), only the blaze powder counts.
  */
 final class PotionPlanner {
 	/** Supplies an alchemist (or the whole guild) can use: carried items plus what the storage gives. */
@@ -111,6 +113,60 @@ final class PotionPlanner {
 			}
 		}
 		return true;
+	}
+
+	// ------------------------------------------------------------------ simple brewing
+
+	/** True when the alchemists brew in simple mode (blaze powder and time only). */
+	static boolean simple() {
+		return AlchemyModule.config().brewing.simple();
+	}
+
+	/** Item used up by simple brewing (blaze powder by default), null when unknown. */
+	static @Nullable Item blazeItem() {
+		return Brews.item(AlchemyModule.config().brewing.item);
+	}
+
+	/** Blaze powder (the item of simple brewing) the storage gives plus what these bags carry. */
+	static int blaze(AlchemyGuild.Stock stock, List<List<ItemStack>> bags) {
+		Item item = blazeItem();
+		if (item == null) {
+			return 0;
+		}
+		int count = stock.plain(item);
+		for (List<ItemStack> bag : bags) {
+			for (ItemStack stack : bag) {
+				if (CraftStock.plain(stack, item)) {
+					count += stack.getCount();
+				}
+			}
+		}
+		return count;
+	}
+
+	/**
+	 * Simple mode: what to brew for the guild with {@code blaze} powder at hand ({@link SimpleBrewing#choose}), batches of
+	 * {@code limit} bottles at most, elixirs of {@code elixirsLeft} bottles at most ({@code except}: this alchemist's own
+	 * batch is not counted held).
+	 */
+	static SimpleBrewing.Choice chooseSimple(ServerLevel level, Guild guild, AlchemyGuild shared, int blaze, int limit, int elixirsLeft,
+			@Nullable UUID except) {
+		AlchemyConfig config = AlchemyModule.config();
+		int full = VillagerModule.config().alchemist.bottlesPerBrew;
+		return SimpleBrewing.choose(config.menuProducts(), AlchemyGuild.targets(guild), shared.held(level, guild, except),
+				product -> !Brews.create(product).isEmpty(), product -> SimpleBrewing.cost(product, config), blaze, full, limit, elixirsLeft);
+	}
+
+	/** Why simple brewing is impossible (blocking reason text), null when it may brew. */
+	static @Nullable String simpleReason(SimpleBrewing.Choice choice, int blaze, int elixirsMade) {
+		String item = AlchemistLang.itemName(AlchemyModule.config().brewing.item);
+		return switch (choice.verdict()) {
+			case BREW -> null;
+			case STOCK_FULL -> AlchemistLang.block("stock_full");
+			case NO_BLAZE -> blaze <= 0 ? AlchemistLang.block("no_blaze", item)
+					: AlchemistLang.block("few_blaze", item, choice.blaze(), choice.product() == null ? "?" : Brews.name(choice.product()));
+			case ELIXIR_CAP -> AlchemistLang.block("elixir_cap", elixirsMade, AlchemyModule.config().brewing.maxElixirsPerDay);
+		};
 	}
 
 	/**

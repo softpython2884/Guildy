@@ -72,7 +72,7 @@ public final class AlchemistConfig {
 	@Comment({
 			"Ordre des travaux : books = livres enchantes, scrolls = parchemins (un parchemin a chaque travail a la table, avec",
 			"livre + papier), potions = potions et elixirs (alambic, voir alchemy.json5). L'alchimiste fait son travail prefere",
-			"(son role) ; s'il est impossible (pas de table, de livres, de papier, d'alambic, d'ingredients, plafond du jour,",
+			"(son role) ; s'il est impossible (pas de table, de livres, de papier, d'alambic, de poudre de blaze, plafond du jour,",
 			"stocks pleins...), il passe au premier travail possible dans cet ordre (raison affichee dans son menu)"
 	})
 	public List<String> jobOrder = new ArrayList<>(List.of("books", "scrolls", "potions"));
@@ -90,17 +90,20 @@ public final class AlchemistConfig {
 	public boolean manualRoleFallback = true;
 	@Comment("Fioles de potions et d'elixirs au plus par alchimiste et par jour de jeu (0 a 1000 ; 0 = jamais de potions)")
 	public int maxPotionsPerDay = 18;
-	@Comment("Duree d'un brassage en secondes (20 = alambic vanilla) ; le bonus de vitesse de travail s'applique (1 a 120)")
+	@Comment({
+			"Mode 'recipes' (alchemy.json5 -> brewing.mode) : duree d'un brassage en secondes (20 = alambic vanilla) ; le bonus",
+			"de vitesse de travail s'applique (1 a 120). Mode simple : duree par classe de produit dans alchemy.json5 -> brewing"
+	})
 	public int secondsPerBrew = 20;
-	@Comment("Fioles par brassage (1 a 3, comme les 3 emplacements de l'alambic) : un ingredient pour toutes")
+	@Comment("Fioles par brassage (1 a 3, comme les 3 emplacements de l'alambic) : un ingredient (mode simple : un cout) pour toutes")
 	public int bottlesPerBrew = 3;
-	@Comment("Combustible des brassages, pris dans son sac puis au stockage")
+	@Comment("Mode 'recipes' : combustible des brassages, pris dans son sac puis au stockage")
 	public String brewFuel = "minecraft:blaze_powder";
-	@Comment("Brassages par unite de combustible (1 a 100 ; 20 = poudre de blaze vanilla)")
+	@Comment("Mode 'recipes' : brassages par unite de combustible (1 a 100 ; 20 = poudre de blaze vanilla)")
 	public int brewsPerFuel = 20;
-	@Comment("Remplir des fioles vides du stockage a une source d'eau ou un chaudron d'eau proche de l'alambic (sinon : fioles d'eau)")
+	@Comment("Mode 'recipes' : remplir des fioles vides du stockage a une source d'eau ou un chaudron d'eau proche de l'alambic")
 	public boolean fillBottles = true;
-	@Comment("Distance maximum (blocs) entre l'alambic et l'eau qui remplit les fioles vides (1 a 16)")
+	@Comment("Mode 'recipes' : distance maximum (blocs) entre l'alambic et l'eau qui remplit les fioles vides (1 a 16)")
 	public int waterRadius = 6;
 	@Comment("Intervalle (secondes) entre deux inventaires des potions et des ingredients du stockage (5 a 300)")
 	public int stockScanSeconds = 10;

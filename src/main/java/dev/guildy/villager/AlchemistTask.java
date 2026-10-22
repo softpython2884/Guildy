@@ -1,8 +1,10 @@
 package dev.guildy.villager;
 
+import dev.guildy.alchemy.AlchemyModule;
 import dev.guildy.alchemy.BrewBook;
 import dev.guildy.alchemy.Brews;
 import dev.guildy.alchemy.PotionKey;
+import dev.guildy.alchemy.SimpleBrewing;
 import dev.guildy.data.GuildManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -47,8 +49,10 @@ import java.util.function.Predicate;
  * out); with chance {@code scrollChance} the book becomes a spell scroll when it has paper ({@link AlchemistScrolls}).</li>
  * <li><b>Parchemins</b>: the same work at the table, always a spell scroll (book + lapis + {@code scrollPaper} paper).</li>
  * <li><b>Potions</b>: at a brewing stand of the territory, brews the product furthest below the guild's stock target
- * (alchemy.json5, {@link PotionPlanner}): from water bottles (or glass bottles filled at water near the stand), one brew per
- * step of {@code secondsPerBrew} seconds with one reagent for up to three bottles, fuel from blaze powder.</li>
+ * (alchemy.json5, {@link PotionPlanner}). Simple mode (default, {@link SimpleBrewing}): a batch of up to three bottles
+ * costs only blaze powder and the time of its class, elixirs capped per day. Recipes mode: from water bottles (or glass
+ * bottles filled at water near the stand), one brew per step of {@code secondsPerBrew} seconds with one reagent for up to
+ * three bottles, fuel from blaze powder.</li>
  * </ul>
  * Supplies come from its bag, else from the registered storage chests (really removed, see {@link CraftStock}); products
  * go to the chest of their storage category (else a fallback, else a deposit chest). Each job has its daily cap. The
@@ -105,6 +109,9 @@ final class AlchemistTask extends TaskHandler {
 	private int stepIndex;
 	private int batch;
 	private @Nullable BlockPos stand;
+	// simple brewing: the choice of the last decision, the batch in progress
+	private SimpleBrewing.@Nullable Choice simpleCandidate;
+	private SimpleBrewing.@Nullable Choice simple;
 	// delivery
 	private @Nullable BlockPos deliverTo;
 	/** Storage category of the items taken to {@link #deliverTo}, and their kind for the status. */
@@ -288,7 +295,7 @@ final class AlchemistTask extends TaskHandler {
 			scanStep(ctx);
 			return;
 		}
-		if (plan != null) {
+		if (plan != null || simple != null) {
 			// A batch in progress (back from fetching a supply): it goes on.
 			job = AlchemyJob.POTIONS;
 			brewReady(ctx);
@@ -315,6 +322,7 @@ final class AlchemistTask extends TaskHandler {
 		List<AlchemyJob> order = manual != null && !cfg.manualRoleFallback ? List.of(manual) : AlchemyRoles.tryOrder(preferred, cfg.order());
 		Map<AlchemyJob, String> reasons = new LinkedHashMap<>();
 		candidate = null;
+		simpleCandidate = null;
 		AlchemyJob chosen = AlchemyRoles.firstPossible(order, candidateJob -> {
 			String reason = blocked(ctx, shared, candidateJob);
 			if (reason != null) {
@@ -380,6 +388,18 @@ final class AlchemistTask extends TaskHandler {
 				if (made >= cfg.maxPotionsPerDay) {
 					return AlchemistLang.block("cap", made, cfg.maxPotionsPerDay);
 				}
+				if (PotionPlanner.simple()) {
+					// Simple brewing: blaze powder only (the storage, then its bag).
+					int blaze = PotionPlanner.blaze(stock, List.of(ctx.record.carried));
+					int elixirs = data.elixirsToday(today);
+					SimpleBrewing.Choice choice = PotionPlanner.chooseSimple(ctx.level, ctx.guild, shared, blaze, cfg.maxPotionsPerDay - made,
+							AlchemyModule.config().brewing.maxElixirsPerDay - elixirs, ctx.record.uuid);
+					String reason = PotionPlanner.simpleReason(choice, blaze, elixirs);
+					if (reason == null) {
+						simpleCandidate = choice;
+					}
+					return reason;
+				}
 				PotionPlanner.View view = view(ctx, shared, stock);
 				BrewBook.Choice choice = PotionPlanner.choose(ctx.level, ctx.guild, shared, view, ctx.record.uuid);
 				if (choice.verdict() == BrewBook.Verdict.STOCK_FULL) {
@@ -419,7 +439,7 @@ final class AlchemistTask extends TaskHandler {
 		return CraftStock.plain(stack, Items.BOOK) || CraftStock.plain(stack, Items.LAPIS_LAZULI) || CraftStock.plain(stack, Items.PAPER);
 	}
 
-	/** Water and glass bottles, fuel and reagents of the brewing steps. */
+	/** Water and glass bottles, fuel and reagents of the brewing steps, the blaze powder of simple brewing. */
 	private static boolean isBrewSupply(ItemStack stack) {
 		if (Brews.isWater(stack) || CraftStock.plain(stack, Items.GLASS_BOTTLE)) {
 			return true;
@@ -428,7 +448,7 @@ final class AlchemistTask extends TaskHandler {
 			return false;
 		}
 		String id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-		if (id.equals(VillagerModule.config().alchemist.brewFuel)) {
+		if (id.equals(VillagerModule.config().alchemist.brewFuel) || id.equals(AlchemyModule.config().brewing.item)) {
 			return true;
 		}
 		for (BrewBook.Step step : Brews.book().steps()) {
@@ -487,6 +507,11 @@ final class AlchemistTask extends TaskHandler {
 		}
 		if (job != null && job.atTable()) {
 			return !isTableSupply(stack);
+		}
+		if (PotionPlanner.simple()) {
+			// Simple brewing only uses its blaze powder.
+			Item blaze = PotionPlanner.blazeItem();
+			return blaze == null || !CraftStock.plain(stack, blaze);
 		}
 		BrewBook.Plan current = plan;
 		if (current == null || stepIndex >= current.steps().size()) {
@@ -917,6 +942,17 @@ final class AlchemistTask extends TaskHandler {
 
 	/** Plans the batch (once), gathers its bottles, reagents and fuel, then goes to the stand. */
 	private void brewReady(WorkContext ctx) {
+		if (PotionPlanner.simple()) {
+			if (plan != null) {
+				// The mode changed (reload): the bottles of the batch stay in the bag.
+				abortBrew(ctx);
+			}
+			simpleReady(ctx);
+			return;
+		}
+		if (simple != null) {
+			abortBrew(ctx);
+		}
 		AlchemistConfig cfg = ctx.config.alchemist;
 		AlchemyGuild shared = shared(ctx);
 		CraftData data = CraftJobs.data(ctx.record);
@@ -1038,6 +1074,10 @@ final class AlchemistTask extends TaskHandler {
 	}
 
 	private void brewGoStep(WorkContext ctx) {
+		if (simple != null) {
+			simpleGoStep(ctx);
+			return;
+		}
 		BrewBook.Plan current = plan;
 		if (current == null || !standUsable(ctx)) {
 			if (current != null) {
@@ -1113,6 +1153,10 @@ final class AlchemistTask extends TaskHandler {
 	}
 
 	private void brewStep(WorkContext ctx) {
+		if (simple != null) {
+			simpleBrewStep(ctx);
+			return;
+		}
 		BrewBook.Plan current = plan;
 		AlchemistConfig cfg = ctx.config.alchemist;
 		if (current == null || stepIndex >= current.steps().size()) {
@@ -1148,7 +1192,7 @@ final class AlchemistTask extends TaskHandler {
 		Movement.hold(ctx, at);
 		shared(ctx).lease(at, ctx.record.uuid, ctx.now);
 		progress += 20;
-		brewEffects(ctx, at, step);
+		brewEffects(ctx, at, step.to());
 		if (progress < required) {
 			ctx.status("villager.status.alchemy.brewing", Brews.name(current.product()), AlchemistLang.itemName(step.reagent()), stepIndex + 1,
 					current.steps().size(), AlchemyRules.progressPercent(progress, required));
@@ -1205,16 +1249,16 @@ final class AlchemistTask extends TaskHandler {
 	}
 
 	/** Bubbles in the colour of the brew, the stand's smoke, the arm stirring. */
-	private void brewEffects(WorkContext ctx, BlockPos at, BrewBook.Step step) {
+	private void brewEffects(WorkContext ctx, BlockPos at, String product) {
 		ServerLevel level = ctx.level;
 		RandomSource random = level.getRandom();
 		double x = at.getX() + 0.5;
 		double y = at.getY() + 0.8;
 		double z = at.getZ() + 0.5;
-		int color = 0xFF000000 | Brews.color(step.to());
+		int color = 0xFF000000 | Brews.color(product);
 		level.sendParticles(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, color), x, y, z, 3, 0.2, 0.15, 0.2, 1.0);
 		level.sendParticles(ParticleTypes.BUBBLE_POP, x, y + 0.1, z, 2, 0.15, 0.05, 0.15, 0.01);
-		if (step.to().startsWith(PotionKey.Form.ELIXIR.prefix())) {
+		if (product.startsWith(PotionKey.Form.ELIXIR.prefix())) {
 			level.sendParticles(ParticleTypes.WITCH, x, y + 0.3, z, 3, 0.25, 0.2, 0.25, 0.02);
 		}
 		long second = progress / 20;
@@ -1252,13 +1296,181 @@ final class AlchemistTask extends TaskHandler {
 
 	/** Gives the batch up (its bottles stay in the bag, delivered as products or used by a later batch). */
 	private void abortBrew(WorkContext ctx) {
-		if (plan != null) {
+		if (plan != null || simple != null) {
 			shared(ctx).release(ctx.record.uuid);
 		}
 		plan = null;
 		candidate = null;
+		simple = null;
+		simpleCandidate = null;
 		stepIndex = 0;
 		batch = 0;
+	}
+
+	// ------------------------------------------------------------------ simple brewing (blaze powder and time)
+
+	/** Takes the batch chosen by the decision (once), gathers its blaze powder, then goes to the stand. */
+	private void simpleReady(WorkContext ctx) {
+		AlchemyGuild shared = shared(ctx);
+		if (simple == null) {
+			SimpleBrewing.Choice chosen = simpleCandidate;
+			if (chosen == null || chosen.verdict() != SimpleBrewing.Verdict.BREW || chosen.product() == null || chosen.bottles() <= 0) {
+				phase = Phase.READY;
+				return;
+			}
+			simple = chosen;
+			shared.reserve(ctx.record.uuid, chosen.product(), chosen.bottles());
+		}
+		SimpleBrewing.Choice current = simple;
+		if (!standUsable(ctx)) {
+			stand = shared.stand(ctx);
+			if (stand == null) {
+				abortBrew(ctx);
+				shared.invalidateWorkshops();
+				ctx.status("villager.status.alchemy.missing", AlchemistLang.block("no_stand"));
+				return;
+			}
+		} else {
+			shared.lease(stand, ctx.record.uuid, ctx.now);
+		}
+		// 1. the blaze powder of the batch, from the storage
+		Item blaze = PotionPlanner.blazeItem();
+		String blazeName = AlchemistLang.itemName(AlchemyModule.config().brewing.item);
+		if (current.blaze() > 0) {
+			int missing = blaze == null ? current.blaze() : current.blaze() - CraftStock.countInBag(ctx, blaze);
+			if (missing > 0) {
+				if (blaze != null && CraftStock.roomFor(ctx, new ItemStack(blaze)) <= 0) {
+					needRoom(ctx);
+					return;
+				}
+				if (blaze == null || !supply(ctx, plainSupply("blaze", blaze, "villager.status.alchemy.fetch_fuel", blazeName), missing)) {
+					abortBrew(ctx);
+					ctx.status("villager.status.alchemy.missing", AlchemistLang.block("no_blaze", blazeName));
+				}
+				return;
+			}
+		}
+		// 2. a bag slot per bottle (a smaller batch when the bag is short of room)
+		int room = ctx.config.work.carryStacks - ctx.record.carried.size();
+		if (blaze != null && current.blaze() > 0 && CraftStock.countInBag(ctx, blaze) <= current.blaze()) {
+			room += stacks(ctx, blaze);
+		}
+		if (room <= 0) {
+			needRoom(ctx);
+			return;
+		}
+		if (room < current.bottles()) {
+			current = current.resized(room, ctx.config.alchemist.bottlesPerBrew);
+			simple = current;
+			shared.reserve(ctx.record.uuid, current.product(), current.bottles());
+		}
+		phase = Phase.BREW_GO;
+		brewGoStep(ctx);
+	}
+
+	/** Bag slots holding plain stacks of an item. */
+	private static int stacks(WorkContext ctx, Item item) {
+		int count = 0;
+		for (ItemStack stack : ctx.record.carried) {
+			if (CraftStock.plain(stack, item)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	private void simpleGoStep(WorkContext ctx) {
+		SimpleBrewing.Choice current = simple;
+		if (current == null || !standUsable(ctx)) {
+			stand = null;
+			phase = Phase.READY;
+			return;
+		}
+		BlockPos at = stand;
+		shared(ctx).lease(at, ctx.record.uuid, ctx.now);
+		switch (Movement.moveTo(ctx, at, 2.5, ctx.config.work.walkTimeoutSeconds)) {
+			case UNREACHABLE -> {
+				stand = null;
+				shared(ctx).invalidateWorkshops();
+				phase = Phase.READY;
+			}
+			case MOVING -> ctx.status("villager.status.alchemy.brew_going", Brews.name(current.product()), current.bottles());
+			case ARRIVED -> {
+				required = ctx.workTicks(current.seconds());
+				progress = 0;
+				phase = Phase.BREW;
+				simpleBrewStep(ctx);
+			}
+		}
+	}
+
+	/** Brews at the stand for the time of the product, then uses up the blaze powder and makes the bottles. */
+	private void simpleBrewStep(WorkContext ctx) {
+		SimpleBrewing.Choice current = simple;
+		if (current == null || current.product() == null) {
+			phase = Phase.READY;
+			return;
+		}
+		if (!standUsable(ctx)) {
+			stand = null;
+			phase = Phase.READY;
+			return;
+		}
+		BlockPos at = stand;
+		if (!Movement.near(ctx, at, 3.5, 3.0)) {
+			phase = Phase.BREW_GO;
+			brewGoStep(ctx);
+			return;
+		}
+		Item blaze = PotionPlanner.blazeItem();
+		if (current.blaze() > 0 && (blaze == null || CraftStock.countInBag(ctx, blaze) < current.blaze())) {
+			// Back to fetching the blaze powder (the batch goes on).
+			phase = Phase.READY;
+			return;
+		}
+		String product = current.product();
+		Movement.hold(ctx, at);
+		shared(ctx).lease(at, ctx.record.uuid, ctx.now);
+		progress += 20;
+		brewEffects(ctx, at, product);
+		if (progress < required) {
+			ctx.status("villager.status.alchemy.brewing_simple", Brews.name(product), current.bottles(), current.blaze(),
+					AlchemistLang.itemName(AlchemyModule.config().brewing.item), AlchemyRules.progressPercent(progress, required));
+			return;
+		}
+		ItemStack made = Brews.create(product);
+		if (made.isEmpty()) {
+			// Unknown or disabled since the decision (reload): nothing is used up.
+			abortBrew(ctx);
+			phase = Phase.READY;
+			return;
+		}
+		if (current.blaze() > 0) {
+			CraftStock.takeFromBag(ctx, blaze, current.blaze());
+		}
+		for (int i = 0; i < current.bottles(); i++) {
+			CraftStock.addStack(ctx, made.copy());
+		}
+		ctx.level.levelEvent(1035, at, 0);
+		int color = 0xFF000000 | Brews.color(product);
+		ctx.level.sendParticles(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, color), at.getX() + 0.5, at.getY() + 0.9, at.getZ() + 0.5,
+				16, 0.25, 0.3, 0.25, 1.0);
+		WorldUtil.swing(ctx.villager);
+		CraftData data = CraftJobs.data(ctx.record);
+		data.countPotions(today(ctx), current.bottles(), product.startsWith(PotionKey.Form.ELIXIR.prefix()));
+		data.lastPotion = product;
+		GuildManager.markDirty();
+		AlchemyGuild shared = shared(ctx);
+		shared.release(ctx.record.uuid);
+		shared.invalidateStock();
+		ctx.level.playSound(null, at, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.8f, 1.2f);
+		WorldUtil.happy(ctx.level, ctx.villager);
+		ctx.status("villager.status.alchemy.brewed", current.bottles(), Brews.name(product));
+		simple = null;
+		simpleCandidate = null;
+		progress = 0;
+		deliverRetryAt = 0;
+		phase = Phase.DELIVER;
 	}
 
 	// ------------------------------------------------------------------ delivery

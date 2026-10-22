@@ -1,6 +1,8 @@
 package dev.guildy.villager;
 
+import dev.guildy.alchemy.AlchemyModule;
 import dev.guildy.alchemy.BrewBook;
+import dev.guildy.alchemy.SimpleBrewing;
 import dev.guildy.data.Guild;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -75,7 +77,8 @@ public final class Alchemists {
 
 	/**
 	 * Jobs the guild can do right now, daily caps aside (all of them before the first scan): a table and books (scrolls: and
-	 * paper, a scroll possible at the best table), a stand and a missing potion with its bottles, reagents and fuel.
+	 * paper, a scroll possible at the best table), a stand and a missing potion with its bottles, reagents and fuel (simple
+	 * brewing: its blaze powder).
 	 */
 	static Set<AlchemyJob> possible(ServerLevel level, Guild guild, AlchemyGuild shared, List<VillagerRecord> alchemists) {
 		if (!shared.workshopsKnown()) {
@@ -111,7 +114,15 @@ public final class Alchemists {
 		for (BlockPos pos : shared.stands) {
 			stand |= CraftWorld.isStand(level, pos);
 		}
-		if (stand && cfg.maxPotionsPerDay > 0) {
+		if (stand && cfg.maxPotionsPerDay > 0 && PotionPlanner.simple()) {
+			// Simple brewing: a missing product the blaze powder of the storage and the bags pays for.
+			int elixirs = AlchemyModule.config().brewing.maxElixirsPerDay > 0 ? cfg.bottlesPerBrew : 0;
+			SimpleBrewing.Choice choice = PotionPlanner.chooseSimple(level, guild, shared, PotionPlanner.blaze(stock, bags), cfg.bottlesPerBrew,
+					elixirs, null);
+			if (choice.verdict() == SimpleBrewing.Verdict.BREW) {
+				possible.add(AlchemyJob.POTIONS);
+			}
+		} else if (stand && cfg.maxPotionsPerDay > 0) {
 			boolean fillable = cfg.fillBottles && shared.anyWater(level, cfg.waterRadius);
 			PotionPlanner.View view = PotionPlanner.view(guild, stock, bags, fuel, fillable);
 			if (PotionPlanner.choose(level, guild, shared, view, null).verdict() == BrewBook.Verdict.BREW) {

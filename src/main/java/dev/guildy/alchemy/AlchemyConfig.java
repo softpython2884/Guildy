@@ -24,9 +24,10 @@ import java.util.regex.Pattern;
  */
 @Comment({
 		"Guildy - alchimie : potions et elixirs prepares par les villageois alchimistes a un alambic du territoire.",
-		"Chaque brassage transforme jusqu'a 3 fioles avec 1 ingredient, comme un alambic vanilla (duree, poudre de blaze :",
-		"villagers.json5 -> alchemist). L'alchimiste part de fioles d'eau (ou de fioles vides remplies a une source d'eau ou",
-		"a un chaudron pres de l'alambic) et enchaine les etapes jusqu'au produit voulu, puis le range au stockage.",
+		"Deux modes (brewing.mode) : 'simple' (defaut) = chaque fournee ne coute que de la poudre de blaze et du temps",
+		"(voir la section brewing) ; 'recipes' = brassage vanilla : chaque brassage transforme jusqu'a 3 fioles avec 1",
+		"ingredient (duree, poudre de blaze : villagers.json5 -> alchemist), l'alchimiste part de fioles d'eau (ou de fioles",
+		"vides remplies a une source d'eau ou a un chaudron pres de l'alambic) et enchaine les etapes de 'recipes'.",
 		"Produits : 'healing' (potion), 'splash:healing' (jetable), 'lingering:healing' (persistante), 'elixir:arcanique'.",
 		"Stocks : chaque guilde choisit combien en garder (menu de l'alchimiste -> Stocks de potions) ; ici les valeurs par",
 		"defaut. Commandes admin : /guild admin elixir list | give <joueur> <id> [nombre] | boosts <joueur>."
@@ -43,18 +44,21 @@ public final class AlchemyConfig implements Validatable {
 	@Comment("Version du fichier (geree automatiquement, ne pas modifier)")
 	public int formatVersion = 0;
 
+	@Comment("Mode de brassage et couts du mode simple (poudre de blaze et temps par fournee)")
+	public Brewing brewing = new Brewing();
+
 	@Comment({
-			"Etapes de brassage connues : \"entree + ingredient -> sortie\" (produits comme ci-dessus, ingredient = id d'objet ;",
-			"'minecraft:' facultatif). Par defaut, les recettes vanilla des potions (verrue du Nether, puis l'ingredient de l'effet,",
-			"redstone = plus long, poudre lumineuse = plus fort, oeil d'araignee fermente = effet inverse). Une ligne invalide est",
-			"ignoree avec un avertissement dans les journaux du serveur."
+			"Mode 'recipes' : etapes de brassage connues : \"entree + ingredient -> sortie\" (produits comme ci-dessus, ingredient",
+			"= id d'objet ; 'minecraft:' facultatif). Par defaut, les recettes vanilla des potions (verrue du Nether, puis",
+			"l'ingredient de l'effet, redstone = plus long, poudre lumineuse = plus fort, oeil d'araignee fermente = effet",
+			"inverse). Une ligne invalide est ignoree avec un avertissement dans les journaux du serveur."
 	})
 	public List<String> recipes = defaultRecipes();
 
-	@Comment("Ingredient qui rend une potion jetable (toute potion buvable + cet ingredient ; \"\" = jamais de potion jetable)")
+	@Comment("Mode 'recipes' : ingredient qui rend une potion jetable (toute potion buvable + cet ingredient ; \"\" = jamais)")
 	public String splashReagent = "minecraft:gunpowder";
 
-	@Comment("Ingredient qui rend une potion jetable persistante (\"\" = jamais de potion persistante)")
+	@Comment("Mode 'recipes' : ingredient qui rend une potion jetable persistante (\"\" = jamais de potion persistante)")
 	public String lingeringReagent = "minecraft:dragon_breath";
 
 	@Comment({
@@ -68,8 +72,8 @@ public final class AlchemyConfig implements Validatable {
 	public int maxStockTarget = 64;
 
 	@Comment({
-			"Elixirs de Guildy : potions buvables (fiole vanilla) avec leurs propres effets, couleur et nom. Recette : la potion",
-			"'base' (preparee d'abord par l'alchimiste) + l'ingredient 'reagent' (un brassage). effects : effets vanilla",
+			"Elixirs de Guildy : potions buvables (fiole vanilla) avec leurs propres effets, couleur et nom. Mode 'recipes' : la",
+			"potion 'base' (preparee d'abord par l'alchimiste) + l'ingredient 'reagent' (un brassage). effects : effets vanilla",
 			"(level 1 = niveau I, seconds = duree). Bonus magiques (pendant magicSeconds, a la fin de la gorgee) : spellPower",
 			"(0.25 = sorts +25 % : degats, soins, durees), cooldownReduction (0.3 = recharges des parchemins et grimoires -30 %),",
 			"channelReduction (0.3 = incantations -30 %), foodReduction (0.5 = faim du grimoire -50 %). enabled=false : plus",
@@ -200,6 +204,129 @@ public final class AlchemyConfig implements Validatable {
 		}
 	}
 
+	/** Cost of a batch in simple mode: blaze powder used up and seconds of work. */
+	public static final class CostDef {
+		public int blaze;
+		public int seconds;
+
+		public CostDef() {
+		}
+
+		public CostDef(int blaze, int seconds) {
+			this.blaze = blaze;
+			this.seconds = seconds;
+		}
+
+		public SimpleBrewing.Cost cost() {
+			return new SimpleBrewing.Cost(blaze, seconds);
+		}
+	}
+
+	@Json5.Section
+	public static final class Brewing {
+		/** Bounds of the costs. */
+		public static final int MAX_BLAZE = 64;
+		public static final int MAX_SECONDS = 600;
+
+		@Comment({
+				"simple (defaut) = chaque fournee (jusqu'a 3 fioles, villagers.json5 -> alchemist.bottlesPerBrew) ne coute que de la",
+				"poudre de blaze (prise au stockage, puis dans son sac) et du temps a un alambic du territoire : ni fiole, ni eau, ni",
+				"verrue du Nether, ni ingredient. recipes = brassage vanilla avec les etapes de 'recipes' (fioles d'eau, ingredients,",
+				"combustible ; reglages dans villagers.json5 -> alchemist)"
+		})
+		public String mode = SimpleBrewing.Mode.SIMPLE.id();
+		@Comment("Mode simple : objet consomme (poudre de blaze par defaut)")
+		public String item = "minecraft:blaze_powder";
+		@Comment({
+				"Mode simple, cout d'une fournee : {blaze: poudre de blaze, seconds: duree}. Potion buvable simple (soin, force,",
+				"rapidite...) ; le bonus de vitesse de travail s'applique a la duree ; une fournee plus petite paie sa part (arrondie",
+				"au-dessus), la duree ne change pas"
+		})
+		public CostDef plainPotion = new CostDef(1, 20);
+		@Comment("Potion longue (long_..., la redstone en vanilla)")
+		public CostDef longPotion = new CostDef(1, 30);
+		@Comment("Potion forte (strong_..., niveau II, la poudre lumineuse en vanilla)")
+		public CostDef strongPotion = new CostDef(1, 30);
+		@Comment("Ajoute au cout de la potion buvable pour une potion jetable (splash:...)")
+		public CostDef splashExtra = new CostDef(0, 10);
+		@Comment("Ajoute au cout de la potion buvable pour une potion persistante (lingering:...) : 2 blaze et 40 s pour une simple")
+		public CostDef lingeringExtra = new CostDef(1, 20);
+		@Comment("Elixir de Guildy sans bonus magique (colosse, bete, ombre, titan, phenix, abysses)")
+		public CostDef elixir = new CostDef(2, 60);
+		@Comment("Elixir magique (bonus des sorts : arcanique, clairvoyance, satiete)")
+		public CostDef magicElixir = new CostDef(4, 90);
+		@Comment({
+				"Mode simple : fioles d'elixirs au plus par alchimiste et par jour de jeu, comptees aussi dans",
+				"alchemist.maxPotionsPerDay (0 a 1000 ; 0 = jamais d'elixir en mode simple)"
+		})
+		public int maxElixirsPerDay = 6;
+		@Comment({
+				"Mode simple : cout propre a un produit, a la place de celui de sa classe. Exemple :",
+				"{\"elixir:titan\": {blaze: 3, seconds: 75}, \"splash:strong_harming\": {blaze: 2, seconds: 45}}"
+		})
+		public Map<String, CostDef> products = new LinkedHashMap<>();
+
+		public SimpleBrewing.Mode parsedMode() {
+			SimpleBrewing.Mode parsed = SimpleBrewing.Mode.parse(mode);
+			return parsed == null ? SimpleBrewing.Mode.SIMPLE : parsed;
+		}
+
+		/** True in simple mode (blaze powder and time only). */
+		public boolean simple() {
+			return parsedMode() == SimpleBrewing.Mode.SIMPLE;
+		}
+
+		/** Bounds the values, normalizes the item and the products (pure). */
+		void clean(List<String> warnings) {
+			SimpleBrewing.Mode parsed = SimpleBrewing.Mode.parse(mode);
+			if (parsed == null) {
+				warnings.add("brewing.mode: unknown mode '" + mode + "' (simple, recipes): simple");
+				parsed = SimpleBrewing.Mode.SIMPLE;
+			}
+			mode = parsed.id();
+			String id = item == null ? null : BrewBook.itemId(item);
+			if (id == null) {
+				warnings.add("brewing.item: invalid item id '" + item + "': minecraft:blaze_powder");
+				id = "minecraft:blaze_powder";
+			}
+			item = id;
+			plainPotion = bound("plainPotion", plainPotion, new CostDef(1, 20), 1, warnings);
+			longPotion = bound("longPotion", longPotion, new CostDef(1, 30), 1, warnings);
+			strongPotion = bound("strongPotion", strongPotion, new CostDef(1, 30), 1, warnings);
+			splashExtra = bound("splashExtra", splashExtra, new CostDef(0, 10), 0, warnings);
+			lingeringExtra = bound("lingeringExtra", lingeringExtra, new CostDef(1, 20), 0, warnings);
+			elixir = bound("elixir", elixir, new CostDef(2, 60), 1, warnings);
+			magicElixir = bound("magicElixir", magicElixir, new CostDef(4, 90), 1, warnings);
+			maxElixirsPerDay = Math.max(0, Math.min(1000, maxElixirsPerDay));
+			Map<String, CostDef> own = new LinkedHashMap<>();
+			if (products != null) {
+				for (Map.Entry<String, CostDef> entry : products.entrySet()) {
+					String key = PotionKey.canonical(entry.getKey());
+					if (key == null || key.equals(PotionKey.WATER.text()) || entry.getValue() == null) {
+						warnings.add("brewing.products: invalid product or cost '" + entry.getKey() + "': ignored");
+						continue;
+					}
+					own.put(key, bound("products." + key, entry.getValue(), null, 1, warnings));
+				}
+			}
+			products = own;
+		}
+
+		/** Blaze powder 0 to 64, seconds {@code minSeconds} to 600; a missing cost takes its default. */
+		private static CostDef bound(String name, @Nullable CostDef cost, @Nullable CostDef fallback, int minSeconds, List<String> warnings) {
+			if (cost == null) {
+				warnings.add("brewing." + name + ": missing cost: default");
+				return fallback == null ? new CostDef(1, 20) : fallback;
+			}
+			int blaze = Math.max(0, Math.min(MAX_BLAZE, cost.blaze));
+			int seconds = Math.max(minSeconds, Math.min(MAX_SECONDS, cost.seconds));
+			if (blaze != cost.blaze || seconds != cost.seconds) {
+				warnings.add("brewing." + name + ": out of bounds (blaze 0-" + MAX_BLAZE + ", seconds " + minSeconds + "-" + MAX_SECONDS + ")");
+			}
+			return new CostDef(blaze, seconds);
+		}
+	}
+
 	// ------------------------------------------------------------------ validation
 
 	@Override
@@ -216,6 +343,10 @@ public final class AlchemyConfig implements Validatable {
 			// Format 1 is the first one: nothing to migrate yet (later formats add their new default entries here).
 			formatVersion = CURRENT_FORMAT;
 		}
+		if (brewing == null) {
+			brewing = new Brewing();
+		}
+		brewing.clean(warnings);
 		if (recipes == null) {
 			recipes = defaultRecipes();
 		}
