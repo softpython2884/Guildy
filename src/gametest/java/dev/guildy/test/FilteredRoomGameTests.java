@@ -5,16 +5,22 @@ import dev.guildy.data.GuildManager;
 import dev.guildy.villager.ChestRoom;
 import dev.guildy.villager.StorageChest;
 import dev.guildy.villager.Task;
+import eu.pb4.sgui.api.ClickType;
+import eu.pb4.sgui.api.containerwrappers.SlotBasedWrapperMenu;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
 
@@ -207,7 +213,80 @@ public class FilteredRoomGameTests {
 		});
 	}
 
+	/**
+	 * The room menu: "Mode de la salle" + confirmation turns the room into a filtered room; "Coffres de la salle" shows
+	 * what each chest receives ("Reçoit : Diorite, Granite") or "Vide : ne reçoit rien"; switching back makes it an
+	 * automatic room again (chests planned by columns).
+	 */
+	@GameTest(environment = "guildy-test:day", maxTicks = 200)
+	public void roomMenuSwitchesTheModeAndShowsEachFilter(GameTestHelper helper) throws Exception {
+		ServerLevel level = helper.getLevel();
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Menu");
+		Guild guild = recruit.guild();
+		ServerPlayer leader = recruit.leader();
+		List<BlockPos> chests = row(level, recruit.ground(), 2);
+		container(level, chests.get(0)).setItem(0, new ItemStack(Items.DIORITE, 20));
+		container(level, chests.get(0)).setItem(1, new ItemStack(Items.GRANITE, 5));
+		Method start = Class.forName("dev.guildy.villager.VillagerInteractions").getDeclaredMethod("startRoomSelection", ServerPlayer.class, Guild.class);
+		start.setAccessible(true);
+		start.invoke(null, leader, guild);
+		TestSupport.useOnTop(leader, level, chests.getFirst(), ItemStack.EMPTY);
+		TestSupport.useOnTop(leader, level, chests.getLast(), ItemStack.EMPTY);
+		leader.closeContainer();
+		helper.assertTrue(guild.villagers.rooms.size() == 1, "chest room created");
+		ChestRoom room = guild.villagers.rooms.getFirst();
+		Method openRoom = Class.forName("dev.guildy.villager.StorageGui").getDeclaredMethod("openRoom", ServerPlayer.class, Guild.class, ChestRoom.class);
+		openRoom.setAccessible(true);
+		openRoom.invoke(null, leader, guild, room);
+		helper.assertTrue(lore(leader, 14).contains("automatique"), "mode button of an automatic room: " + lore(leader, 14));
+		click(helper, leader, 14);
+		click(helper, leader, 11);
+		helper.assertTrue(room.filtered(), "the room is filtered after the confirmation");
+		for (BlockPos pos : chests) {
+			StorageChest chest = guild.villagers.chestAt(pos);
+			helper.assertTrue(chest != null && chest.role == StorageChest.Role.CONTENT, "filtered-room chest at " + pos.toShortString());
+		}
+		helper.assertTrue(lore(leader, 14).contains("filtrée"), "mode button of a filtered room: " + lore(leader, 14));
+		click(helper, leader, 12);
+		String first = lore(leader, 0);
+		String second = lore(leader, 1);
+		String both = first + " || " + second;
+		helper.assertTrue(both.contains("Reçoit : Diorite, Granite") && both.contains("Vide : ne reçoit rien"), "chest list: " + both);
+		leader.closeContainer();
+		openRoom.invoke(null, leader, guild, room);
+		click(helper, leader, 14);
+		click(helper, leader, 11);
+		helper.assertTrue(!room.filtered(), "back to an automatic room");
+		for (BlockPos pos : chests) {
+			StorageChest chest = guild.villagers.chestAt(pos);
+			helper.assertTrue(chest != null && chest.auto && chest.role == StorageChest.Role.CATEGORY, "automatic chest again at " + pos.toShortString());
+		}
+		helper.assertTrue(chests.stream().anyMatch(pos -> !guild.villagers.chestAt(pos).category.isEmpty()),
+				"the room was planned again (a chest has a category)");
+		leader.closeContainer();
+		GuildManager.disband(guild);
+		helper.succeed();
+	}
+
 	// ------------------------------------------------------------------ helpers
+
+	private static void click(GameTestHelper helper, ServerPlayer player, int slot) {
+		helper.assertTrue(player.containerMenu instanceof SlotBasedWrapperMenu, "a menu is open");
+		((SlotBasedWrapperMenu) player.containerMenu).getBackingGui().click(slot, ClickType.MOUSE_LEFT, ContainerInput.PICKUP);
+	}
+
+	/** Name and lore of a menu slot, as plain text. */
+	private static String lore(ServerPlayer player, int slot) {
+		ItemStack stack = player.containerMenu.getSlot(slot).getItem();
+		StringBuilder text = new StringBuilder(stack.getHoverName().getString());
+		ItemLore lore = stack.get(DataComponents.LORE);
+		if (lore != null) {
+			for (Component line : lore.lines()) {
+				text.append(" | ").append(line.getString());
+			}
+		}
+		return text.toString().replaceAll("§.", "");
+	}
 
 	private static Container container(ServerLevel level, BlockPos pos) {
 		return (Container) level.getBlockEntity(pos);
