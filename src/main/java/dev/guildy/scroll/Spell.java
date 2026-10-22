@@ -98,11 +98,12 @@ public enum Spell {
 			p("range", 32, 8, 64, Unit.BLOCKS),
 			p("stunSeconds", 2, 0, 10, Unit.SECONDS),
 			p("shieldSeconds", 3, 0, 20, Unit.SECONDS)),
+	/** Range 0 = every distance; crossDimension 1 = the members of the other dimensions are called too (Guildy 1.13). */
 	RALLY("rally", 0xFFB13B, 0x3F8CFF, false,
-			p("range", 512, 32, 4096, Unit.BLOCKS),
+			p("range", 0, 0, 4096, Unit.BLOCKS),
 			p("maxAllies", 8, 1, 20, Unit.COUNT),
 			p("acceptSeconds", 30, 10, 120, Unit.SECONDS),
-			p("crossDimension", 0, 0, 1, Unit.FLAG)),
+			p("crossDimension", 1, 0, 1, Unit.FLAG)),
 	SPECTRAL_CHAINS("spectral_chains", 0xC8FFF4, 0x2E8C7A, true,
 			p("range", 32, 8, 64, Unit.BLOCKS),
 			p("radius", 4, 0, 10, Unit.BLOCKS),
@@ -254,6 +255,21 @@ public enum Spell {
 	/** Lang key prefix: "scroll.spell.meteor_shower". */
 	public String langKey() {
 		return "scroll.spell." + id;
+	}
+
+	/**
+	 * Lang key of the description of this spell for these parameter values: "scroll.spell.<id>.lore", except where a value
+	 * changes what the text must say. Ralliement: ".lore.everywhere" (range 0, every dimension), ".lore.dimension" (range 0,
+	 * the caster's dimension only), ".lore.range_cross" (a range, other dimensions too) or ".lore.range" (a range, the caster's
+	 * dimension only).
+	 */
+	public String loreKey(java.util.function.ToDoubleFunction<String> value) {
+		if (this == RALLY) {
+			boolean everywhere = RallyRules.unlimited(value.applyAsDouble("range"));
+			boolean cross = value.applyAsDouble("crossDimension") > 0;
+			return langKey() + ".lore." + (everywhere ? (cross ? "everywhere" : "dimension") : (cross ? "range_cross" : "range"));
+		}
+		return langKey() + ".lore";
 	}
 
 	public static @Nullable Spell byId(@Nullable String id) {

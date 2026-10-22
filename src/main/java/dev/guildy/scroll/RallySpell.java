@@ -34,12 +34,13 @@ import java.util.UUID;
 
 /**
  * Ralliement: after a long incantation, a war horn sounds and a pillar of amber and blue light rises where the caster stands
- * (the rally point). The guild members online within range (any dimension when {@code crossDimension} is on, never the ones
- * already there) receive a clickable [Rejoindre] in the chat and hear a distant horn: nobody moves without clicking it. A
- * click within {@code acceptSeconds} teleports the member next to the rally point (a free, safe spot), the first
- * {@code maxAllies} only ({@link RallyRules}); rings of light fall around each arrival. The call closes when the caster logs
- * out or leaves the dimension. Allowed during a horde (rally to defend) and to or from a ruin fight (walking in or out is
- * allowed too; the guardian keeps its own arena rules).
+ * (the rally point). Every online guild member (any distance and any dimension by default; {@code range} and
+ * {@code crossDimension} let the admin restrict it), never the ones already there, receives a clickable [Rejoindre] in the
+ * chat and hears a distant horn: nobody moves without clicking it. When nobody can be called, the refusal says why, with the
+ * number of members concerned. A click within {@code acceptSeconds} teleports the member next to the rally point (a free,
+ * safe spot; across dimensions like /tp), the first {@code maxAllies} only ({@link RallyRules}); rings of light fall around
+ * each arrival. The call closes when the caster logs out or leaves the dimension. Allowed during a horde (rally to defend)
+ * and to or from a ruin fight (walking in or out is allowed too; the guardian keeps its own arena rules).
  */
 final class RallySpell extends SpellEffect {
 	private static final String COMMAND = "ralliement";
@@ -96,7 +97,10 @@ final class RallySpell extends SpellEffect {
 
 	// ================================================================== casting
 
-	/** Lang key of the reason the rally cannot be sounded now (scroll kept), or null. */
+	/**
+	 * The reason the rally cannot be sounded now (scroll kept), or null: no guild, unsafe rally point, or nobody to call, with
+	 * why ({@link RallyRules#refusal}: nobody else online, everyone already here, asleep... with their number).
+	 */
 	static @Nullable String check(SpellContext ctx) {
 		if (ctx.guild == null) {
 			return "scroll.fail.no_guild";
@@ -104,27 +108,49 @@ final class RallySpell extends SpellEffect {
 		if (SwapRules.forCaster(SwapSpell.landing(ctx.level, ctx.caster, ctx.caster.position()).spot()) != SwapRules.Verdict.OK) {
 			return "scroll.fail.rally_unsafe";
 		}
-		return called(ctx).isEmpty() ? "scroll.fail.no_members" : null;
+		List<RallyRules.Reason> reasons = new ArrayList<>();
+		called(ctx, reasons);
+		double range = ctx.p("range");
+		RallyRules.Refusal refusal = RallyRules.refusal(RallyRules.census(reasons), range);
+		if (refusal == null) {
+			return null;
+		}
+		if (refusal.key().equals("scroll.fail.rally.mixed")) {
+			// Every reason with its number: "2 déjà à moins de 8 blocs de vous, 1 endormi, mort ou spectateur".
+			List<String> parts = new ArrayList<>();
+			for (RallyRules.Refusal part : RallyRules.parts(RallyRules.census(reasons), range)) {
+				parts.add(Lang.raw(part.key(), part.args().toArray()));
+			}
+			return SpellFailure.of(refusal.key(), String.join(Lang.raw("scroll.rally.reason.separator"), parts));
+		}
+		return SpellFailure.of(refusal.key(), refusal.args());
 	}
 
-	/** The members who receive the call (see {@link RallyRules#called}). */
+	/** The members who receive the call (see {@link RallyRules#reason}). */
 	static List<ServerPlayer> called(SpellContext ctx) {
+		return called(ctx, new ArrayList<>());
+	}
+
+	/** The members who receive the call; the reason of every member of the guild is added to {@code reasons}. */
+	private static List<ServerPlayer> called(SpellContext ctx, List<RallyRules.Reason> reasons) {
 		List<ServerPlayer> out = new ArrayList<>();
 		Guild guild = ctx.guild;
 		if (guild == null) {
 			return out;
 		}
+		// 0 = every distance (the grimoires' multipliers keep 0 as 0).
 		double range = ctx.p("range");
 		boolean cross = ctx.i("crossDimension") > 0;
 		Vec3 point = ctx.caster.position();
 		for (UUID uuid : guild.memberIds()) {
 			ServerPlayer member = GuildyServer.player(uuid);
-			if (member == null) {
-				continue;
-			}
-			boolean same = member.level() == ctx.level;
+			boolean online = member != null && !member.isRemoved();
+			boolean same = online && member.level() == ctx.level;
 			double distance = same ? member.position().distanceTo(point) : Double.MAX_VALUE;
-			if (RallyRules.called(member == ctx.caster, true, available(member), same, distance, range, cross)) {
+			RallyRules.Reason reason = RallyRules.reason(uuid.equals(ctx.caster.getUUID()), online, online && available(member), same, distance, range,
+					cross);
+			reasons.add(reason);
+			if (reason == RallyRules.Reason.CALLED) {
 				out.add(member);
 			}
 		}
@@ -189,8 +215,11 @@ final class RallySpell extends SpellEffect {
 		Guild guild = GuildManager.of(player);
 		RallyRules.Verdict verdict;
 		ServerLevel level = invite == null ? null : player.level().getServer().getLevel(invite.dimension);
-		if (invite == null || level == null) {
+		if (invite == null) {
 			verdict = RallyRules.Verdict.NOT_INVITED;
+		} else if (level == null) {
+			// The rally's dimension is gone (a custom dimension unloaded): the call is over.
+			verdict = RallyRules.Verdict.CLOSED;
 		} else {
 			verdict = RallyRules.verdict(new RallyRules.Click(Scheduler.ticks(), invite.expiresAt, invite.open, invite.invited.contains(player.getUUID()),
 					guild != null && guild.id.equals(invite.guild), invite.joined.contains(player.getUUID()), invite.joined.size(), invite.max,
@@ -207,14 +236,22 @@ final class RallySpell extends SpellEffect {
 			Msg.sound(player, SoundEvents.VILLAGER_NO, 0.6F, 1.2F);
 			return 0;
 		}
-		invite.joined.add(player.getUUID());
-		departure(player);
+		ServerLevel from = player.level();
+		Vec3 start = player.position();
 		if (player.isPassenger()) {
 			player.stopRiding();
 		}
 		Vec3 look = invite.point.subtract(spot);
 		float yaw = look.horizontalDistanceSqr() < 1.0E-4 ? player.getYRot() : (float) Math.toDegrees(Math.atan2(-look.x, look.z));
-		player.teleportTo(level, spot.x, spot.y, spot.z, Set.of(), yaw, 0.0F, true);
+		// Same dimension: a plain teleport; another one (Nether, End...): the vanilla dimension change of /tp, which brings the
+		// member's effects, abilities and level info along.
+		if (!player.teleportTo(level, spot.x, spot.y, spot.z, Set.of(), yaw, 0.0F, true) || player.level() != level) {
+			Msg.send(player, "scroll.rally.fail.teleport");
+			Msg.sound(player, SoundEvents.VILLAGER_NO, 0.6F, 1.2F);
+			return 0;
+		}
+		invite.joined.add(player.getUUID());
+		departure(from, start);
 		player.resetFallDistance();
 		Msg.actionBar(player, "scroll.rally.arrived", invite.casterName);
 		RallySpell effect = invite.effect;
@@ -257,11 +294,10 @@ final class RallySpell extends SpellEffect {
 		return SwapRules.forCaster(center.spot()) == SwapRules.Verdict.OK ? center.feet() : null;
 	}
 
-	/** The column of light where the member stood before leaving (their own level). */
-	private static void departure(ServerPlayer player) {
-		Vec3 p = player.position();
+	/** The column of light where the member stood before leaving ({@code level}: the one they left). */
+	private static void departure(ServerLevel level, Vec3 p) {
 		Spell spell = Spell.RALLY;
-		Fx fx = new Fx(player.level(), p, 220, ScrollModule.config().limits.viewDistance);
+		Fx fx = new Fx(level, p, 220, ScrollModule.config().limits.viewDistance);
 		fx.dot(Fx.flash(spell.color), p.x, p.y + 1, p.z);
 		for (int s = 0; s < 2; s++) {
 			for (int k = 0; k < 16; k++) {
@@ -271,7 +307,7 @@ final class RallySpell extends SpellEffect {
 		}
 		fx.burst(ParticleTypes.REVERSE_PORTAL, p.x, p.y + 1, p.z, 30, 0.3, 0.6, 0.3, 0.2);
 		fx.flush();
-		player.level().playSound(null, p.x, p.y, p.z, SoundEvents.ENDERMAN_TELEPORT, net.minecraft.sounds.SoundSource.PLAYERS, 1.2F, 0.7F);
+		level.playSound(null, p.x, p.y, p.z, SoundEvents.ENDERMAN_TELEPORT, net.minecraft.sounds.SoundSource.PLAYERS, 1.2F, 0.7F);
 	}
 
 	/** Calls long over are forgotten (bounded map). */

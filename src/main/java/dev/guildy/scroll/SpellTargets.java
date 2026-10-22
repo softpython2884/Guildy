@@ -55,6 +55,8 @@ final class SpellTargets {
 	static final ResourceKey<DamageType> GIVRE = key("sort_givre");
 	/** Every spell damage type, tagged minecraft:bypasses_armor. */
 	static final List<ResourceKey<DamageType>> TYPES = List.of(ARCANE, FOUDRE, BRASIER, GIVRE);
+	/** A hit reduced below this (health points) by the boss cap is not dealt at all. */
+	private static final double MIN_DAMAGE = 0.05;
 
 	/** Damage element: the matching guildy damage type, arcane when the target is immune to it (spell magic still lands). */
 	enum Element {
@@ -210,9 +212,25 @@ final class SpellTargets {
 
 	// ================================================================== damage
 
-	/** Spell damage to a monster, attributed to the caster (kill credit, loot); false when nothing was dealt. */
+	/** A hit (a meteor, a wave, a bolt) of spell damage, see {@link #hurt(SpellContext, LivingEntity, Element, double, double)}. */
 	static boolean hurt(SpellContext ctx, LivingEntity target, Element element, double amount) {
+		return hurt(ctx, target, element, amount, 1.0);
+	}
+
+	/**
+	 * Spell damage to a monster, attributed to the caster (kill credit, loot); false when nothing was dealt. Every damage
+	 * spell (scroll, grimoire and cursed grimoire alike) comes through here: the cast's {@link CastDamage} lowers each further
+	 * hit on the same target ({@code weight} of this hit: 1, or a fraction for a tick of a continuous spell, see
+	 * {@link CastDamage#continuous}) and keeps a boss ({@link #isBoss}) within the cast's cap.
+	 */
+	static boolean hurt(SpellContext ctx, LivingEntity target, Element element, double amount, double weight) {
 		if (amount <= 0 || !target.isAlive() || !harmable(target, ctx.caster, ctx.guild)) {
+			return false;
+		}
+		boolean boss = isBoss(target);
+		amount = ctx.damage.amount(target.getUUID(), boss, target.getMaxHealth(), amount);
+		if (amount < MIN_DAMAGE) {
+			// The boss already took all this cast may take from it.
 			return false;
 		}
 		ResourceKey<DamageType> type = switch (element) {
@@ -230,11 +248,24 @@ final class SpellTargets {
 		int frames = target.damageCooldownTime;
 		float lastHurt = ((LivingEntityAccessor) target).guildy$lastHurt();
 		boolean dealt = target.hurtServer(level, new DamageSource(holder, null, caster), (float) amount);
+		if (dealt) {
+			ctx.damage.record(target.getUUID(), weight, amount);
+		}
 		if (target.isAlive()) {
 			target.damageCooldownTime = frames;
 			((LivingEntityAccessor) target).guildy$setLastHurt(lastHurt);
 		}
 		return dealt;
+	}
+
+	/** Health this cast may still take from {@code target} (a boss within the cast's cap; infinite for other monsters). */
+	static double room(SpellContext ctx, LivingEntity target) {
+		return ctx.damage.room(target.getUUID(), isBoss(target), target.getMaxHealth());
+	}
+
+	/** Damage of {@code more} further hits of {@code amount} of this cast on {@code target} (diminishing returns and cap). */
+	static double expected(SpellContext ctx, LivingEntity target, double amount, int more) {
+		return ctx.damage.expected(target.getUUID(), isBoss(target), target.getMaxHealth(), amount, more);
 	}
 
 	/** True for the damage of a spell (a guildy spell damage type). */

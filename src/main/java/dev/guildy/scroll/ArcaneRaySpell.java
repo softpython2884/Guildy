@@ -111,7 +111,8 @@ final class ArcaneRaySpell extends SpellEffect {
 			if (target.getBoundingBox().inflate(width * 0.5).clip(from, to).isEmpty() && !target.getBoundingBox().inflate(width * 0.5).contains(from)) {
 				continue;
 			}
-			SpellTargets.hurt(ctx, target, SpellTargets.Element.ARCANE, damage);
+			// A tick of a continuous spell: a fraction of a hit for the diminishing returns.
+			SpellTargets.hurt(ctx, target, SpellTargets.Element.ARCANE, damage, CastDamage.continuous(HIT_INTERVAL));
 			SpellTargets.push(target, new Vec3(look.x * 0.15, 0.05, look.z * 0.15));
 			fx.burst(ParticleTypes.ENCHANTED_HIT, target.getX(), target.getY(0.5), target.getZ(), 8, 0.3, 0.4, 0.3, 0.15);
 			fx.burst(Fx.fade(ctx.spell.color, ctx.spell.accent, 1.2F), target.getX(), target.getY(0.5), target.getZ(), 6, 0.3, 0.4, 0.3, 0.0);

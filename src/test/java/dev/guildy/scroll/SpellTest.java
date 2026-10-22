@@ -81,4 +81,28 @@ class SpellTest {
 		assertEquals("0,75", Spell.number(0.75));
 		assertEquals("10", Spell.number(10.0000001));
 	}
+
+	@Test
+	void theRallyTextFollowsItsSettings() {
+		Map<String, Double> values = new LinkedHashMap<>(Spell.RALLY.defaults());
+		assertEquals("scroll.spell.rally.lore.everywhere", Spell.RALLY.loreKey(values::get), "defaults: everyone, everywhere");
+		values.put("crossDimension", 0.0);
+		assertEquals("scroll.spell.rally.lore.dimension", Spell.RALLY.loreKey(values::get));
+		values.put("range", 300.0);
+		assertEquals("scroll.spell.rally.lore.range", Spell.RALLY.loreKey(values::get));
+		values.put("crossDimension", 1.0);
+		assertEquals("scroll.spell.rally.lore.range_cross", Spell.RALLY.loreKey(values::get));
+		assertEquals("scroll.spell.blizzard.lore", Spell.BLIZZARD.loreKey(name -> 1.0), "the other spells keep their single text");
+		// Range 0 is a valid value (not raised to a minimum), and stays 0 through the grimoires' multipliers.
+		List<String> warnings = new ArrayList<>();
+		assertEquals(0.0, Spell.RALLY.resolve(Map.of("range", 0.0), "test", warnings).get("range"));
+		assertTrue(warnings.isEmpty(), "no warning: " + warnings);
+		Spell.Param range = Spell.RALLY.param("range");
+		SpellPower cursed = new SpellPower(1.75, 1.35, 1.5, 1, Map.of(), true);
+		assertEquals(0.0, cursed.apply(range, 0.0), "unlimited from a cursed grimoire too");
+		assertEquals(0.0, SpellPower.of(2.0).apply(range, 0.0), "and from a grimoire");
+		assertEquals(0.0, cursed.boosted(1.5, Spell.RALLY).apply(range, 0.0), "and with an elixir");
+		assertEquals(1.0, cursed.apply(Spell.RALLY.param("crossDimension"), 1.0), "a flag is never amplified");
+		assertEquals(405.0, cursed.apply(range, 300.0), 1.0E-9, "a range set by the admin grows like the others");
+	}
 }
