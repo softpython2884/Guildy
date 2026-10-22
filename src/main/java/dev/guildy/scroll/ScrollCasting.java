@@ -168,15 +168,19 @@ public final class ScrollCasting {
 		return Spells.check(new SpellContext(player, def, power));
 	}
 
-	/** The grimoire's own wording of a scroll message when it has one ("scroll.fail.x" -> "grimoire.fail.x"). */
-	private static String grimoireKey(String key) {
+	/**
+	 * The grimoire's own wording of a scroll refusal when it has one ("scroll.fail.x" -> "grimoire.fail.x"), the arguments of
+	 * the message kept ({@link SpellFailure}).
+	 */
+	private static String grimoireKey(String failure) {
+		String key = SpellFailure.key(failure);
 		if (key.startsWith("scroll.")) {
 			String own = "grimoire." + key.substring("scroll.".length());
 			if (Lang.has(own)) {
-				return own;
+				return SpellFailure.rekey(failure, own);
 			}
 		}
-		return key;
+		return failure;
 	}
 
 	/** Enough food for a grimoire (or cursed grimoire) cast of this spell (always in creative). */
@@ -196,7 +200,8 @@ public final class ScrollCasting {
 	 * channel animation of the consumable on its side).
 	 */
 	static InteractionResult refuse(ServerPlayer player, String key, Object... args) {
-		Msg.actionBar(player, key, args);
+		// A spell check's refusal may carry the arguments of its message (SpellFailure).
+		Msg.actionBar(player, SpellFailure.key(key), args.length == 0 ? SpellFailure.args(key) : args);
 		Msg.sound(player, SoundEvents.VILLAGER_NO, 0.6F, 1.2F);
 		syncUsing(player);
 		return InteractionResult.FAIL;
@@ -252,7 +257,8 @@ public final class ScrollCasting {
 			problem = Spells.cast(new SpellContext(player, def, power));
 		}
 		if (problem != null) {
-			Msg.actionBar(player, grimoire ? grimoireKey(problem) : problem);
+			String shown = grimoire ? grimoireKey(problem) : problem;
+			Msg.actionBar(player, SpellFailure.key(shown), SpellFailure.args(shown));
 			Msg.sound(player, SoundEvents.VILLAGER_NO, 0.6F, 1.2F);
 			fizzle(player);
 			undoPrediction(player, stack, true);

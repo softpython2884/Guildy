@@ -142,8 +142,9 @@ public final class ScrollItems {
 
 	/** The spell description with the values of a cast of this power (grimoire, cursed grimoire). */
 	static String spellText(ScrollConfig.ScrollDef def, SpellPower power) {
-		String text = Lang.raw(def.spell().langKey() + ".lore");
-		for (Spell.Param param : def.spell().params()) {
+		Spell spell = def.spell();
+		String text = Lang.raw(spell.loreKey(name -> power.apply(spell.param(name), def.param(name))));
+		for (Spell.Param param : spell.params()) {
 			text = text.replace("{" + param.name() + "}", param.format(power.apply(param, def.param(param.name()))));
 		}
 		return text;
@@ -195,7 +196,7 @@ public final class ScrollItems {
 	static int signature(ScrollConfig.ScrollDef def) {
 		return SIGNATURES.computeIfAbsent(def.id, id -> Objects.hash(def.fingerprint(), UniqueVisuals.enabled(),
 				ScrollModule.config().casting.moveSpeed, String.join("|", Lang.raw("scroll.item.header", ""), Lang.raw("scroll.item.cast", "", ""),
-						Lang.raw("scroll.item.single_use"), Lang.raw(def.spell().langKey() + ".name"), Lang.raw(def.spell().langKey() + ".lore"),
+						Lang.raw("scroll.item.single_use"), Lang.raw(def.spell().langKey() + ".name"), Lang.raw(def.spell().loreKey(def::param)),
 						groupName(def.cooldownGroup))));
 	}
 

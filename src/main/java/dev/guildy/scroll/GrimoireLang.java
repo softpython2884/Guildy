@@ -42,7 +42,12 @@ final class GrimoireLang {
 		m.put("grimoire.fail.no_target", "&7Aucun monstre à portée.");
 		m.put("grimoire.fail.no_monsters", "&7Aucun monstre aux alentours.");
 		m.put("grimoire.fail.no_swap_target", "&7Visez un monstre ou un allié de la guilde (en vue).");
-		m.put("grimoire.fail.no_members", "&7Aucun membre de la guilde à appeler.");
+		m.put("grimoire.fail.rally.alone", "&7Aucun autre membre de la guilde n'est en ligne.");
+		m.put("grimoire.fail.rally.near", "&7Les membres en ligne ({0}) sont déjà à moins de {1} blocs de vous.");
+		m.put("grimoire.fail.rally.unavailable", "&7Les membres en ligne ({0}) dorment, sont morts ou spectateurs.");
+		m.put("grimoire.fail.rally.far", "&7Les membres en ligne ({0}) sont à plus de {1} blocs, la portée du ralliement.");
+		m.put("grimoire.fail.rally.dimension", "&7Les membres en ligne ({0}) sont dans une autre dimension et le ralliement ne la traverse pas.");
+		m.put("grimoire.fail.rally.mixed", "&7Aucun membre à appeler ({0}).");
 		// fusion
 		m.put("grimoire.fuse.added", "&d✦ &7{0} &7est relié au grimoire (page {1}/{2}).");
 		m.put("grimoire.fuse.duplicate", "&cLe grimoire contient déjà {0}&c.");
