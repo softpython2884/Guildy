@@ -10,12 +10,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Pure destination priority of the sorters (no Minecraft classes: unit tested). For an item, every registered chest has
  * a tier, the lower the better:
  * <ol start="0">
- * <li>a filter chest listing the item (exact items);</li>
+ * <li>a filter chest listing the item (exact items), or a chest of a filtered room that already holds this kind of item
+ * ({@link Kind#CONTENT}: its filter is its own contents, {@link ContentKeys});</li>
  * <li>a filter chest of its material family ("diorite");</li>
  * <li>a filter chest of its type family ("wool");</li>
  * <li>a chest of the first category of its routing chain ({@link StorageCategories.Resolution#chain}: a transversal
@@ -24,14 +26,17 @@ import java.util.Map;
  * <li>{@link #FALLBACK_TIER}: a fallback ("Divers") chest;</li>
  * <li>{@link #DEPOSIT_TIER}: a deposit chest.</li>
  * </ol>
- * Filter chests that do not accept the item, category chests of a category outside its chain and free chests of the
- * chest rooms are no destination ({@link #NONE}). The sorter picks the best tier with room, the nearest chest first.
+ * Filter chests that do not accept the item, filtered-room chests that do not hold it (an empty one receives nothing),
+ * category chests of a category outside its chain and free chests of the chest rooms are no destination ({@link #NONE}). The sorter picks the best tier with room, the nearest chest first.
  * <p>
  * {@link Index} answers that question without looking at every chest: chests are grouped by category, filter and kind
- * once, and only the groups of the item's tiers are read (nearest first, one tier at a time).
+ * once, and only the groups of the item's tiers are read (nearest first, one tier at a time); the filtered-room chests
+ * holding the item come from a live index of their contents ({@link ContentHolders}).
  */
 public final class StorageRouting {
 	public static final int NONE = Integer.MAX_VALUE;
+	/** Tier of a filtered-room chest holding the item: the tier of a filter chest listing it. */
+	public static final int CONTENT_TIER = 0;
 	public static final int CATEGORY_TIER = 3;
 	/** Longest routing chain followed (transversal categories + sub-categories + top-level category). */
 	public static final int MAX_CHAIN = 8;
@@ -45,11 +50,20 @@ public final class StorageRouting {
 		FALLBACK,
 		DEPOSIT,
 		/** Free chest of a chest room (reserve): receives nothing. */
-		RESERVE
+		RESERVE,
+		/** Chest of a filtered room: receives the kinds of items it already holds ({@link Target#contents}). */
+		CONTENT
 	}
 
-	/** A registered chest: its kind, its filter (FILTER) and its effective category (CATEGORY). */
-	public record Target(Kind kind, @Nullable ChestFilter filter, String category) {
+	/**
+	 * A registered chest: its kind, its filter (FILTER), its effective category (CATEGORY) and the kinds of items it holds
+	 * (CONTENT: a live read-only view, {@link ContentIndex#kinds}).
+	 */
+	public record Target(Kind kind, @Nullable ChestFilter filter, String category, @Nullable Set<String> contents) {
+		public Target(Kind kind, @Nullable ChestFilter filter, String category) {
+			this(kind, filter, category, null);
+		}
+
 		public static Target filter(ChestFilter filter) {
 			return new Target(Kind.FILTER, filter, "");
 		}
@@ -69,6 +83,19 @@ public final class StorageRouting {
 		public static Target reserve() {
 			return new Target(Kind.RESERVE, null, "");
 		}
+
+		/** Chest of a filtered room holding these kinds of items ({@link ContentKeys} keys). */
+		public static Target content(Set<String> kinds) {
+			return new Target(Kind.CONTENT, null, "", kinds);
+		}
+	}
+
+	/** Filtered-room chests currently holding a kind of item (indices of the targets of an {@link Index}). */
+	@FunctionalInterface
+	public interface ContentHolders {
+		ContentHolders NONE = key -> new int[0];
+
+		int[] holders(String key);
 	}
 
 	private StorageRouting() {
@@ -79,10 +106,19 @@ public final class StorageRouting {
 		return tier(target, itemId, List.of(itemCategory));
 	}
 
-	/** Tier of the chest for an item of this id and routing chain ({@link #NONE}: never a destination). */
+	/** Tier of the chest for an item of this id and routing chain ({@link #NONE}: never a destination); kind = item id. */
 	public static int tier(Target target, String itemId, List<String> chain) {
+		return tier(target, itemId, itemId, chain);
+	}
+
+	/**
+	 * Tier of the chest for an item of this id, kind ({@link ContentKeys} key: what a filtered-room chest must hold) and
+	 * routing chain ({@link #NONE}: never a destination).
+	 */
+	public static int tier(Target target, String itemId, String contentKey, List<String> chain) {
 		return switch (target.kind()) {
 			case FILTER -> target.filter() != null && target.filter().accepts(itemId) ? ChestFilters.specificity(target.filter()) : NONE;
+			case CONTENT -> target.contents() != null && target.contents().contains(contentKey) ? CONTENT_TIER : NONE;
 			case CATEGORY -> {
 				int index = indexOf(chain, target.category());
 				yield index < 0 || index >= MAX_CHAIN ? NONE : CATEGORY_TIER + index;
@@ -112,9 +148,15 @@ public final class StorageRouting {
 
 	/** Same as {@link #candidates(List, double[], String, String, int)} with a routing chain. */
 	public static List<Integer> candidates(List<Target> targets, double[] distSq, String itemId, List<String> chain, int maxTier) {
+		return candidates(targets, distSq, itemId, itemId, chain, maxTier);
+	}
+
+	/** Same as {@link #candidates(List, double[], String, List, int)} with the item's kind for the filtered rooms. */
+	public static List<Integer> candidates(List<Target> targets, double[] distSq, String itemId, String contentKey, List<String> chain,
+			int maxTier) {
 		List<int[]> ranked = new ArrayList<>();
 		for (int i = 0; i < targets.size(); i++) {
-			int tier = tier(targets.get(i), itemId, chain);
+			int tier = tier(targets.get(i), itemId, contentKey, chain);
 			if (tier <= maxTier) {
 				ranked.add(new int[]{tier, i});
 			}
@@ -136,7 +178,8 @@ public final class StorageRouting {
 	/**
 	 * The registered chests of a guild grouped once (by category, filter, fallback, deposit) with their block positions,
 	 * so that finding a destination only reads the chests of the item's tiers. Built for one state of the chest list;
-	 * filter answers are remembered per item id.
+	 * filter answers are remembered per item id. The filtered-room chests holding an item are asked to
+	 * {@link ContentHolders} at each question (their contents change all the time).
 	 */
 	public static final class Index {
 		private static final int MEMO_LIMIT = 4096;
@@ -151,12 +194,19 @@ public final class StorageRouting {
 		private final List<ChestFilter> filters = new ArrayList<>();
 		private final List<int[]> filterMembers = new ArrayList<>();
 		private final Map<String, List<Bucket>> filterMemo = new HashMap<>();
+		private final ContentHolders content;
 
 		/**
 		 * @param targets the chests as the routing sees them
 		 * @param xs      block x of each target (same order), likewise {@code ys}, {@code zs}
 		 */
 		public Index(List<Target> targets, int[] xs, int[] ys, int[] zs) {
+			this(targets, xs, ys, zs, ContentHolders.NONE);
+		}
+
+		/** Same, with the live index of the filtered-room chests ({@code content}: target indices holding a kind). */
+		public Index(List<Target> targets, int[] xs, int[] ys, int[] zs, ContentHolders content) {
+			this.content = content;
 			this.targets = List.copyOf(targets);
 			this.xs = xs.clone();
 			this.ys = ys.clone();
@@ -179,7 +229,7 @@ public final class StorageRouting {
 					}
 					case FALLBACK -> fallbackList.add(i);
 					case DEPOSIT -> depositList.add(i);
-					case RESERVE -> {
+					case RESERVE, CONTENT -> {
 					}
 				}
 			}
@@ -227,11 +277,28 @@ public final class StorageRouting {
 		 * {@code maxTier} = {@link #DEPOSIT_TIER} these are also every chest that may give the item to a worker.
 		 */
 		public List<Bucket> buckets(String itemId, List<String> chain, int maxTier) {
-			List<Bucket> buckets = new ArrayList<>(chain.size() + 4);
+			return buckets(itemId, itemId, chain, maxTier);
+		}
+
+		/**
+		 * Same as {@link #buckets(String, List, int)} for an item of this kind ({@link ContentKeys}): the filtered-room
+		 * chests holding it share the first tier with the filter chests listing it (nearest first among them).
+		 */
+		public List<Bucket> buckets(String itemId, String contentKey, List<String> chain, int maxTier) {
+			List<Bucket> buckets = new ArrayList<>(chain.size() + 5);
+			int[] held = CONTENT_TIER <= maxTier ? contentMembers(contentKey) : new int[0];
 			for (Bucket bucket : filterBuckets(itemId)) {
-				if (bucket.tier() <= maxTier) {
-					buckets.add(bucket);
+				if (bucket.tier() > maxTier) {
+					continue;
 				}
+				if (held.length > 0 && bucket.tier() == CONTENT_TIER) {
+					bucket = new Bucket(CONTENT_TIER, union(bucket.members(), held));
+					held = new int[0];
+				}
+				buckets.add(bucket);
+			}
+			if (held.length > 0) {
+				buckets.addFirst(new Bucket(CONTENT_TIER, held));
 			}
 			for (int i = 0; i < chain.size() && i < MAX_CHAIN; i++) {
 				int tier = CATEGORY_TIER + i;
@@ -291,9 +358,46 @@ public final class StorageRouting {
 			return result;
 		}
 
+		/** Filtered-room targets holding the kind (sorted, each once; other targets the provider names are left out). */
+		private int[] contentMembers(String contentKey) {
+			int[] held = content.holders(contentKey);
+			if (held.length == 0) {
+				return held;
+			}
+			int[] members = new int[held.length];
+			int count = 0;
+			for (int member : held) {
+				if (member >= 0 && member < targets.size() && targets.get(member).kind() == Kind.CONTENT) {
+					members[count++] = member;
+				}
+			}
+			members = Arrays.copyOf(members, count);
+			Arrays.sort(members);
+			int distinct = 0;
+			for (int i = 0; i < members.length; i++) {
+				if (i == 0 || members[i] != members[i - 1]) {
+					members[distinct++] = members[i];
+				}
+			}
+			return Arrays.copyOf(members, distinct);
+		}
+
+		private static int[] union(int[] a, int[] b) {
+			int[] all = new int[a.length + b.length];
+			System.arraycopy(a, 0, all, 0, a.length);
+			System.arraycopy(b, 0, all, a.length, b.length);
+			Arrays.sort(all);
+			return all;
+		}
+
 		/** Best tier of the item among the targets {@code outside} accepts (NONE when none, tiers above maxTier ignored). */
 		public int bestTier(String itemId, List<String> chain, int maxTier, java.util.function.IntPredicate outside) {
-			for (Bucket bucket : buckets(itemId, chain, maxTier)) {
+			return bestTier(itemId, itemId, chain, maxTier, outside);
+		}
+
+		/** Same as {@link #bestTier(String, List, int, java.util.function.IntPredicate)} for an item of this kind. */
+		public int bestTier(String itemId, String contentKey, List<String> chain, int maxTier, java.util.function.IntPredicate outside) {
+			for (Bucket bucket : buckets(itemId, contentKey, chain, maxTier)) {
 				for (int member : bucket.members()) {
 					if (outside.test(member)) {
 						return bucket.tier();
@@ -305,7 +409,12 @@ public final class StorageRouting {
 
 		/** Destinations of the item best first: tier, then distance to (x, y, z), then registration order; lazily sorted. */
 		public Cursor cursor(String itemId, List<String> chain, int maxTier, double x, double y, double z) {
-			return new Cursor(this, buckets(itemId, chain, maxTier), x, y, z);
+			return cursor(itemId, itemId, chain, maxTier, x, y, z);
+		}
+
+		/** Same as {@link #cursor(String, List, int, double, double, double)} for an item of this kind. */
+		public Cursor cursor(String itemId, String contentKey, List<String> chain, int maxTier, double x, double y, double z) {
+			return new Cursor(this, buckets(itemId, contentKey, chain, maxTier), x, y, z);
 		}
 
 		double distSq(int index, double x, double y, double z) {

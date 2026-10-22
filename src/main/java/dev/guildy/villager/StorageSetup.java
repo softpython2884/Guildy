@@ -25,12 +25,14 @@ final class StorageSetup {
 		StorageVisualizer.register();
 		ChestScan.init();
 		StorageCommands.init();
+		RoomContents.init();
 		Lifecycle.STARTED.add(server -> {
 			ItemClassifier.invalidate();
 			StorageVisualizer.clear();
 			Tidier.clear();
 			ChestRooms.clear();
 			ChestScan.clear();
+			RoomContents.clear();
 			migrateChestCategories();
 		});
 		Lifecycle.RELOADED.add(() -> {

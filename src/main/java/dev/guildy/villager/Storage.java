@@ -13,7 +13,6 @@ import net.minecraft.world.Container;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.ChestBlock;
@@ -99,10 +98,10 @@ final class Storage {
 
 	/**
 	 * Category a CATEGORY chest really receives: its category, or the fallback when that category no longer exists
-	 * (removed or renamed in villagers.json5). "" for free chests and filter chests.
+	 * (removed or renamed in villagers.json5). "" for free chests, filter chests and filtered-room chests.
 	 */
 	static String effectiveCategory(StorageChest chest) {
-		if (chest.isFree() || chest.role == StorageChest.Role.FILTER) {
+		if (chest.isFree() || chest.role == StorageChest.Role.FILTER || chest.isContent()) {
 			return "";
 		}
 		String canonical = categories().canonical(chest.category);
@@ -118,9 +117,14 @@ final class Storage {
 		return chest.isFilter() && !stack.isEmpty() && chest.filter.accepts(itemId(stack));
 	}
 
+	/** True when a filtered-room chest holds this kind of item (as last read, {@link RoomContents}). */
+	static boolean holds(Guild guild, StorageChest chest, ItemStack stack) {
+		return chest.isContent() && !stack.isEmpty() && guild.villagers.contents().holds(chest.pos.asLong(), RoomContents.key(stack));
+	}
+
 	/**
 	 * Same kind of destination: both deposit chests, filter chests of the same filter, or category chests of the same
-	 * (effective) category.
+	 * (effective) category; a filtered-room chest is only its own destination (another one may not hold the item).
 	 */
 	static boolean sameDestination(StorageChest a, StorageChest b) {
 		if (a.role != b.role) {
@@ -128,6 +132,9 @@ final class Storage {
 		}
 		if (a.isDeposit()) {
 			return true;
+		}
+		if (a.isContent()) {
+			return a == b || (a.pos != null && a.pos.equals(b.pos));
 		}
 		if (a.role == StorageChest.Role.FILTER) {
 			return a.isFilter() && b.isFilter() && a.filter.key().equals(b.filter.key());
@@ -143,16 +150,20 @@ final class Storage {
 		if (chest.isFilter()) {
 			return FilterNames.text(chest.filter);
 		}
+		if (chest.isContent()) {
+			return Lang.raw("villager.storage.role.content");
+		}
 		return chest.isDeposit() ? Lang.raw("villager.storage.role.deposit") : effectiveCategory(chest);
 	}
 
 	/**
 	 * May the chest give this stack to a worker looking for it (crafts, plantations)? Deposit and fallback chests,
-	 * filter chests accepting it, and the chests of the categories of its routing chain (its category, the parent
-	 * categories, a transversal category that takes it).
+	 * filter chests accepting it, the chests of the categories of its routing chain (its category, the parent
+	 * categories, a transversal category that takes it) and the filtered-room chests (what they hold; workers keep the
+	 * last item of each kind there: {@link Spare}).
 	 */
 	static boolean gives(StorageChest chest, ItemStack stack) {
-		if (chest.isDeposit() || isFallback(chest)) {
+		if (chest.isDeposit() || isFallback(chest) || chest.isContent()) {
 			return true;
 		}
 		if (chest.role == StorageChest.Role.FILTER) {
@@ -172,10 +183,13 @@ final class Storage {
 
 	// ------------------------------------------------------------------ routing
 
-	/** The chest as the routing sees it ({@link StorageRouting}). */
-	static StorageRouting.Target target(StorageChest chest) {
+	/** The chest as the routing sees it ({@link StorageRouting}); a filtered-room chest with the live view of its contents. */
+	static StorageRouting.Target target(GuildVillagerData data, StorageChest chest) {
 		if (chest.isDeposit()) {
 			return StorageRouting.Target.deposit();
+		}
+		if (chest.isContent()) {
+			return StorageRouting.Target.content(data.contents().kinds(chest.pos.asLong()));
 		}
 		if (chest.isFree() || (chest.role == StorageChest.Role.FILTER && !chest.isFilter())) {
 			return StorageRouting.Target.reserve();
@@ -187,8 +201,53 @@ final class Storage {
 	}
 
 	/** Tier of a chest for a stack ({@link StorageRouting#tier}). */
-	static int tier(StorageChest chest, ItemStack stack) {
-		return StorageRouting.tier(target(chest), itemId(stack), chain(stack));
+	static int tier(Guild guild, StorageChest chest, ItemStack stack) {
+		return StorageRouting.tier(target(guild.villagers, chest), itemId(stack), RoomContents.key(stack), chain(stack));
+	}
+
+	/**
+	 * What a worker may take from a container: everything, except that a filtered-room chest keeps at least one item of
+	 * each kind it holds (its contents are its filter). {@link #take} answers slot after slot and counts what was taken,
+	 * so that counting and taking agree.
+	 */
+	static final class Spare {
+		private final @Nullable Map<String, Integer> left;
+
+		private Spare(@Nullable Map<String, Integer> left) {
+			this.left = left;
+		}
+
+		/** For the chest and its container (no limit for the chests outside the filtered rooms). */
+		static Spare of(@Nullable StorageChest chest, Container container) {
+			if (chest == null || !chest.isContent()) {
+				return new Spare(null);
+			}
+			Map<String, Integer> totals = new HashMap<>();
+			for (int i = 0; i < container.getContainerSize(); i++) {
+				ItemStack stack = container.getItem(i);
+				if (!stack.isEmpty()) {
+					totals.merge(RoomContents.key(stack), stack.getCount(), Integer::sum);
+				}
+			}
+			return new Spare(totals);
+		}
+
+		/** True when one item of this stack may be taken (nothing counted). */
+		boolean mayTake(ItemStack stack) {
+			return left == null || left.getOrDefault(RoomContents.key(stack), 0) > 1;
+		}
+
+		/** How many of {@code wanted} items of this stack may be taken now (counted as taken). */
+		int take(ItemStack stack, int wanted) {
+			if (left == null || wanted <= 0) {
+				return Math.max(0, wanted);
+			}
+			String key = RoomContents.key(stack);
+			int remaining = left.getOrDefault(key, 0);
+			int allowed = Math.max(0, Math.min(wanted, remaining - 1));
+			left.put(key, remaining - allowed);
+			return allowed;
+		}
 	}
 
 	// ------------------------------------------------------------------ containers
@@ -471,33 +530,45 @@ final class Storage {
 
 	/**
 	 * Best usable chest with room for the stack among the tiers up to {@code maxTier}, nearest first, or null. Only the
-	 * chests of the item's tiers are read ({@link StorageRouting.Index}), one tier at a time.
+	 * chests of the item's tiers are read ({@link StorageRouting.Index}), one tier at a time. A filtered-room chest is
+	 * read again before it is chosen (its contents may have changed since it was last read): it must still hold the item.
 	 */
 	static @Nullable StorageChest route(ServerLevel level, Guild guild, Vec3 from, ItemStack stack, Set<BlockPos> excluded, int maxTier) {
 		if (stack.isEmpty()) {
 			return null;
 		}
 		StorageIndex index = index(guild);
-		StorageRouting.Cursor cursor = index.routing().cursor(itemId(stack), chain(stack), maxTier, from.x, from.y, from.z);
+		String key = RoomContents.key(stack);
+		StorageRouting.Cursor cursor = index.routing().cursor(itemId(stack), key, chain(stack), maxTier, from.x, from.y, from.z);
 		for (int target = cursor.next(); target >= 0; target = cursor.next()) {
 			StorageChest chest = index.chest(target);
 			if (excluded.contains(chest.pos) || !usable(level, guild, chest)) {
 				continue;
 			}
 			Container container = container(level, chest.pos);
-			if (container != null && hasSpaceFor(container, stack)) {
+			if (container == null) {
+				continue;
+			}
+			if (chest.isContent() && !RoomContents.refresh(guild, chest, container).contains(key)) {
+				continue;
+			}
+			if (hasSpaceFor(container, stack)) {
 				return chest;
 			}
 		}
 		return null;
 	}
 
-	/** True if the stack has a sorted destination (category or fallback chest with room). Memoized per item for one scan. */
-	private static boolean movable(WorkContext ctx, ItemStack stack, Set<BlockPos> excluded, Map<Item, Boolean> memo) {
-		Boolean known = memo.get(stack.getItem());
+	/**
+	 * True if the stack has a sorted destination (category or fallback chest with room). Memoized per kind of item
+	 * ({@link RoomContents#key}: two potions may have different destinations) for one scan.
+	 */
+	private static boolean movable(WorkContext ctx, ItemStack stack, Set<BlockPos> excluded, Map<String, Boolean> memo) {
+		String kind = RoomContents.key(stack);
+		Boolean known = memo.get(kind);
 		if (known == null) {
 			known = route(ctx, stack, excluded, false) != null;
-			memo.put(stack.getItem(), known);
+			memo.put(kind, known);
 		}
 		return known;
 	}
@@ -509,7 +580,7 @@ final class Storage {
 	static @Nullable StorageChest findSortSource(WorkContext ctx, Set<BlockPos> excluded) {
 		StorageChest best = null;
 		double bestDist = Double.MAX_VALUE;
-		Map<Item, Boolean> memo = new HashMap<>();
+		Map<String, Boolean> memo = new HashMap<>();
 		for (StorageChest chest : index(ctx.guild).sources()) {
 			if (excluded.contains(chest.pos) || !usable(ctx.level, ctx.guild, chest)) {
 				continue;
@@ -539,7 +610,7 @@ final class Storage {
 	 */
 	static int takeMovable(WorkContext ctx, Container container, int maxStacks, Set<BlockPos> excluded) {
 		int taken = 0;
-		Map<Item, Boolean> memo = new HashMap<>();
+		Map<String, Boolean> memo = new HashMap<>();
 		for (int i = 0; i < container.getContainerSize() && taken < maxStacks; i++) {
 			ItemStack stack = container.getItem(i);
 			if (stack.isEmpty() || !movable(ctx, stack, excluded, memo)) {

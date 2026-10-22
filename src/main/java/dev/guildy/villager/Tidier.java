@@ -38,6 +38,9 @@ import java.util.UUID;
  * <li>bounded: at most {@code auditChestsPerStep} chests read per step (a bigger group alone), groups in turn
  * (round robin) with a "Réorganiser maintenant" group first; a group leased by a sorter is left to it.</li>
  * </ul>
+ * The chests of a filtered room (a group whose {@link StorageGroups.Group#content} is set) are only merged and laid out
+ * inside each chest: their items define what they accept, so nothing is ever taken out of them nor carried from one to
+ * another (each chest keeps exactly the items it holds, hence every kind it holds).
  * Every change is checked: the items of the containers are counted before and after, a mismatch restores the previous
  * contents. A container someone has open ({@link Storage#inUse}) is never touched.
  */
@@ -274,10 +277,15 @@ final class Tidier {
 			}
 		}
 		a.rules = rules(a);
-		markOut(level, guild, a);
-		SortedMap<Integer, Long> totals = StorageLayout.totals(a.current, null);
-		totals.keySet().removeAll(a.out);
-		a.target = StorageLayout.layout(sizes, totals, a.rules, StorageGroups.fill(guild));
+		if (group.content()) {
+			// Filtered room: nothing leaves a chest, each chest is laid out with its own items.
+			a.target = ownLayouts(a, sizes, StorageGroups.fill(guild));
+		} else {
+			markOut(level, guild, a);
+			SortedMap<Integer, Long> totals = StorageLayout.totals(a.current, null);
+			totals.keySet().removeAll(a.out);
+			a.target = StorageLayout.layout(sizes, totals, a.rules, StorageGroups.fill(guild));
+		}
 		a.sections = ChestOrder.sections(a.units, config.reach, config.maxChestsPerStep, a.busy);
 		boolean hasOut = false;
 		for (StorageLayout.Stack[] container : a.current) {
@@ -287,6 +295,52 @@ final class Tidier {
 		}
 		a.tidy = a.target == null ? !hasOut : StorageLayout.sameLayout(a.current, a.target);
 		return a;
+	}
+
+	/**
+	 * Target of a filtered room's chests: each chest laid out with exactly its own items (a chest whose items do not fit
+	 * a layout keeps its current contents).
+	 */
+	private static StorageLayout.Stack[][] ownLayouts(Audit a, int[] sizes, StorageLayout.Fill fill) {
+		StorageLayout.Stack[][] target = new StorageLayout.Stack[sizes.length][];
+		for (int c = 0; c < sizes.length; c++) {
+			int container = c;
+			StorageLayout.Rules local = new StorageLayout.Rules() {
+				@Override
+				public int maxStack(int key) {
+					return a.rules.maxStack(key);
+				}
+
+				@Override
+				public int kind(int key) {
+					return a.rules.kind(key);
+				}
+
+				@Override
+				public boolean accepts(int ignored, int key) {
+					return a.rules.accepts(container, key);
+				}
+			};
+			StorageLayout.Stack[][] own = StorageLayout.layout(new int[]{sizes[c]}, StorageLayout.totals(a.current, new int[]{c}), local, fill);
+			target[c] = own == null ? a.current[c].clone() : own[0];
+		}
+		return target;
+	}
+
+	/**
+	 * New contents of a section: {@link StorageLayout#arrange}, except in a filtered room where each chest is arranged
+	 * with its own items only (null when nothing fits).
+	 */
+	private static StorageLayout.Stack @Nullable [][] arrangeSection(Audit a, int[] containers) {
+		if (!a.group.content()) {
+			return StorageLayout.arrange(containers, a.target, a.current, a.rules);
+		}
+		StorageLayout.Stack[][] result = new StorageLayout.Stack[containers.length][];
+		for (int i = 0; i < containers.length; i++) {
+			StorageLayout.Stack[][] own = StorageLayout.arrange(new int[]{containers[i]}, a.target, a.current, a.rules);
+			result[i] = own == null ? a.current[containers[i]].clone() : own[0];
+		}
+		return result;
 	}
 
 	/**
@@ -317,18 +371,19 @@ final class Tidier {
 		for (int k = 0; k < a.keys.size(); k++) {
 			ItemStack stack = a.keys.get(k);
 			String id = Storage.itemId(stack);
+			String kind = RoomContents.key(stack);
 			List<String> chain = Storage.chain(stack);
-			int homeTier = StorageRouting.tier(home, id, chain);
+			int homeTier = StorageRouting.tier(home, id, kind, chain);
 			if (homeTier == 0) {
 				continue;
 			}
 			// Without reading any chest: could a better destination exist at all (a chest of a better tier outside the group)?
-			int possible = routing.bestTier(id, chain, Math.min(maxTier, homeTier - 1), target -> !members.contains(index.chest(target).pos));
+			int possible = routing.bestTier(id, kind, chain, Math.min(maxTier, homeTier - 1), target -> !members.contains(index.chest(target).pos));
 			if (possible >= homeTier || possible > maxTier) {
 				continue;
 			}
 			StorageChest destination = Storage.route(level, guild, from, stack, Set.of(), maxTier);
-			if (destination != null && Storage.tier(destination, stack) < homeTier) {
+			if (destination != null && Storage.tier(guild, destination, stack) < homeTier) {
 				a.out.add(k);
 			}
 		}
@@ -483,7 +538,7 @@ final class Tidier {
 		bestDist = Double.MAX_VALUE;
 		for (List<Integer> candidate : a.sections) {
 			int[] containers = toArray(candidate);
-			StorageLayout.Stack[][] arranged = StorageLayout.arrange(containers, a.target, a.current, a.rules);
+			StorageLayout.Stack[][] arranged = arrangeSection(a, containers);
 			if (arranged == null || !changes(a, containers, arranged)) {
 				continue;
 			}
@@ -496,6 +551,10 @@ final class Tidier {
 		if (section != null) {
 			return new Job(Kind.ARRANGE, a.group.key(), a.group.category(), standingSpot(ctx.level, a, section), positions(a, section),
 					List.of(), section.getFirst() + 1, total);
+		}
+		if (a.group.content()) {
+			// A filtered room: nothing is carried from one chest to another.
+			return null;
 		}
 		// 3. Items to carry between sections (source nearest first).
 		List<int[]> sections = new ArrayList<>();
@@ -649,9 +708,18 @@ final class Tidier {
 		if (containers == null) {
 			return 0;
 		}
-		StorageLayout.Stack[][] arranged = StorageLayout.arrange(containers, a.target, a.current, a.rules);
+		StorageLayout.Stack[][] arranged = arrangeSection(a, containers);
 		if (arranged == null) {
 			return 0;
+		}
+		if (a.group.content()) {
+			// Each chest of a filtered room keeps exactly its own items (so every kind it holds).
+			for (int i = 0; i < containers.length; i++) {
+				if (!StorageLayout.totals(new StorageLayout.Stack[][]{arranged[i]}, null)
+						.equals(StorageLayout.totals(a.current, new int[]{containers[i]}))) {
+					return 0;
+				}
+			}
 		}
 		return apply(a, containers, arranged);
 	}
@@ -741,7 +809,7 @@ final class Tidier {
 	 */
 	static int takeOut(WorkContext ctx, Job job, int maxStacks) {
 		Audit a = reaudit(ctx.level, ctx.guild, job);
-		if (a == null) {
+		if (a == null || a.group.content()) {
 			return 0;
 		}
 		int[] containers = indices(a, job.chests());
@@ -773,7 +841,7 @@ final class Tidier {
 	 */
 	static int carryPickup(WorkContext ctx, Job job, int maxStacks) {
 		Audit a = reaudit(ctx.level, ctx.guild, job);
-		if (a == null || a.target == null) {
+		if (a == null || a.target == null || a.group.content()) {
 			return 0;
 		}
 		int[] from = indices(a, job.chests());
@@ -904,6 +972,10 @@ final class Tidier {
 
 	/** True when the stack belongs in this group (one of its keys that stays, an item its filter accepts or of its category). */
 	private static boolean belongs(Audit a, ItemStack stack) {
+		if (a.group.content()) {
+			// Nothing is ever carried into the chests of a filtered room by the tidying.
+			return false;
+		}
 		int key = a.key(stack);
 		if (key >= 0) {
 			return !a.out.contains(key);

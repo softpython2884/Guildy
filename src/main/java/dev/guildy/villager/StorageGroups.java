@@ -1,5 +1,6 @@
 package dev.guildy.villager;
 
+import dev.guildy.core.Lang;
 import dev.guildy.data.Guild;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -11,25 +12,30 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Chest groups: the CATEGORY chests of one category, or the FILTER chests of one filter, inside one chest room (room 0
- * = the chests outside any room), in reading order ({@link ChestOrder}, order setting of the guild). Deposits and free
- * automatic chests belong to no group. A group bigger than {@code storage.maxGroupChests} is cut into consecutive parts
+ * = the chests outside any room), or the chests of a filtered room (each one tidied on its own: its items never leave
+ * it), in reading order ({@link ChestOrder}, order setting of the guild). Deposits and free automatic chests belong to no
+ * group. A group bigger than {@code storage.maxGroupChests} is cut into consecutive parts
  * in reading order (keys "key", "key#2", "key#3"...): each part is audited and tidied on its own, so that the cost of a
  * tidying step never depends on the size of the storage.
  */
 final class StorageGroups {
 	/**
-	 * A group of chests, in reading order. {@code key} = "room:category" (lower case) or "room:filter:" + filter key;
-	 * {@code category} = the category, or the name of the filter (statuses, menus); {@code filter} null for category
-	 * groups.
+	 * A group of chests, in reading order. {@code key} = "room:category" (lower case), "room:filter:" + filter key or
+	 * "room:content" (the chests of a filtered room); {@code category} = the category, or the name of the filter or of
+	 * the filtered room (statuses, menus); {@code filter} null for category groups; {@code content}: chests of a filtered
+	 * room.
 	 */
-	record Group(String key, String category, int room, List<StorageChest> chests, @Nullable ChestFilter filter, int part, int parts) {
+	record Group(String key, String category, int room, List<StorageChest> chests, @Nullable ChestFilter filter, int part, int parts,
+			boolean content) {
 		boolean isFilter() {
 			return filter != null;
 		}
@@ -63,10 +69,18 @@ final class StorageGroups {
 		return room + ":filter:" + filter.key();
 	}
 
+	/** Key of the group of the chests of a filtered room. */
+	static String contentKey(int room) {
+		return room + ":content";
+	}
+
 	/** Group key of a chest (deposits and free chests: a key no group has). */
 	static String keyOf(StorageChest chest) {
 		if (chest.isFilter()) {
 			return filterKey(chest.room, chest.filter);
+		}
+		if (chest.isContent()) {
+			return contentKey(chest.room);
 		}
 		return key(chest.room, Storage.effectiveCategory(chest));
 	}
@@ -99,18 +113,29 @@ final class StorageGroups {
 	}
 
 	/** Computes the groups of these chests (reads the facing of the loaded containers). */
-	static List<Group> build(ServerLevel level, List<StorageChest> chests, ChestOrder.Mode mode) {
+	static List<Group> build(ServerLevel level, GuildVillagerData data, List<StorageChest> chests, ChestOrder.Mode mode) {
 		Map<String, List<StorageChest>> byKey = new LinkedHashMap<>();
 		Map<String, String> categoryOf = new LinkedHashMap<>();
 		Map<String, Integer> roomOf = new LinkedHashMap<>();
 		Map<String, ChestFilter> filterOf = new LinkedHashMap<>();
+		Set<String> contentGroups = new HashSet<>();
 		for (StorageChest chest : chests) {
 			if (chest.pos == null || chest.isDeposit() || chest.isFree() || (chest.role == StorageChest.Role.FILTER && !chest.isFilter())) {
 				continue;
 			}
 			String key = keyOf(chest);
 			if (!byKey.containsKey(key)) {
-				categoryOf.put(key, chest.isFilter() ? FilterNames.text(chest.filter) : Storage.effectiveCategory(chest));
+				String name;
+				if (chest.isFilter()) {
+					name = FilterNames.text(chest.filter);
+				} else if (chest.isContent()) {
+					ChestRoom room = data.room(chest.room);
+					name = Lang.raw("villager.storage.group.content", room == null ? "?" : room.name);
+					contentGroups.add(key);
+				} else {
+					name = Storage.effectiveCategory(chest);
+				}
+				categoryOf.put(key, name);
 				roomOf.put(key, chest.room);
 				if (chest.isFilter()) {
 					filterOf.put(key, chest.filter);
@@ -125,6 +150,9 @@ final class StorageGroups {
 		}
 		List<String> keys = new ArrayList<>(byKey.keySet());
 		keys.sort(Comparator.comparingInt((String key) -> {
+			if (contentGroups.contains(key)) {
+				return -2;
+			}
 			if (filterOf.containsKey(key)) {
 				return -1;
 			}
@@ -135,8 +163,9 @@ final class StorageGroups {
 		int max = VillagerModule.config().storage.maxGroupChests;
 		for (String key : keys) {
 			List<StorageChest> ordered = ordered(level, byKey.get(key), mode);
+			boolean content = contentGroups.contains(key);
 			if (max <= 0 || ordered.size() <= max) {
-				groups.add(new Group(key, categoryOf.get(key), roomOf.get(key), ordered, filterOf.get(key), 1, 1));
+				groups.add(new Group(key, categoryOf.get(key), roomOf.get(key), ordered, filterOf.get(key), 1, 1, content));
 				continue;
 			}
 			// Parts of (nearly) equal size, consecutive in reading order.
@@ -145,7 +174,7 @@ final class StorageGroups {
 			for (int part = 0; part < parts; part++) {
 				List<StorageChest> slice = List.copyOf(ordered.subList(part * size, Math.min(ordered.size(), (part + 1) * size)));
 				groups.add(new Group(part == 0 ? key : key + PART + (part + 1), categoryOf.get(key), roomOf.get(key), slice, filterOf.get(key),
-						part + 1, parts));
+						part + 1, parts, content));
 			}
 		}
 		return groups;

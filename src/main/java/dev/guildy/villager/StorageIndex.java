@@ -24,7 +24,8 @@ import java.util.Set;
  * <li>deposits, sort sources (deposits and free chests of the rooms), one container per chunk (chunk tickets), the
  * counters of the limits;</li>
  * <li>the routing index ({@link StorageRouting.Index}: chests by category, filter, fallback, deposit) built with the
- * current categories;</li>
+ * current categories, and the chests of the filtered rooms (their contents: {@link ContentIndex}, kept by the guild
+ * across rebuilds);</li>
  * <li>the chest groups ({@link StorageGroups}) in reading order, built on demand.</li>
  * </ul>
  * Rebuilt when the chest list changes (its modification counter), when a chest's role changes ({@link Storage#changed},
@@ -51,6 +52,10 @@ final class StorageIndex {
 	private final List<StorageChest> deposits = new ArrayList<>();
 	private final List<StorageChest> sources = new ArrayList<>();
 	private final List<BlockPos> chunkAnchors = new ArrayList<>();
+	/** Chests of the filtered rooms, and their target index by position ({@link BlockPos#asLong}). */
+	private final List<StorageChest> contentChests = new ArrayList<>();
+	private final Map<Long, Integer> contentTargets = new HashMap<>();
+	private final GuildVillagerData data;
 	private int manual;
 	private int filters;
 	private int roomChests;
@@ -65,7 +70,8 @@ final class StorageIndex {
 	private long groupsBuiltAt;
 	private @Nullable List<StorageChest> equipmentGivers;
 
-	private StorageIndex(GuildVillagerData.ChestList list, int version, long now) {
+	private StorageIndex(GuildVillagerData data, GuildVillagerData.ChestList list, int version, long now) {
+		this.data = data;
 		this.list = list;
 		this.modifications = list.modifications();
 		this.version = version;
@@ -84,6 +90,9 @@ final class StorageIndex {
 			}
 			if (Storage.isSortSource(chest)) {
 				sources.add(chest);
+			}
+			if (chest.isContent() && contentTargets.putIfAbsent(chest.pos.asLong(), chests.size() - 1) == null) {
+				contentChests.add(chest);
 			}
 			if (chest.role == StorageChest.Role.FILTER) {
 				filters++;
@@ -110,7 +119,11 @@ final class StorageIndex {
 				&& now >= index.builtAt;
 		if (!same || now - index.builtAt >= MAX_AGE) {
 			StorageIndex previous = index;
-			index = new StorageIndex(list, data.storageVersion, now);
+			index = new StorageIndex(data, list, data.storageVersion, now);
+			// Contents of chests that are no filtered-room chests any more are forgotten.
+			if (data.contentIndex != null && data.contentIndex.size() > 0) {
+				data.contentIndex.retain(index.contentTargets.keySet());
+			}
 			if (same && previous.groups != null && now - previous.groupsBuiltAt < GROUPS_MAX_AGE) {
 				// Periodic rebuild, nothing changed: the same chests in the same groups (they hold the chest objects).
 				index.groups = previous.groups;
@@ -169,6 +182,11 @@ final class StorageIndex {
 		return autos;
 	}
 
+	/** Chests of the filtered rooms (each position once), in registration order. */
+	List<StorageChest> contentChests() {
+		return contentChests;
+	}
+
 	// ================================================================ routing
 
 	/** Routing index with the current categories (targets in the order of {@link #chests()}). */
@@ -181,16 +199,33 @@ final class StorageIndex {
 			int[] zs = new int[chests.size()];
 			for (int i = 0; i < chests.size(); i++) {
 				StorageChest chest = chests.get(i);
-				targets.add(Storage.target(chest));
+				targets.add(Storage.target(data, chest));
 				xs[i] = chest.pos.getX();
 				ys[i] = chest.pos.getY();
 				zs[i] = chest.pos.getZ();
 			}
-			routing = new StorageRouting.Index(targets, xs, ys, zs);
+			routing = new StorageRouting.Index(targets, xs, ys, zs, this::contentHolders);
 			routingFor = categories;
 			equipmentGivers = null;
 		}
 		return routing;
+	}
+
+	/** Routing targets of the filtered-room chests currently holding this kind of item. */
+	private int[] contentHolders(String key) {
+		if (contentTargets.isEmpty()) {
+			return new int[0];
+		}
+		long[] holders = data.contents().holders(key);
+		int[] targets = new int[holders.length];
+		int count = 0;
+		for (long holder : holders) {
+			Integer target = contentTargets.get(holder);
+			if (target != null) {
+				targets[count++] = target;
+			}
+		}
+		return count == targets.length ? targets : java.util.Arrays.copyOf(targets, count);
 	}
 
 	/** Chest of a routing target index. */
@@ -205,7 +240,8 @@ final class StorageIndex {
 	List<StorageChest> givers(ItemStack stack) {
 		StorageRouting.Index index = routing();
 		List<StorageChest> givers = new ArrayList<>();
-		for (StorageRouting.Bucket bucket : index.buckets(Storage.itemId(stack), Storage.chain(stack), StorageRouting.DEPOSIT_TIER)) {
+		for (StorageRouting.Bucket bucket : index.buckets(Storage.itemId(stack), RoomContents.key(stack), Storage.chain(stack),
+				StorageRouting.DEPOSIT_TIER)) {
 			for (int member : bucket.members()) {
 				givers.add(chests.get(member));
 			}
@@ -246,7 +282,7 @@ final class StorageIndex {
 	List<StorageGroups.Group> groups(ServerLevel level, GuildVillagerData data, ChestOrder.Mode mode) {
 		StorageCategories categories = Storage.categories();
 		if (groups == null || groupsFor != categories || groupsMode != mode) {
-			groups = List.copyOf(StorageGroups.build(level, chests, mode));
+			groups = List.copyOf(StorageGroups.build(level, data, chests, mode));
 			Map<String, Integer> positions = new HashMap<>();
 			for (int i = 0; i < groups.size(); i++) {
 				positions.put(groups.get(i).key(), i);

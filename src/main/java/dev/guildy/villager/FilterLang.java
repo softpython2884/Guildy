@@ -198,7 +198,48 @@ final class FilterLang {
 		family(m, "bucket", "Seaux");
 		family(m, "potion", "Potions");
 		family(m, "arrow", "Flèches");
+		filteredRooms(m);
 		Lang.addDefaults(m);
+	}
+
+	/** Filtered rooms: each chest receives the kinds of items it already holds. */
+	private static void filteredRooms(Map<String, String> m) {
+		m.put("villager.storage.role.content", "Filtré (son contenu)");
+		m.put("villager.storage.label.content", "Filtré");
+		m.put("villager.storage.content.more", " +{0}");
+		m.put("villager.storage.group.content", "Salle filtrée « {0} »");
+		m.put("villager.gui.storage.entry.content", "&d&lCoffre de salle filtrée");
+		m.put("villager.gui.storage.entry.lore.content", "&7Reçoit : ");
+		m.put("villager.gui.storage.entry.lore.content.empty", "&cVide : ne reçoit rien");
+		m.put("villager.gui.storage.held.content", "&7Coffres de salle filtrée qui en contiennent : &f{0}");
+		m.put("villager.gui.rooms.help.text.v3", "&7Une salle des coffres range toute seule :\n&7chaque catégorie reçoit des colonnes\n&7entières à sa taille (plus une marge),\n&7les colonnes libres restent en réserve.\n&7Un coffre dont vous choisissez le rôle\n&7n'est jamais réattribué.\n&6Une salle peut être réservée à quelques\n&6catégories (menu de la salle).\n&dUne salle filtrée ne planifie rien :\n&dchaque coffre ne reçoit que les objets\n&dqu'il contient déjà ; vide, il ne reçoit\n&drien.");
+		m.put("villager.gui.role.auto.lore.v2", "&7Le coffre suit le mode de sa salle : une\n&7catégorie choisie par les trieurs, ou,\n&7dans une salle filtrée, seulement les\n&7objets qu'il contient déjà.");
+		m.put("villager.gui.room.filtered.state", "&dSalle filtrée : chaque coffre ne reçoit\n&dque ce qu'il contient déjà.\n&7Conteneurs : &f{0}&7 (filtrés : &f{1}&7, vides : &f{2}&7)");
+		m.put("villager.gui.room.mode.auto", "&6&lMode : salle automatique");
+		m.put("villager.gui.room.mode.filtered", "&d&lMode : salle filtrée");
+		m.put("villager.gui.room.mode.lore.auto", "&7Les trieurs donnent une catégorie aux\n&7coffres, par colonnes entières.");
+		m.put("villager.gui.room.mode.lore.filtered", "&7Chaque coffre ne reçoit que les sortes\n&7d'objets qu'il contient déjà (plusieurs\n&7possibles). Un coffre vide ne reçoit\n&7rien : mettez-y un objet à la main pour\n&7qu'il l'accepte. Les trieurs n'en sortent\n&7jamais rien ; ils fusionnent seulement\n&7les piles dans chaque coffre.");
+		m.put("villager.gui.room.mode.to_filtered", "&eClic : en faire une salle filtrée");
+		m.put("villager.gui.room.mode.to_auto", "&eClic : repasser en salle automatique");
+		m.put("villager.gui.room.mode.disabled", "&cSalles filtrées désactivées sur ce serveur.");
+		m.put("villager.gui.room.mode.confirm.filtered", "Rendre la salle filtrée ?");
+		m.put("villager.gui.room.mode.confirm.auto", "Repasser en salle automatique ?");
+		m.put("villager.gui.room.mode.confirm.filtered.lore", "&7Chaque coffre automatique ne recevra\n&7plus que ce qu'il contient maintenant.\n&7Rien n'est déplacé ; un coffre vide ne\n&7reçoit rien.");
+		m.put("villager.gui.room.mode.confirm.auto.lore", "&7Les coffres reçoivent de nouveau une\n&7catégorie par colonnes et les trieurs\n&7déplacent leurs objets en conséquence.");
+		m.put("villager.storage.room.filtered.on", "&aSalle « {0} » filtrée : &e{1}&a coffre(s) ne reçoivent plus que ce qu'ils contiennent déjà (un coffre vide ne reçoit rien).");
+		m.put("villager.storage.room.filtered.off", "&aSalle « {0} » de nouveau automatique : &e{1}&a coffre(s) reçoivent une catégorie, les trieurs y rangent les objets.");
+		m.put("villager.storage.room.filtered.disabled", "&cSalles filtrées désactivées sur ce serveur (storage.filteredRooms = false).");
+		m.put("villager.gui.room.theme.lore.filtered", "&7Sans effet dans une salle filtrée\n&7(gardées pour un retour en salle\n&7automatique).");
+		m.put("villager.storage.room.theme.filtered", "&cSalle filtrée : ses coffres reçoivent ce qu'ils contiennent déjà. Repassez-la en salle automatique pour choisir ses catégories.");
+		m.put("villager.gui.room.chest_list", "&b&lCoffres de la salle");
+		m.put("villager.gui.room.chest_list.lore", "&7Chaque coffre et ce qu'il reçoit.\n&eClic : ouvrir la liste");
+		m.put("villager.gui.room.chest_list.lore.filtered", "&7Chaque coffre et son filtre (les sortes\n&7d'objets qu'il contient) ; un coffre\n&7vide ne reçoit rien.\n&eClic : ouvrir la liste");
+		m.put("villager.gui.room.chest_list.title", "Coffres de « {0} » ({1})");
+		m.put("villager.gui.room.chest_list.chest", "&6Coffre {0}");
+		m.put("villager.gui.room.chest_list.role", "&7Rôle : &f{0}");
+		m.put("villager.gui.room.chest_list.manual", "&8Rôle choisi par un joueur");
+		m.put("villager.gui.room.chest_list.click", "&eClic : changer son rôle");
+		m.put("villager.gui.room.chest_list.none", "&7Aucun coffre dans cette salle.");
 	}
 
 	private static void family(Map<String, String> m, String family, String name) {
