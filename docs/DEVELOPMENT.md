@@ -589,6 +589,29 @@ schématiques) : `tools/ruins/`.
     exacte). `Tidier` : groupe `room:content`, rien à sortir, chaque coffre rangé avec ses seuls objets. `Storage.Spare` :
     forge, alchimie, plantations et gardes laissent le dernier objet de chaque sorte. `ChestRooms.setFiltered` (menu Mode).
 
+72. **Forme redoutable et Avatar** (ruins.json5 format 4) : `DreadRules` (pur) : à partir de `escalation.dreadThreshold`
+    (VII), multiplicateurs par niveau (vie ×2,5 → ×4 à X, dégâts +50 % → +125 %, recharges ×0,8 → ×0,65, or et XP),
+    plafonds. **Vie au-delà de 1 024** (plafond de `max_health`) pour tous les gardiens : vie prévue = configurée × menace ×
+    groupe × malédiction × forme redoutable (× Avatar, bornée par joueur) ; `Encounter.vitality` = prévue / réelle ; mixins
+    `LivingEntityDreadMixin` / `PlayerDreadMixin` (après `getDamageAfterMagicAbsorb` dans `actuallyHurt` ; `Player` le
+    redéfinit sans `super`) : coup sur le gardien ÷ vitalité, soin ÷ vitalité ; coup sur un joueur venant d'un combat
+    redoutable × facteur, bonus borné par `maxHitHealthRatio`. Barre et bilan (`FightTracker.Hit.scale`) en vie prévue ; le
+    plafond par sort des boss (`CastDamage`) se calcule sur `Encounters.effectiveMaxHealth`. Capacités : `DreadEncounter`
+    (rotation, phases), `DreadAttacks` + `DreadZones` / `DreadStrikes` / `DreadSummons` (lignes, cônes, anneaux à brèches,
+    puits, racines, zones, missiles, plongeons, tempêtes à œil, marques), `DreadFx` (alertes au sol), `Roots`,
+    `DreadFights`. Avatar : `AvatarRules` (pur), `AvatarEncounter` (ciel rouge = distance d'alerte de la bordure envoyée aux
+    joueurs de l'arène, musique, aura, annonces, trophée « Cœur de l'Avatar »), étoile détectée dans le cercle à l'apogée du
+    rituel maudit (`Incantations.climax`), consommée seulement si l'Avatar apparaît, retenue pendant le rituel.
+73. **Grand spectacle** (scrolls.json5 format 6 ; `scroll/FireworksSpell`, `ShowPlan`, `ShowStage`, `ShowFigures` purs et
+    testés) : parchemin épique `grand_spectacle` (sort `fireworks`, groupe `spectacle`), ajouté une fois (`addScrolls`) et
+    proposé une fois à l'alchimiste. `ShowStage` : ligne perpendiculaire au regard du lanceur, 3 blocs derrière lui,
+    extrémités ramenées vers le public, sol au niveau du lanceur, ciel libre, ni fluide ni claim étranger ; refus sous 3
+    points. `ShowPlan` (même graine = même plan) : actes par tick d'éclatement (ouverture, cycles salves / figures / tirs
+    croisés / accalmie, crescendo, final avec silence puis dernière salve), 20 s à 2 min, ≤ 40 fusées en vol (48 maudit).
+    Fusées vanilla à vitesse calculée, éclatement au tick prévu par l'événement d'entité 17 puis `discard` (jamais
+    `explode`), `noPhysics`, tag `guildy_firework` (ALLOW_DAMAGE annule tout dégât, ALLOW_LOAD refuse au rechargement) ;
+    rien n'est tiré sans joueur à `viewDistance`, `limits.maxFireworks` (120) pour tout le serveur.
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).

@@ -40,7 +40,8 @@ ou à héberger pour les joueurs.
   mythiques (Phénix, Dragon) sur les plastrons en netherite.
 - **Armes uniques vraiment uniques** : numéro de série, une guilde ne reçoit jamais une arme qu'elle a déjà, collection
   de guilde X / 33.
-- **Parchemins de sort** : 18 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel,
+- **Parchemins de sort** : 19 sorts à usage unique (météores, foudre en chaîne, singularité, dôme d'Égide, rappel, grand feu
+  d'artifice,
   bannière de guerre, fléau, permutation, ralliement de la guilde…)
   avec de grandes animations de particules, et le **grimoire** qui relie 4 sorts et les lance contre de la nourriture
   (et sa version **maudite**, bien plus puissante, sur l'Archimage déchu maudit).
@@ -486,7 +487,7 @@ d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas s
   - **Parchemins** : le même travail à la table, mais chaque livre devient un **parchemin de sort** (livre + 2 papiers).
     Surtout des parchemins simples : **Rappel** le plus souvent, puis Bénédiction, Révélation, Hâte du vent et
     Permutation ; avec une table entourée de **15 bibliothèques**, rarement un épique (Blizzard, Séisme, Égide, Tempête de
-    foudre, Ralliement, Bannière de guerre, Fléau) ; jamais de légendaire ni de mythique. **2 parchemins par jour** au plus,
+    foudre, Ralliement, Bannière de guerre, Fléau, Grand spectacle) ; jamais de légendaire ni de mythique. **2 parchemins par jour** au plus,
     en plus des livres (`scrollChance`, `scrollPaper`, `maxScrollsPerDay`, `epicScrollLevel`, `scrolls`).
   - **Potions** : avec un **alambic** dans le territoire, il prépare les **potions** et **élixirs** qui manquent au
     stockage. Il part de **fioles d'eau** prises au stockage (ou de **fioles vides** qu'il remplit à une source d'eau ou un
@@ -930,8 +931,8 @@ De vieux rouleaux couverts de runes, **à usage unique**, qui libèrent des sort
 armes uniques. **Maintenez le clic droit** pour lire le parchemin : un cercle runique se dessine à vos pieds, puis le sort
 part dans un grand spectacle de particules visible de loin. Le parchemin n'est consommé que si le sort réussit (aucun
 monstre à portée, incantation interrompue ou recharge en cours : il reste intact ; jamais consommé en créatif).
-Chaque parchemin a une **recharge partagée** avec son groupe (Attaque, Soutien, Rappel, Invocation, Permutation ; le
-Ralliement partage celle du Rappel).
+Chaque parchemin a une **recharge partagée** avec son groupe (Attaque, Soutien, Rappel, Invocation, Permutation,
+Spectacle ; le Ralliement partage celle du Rappel).
 Les sorts ne touchent que les **monstres** : jamais les joueurs, les villageois ni les familiers, et aucun bloc n'est
 modifié. Les bienfaits vont au lanceur, aux membres de sa guilde et à ses villageois. Les dégâts des sorts **ignorent
 l'armure** (comme la magie des potions vanilla) : un gardien en netherite les prend en plein (la Résistance de sa rage
@@ -957,6 +958,19 @@ les réduit encore). Les deux tiers des météores d'une Pluie **suivent un mons
 | **Ralliement** | Épique | 4 s d'incantation, puis **tous les membres de la guilde en ligne**, où qu'ils soient (autres dimensions comprises), reçoivent **[Rejoindre]** dans le chat pendant 30 s : les 8 premiers qui cliquent sont téléportés près de vous |
 | **Chaînes spectrales** | Légendaire | enchaîne le monstre visé et 2 voisins (4 blocs) sur place pendant 5 s (boss : 2,5 s), puis les chaînes se brisent (**6 ❤**) |
 | **Hâte du vent** | Rare | pendant 30 s, vous et la guilde à 8 blocs gagnez **Vitesse II**, **Saut amélioré II** et ne subissez plus de dégâts de chute |
+| **Grand spectacle** | Épique | face à votre public, trace **9 cercles runiques** sur 18 blocs derrière vous et tire un **vrai feu d'artifice** de **40 s** (20 s à 2 min) : ouverture, salves synchronisées, figures (cœurs, étoiles, cercle runique dans le ciel), tirs croisés, accalmie, crescendo et **bouquet final** ; ne blesse personne, ne touche à aucun bloc |
+
+**Grand spectacle.** Tournez-vous vers votre public et lisez le parchemin : pendant les 3 s d'incantation, les cercles
+runiques se tracent sur le sol **derrière vous**, du milieu vers les bords, sur une ligne de 18 blocs perpendiculaire à
+votre regard. Chaque cercle a besoin d'un **ciel dégagé** (ni toit, ni plafond, ni feuillage), d'un sol à votre niveau,
+ni eau ni lave, et pas du territoire d'une autre guilde : les emplacements impossibles sont sautés ; il en faut au moins 3,
+sinon le parchemin reste intact. Puis le spectacle commence pour **40 s** : de **vraies fusées** synchronisées au tick
+près, aux **couleurs de la bannière** de votre guilde pour l'ouverture, des **salves symétriques** de plus en plus
+rapides, des **figures** (cœur, étoile, anneau, spirale, cercle runique dans le ciel), des **tirs croisés**, une
+**accalmie** (comètes, saules dorés), un **crescendo** et le **bouquet final** : une gerbe dense, une seconde de silence,
+puis une dernière salve géante de tous les cercles. Les fusées **ne touchent rien** : ni joueur, ni villageois, ni animal,
+ni bloc ; on peut regarder debout sur un cercle. Un spectacle à la fois par joueur, pas deux à moins de 32 blocs. Avec le
+**grimoire maudit** : **70 s**, **14 cercles** sur 24 blocs, couleurs de sang, de vide et d'âmes, pentagrammes et crânes.
 
 **Un sort ne fait pas tout.** Chaque nouveau coup d'un même sort sur une même cible fait un peu moins mal (−25 % à chaque
 coup, jamais moins de 20 %) : les 25 météores d'une Pluie maudite écrasent toujours une horde, mais ne s'acharnent plus
@@ -1092,6 +1106,35 @@ un éclair et une onde de choc : **Enragé**, à pleine vie, plus grand, plus ra
 vaincre sous cette forme rapporte un butin exceptionnel (+50 % d'or et d'XP, tirages de butin, d'arme unique et de
 parchemin en plus) et tout le serveur l'apprend. Il ne ressuscite qu'une fois par combat.
 
+#### Menace VII et plus : la forme redoutable
+À partir de la **Menace VII**, un gardien n'est plus le même : normal ou maudit, il se lève sous sa **forme redoutable**
+(« Seigneur des Cryptes **Redoutable** », barre de boss « Menace VII — **Forme redoutable** »).
+- **Bien plus de vie** : ×2,5 à la Menace VII, puis +0,5 par niveau (×4 à la Menace X), en plus de la menace, du groupe et
+  de la malédiction (plafond : 8 000 PV par joueur présent à son apparition).
+- **Plus de dégâts** : ses coups, ses capacités, ses projectiles et ceux de son escorte font **+50 %** à la Menace VII,
+  jusqu'à **+125 %** à la Menace X, après votre armure (le bonus ne fait jamais dépasser à un coup 80 % de votre vie).
+- **Plus rapide** : ses capacités reviennent plus vite (−20 % à VII, −35 % à X).
+- **De nouvelles attaques**, propres à chaque gardien, toutes **annoncées** : cercles, lignes et cônes rouges au sol,
+  cercles verts pour les abris, un son et un message, puis environ une seconde et quart pour esquiver. Lisez le sol !
+- Son escorte a +50 % de vie. Victoire : or et XP ×1,5 (×1,8 à X), un tirage de butin en plus, plus de chances de
+  parchemin et d'arme unique.
+
+| Ruine | Attaques redoutables |
+|---|---|
+| **Crypte oubliée** | *Tombes agrippantes* (enraciné 2,5 s, Wither), *Pointes d'os* (lignes de pointes qui projettent en l'air), *Prison d'os* (un cercle de piliers qui se referme) |
+| **Tour du Mage déchu** | *Barrage arcanique* (six projectiles à tête chercheuse), *Puits de gravité* (aspire puis implose), *Images miroir* (l'Archimage se cache parmi ses reflets) |
+| **Ziggourat des sables** | *Sables mouvants* (attirent et ralentissent), *Malédiction de la momie* (explose sur les joueurs autour du marqué), *Tempête de sable* (seul l'œil est sûr) |
+| **Bastion de givre** | *Pics de glace* (quatre lignes), *Sol gelé* (plaques qui persistent 6 s), *Dôme de blizzard* (un seul abri) |
+| **Temple du Serpent à plumes** | *Tempête de plumes* (spirale : placez-vous entre ses branches), *Plongeon* (sur un joueur marqué), *Pluie de poison* |
+| **Grand Temple du Jaguar céleste** | *Bonds en chaîne* (trois joueurs marqués), *Rugissement étourdissant* (cône), *Rayon solaire* (balaie vers un joueur) |
+| **Autel infernal** | *Geysers de lave*, *Pluie de météores* de magma (sol brûlant), *Anneau de lave* (seules ses brèches laissent passer) |
+| **Citadelle des âmes** | *Chaînes d'âmes* (restez à moins de 7 blocs), *Aura de flétrissure* (éloignez-vous), *Éruption d'âmes* (anneau à trois brèches) |
+
+**Vie au-delà de 1 024** : le jeu plafonne la vie d'une créature à 1 024. Désormais la vie prévue d'un gardien (menace ×
+groupe × malédiction × forme redoutable) est respectée **à toutes les menaces** : au-delà de 1 024, il garde 1 024 PV
+réels et chaque coup reçu (épées, flèches, sorts) est divisé d'autant ; la barre et le bilan du combat montrent la vie
+prévue. Les combats maudits ou à plusieurs contre les gros gardiens durent donc plus longtemps qu'avant.
+
 #### Le parchemin d'incantation maudit
 Un rouleau noir qui suinte un sang violacé. Il se lit comme le parchemin d'incantation (clic droit maintenu 2,5 s, à moins
 de 16 blocs du gardien endormi d'une ruine dormante, et seulement quand aucun gardien de salle ne tient l'arène) et lance
@@ -1125,6 +1168,24 @@ Aperçus des huit ruines (le grand temple a aussi une planche de coupes) : [`too
 panneaux (`[boss]`, `[sbire]`, `[entree]`, `[coffre commun|rare|tresor]`), exportez-la (WorldEdit `.schem`, Litematica
 `.litematic` ou bloc de structure `.nbt`) puis convertissez-la avec `python tools/ruins/import_schematic.py` : elle devient
 une variante de la ruine choisie (procédure complète dans [`tools/ruins/README.md`](tools/ruins/README.md)).
+
+**L'Avatar : l'étoile du Nether.** Posez une **étoile du Nether** au sol dans le cercle (moins de 16 blocs du gardien
+endormi) et lisez un **parchemin d'incantation maudit** : l'étoile frémit et s'entoure de braises pendant le rituel (on ne
+peut plus la ramasser). À la fin du rituel, elle est **consumée** et le gardien se lève en **Avatar infernal** : le ciel
+vire au rouge sombre, la musique de boss résonne, la barre de boss est rouge et crantée, et tout le serveur l'apprend. Un
+parchemin normal ne touche jamais l'étoile ; si le rituel échoue, l'étoile reste au sol.
+- **Au moins Menace X** : il se bat comme un gardien maudit de Menace X sous sa forme redoutable, puis ×2 : de 10 000 à
+  16 000 ❤ par joueur présent. Ses coups font encore +20 % (jamais plus de 90 % de votre vie d'un seul coup).
+- **Trois phases puis sa forme ascendante** (abattu à la fin de la phase III, il se relève une dernière fois, plus vite).
+- **Ses attaques** : celles de sa ruine en plus fort dès la phase I, et celles des âmes et du Nether — *Piliers de feu des
+  âmes* et *Têtes de wither* (phase I), *Failles du Nether* qui libèrent blazes et squelettes wither, *Pluie de boules de
+  feu* (phase II), *Chaînes d'âmes* et *Anneau de feu des âmes* qui se referme (phase III) ; les attaques maudites
+  s'ajoutent à partir de la phase II.
+- **Butin mythique** : celui d'un gardien maudit, puis or ×1,5, XP ×2, deux tirages de butin en plus, jusqu'à trois armes
+  uniques, deux parchemins de plus (un garanti), un grimoire vierge, et le **Cœur de l'Avatar** (trophée). La menace de la
+  ruine monte de 2 niveaux.
+- Admin : `/guild admin ruin awaken cursed avatar` (sans rituel ni étoile), `/guild admin ruin avatar attack <attaque>`,
+  `/guild admin ruin dread <capacité>`.
 
 **Les trouver : l'Atelier du cartographe** (construction, guilde niveau 5, 80 or). Donnez la tâche **Cartographe** à un
 villageois, puis clic droit sur le panneau de l'atelier : **« Chercher une ruine »** à la surface (8 papiers + 1 boussole)
@@ -1236,6 +1297,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin ruin locate <id>` · `map <joueur> <id>` · `research <guilde> finish` | Localiser une ruine, donner une carte / boussole vers une ruine, terminer la recherche en cours d'une guilde |
 | `/guild admin ruin ability <type> [style]` | Jouer un effet de capacité de boss (test visuel) |
 | `/guild admin ruin statues <joueur>` · `ruin statues list` | Carte des statues du grand temple le plus proche ; statues en attente / posées / abandonnées |
+| `/guild admin ruin awaken cursed avatar` · `ruin avatar attack <attaque>` · `ruin dread <capacité>` | Avatar sans rituel ni étoile ; lancer une attaque de l'Avatar ; lancer une attaque redoutable |
 | `/guild admin ruin threat <niveau>` | Niveau de menace de la ruine la plus proche (appliqué au prochain réveil) |
 | `/guild admin ruin guards` · `ruin guards clear` | Gardiens de salle de la ruine la plus proche : les poster maintenant / les renvoyer |
 | `/guild admin ruin incantation <joueur> [nombre] cursed` · `ruin awaken cursed` | Parchemins maudits ; réveiller le gardien maudit de la ruine la plus proche (sans rituel) |
@@ -1272,7 +1334,7 @@ analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit
 (`cursedGrimoire` : multiplicateurs de puissance / portée / nombre, niveaux en plus, surcharges par sort, faim, sang,
 vie minimale, recharge, chance par ruine maudite), chances par source, prix au Carrefour, limites (effets simultanés, budget de particules, rendement décroissant des coups répétés `repeatHitDecay` / `repeatHitFloor`, part maximale de la vie d'un boss par sort `bossCastCap` et `cursedGrimoire.bossCastCap`) |
-| `ruins.json5` | Ruines : bilan du combat (`stats`), sentinelles (`guards`, annonce à l'écran désactivée), rituel scellé (`summon.sealSeconds`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) et légende du Jaguar céleste
+| `ruins.json5` | Ruines : forme redoutable (`escalation.dreadThreshold`, `escalation.dread`, `dreadAbilities` de chaque ruine), Avatar (`cursed.avatar`), bilan du combat (`stats`), sentinelles (`guards`, annonce à l'écran désactivée), rituel scellé (`summon.sealSeconds`), renfort de groupe (`scaling`), gardiens maudits (`cursed` : rituel, multiplicateurs, phases, attaques, récompenses, sources), menace (`escalation` : bonus par niveau, plafond), résurrection (`resurrection` : fenêtre, durée, bonus de la forme enragée, butin bonus), réveil par parchemin d'incantation ou à l'approche (`summon` : mode, rayon de l'arène, durée du rituel, prix du sang), gardien de chaque ruine (créature, nom, vie, dégâts, armure, taille, équipement, escorte, capacités et recharges), réveil, réinitialisation, retour (`respawnDays`), récompenses ; recherches du cartographe (durée, coûts, rayon de recherche, carte) et légende du Jaguar céleste
 (`cartography.statues` : niveau, coûts, nombre et espacement des statues, distance de la dernière au temple, sol,
 guidage, carte) |
 | `uniques.json5` | Armes uniques : unicité (`uniqueness` : guild / server / none, parchemin de remplacement, annonce de collection), définitions (objet de base, nom, rareté, histoire, enchantements, attributs, incassable, pouvoir, modèle), tables de butin par source (chance + poids), armes favorites des gardiens (`favorites`), panoplies (`sets` : bonus par nombre de pièces portées ; champ `set` des pièces ; pouvoirs `winterHeart`, `jaguarAmbush`, `soulPyre`), protection minimale des armures (`armorFloor`), réglages des pouvoirs (recharges, dégâts, rayons), annonces, modèles personnalisés (`customModels`, Polymer) |
@@ -1412,6 +1474,12 @@ Formules par défaut (modifiables) :
   multiplicateurs de menace, de malédiction et de groupe au-delà ; le plafond par sort suit cette vie réelle.
 - Salles filtrées : un objet ajouté ou retiré à la main est vu en une seconde environ (quelques secondes pour des milliers
   de coffres) ; une épée simple dans un coffre fait aussi accepter les épées enchantées (avant « Équipement enchanté »).
+
+- Forme redoutable et Avatar : le ciel rouge de l'Avatar dépend de l'option de vignette du client (activée par défaut) ;
+  le feu et le Wither posés par une attaque gardent leurs dégâts vanilla ; dans une arène étroite, une zone peut tomber
+  contre un mur ; les durées de combat sont estimées, à vérifier en jeu.
+- Grand spectacle : les fusées ne sont visibles qu'à 64 blocs et les figures à 96 blocs ; avec les particules en
+  « Minimal », le bouquet final perd des étincelles ; les figures sont tournées vers le public du lancement.
 
 ---
 
