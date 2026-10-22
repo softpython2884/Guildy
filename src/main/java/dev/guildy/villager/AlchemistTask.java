@@ -109,9 +109,10 @@ final class AlchemistTask extends TaskHandler {
 	private int stepIndex;
 	private int batch;
 	private @Nullable BlockPos stand;
-	// simple brewing: the choice of the last decision, the batch in progress
+	// simple brewing: the choice of the last decision, the batch in progress and the stand it is brewed at
 	private SimpleBrewing.@Nullable Choice simpleCandidate;
 	private SimpleBrewing.@Nullable Choice simple;
+	private @Nullable BlockPos brewingAt;
 	// delivery
 	private @Nullable BlockPos deliverTo;
 	/** Storage category of the items taken to {@link #deliverTo}, and their kind for the status. */
@@ -1303,6 +1304,7 @@ final class AlchemistTask extends TaskHandler {
 		candidate = null;
 		simple = null;
 		simpleCandidate = null;
+		brewingAt = null;
 		stepIndex = 0;
 		batch = 0;
 	}
@@ -1319,6 +1321,8 @@ final class AlchemistTask extends TaskHandler {
 				return;
 			}
 			simple = chosen;
+			brewingAt = null;
+			progress = 0;
 			shared.reserve(ctx.record.uuid, chosen.product(), chosen.bottles());
 		}
 		SimpleBrewing.Choice current = simple;
@@ -1396,8 +1400,12 @@ final class AlchemistTask extends TaskHandler {
 			}
 			case MOVING -> ctx.status("villager.status.alchemy.brew_going", Brews.name(current.product()), current.bottles());
 			case ARRIVED -> {
-				required = ctx.workTicks(current.seconds());
-				progress = 0;
+				if (!at.equals(brewingAt)) {
+					// A long brew goes on when the alchemist drifted away and came back to the same stand.
+					required = ctx.workTicks(current.seconds());
+					progress = 0;
+					brewingAt = at;
+				}
 				phase = Phase.BREW;
 				simpleBrewStep(ctx);
 			}
@@ -1468,6 +1476,7 @@ final class AlchemistTask extends TaskHandler {
 		ctx.status("villager.status.alchemy.brewed", current.bottles(), Brews.name(product));
 		simple = null;
 		simpleCandidate = null;
+		brewingAt = null;
 		progress = 0;
 		deliverRetryAt = 0;
 		phase = Phase.DELIVER;
