@@ -14,9 +14,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Unit;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
@@ -47,7 +49,8 @@ import java.util.Set;
  * Unique items are vanilla items with components: custom_data {"guildy": {"kind": "unique", "id": ...}}, colored item
  * name, lore (rarity, story, power), enchantments (vanilla + guildy), extra attribute modifiers, glint, unbreakable,
  * dyed color, a cooldown group for right-click powers and, only when a resource pack is guaranteed, an item_model (and,
- * for the armors, an equippable drawn with their own equipment asset).
+ * for the armors, an equippable drawn with their own equipment asset). The armors also get the protection floor of
+ * uniques.json5 ({@link ArmorFloor}), and the set pieces the set section of their lore and their set's cooldown group.
  */
 public final class UniqueItems {
 	public static final String KIND = "unique";
@@ -487,12 +490,72 @@ public final class UniqueItems {
 
 	/**
 	 * Custom model (and worn look of the armors) only when a resource pack is guaranteed (Polymer or forced in the config);
-	 * otherwise the vanilla model and look of the base item. Also reverts items created while models were enabled.
+	 * otherwise the vanilla model and look of the base item. Also reverts items created while models were enabled, and
+	 * keeps the protection floor of the armors in line with the config ({@link #syncArmorFloor}).
 	 *
 	 * @return true when the stack changed
 	 */
 	public static boolean syncVisuals(ItemStack stack, UniqueConfig.@Nullable UniqueDef def) {
-		return syncModel(stack, def) | syncEquipment(stack, def);
+		return syncModel(stack, def) | syncEquipment(stack, def) | syncArmorFloor(stack);
+	}
+
+	/**
+	 * Protection floor of a unique worn in an armor slot ({@link ArmorFloor}): the item's own armor, toughness and
+	 * knockback resistance for its slot (base item + definition, the floor modifiers left out) are completed up to the
+	 * floor of uniques.json5 {@code armorFloor} with modifiers {@code guildy:unique_floor_<slot>_<stat>}; no floor (or a
+	 * higher value) = no modifier. Copies in circulation are brought in line by the inventory scan (worn armor included).
+	 *
+	 * @return true when the stack changed
+	 */
+	public static boolean syncArmorFloor(ItemStack stack) {
+		Equippable equippable = stack.getPrototype().get(DataComponents.EQUIPPABLE);
+		if (equippable == null || equippable.slot().getType() != EquipmentSlot.Type.HUMANOID_ARMOR) {
+			return false;
+		}
+		EquipmentSlot slot = equippable.slot();
+		String slotName = slot.getSerializedName();
+		ItemAttributeModifiers current = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+		List<ItemAttributeModifiers.Entry> kept = new ArrayList<>();
+		double armor = 0;
+		double toughness = 0;
+		double knockback = 0;
+		for (ItemAttributeModifiers.Entry entry : current.modifiers()) {
+			Identifier id = entry.modifier().id();
+			if (Guildy.MOD_ID.equals(id.getNamespace()) && ArmorFloor.isFloorModifier(id.getPath())) {
+				continue;
+			}
+			kept.add(entry);
+			if (entry.modifier().operation() != AttributeModifier.Operation.ADD_VALUE || !entry.slot().test(slot)) {
+				continue;
+			}
+			if (entry.attribute().equals(Attributes.ARMOR)) {
+				armor += entry.modifier().amount();
+			} else if (entry.attribute().equals(Attributes.ARMOR_TOUGHNESS)) {
+				toughness += entry.modifier().amount();
+			} else if (entry.attribute().equals(Attributes.KNOCKBACK_RESISTANCE)) {
+				knockback += entry.modifier().amount();
+			}
+		}
+		ArmorFloor.Stats missing = ArmorFloor.missing(ArmorFloor.floor(UniqueModule.config().armorFloor, slotName),
+				new ArmorFloor.Stats(armor, toughness, knockback));
+		List<ItemAttributeModifiers.Entry> wanted = new ArrayList<>(kept);
+		EquipmentSlotGroup group = EquipmentSlotGroup.bySlot(slot);
+		addFloor(wanted, Attributes.ARMOR, slotName, "armor", missing.armor(), group);
+		addFloor(wanted, Attributes.ARMOR_TOUGHNESS, slotName, "toughness", missing.toughness(), group);
+		addFloor(wanted, Attributes.KNOCKBACK_RESISTANCE, slotName, "knockback", missing.knockback(), group);
+		if (wanted.equals(current.modifiers())) {
+			return false;
+		}
+		stack.set(DataComponents.ATTRIBUTE_MODIFIERS, new ItemAttributeModifiers(List.copyOf(wanted)));
+		return true;
+	}
+
+	private static void addFloor(List<ItemAttributeModifiers.Entry> entries, Holder<Attribute> attribute, String slot, String stat, double amount,
+			EquipmentSlotGroup group) {
+		if (amount > 0) {
+			Identifier id = Identifier.fromNamespaceAndPath(Guildy.MOD_ID, ArmorFloor.modifierPath(slot, stat));
+			entries.add(new ItemAttributeModifiers.Entry(attribute, new AttributeModifier(id, amount, AttributeModifier.Operation.ADD_VALUE), group));
+		}
 	}
 
 	private static boolean syncModel(ItemStack stack, UniqueConfig.@Nullable UniqueDef def) {

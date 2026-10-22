@@ -29,6 +29,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.equipment.Equippable;
 
@@ -182,6 +183,8 @@ public class UniqueSetGameTests {
 	public void winterHeartFreezesTheZombie(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		BlockPos ground = TestSupport.region(level, 8);
+		// Entity-ticking chunks: the zombies are found by the powers (entities of a merely loaded chunk are hidden).
+		TestSupport.forceChunks(level, ground, 1);
 		ServerPlayer wearer = hittable(helper, TestSupport.survivor(helper, ground, TestSupport.uniqueName("Hiver")));
 		ServerPlayer bystander = hittable(helper, TestSupport.survivor(helper, ground, TestSupport.uniqueName("HivB")));
 		place(wearer, ground);
@@ -234,6 +237,8 @@ public class UniqueSetGameTests {
 	public void jaguarAmbushFromTheCamouflage(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		BlockPos ground = TestSupport.region(level, 8);
+		// Entity-ticking chunks: the zombies are found by the powers (entities of a merely loaded chunk are hidden).
+		TestSupport.forceChunks(level, ground, 1);
 		ServerPlayer wearer = hittable(helper, TestSupport.survivor(helper, ground, TestSupport.uniqueName("Jag")));
 		ServerPlayer bystander = hittable(helper, TestSupport.survivor(helper, ground, TestSupport.uniqueName("JagB")));
 		place(wearer, ground);
@@ -280,6 +285,8 @@ public class UniqueSetGameTests {
 	public void soulPyreDrainsTheZombie(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		BlockPos ground = TestSupport.region(level, 8);
+		// Entity-ticking chunks: the zombies are found by the powers (entities of a merely loaded chunk are hidden).
+		TestSupport.forceChunks(level, ground, 1);
 		ServerPlayer wearer = hittable(helper, TestSupport.survivor(helper, ground, TestSupport.uniqueName("Ame")));
 		ServerPlayer bystander = hittable(helper, TestSupport.survivor(helper, ground, TestSupport.uniqueName("AmeB")));
 		place(wearer, ground);
@@ -341,6 +348,81 @@ public class UniqueSetGameTests {
 		steve.getInventory().clearContent();
 		GuildManager.disband(guild);
 		helper.succeed();
+	}
+
+	/** Armor, toughness and knockback resistance a stack gives in a slot (additive modifiers of its component). */
+	private static double total(ItemStack stack, Holder<Attribute> attribute, EquipmentSlot slot) {
+		double sum = 0;
+		for (ItemAttributeModifiers.Entry entry : stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY).modifiers()) {
+			if (entry.attribute().equals(attribute) && entry.slot().test(slot) && entry.modifier().operation() == AttributeModifier.Operation.ADD_VALUE) {
+				sum += entry.modifier().amount();
+			}
+		}
+		return sum;
+	}
+
+	private static void assertNetherite(GameTestHelper helper, ItemStack stack, EquipmentSlot slot, double armor, String what) {
+		double a = total(stack, Attributes.ARMOR, slot);
+		double t = total(stack, Attributes.ARMOR_TOUGHNESS, slot);
+		double k = total(stack, Attributes.KNOCKBACK_RESISTANCE, slot);
+		helper.assertTrue(a >= armor - 1e-6 && t >= 3 - 1e-6 && k >= 0.1 - 1e-6, what + ": at least netherite (" + armor + " / 3 / 0.1), got "
+				+ a + " / " + t + " / " + k);
+	}
+
+	/** The old copy of a unique armor, made before the floor: the floor modifiers taken off. */
+	private static ItemStack withoutFloor(ItemStack stack) {
+		ItemAttributeModifiers modifiers = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+		stack.set(DataComponents.ATTRIBUTE_MODIFIERS, new ItemAttributeModifiers(modifiers.modifiers().stream()
+				.filter(entry -> !entry.modifier().id().getPath().startsWith("unique_floor_")).toList()));
+		return stack;
+	}
+
+	/**
+	 * Protection floor: a new Bottes du Coursier (leather) protects like netherite boots, and so does an old copy made
+	 * without the floor once the inventory scan refreshed it (worn, and carried in the inventory); the other unique armors
+	 * too (a diamond crown gets its toughness), a netherite piece gets nothing.
+	 */
+	@GameTest(environment = "guildy-test:day", maxTicks = 200)
+	public void uniqueArmorsProtectAtLeastLikeNetherite(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		BlockPos ground = TestSupport.region(level, 2);
+		ServerPlayer player = TestSupport.survivor(helper, ground, TestSupport.uniqueName("Floor"));
+		ItemStack fresh = UniqueDrops.create("bottes_du_coursier");
+		helper.assertTrue(fresh.is(Items.LEATHER_BOOTS), "leather boots");
+		assertNetherite(helper, fresh, EquipmentSlot.FEET, 3, "new Bottes du Coursier");
+		assertNetherite(helper, UniqueDrops.create("couronne_du_roi_de_givre"), EquipmentSlot.HEAD, 3, "Couronne du Roi de givre");
+		assertNetherite(helper, UniqueDrops.create("plastron_du_serpent"), EquipmentSlot.CHEST, 8, "Plastron du Serpent à plumes");
+		assertNetherite(helper, UniqueDrops.create("jambieres_guerrier_jaguar"), EquipmentSlot.LEGS, 6, "golden leggings of the jaguar warrior");
+		ItemStack zephyr = UniqueDrops.create("bottes_de_zephyr");
+		helper.assertTrue(zephyr.get(DataComponents.ATTRIBUTE_MODIFIERS).modifiers().stream()
+				.noneMatch(entry -> entry.modifier().id().getPath().startsWith("unique_floor_")), "netherite boots: no floor modifier");
+		helper.assertTrue(fresh.get(DataComponents.ATTRIBUTE_MODIFIERS).modifiers().stream()
+				.filter(entry -> entry.modifier().id().getPath().startsWith("unique_floor_feet_")).count() == 3, "three floor modifiers for the feet");
+
+		ItemStack worn = withoutFloor(UniqueDrops.create("bottes_du_coursier"));
+		ItemStack carried = withoutFloor(UniqueDrops.create("couronne_du_roi_de_givre"));
+		helper.assertTrue(total(worn, Attributes.ARMOR, EquipmentSlot.FEET) < 3, "an old copy: below the floor");
+		player.setItemSlot(EquipmentSlot.FEET, worn);
+		player.getInventory().add(carried);
+		helper.startSequence()
+				.thenWaitUntil(() -> {
+					assertNetherite(helper, player.getItemBySlot(EquipmentSlot.FEET), EquipmentSlot.FEET, 3, "worn old copy, refreshed by the scan");
+					ItemStack crown = ItemStack.EMPTY;
+					for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+						if ("couronne_du_roi_de_givre".equals(UniqueItems.idOf(player.getInventory().getItem(i)))) {
+							crown = player.getInventory().getItem(i);
+						}
+					}
+					helper.assertFalse(crown.isEmpty(), "the crown is carried");
+					assertNetherite(helper, crown, EquipmentSlot.HEAD, 3, "carried old copy, refreshed by the scan");
+				})
+				.thenExecute(() -> {
+					ItemStack boots = player.getItemBySlot(EquipmentSlot.FEET);
+					helper.assertFalse(UniqueItems.syncArmorFloor(boots), "stable once refreshed");
+					player.getInventory().clearContent();
+					player.setItemSlot(EquipmentSlot.FEET, ItemStack.EMPTY);
+				})
+				.thenSucceed();
 	}
 
 	/** With the resource pack guaranteed, every set piece is drawn with its own equipment asset and item model. */

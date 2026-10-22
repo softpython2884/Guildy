@@ -33,7 +33,8 @@ public final class UniqueConfig implements Validatable {
 	/**
 	 * Current file format: 2 = drop tables of the ruin bosses added to older files, 3 = crossbow model, 4 = the seven uniques
 	 * of the ruins (definitions and drop table entries added to older files), 5 = the three armor sets (twelve pieces, set
-	 * definitions, drop table and favourite entries added to older files).
+	 * definitions, drop table and favourite entries added to older files) and the protection floor of the unique armors
+	 * ({@link #armorFloor}, "netherite" for the older files, which do not have it).
 	 */
 	public static final int CURRENT_VERSION = 5;
 	/** Drop sources used by the other modules (UniqueDrops.roll). */
@@ -84,6 +85,14 @@ public final class UniqueConfig implements Validatable {
 
 	@Comment("Annonce a tout le serveur quand une guilde a reuni toutes les armes uniques (collection complete)")
 	public boolean announceCollection = true;
+
+	@Comment({
+			"Protection minimale des armures uniques : \"netherite\" = chaque piece unique portee (casque, plastron, jambieres,",
+			"bottes) protege au moins comme la piece en netherite du meme emplacement (points d'armure, robustesse, resistance",
+			"au recul ; une valeur superieure de la definition est gardee, les exemplaires deja obtenus sont mis a jour) ;",
+			"\"none\" = seulement les valeurs de l'objet de base et de la definition."
+	})
+	public String armorFloor = ArmorFloor.NETHERITE;
 
 	@Comment({
 			"Modeles et textures personnalises (pack de ressources) :",
@@ -732,6 +741,12 @@ public final class UniqueConfig implements Validatable {
 		}
 		mode = parsed;
 		uniqueness = parsed.id();
+		String floor = ArmorFloor.parse(armorFloor);
+		if (floor == null) {
+			warnings.add("armorFloor '" + armorFloor + "' unknown (netherite, none): netherite used");
+			floor = ArmorFloor.NETHERITE;
+		}
+		armorFloor = floor;
 		rebuildAnnounce(warnings);
 		rebuildSets(warnings);
 		rebuildItems(itemExists, warnings);
@@ -1358,6 +1373,10 @@ public final class UniqueConfig implements Validatable {
 		}
 		if (configVersion < 5) {
 			addSetUniques();
+			// The armor floor is new in format 5: an older file never chose it, the default applies.
+			if (armorFloor == null || armorFloor.isBlank()) {
+				armorFloor = ArmorFloor.NETHERITE;
+			}
 		}
 	}
 
@@ -1533,11 +1552,11 @@ public final class UniqueConfig implements Validatable {
 		map.put("nether_ruin_boss@autel_infernal", new LinkedHashMap<>(Map.of("hache_du_seigneur_de_guerre", 25.0)));
 		map.put("ruin_boss@cursed", new LinkedHashMap<>(Map.of("lame_du_pacte", 30.0)));
 		map.put("nether_ruin_boss@cursed", new LinkedHashMap<>(Map.of("lame_du_pacte", 30.0)));
-		addSetFavorites(map, "ruin_boss@bastion_de_givre", "hiver_eternel", 20);
-		addSetFavorites(map, "ruin_boss@grand_temple_maya", "guerrier_jaguar", 20);
-		addSetFavorites(map, "ruin_boss@temple_maya", "guerrier_jaguar", 10);
-		addSetFavorites(map, "nether_ruin_boss@citadelle_des_ames", "brasier_des_ames", 20);
-		addSetFavorites(map, "nether_ruin_boss@autel_infernal", "brasier_des_ames", 10);
+		addSetFavorites(map, "ruin_boss@bastion_de_givre", "hiver_eternel", 15);
+		addSetFavorites(map, "ruin_boss@grand_temple_maya", "guerrier_jaguar", 15);
+		addSetFavorites(map, "ruin_boss@temple_maya", "guerrier_jaguar", 8);
+		addSetFavorites(map, "nether_ruin_boss@citadelle_des_ames", "brasier_des_ames", 15);
+		addSetFavorites(map, "nether_ruin_boss@autel_infernal", "brasier_des_ames", 8);
 		return map;
 	}
 
