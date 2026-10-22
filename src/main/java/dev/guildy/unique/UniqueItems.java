@@ -28,6 +28,9 @@ import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.component.UseCooldown;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.equipment.EquipmentAsset;
+import net.minecraft.world.item.equipment.EquipmentAssets;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.block.entity.BannerPattern;
 import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import org.jspecify.annotations.Nullable;
@@ -43,7 +46,8 @@ import java.util.Set;
 /**
  * Unique items are vanilla items with components: custom_data {"guildy": {"kind": "unique", "id": ...}}, colored item
  * name, lore (rarity, story, power), enchantments (vanilla + guildy), extra attribute modifiers, glint, unbreakable,
- * dyed color, a cooldown group for right-click powers and, only when a resource pack is guaranteed, an item_model.
+ * dyed color, a cooldown group for right-click powers and, only when a resource pack is guaranteed, an item_model (and,
+ * for the armors, an equippable drawn with their own equipment asset).
  */
 public final class UniqueItems {
 	public static final String KIND = "unique";
@@ -351,12 +355,16 @@ public final class UniqueItems {
 	// ================================================================== visuals
 
 	/**
-	 * Custom model only when a resource pack is guaranteed (Polymer or forced in the config); otherwise the vanilla model of
-	 * the base item. Also reverts items created while models were enabled.
+	 * Custom model (and worn look of the armors) only when a resource pack is guaranteed (Polymer or forced in the config);
+	 * otherwise the vanilla model and look of the base item. Also reverts items created while models were enabled.
 	 *
 	 * @return true when the stack changed
 	 */
 	public static boolean syncVisuals(ItemStack stack, UniqueConfig.@Nullable UniqueDef def) {
+		return syncModel(stack, def) | syncEquipment(stack, def);
+	}
+
+	private static boolean syncModel(ItemStack stack, UniqueConfig.@Nullable UniqueDef def) {
 		Identifier wanted = def != null && !def.model.isEmpty() && UniqueVisuals.enabled()
 				? Identifier.fromNamespaceAndPath(Guildy.MOD_ID, def.model) : null;
 		Identifier current = stack.get(DataComponents.ITEM_MODEL);
@@ -373,6 +381,46 @@ public final class UniqueItems {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Worn look of the unique armors: the base item's equippable with asset_id guildy:{model} when the pack ships that
+	 * equipment asset for the base item's slot (slot, sounds and every other field stay the base item's); otherwise the
+	 * base item's own equippable (vanilla armor texture, dyed leather).
+	 */
+	private static boolean syncEquipment(ItemStack stack, UniqueConfig.@Nullable UniqueDef def) {
+		Equippable base = stack.getPrototype().get(DataComponents.EQUIPPABLE);
+		if (base == null) {
+			return false;
+		}
+		Equippable current = stack.get(DataComponents.EQUIPPABLE);
+		String asset = def != null && UniqueVisuals.enabled() ? UniqueEquipment.assetFor(def.model, base.slot().getSerializedName()) : null;
+		if (asset != null) {
+			ResourceKey<EquipmentAsset> key = equipmentAsset(asset);
+			if (current != null && current.assetId().equals(Optional.of(key))) {
+				return false;
+			}
+			stack.set(DataComponents.EQUIPPABLE, withAsset(base, key));
+			return true;
+		}
+		if (current != null && current.assetId().map(id -> Guildy.MOD_ID.equals(id.identifier().getNamespace())).orElse(false)) {
+			// Back to the base item's own look (a value equal to the prototype clears the patch).
+			stack.set(DataComponents.EQUIPPABLE, base);
+			return true;
+		}
+		return false;
+	}
+
+	/** Key of a Guildy equipment asset (assets/guildy/equipment/{name}.json in the resource pack). */
+	public static ResourceKey<EquipmentAsset> equipmentAsset(String name) {
+		return ResourceKey.create(EquipmentAssets.ROOT_ID, Identifier.fromNamespaceAndPath(Guildy.MOD_ID, name));
+	}
+
+	/** A copy of an equippable component drawn with another equipment asset. */
+	public static Equippable withAsset(Equippable base, ResourceKey<EquipmentAsset> asset) {
+		return new Equippable(base.slot(), base.equipSound(), Optional.of(asset), base.cameraOverlay(), base.allowedEntities(),
+				base.dispensable(), base.swappable(), base.damageOnHurt(), base.equipOnInteract(), base.canBeSheared(),
+				base.shearingSound());
 	}
 
 	// ================================================================== helpers

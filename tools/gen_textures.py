@@ -2,15 +2,20 @@
 """
 Guildy - generator of the optional resource pack: unique weapons, spell scrolls, grimoire and incantation scroll.
 
-Every texture is ORIGINAL 16x16 pixel art. The unique weapons, the grimoire and the incantation scroll are hand-drawn
-here as character grids (one character = one pixel, one palette per sprite: 1-pixel hue-shifted outlines, light from
-the top-left, 3-5 tone ramps per material) with frame-by-frame animation layers; the spell scrolls are drawn from
-simple shapes (rolled parchment + rune). The script writes, under src/main/resources/assets/guildy/:
-  textures/item/<name>.png (+ .png.mcmeta when animated), models/item/<name>.json, items/<name>.json
+Every texture is ORIGINAL pixel art (16x16 icons, 32x32 in-hand textures, 64x32 worn armor layers). The unique
+weapons, the grimoire and the incantation scroll are hand-drawn here as character grids (one character = one pixel,
+one palette per sprite: 1-pixel hue-shifted outlines, light from the top-left, 3-5 tone ramps per material) with
+frame-by-frame animation layers; the spell scrolls are drawn from simple shapes (rolled parchment + rune). The script
+writes, under src/main/resources/assets/guildy/:
+  textures/item/<name>.png (+ .png.mcmeta when animated), models/item/<name>.json, items/<name>.json,
+  equipment/<name>.json + textures/entity/equipment/humanoid/<name>.png (worn look of the unique armors)
 and tools/resourcepack/pack.png (pack icon); stale files of those generated folders are removed. No Minecraft texture
 is used or copied: models only reference vanilla *parent models* (item/handheld, item/bow, item/crossbow...) for their
-in-hand transforms. Previews: tools/previews/textures.png (every texture, every frame, in-game sizes) and
-tools/previews/textures_animated.png (animated PNG playing the animations as in game).
+in-hand transforms (the 3D shield copies the display numbers of the vanilla shield models) and the equipment assets
+only point baby mobs to the vanilla armor textures. Previews: tools/previews/textures.png (every texture, every frame,
+in-game sizes), tools/previews/textures_animated.png (animated PNG playing the animations as in game),
+tools/previews/textures_in_hand.png (in-hand spear) and tools/previews/armor_worn.png (worn armors and 3D shield,
+rendered in 3D).
 
 Usage (from the project root):  python tools/gen_textures.py
 Pure standard library (zlib + struct for the PNG files). Re-running it reproduces the committed files exactly.
@@ -168,7 +173,8 @@ def still(rows, palette):
 # Asset files written by this run: anything else in the generated folders is a stale output and is removed.
 WRITTEN = set()
 GENERATED_DIRS = [os.path.join(ASSETS, "textures", "item"), os.path.join(ASSETS, "models", "item"),
-				  os.path.join(ASSETS, "items")]
+				  os.path.join(ASSETS, "items"), os.path.join(ASSETS, "equipment"),
+				  os.path.join(ASSETS, "textures", "entity", "equipment", "humanoid")]
 
 
 def write_sprite(name, sprite):
@@ -191,6 +197,8 @@ def write_json(path, data):
 def remove_stale():
 	"""Deletes the textures, models and item definitions of the generated folders that this run did not write."""
 	for folder in GENERATED_DIRS:
+		if not os.path.isdir(folder):
+			continue
 		for entry in sorted(os.listdir(folder)):
 			path = os.path.join(folder, entry)
 			if os.path.isfile(path) and os.path.normcase(path) not in WRITTEN:
@@ -1528,13 +1536,10 @@ def spear_model(name):
 
 
 def shield_model(name):
-	"""The flat icon in inventories; everywhere else the vanilla shield (special model, same states and transformation as
-	minecraft:items/shield.json), which draws the base color and banner patterns of the item."""
+	"""The flat icon in inventories; everywhere else the 3D shield model (same states as minecraft:items/shield.json:
+	carried / blocking), see shield_3d_models()."""
 	model_file(name, "minecraft:item/generated")
-
-	def special(base):
-		return {"type": "minecraft:special", "base": base, "model": {"type": "minecraft:shield"}}
-
+	shield_3d_models(name)
 	item_file(name, {
 		"type": "minecraft:select",
 		"property": "minecraft:display_context",
@@ -1542,16 +1547,14 @@ def shield_model(name):
 		"fallback": {
 			"type": "minecraft:condition",
 			"property": "minecraft:using_item",
-			"on_false": special("minecraft:item/shield"),
-			"on_true": special("minecraft:item/shield_blocking"),
-			"transformation": {"left_rotation": [0.0, 0.0, 0.0, 1.0], "right_rotation": [0.0, 0.0, 0.0, 1.0],
-							   "scale": [1.0, -1.0, -1.0], "translation": [0.0, 0.0, 0.0]},
+			"on_false": ref(name + "_in_hand"),
+			"on_true": ref(name + "_in_hand_blocking"),
 		},
 	})
 
 
 def ruin_unique_models():
-	"""Models and item definitions of the uniques of the ruins, and the in-hand texture of the spear."""
+	"""Models and item definitions of the uniques of the ruins, and the in-hand textures of the spear and the shield."""
 	for name, (_, parent) in RUIN_UNIQUES.items():
 		if name in SPEAR_UNIQUES:
 			spear_model(name)
@@ -1561,6 +1564,8 @@ def ruin_unique_models():
 			simple_model(name, parent)
 	for name in SPEAR_UNIQUES:
 		write_sprite_sized(name + "_in_hand", lance_du_jaguar_celeste_in_hand())
+	for name in SHIELD_UNIQUES:
+		write_sprite_sized(name + "_in_hand", egide_des_ames_in_hand())
 
 
 def ruin_unique_preview(path):
@@ -1585,6 +1590,412 @@ def ruin_unique_preview(path):
 	for i, frame in enumerate(frames):
 		draw(12 + (i % strip) * 70, 30 + 32 * 6 + 12 + (i // strip) * 70, frame, 2, 4)
 	img.save(path)
+
+
+# ---------------------------------------------------------------------------------------------------------- 3D shield
+# The Egide des Ames in hand: a JSON element model instead of the vanilla shield (special model drawing banner patterns).
+# The vanilla shield renderer draws its entity model (plate 12 x 22 x 1, handle 2 x 6 x 6) flipped by the item
+# transformation scale(1, -1, -1); the same box in element coordinates is plate x -6..6, y -11..11, z 1..2 and handle
+# x -1..1, y -3..3, z -5..1 (the design faces +z). The elements below stay inside those bounds and the models reuse the
+# display transforms of minecraft:item/shield and item/shield_blocking, so the shield sits exactly where the vanilla one
+# does (in hand, blocking, on the ground, in frames and on shelves). The texture is an item atlas sprite: it animates.
+
+SHIELD_TEXTURE = 32
+# Texture layout (pixels): front 12 x 22 at (0, 0), back 12 x 22 at (12, 0), plate edges (1 x 22 at (24, 0), 12 x 1 at
+# (0, 22)), skull boss front 6 x 7 at (25, 0) with its sides (1 x 7 at (31, 0)) and top/bottom (6 x 1 at (25, 7)), handle
+# side 6 x 6 at (25, 8), handle front/back 2 x 6 at (25, 14), handle top/bottom 2 x 6 at (27, 14).
+
+# Heater outline: rows of the 12 x 22 front (top to bottom) -> first and last column of the plate.
+SHIELD_STEPS = [(0, 13, 0, 11), (14, 16, 1, 10), (17, 18, 2, 9), (19, 20, 3, 8), (21, 21, 4, 7)]
+
+
+def shield_elements():
+	"""The elements of the 3D shield: (name, from, to, faces {side: (x, y, w, h) texture pixels, flip}) in element units."""
+	elements = []
+	for i, (top, bottom, first, last) in enumerate(SHIELD_STEPS):
+		x0, x1 = first - 6, last + 1 - 6
+		y0, y1 = 11 - (bottom + 1), 11 - top
+		w, h = x1 - x0, y1 - y0
+		faces = {
+			"south": (first, top, w, h),
+			"north": (12 + 11 - last, top, w, h),
+			"west": (24, top, 1, h),
+			"east": (24, top, 1, h),
+			"down": (first, 22, w, 1),
+		}
+		if i == 0:
+			faces["up"] = (first, 22, w, 1)
+		elements.append(("plate_%d" % i, [x0, y0, 1], [x1, y1, 2], faces))
+	# The skull boss stands one pixel out of the plate: cranium 6 x 5, jaw 4 x 2.
+	elements.append(("cranium", [-3, 2, 2], [3, 7, 3], {"south": (25, 0, 6, 5), "west": (31, 0, 1, 5), "east": (31, 0, 1, 5),
+														   "up": (25, 7, 6, 1), "down": (25, 7, 6, 1)}))
+	elements.append(("jaw", [-2, 0, 2], [2, 2, 3], {"south": (26, 5, 4, 2), "west": (31, 5, 1, 2), "east": (31, 5, 1, 2),
+													 "down": (26, 7, 4, 1)}))
+	elements.append(("handle", [-1, -3, -5], [1, 3, 1], {"north": (25, 14, 2, 6), "west": (25, 8, 6, 6), "east": (25, 8, 6, 6),
+														   "up": (27, 14, 2, 6), "down": (27, 14, 2, 6)}))
+	return elements
+
+
+# Display transforms of the vanilla shield models (minecraft:models/item/shield.json and shield_blocking.json).
+SHIELD_DISPLAY = {
+	"thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [10, 6, -4], "scale": [1, 1, 1]},
+	"thirdperson_lefthand": {"rotation": [0, 90, 0], "translation": [10, 6, 12], "scale": [1, 1, 1]},
+	"firstperson_righthand": {"rotation": [0, 180, 5], "translation": [-10, 1.75, -10], "scale": [1.25, 1.25, 1.25]},
+	"firstperson_lefthand": {"rotation": [0, 180, 5], "translation": [10, 0, -10], "scale": [1.25, 1.25, 1.25]},
+	"gui": {"rotation": [15, -25, -5], "translation": [2, 3, 0], "scale": [0.65, 0.65, 0.65]},
+	"fixed": {"rotation": [0, 180, 0], "translation": [-4.5, 4.5, -5], "scale": [0.55, 0.55, 0.55]},
+	"on_shelf": {"rotation": [0, 0, 0], "translation": [11, 18.5, 8.7], "scale": [1.4, 1.4, 1.4]},
+	"ground": {"rotation": [0, 0, 0], "translation": [2, 4, 2], "scale": [0.25, 0.25, 0.25]},
+}
+SHIELD_BLOCKING_DISPLAY = {
+	"thirdperson_righthand": {"rotation": [45, 155, 0], "translation": [-3.49, 11, -2], "scale": [1, 1, 1]},
+	"thirdperson_lefthand": {"rotation": [45, 155, 0], "translation": [11.51, 7, 2.5], "scale": [1, 1, 1]},
+	"firstperson_righthand": {"rotation": [0, 180, -5], "translation": [-15, 3.25, -11], "scale": [1.25, 1.25, 1.25]},
+	"firstperson_lefthand": {"rotation": [0, 180, -5], "translation": [5, 5, -11], "scale": [1.25, 1.25, 1.25]},
+}
+
+
+def shield_3d_models(name):
+	"""models/item/<name>_in_hand.json (elements + vanilla shield transforms) and <name>_in_hand_blocking.json (its child
+	with the blocking transforms)."""
+	texture = "guildy:item/" + name + "_in_hand"
+	scale = 16.0 / SHIELD_TEXTURE
+
+	def uv(rect, side):
+		x, y, w, h = rect
+		u0, v0, u1, v1 = x * scale, y * scale, (x + w) * scale, (y + h) * scale
+		return [u0, v0, u1, v1]
+
+	elements = []
+	for label, start, end, faces in shield_elements():
+		elements.append({
+			"name": label,
+			"from": start,
+			"to": end,
+			"faces": {side: {"uv": uv(rect, side), "texture": "#shield"} for side, rect in faces.items()},
+		})
+	write_json(os.path.join(ASSETS, "models", "item", name + "_in_hand.json"), {
+		"textures": {"shield": texture, "particle": texture},
+		"elements": elements,
+		"display": SHIELD_DISPLAY,
+	})
+	write_json(os.path.join(ASSETS, "models", "item", name + "_in_hand_blocking.json"), {
+		"parent": "guildy:item/" + name + "_in_hand",
+		"display": SHIELD_BLOCKING_DISPLAY,
+	})
+
+
+SHIELD_FRONT = [
+	"aAAAAAAAAAAd",
+	"AkkkkkkkkkkD",
+	"AkfkkkkkkfkD",
+	"AkkkkkkkkkkD",
+	"AkkkkkkkkkkD",
+	"AkFkkkkkkFkD",
+	"AkfkkkkkkfkD",
+	"AkFfkkkkfFkD",
+	"AfFfkkkkfFfD",
+	"AkFFfkkfFFkD",
+	"AkfFFkkFFfkD",
+	"AkkfFFFFfkkD",
+	"AkkkfFFfkkkD",
+	"AkfkkfFkkfkD",
+	"OAkkkFfkkkdO",
+	"OAkfkfFkfkdO",
+	"OAkkkFfkkkdO",
+	"OOAkkfFkkdOO",
+	"OOAkkFfkkdOO",
+	"OOOAkfFkdOOO",
+	"OOOAkFfkdOOO",
+	"OOOOAddDOOOO",
+]
+
+SHIELD_BACK = [
+	"DddddddddddD",
+	"dKKKKKKKKKKd",
+	"dKssssssssKd",
+	"dKKKKKKKKKKd",
+	"dKKKKKKKKKKd",
+	"dKKKrKKrKKKd",
+	"dKKKKKKKKKKd",
+	"dKKKKKKKKKKd",
+	"dKssssssssKd",
+	"dKKKKKKKKKKd",
+	"dKKKKKKKKKKd",
+	"dKKKrKKrKKKd",
+	"dKKKKKKKKKKd",
+	"dKssssssssKd",
+	"DdKKKKKKKKdD",
+	"DdKKKKKKKKdD",
+	"DDdKKKKKKdDD",
+	"DDdKKKKKKdDD",
+	"DDDdKKKKdDDD",
+	"DDDddKKddDDD",
+	"DDDDdKKdDDDD",
+	"DDDDddddDDDD",
+]
+
+SKULL = [
+	".BBBB.",
+	"BBBBBb",
+	"BnBBnb",
+	"BEBBEb",
+	"bBnnBb",
+	".BbBb.",
+	".bnbn.",
+]
+
+SHIELD_PALETTE = {"O": "#04121a", "A": "#7ff6ff", "a": "#e4ffff", "d": "#1d7486", "D": "#0f4452", "k": "#0e2028",
+				  "K": "#1a262c", "s": "#4a3a2c", "r": "#9fe8f0", "B": "#eaf6f2", "b": "#94bcc0", "n": "#03090c",
+				  "F": "#5ff0ff", "f": "#1aa8c0", "E": "#ffffff", "w": "#5a3a22", "W": "#7a5232", "h": "#2c1a10",
+				  "i": "#3a4a52"}
+
+
+def egide_des_ames_in_hand():
+	"""
+	The 32 x 32 texture of the 3D shield: the heater plate of blackened soul-steel with its cyan rim and soul flames, the
+	skull boss with glowing eyes, the dark back with leather straps and the handle. Same animation as the icon (the soul
+	fire flickers, the eyes flare).
+	"""
+	frames = []
+	for f in range(8):
+		flame, ember = [("#5ff0ff", "#1aa8c0"), ("#8ffbff", "#2ac4dc"), ("#3fd8f0", "#128ca4"), ("#8ffbff", "#2ac4dc")][f % 4]
+		eye = ["#bffcff", "#5ff0ff", "#2ad8f0", "#5ff0ff"][f % 4]
+		pal = dict(SHIELD_PALETTE, F=flame, f=ember, E=eye)
+		g = [[TRANSPARENT] * SHIELD_TEXTURE for _ in range(SHIELD_TEXTURE)]
+
+		def block(x0, y0, rows):
+			for y, row in enumerate(rows):
+				for x, ch in enumerate(row):
+					if ch != ".":
+						g[y0 + y][x0 + x] = rgba(pal[ch])
+
+		block(0, 0, SHIELD_FRONT)
+		block(12, 0, SHIELD_BACK)
+		block(24, 0, ["A"] * 22)
+		block(0, 22, ["A" * 12])
+		block(25, 0, SKULL)
+		block(31, 0, ["b"] * 7)
+		block(25, 7, ["bbbbbb"])
+		block(25, 8, ["wWwwWw", "hhhhhh", "wwWwwW", "wWwwWw", "hhhhhh", "Wwwwww"])
+		block(25, 14, ["wW", "hh", "wW", "Ww", "hh", "wW"])
+		block(27, 14, ["wW", "wW", "wW", "Ww", "Ww", "Ww"])
+		frames.append(g)
+	return Sprite(frames, anim(3))
+
+
+# ---------------------------------------------------------------------------------------------------------- worn armor
+# The unique armors on the player: equipment assets assets/guildy/equipment/<name>.json, each with its 64 x 32 layer
+# textures/entity/equipment/humanoid/<name>.png. Layout = top half of the player skin: head 0,0 (+ hat 32,0), right leg
+# 0,16, body 16,16, right arm 40,16, the left limbs mirror the right ones. Helmet and chestplate use the player model
+# inflated by 1, the boots the legs inflated by 0.9 (leggings would use the humanoid_leggings layer, inflated by 0.5).
+# These layers are not dyeable (the drawing replaces the dyed leather) and baby mobs keep the vanilla look of the base
+# item (other layout). Equipment textures are plain textures, not atlas sprites: Minecraft does not animate them.
+
+# Boxes of the layout: part -> (u, v, width, height, depth).
+LAYOUT = {"head": (0, 0, 8, 8, 8), "hat": (32, 0, 8, 8, 8), "body": (16, 16, 8, 12, 4), "arm": (40, 16, 4, 12, 4),
+		  "leg": (0, 16, 4, 12, 4)}
+
+
+def face_rect(part, side):
+	"""(x, y, width, height) of one face of a box in the texture. 'ring' = the four sides unrolled (right, front, left,
+	back: each one continues the previous one around the box); right = the outer side of a right limb, back seen from
+	behind."""
+	u, v, w, h, d = LAYOUT[part]
+	return {"top": (u + d, v, w, d), "bottom": (u + d + w, v, w, d), "right": (u, v + d, d, h), "front": (u + d, v + d, w, h),
+			"left": (u + d + w, v + d, d, h), "back": (u + d + w + d, v + d, w, h), "ring": (u, v + d, 2 * (d + w), h)}[side]
+
+
+class Layer:
+	"""A 64 x 32 equipment texture being drawn, face by face (character grids, '.' = transparent)."""
+
+	def __init__(self, palette):
+		self.palette = palette
+		self.grid = [[TRANSPARENT] * 64 for _ in range(32)]
+
+	def draw(self, part, side, rows):
+		x0, y0, w, h = face_rect(part, side)
+		if len(rows) != h or any(len(row) != w for row in rows):
+			raise ValueError("%s %s: %d rows of %d pixels expected: %r" % (part, side, h, w, rows))
+		for y, row in enumerate(rows):
+			for x, ch in enumerate(row):
+				if ch != ".":
+					self.grid[y0 + y][x0 + x] = rgba(self.palette[ch])
+		return self
+
+	def put(self, part, side, x, y, color):
+		x0, y0, _, _ = face_rect(part, side)
+		self.grid[y0 + y][x0 + x] = rgba(color)
+		return self
+
+
+def couronne_worn():
+	"""
+	The frost king's crown on the head: a ring of ice crystals (tall ones above the brow and the nape, smaller ones above
+	the ears, one on each corner), open on the top so the hair shows through, on a frosted silver circlet set with frost
+	gems (the largest one hanging on the brow), icicles at the temples and a frost veil over the nape.
+	"""
+	pal = {"W": "#ffffff", "I": "#c8f2ff", "i": "#78d4f6", "c": "#3aa0e0", "C": "#1f64b0",
+		   "S": "#eef3f8", "s": "#b2c0d0", "t": "#7a8ca4", "T": "#55667e",
+		   "E": "#f0ffff", "e": "#50e8ff", "f": "#1a86e0", "g": "#0a3c88"}
+	layer = Layer(pal)
+	# right (back edge -> front edge) | front | left (front edge -> back edge) | back
+	layer.draw("head", "ring", [
+		"........" + "...Wi..." + "........" + "...Wi...",
+		"i..Ii..I" + "i..IW..I" + "i..Ii..I" + "i..IW..I",
+		"c.IWic.i" + "c.IWic.i" + "c.IWic.i" + "c.IWic.i",
+		"SSSSeSSS" + "SSSEeSSS" + "SSSeSSSS" + "SSSEeSSS",
+		"tTttfttT" + "t..ef..t" + "TttfttTt" + "tTtefTtT",
+		".....ic." + "........" + ".ic....." + "iCciCciC",
+		"......c." + "........" + ".c......" + "c.i.c.i.",
+		"........" + "........" + "........" + "..c...c.",
+	])
+	return layer.grid
+
+
+def scale_rows(width, rows, start=0, shift=0):
+	"""Jade scales in staggered rows (two pixels high, offset by half a scale from one row to the next), lit from the
+	top-left; start = index of the first row in the pattern, shift = horizontal offset of the pattern."""
+	tile = ["JJjk", "jjkK", "jkJJ", "kKjj"]
+	return ["".join(tile[(start + y) % 4][(shift + x) % 4] for x in range(width)) for y in range(rows)]
+
+
+def plastron_worn():
+	"""
+	The feathered serpent's chestplate: jade scales lit from the top-left, a golden torque and belt, a golden serpent
+	medallion with ruby eyes on the chest, a golden feathered serpent winding down the back, quetzal feather mantles
+	(green feathers, red and turquoise tips) on the shoulders.
+	"""
+	pal = {"J": "#6ee8a8", "j": "#34b878", "k": "#1f8a56", "K": "#0f5e38", "G": "#ffe68a", "g": "#e8b03a", "h": "#a86e1c",
+		   "H": "#6a4210", "R": "#ff6a48", "r": "#c22c1c", "e": "#ff2a20", "q": "#4ae8e0", "F": "#5fe896", "f": "#24a85e",
+		   "d": "#146a3a"}
+	layer = Layer(pal)
+	layer.draw("body", "front", [
+		"hgGGGGgh",
+		"JhgGGghK",
+		"jhGGGGhK",
+		"JgeGGegK",
+		"jhgGGghK",
+	] + scale_rows(8, 5, 0) + [
+		"hgGGGGgh",
+		"JjkGgJkK",
+	])
+	back = ["hgGGGGgh"] + scale_rows(8, 9, 1, 1) + ["hgGGGGgh", "JjkKJjkK"]
+	layer.draw("body", "back", back)
+	# The serpent winding down the back: head between the shoulders, body swinging left and right, tail at the belt.
+	for y, x in enumerate([3, 4, 5, 5, 4, 3, 2, 2, 3], start=1):
+		layer.put("body", "back", x, y, "#ffe68a").put("body", "back", x + 1, y, "#e8b03a")
+	layer.put("body", "back", 3, 1, "#ff2a20").put("body", "back", 4, 1, "#ff2a20")
+	for side in ("right", "left"):
+		layer.draw("body", side, ["gggh"] + scale_rows(4, 9, 1, 2) + ["gGgh", "JjkK"])
+	layer.draw("body", "top", ["hgGGGGgh", "Jj....jK", "jJ....kK", "hggggggh"])
+	layer.draw("body", "bottom", scale_rows(8, 4))
+	layer.draw("arm", "ring", [
+		"gGgh" + "GGgh" + "gggh" + "gGgh",
+		"FfdF" + "FfFd" + "dfFf" + "FfdF",
+		"FfdF" + "fFdf" + "dfFf" + "FfdF",
+		"Rfdq" + "FrqF" + "qdfR" + "qfrF",
+		"r.R." + ".r.q" + "...." + ".R.r",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+	])
+	layer.draw("arm", "top", ["GggG", "gFfg", "gfdg", "hggh"])
+	return layer.grid
+
+
+def zephyr_worn():
+	"""
+	The Zephyr boots: cloud-white boots shaded with sky blue, golden cuffs set with a sky gem on the front, a golden strap,
+	golden soles, and a feathered wing rising from each ankle on the outer side (the left boot mirrors the right one).
+	"""
+	pal = {"W": "#ffffff", "L": "#f4faff", "M": "#cfe6fb", "D": "#8fb8e0", "N": "#5f88b4", "G": "#ffe48a", "g": "#e0a830",
+		   "h": "#a06a1c", "C": "#5ad8ff", "c": "#2a9ad0", "F": "#f0f8ff", "e": "#b4d4f0", "E": "#7aa8d8"}
+	layer = Layer(pal)
+	# outer side (back -> front) | front | inner side (front -> back) | back
+	layer.draw("leg", "ring", [
+		"W..." + "...." + "...." + "...W",
+		"WW.." + "...." + "...." + "...W",
+		"WW.." + "...." + "...." + "...W",
+		"EWW." + "...." + "...." + "...E",
+		"EEWW" + "W..." + "...." + "...E",
+		".EEg" + "W..." + "...." + "....",
+		"GgGg" + "GCcg" + "gGgh" + "gGgh",
+		"LLMD" + "LLMD" + "LMDN" + "MMDN",
+		"LMMD" + "LMMD" + "MMDN" + "MDDN",
+		"gGgh" + "gGgh" + "gGgh" + "gGgh",
+		"LLMD" + "LLMD" + "LMDN" + "MDDN",
+		"hggh" + "GGgh" + "gggh" + "hhhh",
+	])
+	layer.draw("leg", "bottom", ["hggh", "gGgh", "gggh", "hhhh"])
+	return layer.grid
+
+
+def coursier_worn():
+	"""
+	The courier's boots: tall riding boots of fine green leather with folded tan cuffs, brass buckles on the straps, dark
+	heeled soles.
+	"""
+	pal = {"L": "#7cc86e", "M": "#4a9a4e", "D": "#2e6a36", "N": "#1e4a26", "C": "#f0d8a0", "c": "#c8a060", "x": "#9a7440",
+		   "b": "#a8741e", "B": "#ffe080", "s": "#4a2e1a", "S": "#6e4a2c", "t": "#a6e090"}
+	layer = Layer(pal)
+	# outer side (back -> front) | front | inner side (front -> back) | back
+	layer.draw("leg", "ring", [
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"CCCc" + "CCCc" + "CCcx" + "CCcx",
+		"cxcx" + "cxcx" + "cxxx" + "cxxx",
+		"LMMD" + "LMMD" + "MMDN" + "LMDN",
+		"LtMD" + "LtMD" + "MMDN" + "MMDN",
+		"bBbs" + "bBbs" + "MDDN" + "sbBb",
+		"LMMD" + "LMMD" + "MDDN" + "MMDN",
+		"LMMD" + "LMMD" + "MDDN" + "sSSs",
+		"ssSs" + "SSss" + "sSss" + "SSSs",
+	])
+	layer.draw("leg", "bottom", ["sSss", "Ssss", "ssss", "ssss"])
+	return layer.grid
+
+
+WORN_ARMORS = {
+	# name: (draw, slot, vanilla material of the base item)
+	"couronne_du_roi_de_givre": (couronne_worn, "head", "diamond"),
+	"plastron_du_serpent": (plastron_worn, "chest", "leather"),
+	"bottes_de_zephyr": (zephyr_worn, "feet", "netherite"),
+	"bottes_du_coursier": (coursier_worn, "feet", "leather"),
+}
+
+EQUIPMENT_DIR = os.path.join(ASSETS, "equipment")
+EQUIPMENT_TEXTURES = os.path.join(ASSETS, "textures", "entity", "equipment")
+
+
+def equipment_layer(slot):
+	return "humanoid_leggings" if slot == "legs" else "humanoid"
+
+
+def worn_armor_assets():
+	"""assets/guildy/equipment/<name>.json and its texture for every unique armor."""
+	for name, (draw, slot, material) in WORN_ARMORS.items():
+		layer = equipment_layer(slot)
+		path = os.path.join(EQUIPMENT_TEXTURES, layer, name + ".png")
+		write_png(path, 64, 32, draw())
+		WRITTEN.add(os.path.normcase(path))
+		layers = {layer: [{"texture": "guildy:" + name}]}
+		if material == "leather":
+			layers["humanoid_baby"] = [{"texture": "minecraft:leather", "dyeable": {"color_when_undyed": -6265536}},
+									   {"texture": "minecraft:leather_overlay"}]
+		else:
+			layers["humanoid_baby"] = [{"texture": "minecraft:" + material}]
+		data = {"layers": layers}
+		if material in ("diamond", "netherite"):
+			# Same trim palettes as the base armor (a trim of the armor's own material is drawn darker).
+			data["trim_overrides"] = [{"palette": "minecraft:trim/%s_darker" % material, "when": {"material": "minecraft:" + material}}]
+		write_json(os.path.join(EQUIPMENT_DIR, name + ".json"), data)
 
 
 # ---------------------------------------------------------------------------------------------------------- spell scrolls
@@ -2085,6 +2496,259 @@ def animated_preview(path, sprites, ticks=200):
 	write_apng(path, width, height, frames)
 
 
+# ---------------------------------------------------------------------------------------------------------- 3D previews
+# tools/previews/armor_worn.png: the worn armors on a plain player figure (front, side, back, three-quarter views) and the
+# 3D shield, drawn by a tiny orthographic rasterizer (z-buffer, nearest texel, cutout transparency, no back-face culling
+# for the armor layers, like Minecraft's armor render type). Model space is Minecraft's entity model space: y down, the
+# figure faces -z, x = the figure's left.
+
+import math
+
+
+class Quad:
+	"""A textured parallelogram: corner origin + edges u (texture x) and v (texture y), outward normal, texture rect;
+	cull = drawn only from the front (otherwise double-sided)."""
+
+	def __init__(self, origin, u, v, normal, texture, rect, cull):
+		self.origin, self.u, self.v, self.normal = origin, u, v, normal
+		self.texture, self.rect, self.cull = texture, rect, cull
+
+
+def box_quads(texture, uv, start, size, inflate=0.0, mirror=False, offset=(0.0, 0.0, 0.0), cull=False, dims=None):
+	"""The six faces of a model box (ModelPart.Cube): UV layout from texOffs uv and the box size, mirrored like the left
+	limbs. dims: texture size of the faces when it differs from the box size (block-model elements)."""
+	w, h, d = size
+	x0, y0, z0 = (start[i] - inflate + offset[i] for i in range(3))
+	x1, y1, z1 = (start[i] + size[i] + inflate + offset[i] for i in range(3))
+	if mirror:
+		x0, x1 = x1, x0
+	u, v = uv
+	tw, th, td = dims or size
+	side = -1 if mirror else 1
+	faces = [
+		((x0, y0, z0), (x1 - x0, 0, 0), (0, y1 - y0, 0), (0, 0, -1), (u + td, v + td, tw, th)),  # front (north)
+		((x1, y0, z1), (x0 - x1, 0, 0), (0, y1 - y0, 0), (0, 0, 1), (u + td + tw + td, v + td, tw, th)),  # back (south)
+		((x0, y0, z1), (0, 0, z0 - z1), (0, y1 - y0, 0), (-side, 0, 0), (u, v + td, td, th)),  # right side (west)
+		((x1, y0, z0), (0, 0, z1 - z0), (0, y1 - y0, 0), (side, 0, 0), (u + td + tw, v + td, td, th)),  # left side (east)
+		((x0, y0, z1), (x1 - x0, 0, 0), (0, 0, z0 - z1), (0, -1, 0), (u + td, v, tw, td)),  # top
+		((x0, y1, z1), (x1 - x0, 0, 0), (0, 0, z0 - z1), (0, 1, 0), (u + td + tw, v, tw, td)),  # bottom
+	]
+	return [Quad(o, eu, ev, n, texture, rect, cull) for o, eu, ev, n, rect in faces]
+
+
+def element_quads(texture, elements, texel=1.0):
+	"""Faces of block-model elements (y up, rects in texture pixels), converted to model space (y down)."""
+	quads = []
+	for _, start, end, faces in elements:
+		x0, y0, z0 = start
+		x1, y1, z1 = end
+		# Block model face orientation: (corner seen at the texture's top-left, edge to the right, edge downward).
+		geometry = {
+			"south": ((x0, y1, z1), (x1 - x0, 0, 0), (0, y0 - y1, 0), (0, 0, 1)),
+			"north": ((x1, y1, z0), (x0 - x1, 0, 0), (0, y0 - y1, 0), (0, 0, -1)),
+			"west": ((x0, y1, z0), (0, 0, z1 - z0), (0, y0 - y1, 0), (-1, 0, 0)),
+			"east": ((x1, y1, z1), (0, 0, z0 - z1), (0, y0 - y1, 0), (1, 0, 0)),
+			"up": ((x0, y1, z0), (x1 - x0, 0, 0), (0, 0, z1 - z0), (0, 1, 0)),
+			"down": ((x0, y0, z1), (x1 - x0, 0, 0), (0, 0, z0 - z1), (0, -1, 0)),
+		}
+		for side, rect in faces.items():
+			(ox, oy, oz), eu, ev, n = geometry[side]
+			quads.append(Quad((ox * texel, -oy * texel, oz * texel), tuple(c * texel for c in (eu[0], -eu[1], eu[2])),
+							  tuple(c * texel for c in (ev[0], -ev[1], ev[2])), (n[0], -n[1], n[2]), texture, rect, True))
+	return quads
+
+
+def rotate(p, yaw, pitch):
+	"""Model point -> camera space (x right, y down, z away from the viewer)."""
+	ca, sa = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
+	x, y, z = p[0] * ca + p[2] * sa, p[1], -p[0] * sa + p[2] * ca
+	cb, sb = math.cos(math.radians(pitch)), math.sin(math.radians(pitch))
+	return x, y * cb - z * sb, y * sb + z * cb
+
+
+def render_quads(img, quads, yaw, pitch, scale, cx, cy, clip=None, light=(-0.45, -1.0, -0.7)):
+	"""Rasterizes the quads into img (z-buffer); (cx, cy) = screen position of the model origin, clip = (x0, y0, x1, y1)."""
+	cx0, cy0, cx1, cy1 = clip or (0, 0, img.width, img.height)
+	norm = math.sqrt(sum(c * c for c in light))
+	light = tuple(c / norm for c in light)
+	depth = {}
+	for index, q in enumerate(quads):
+		# Coplanar faces (shoulder pads over the chest, as in game): the first one drawn wins, without z-fighting noise.
+		bias = index * 1e-6
+		o = rotate(q.origin, yaw, pitch)
+		pu = rotate((q.origin[0] + q.u[0], q.origin[1] + q.u[1], q.origin[2] + q.u[2]), yaw, pitch)
+		pv = rotate((q.origin[0] + q.v[0], q.origin[1] + q.v[1], q.origin[2] + q.v[2]), yaw, pitch)
+		eu = tuple(a - b for a, b in zip(pu, o))
+		ev = tuple(a - b for a, b in zip(pv, o))
+		normal = rotate(q.normal, yaw, pitch)
+		facing = normal[2] < 0
+		if q.cull and not facing:
+			continue
+		if not facing:
+			normal = tuple(-c for c in normal)
+		bright = 0.62 + 0.38 * max(0.0, sum(a * b for a, b in zip(normal, light)))
+		ax, ay = eu[0] * scale, eu[1] * scale
+		bx, by = ev[0] * scale, ev[1] * scale
+		det = ax * by - ay * bx
+		if abs(det) < 1e-6:
+			continue
+		sx0, sy0 = cx + o[0] * scale, cy + o[1] * scale
+		xs = [sx0, sx0 + ax, sx0 + bx, sx0 + ax + bx]
+		ys = [sy0, sy0 + ay, sy0 + by, sy0 + ay + by]
+		tx, ty, tw, th = q.rect
+		tex = q.texture
+		for py in range(max(cy0, int(min(ys))), min(cy1, int(max(ys)) + 1)):
+			row = img.rows[py]
+			for px in range(max(cx0, int(min(xs))), min(cx1, int(max(xs)) + 1)):
+				dx, dy = px + 0.5 - sx0, py + 0.5 - sy0
+				s = (dx * by - dy * bx) / det
+				t = (ax * dy - ay * dx) / det
+				if not (0.0 <= s < 1.0 and 0.0 <= t < 1.0):
+					continue
+				texel = tex[ty + min(th - 1, int(t * th))][tx + min(tw - 1, int(s * tw))]
+				if texel[3] == 0:
+					continue
+				z = o[2] + s * eu[2] + t * ev[2] + bias
+				key = (px, py)
+				if key in depth and depth[key] <= z:
+					continue
+				depth[key] = z
+				row[px] = (int(texel[0] * bright), int(texel[1] * bright), int(texel[2] * bright), 255)
+
+
+def figure_skin():
+	"""64 x 32 texture of the plain preview figure (skin, hair, grey shirt, dark trousers, shoes)."""
+	pal = {"s": "#c99a78", "S": "#b0846a", "h": "#4b3424", "H": "#3a2618", "w": "#f0f0f0", "e": "#2a3a6a", "m": "#9a6a58",
+		   "c": "#7a8090", "C": "#666b7a", "p": "#3c4250", "P": "#30353f", "b": "#26262b", "x": "#58606e"}
+	layer = Layer(pal)
+	layer.draw("head", "top", ["hhhhhhhh"] * 8)
+	layer.draw("head", "bottom", ["SSSSSSSS"] * 8)
+	layer.draw("head", "ring", [
+		"hhhhhhhh" + "hhhhhhhh" + "hhhhhhhh" + "hhhhhhhh",
+		"hhhhhhhh" + "hhhhhhhh" + "hhhhhhhh" + "hhhhhhhh",
+		"hhhhhhss" + "hssssssh" + "sshhhhhh" + "hhhhhhhh",
+		"hhhhhsss" + "ssssssss" + "ssshhhhh" + "hhhhhhhh",
+		"hhhhssss" + "swessews" + "sssshhhh" + "HhhhhhhH",
+		"hhhsssss" + "ssssssss" + "ssssshhh" + "HHhhhhHH",
+		"hhssssss" + "sssmmsss" + "sssssshh" + "SHHHHHHS",
+		"SSssssss" + "Ssssssss" + "ssssssSS" + "SSSSSSSS",
+	])
+	layer.draw("body", "top", ["cccccccc"] * 4)
+	layer.draw("body", "bottom", ["pppppppp"] * 4)
+	layer.draw("body", "ring", ["cccc" + "ccxxxxcc" + "cccc" + "cccccccc"] + ["cccc" + "cccxxccc" + "cccc" + "cccccccc"]
+			   + ["cccc" + "cccccccc" + "cccc" + "cccccccc"] * 7 + ["CCCC" + "CCCCCCCC" + "CCCC" + "CCCCCCCC"]
+			   + ["pppp" + "pppPPppp" + "pppp" + "pppppppp"] * 2)
+	layer.draw("arm", "top", ["cccc"] * 4)
+	layer.draw("arm", "bottom", ["ssss"] * 4)
+	layer.draw("arm", "ring", ["cccC" * 4] * 8 + ["CCCC" * 4] + ["sssS" * 4] * 3)
+	layer.draw("leg", "top", ["pppp"] * 4)
+	layer.draw("leg", "bottom", ["bbbb"] * 4)
+	layer.draw("leg", "ring", ["pppP" * 4] * 10 + ["bbbb" * 4] * 2)
+	return layer.grid
+
+
+# Player model (wide arms): part -> (texOffs, box start, box size, pivot, mirrored).
+FIGURE = {
+	"head": ((0, 0), (-4, -8, -4), (8, 8, 8), (0, 0, 0), False),
+	"body": ((16, 16), (-4, 0, -2), (8, 12, 4), (0, 0, 0), False),
+	"right_arm": ((40, 16), (-3, -2, -2), (4, 12, 4), (-5, 2, 0), False),
+	"left_arm": ((40, 16), (-1, -2, -2), (4, 12, 4), (5, 2, 0), True),
+	"right_leg": ((0, 16), (-2, 0, -2), (4, 12, 4), (-1.9, 12, 0), False),
+	"left_leg": ((0, 16), (-2, 0, -2), (4, 12, 4), (1.9, 12, 0), True),
+}
+# Armor model of each slot: parts and inflation (HumanoidModel.createArmorMeshSet: helmet/chestplate 1, boots 0.9).
+ARMOR_PARTS = {"head": (("head", 1.0),), "chest": (("body", 1.0), ("right_arm", 1.0), ("left_arm", 1.0)),
+			   "feet": (("right_leg", 0.9), ("left_leg", 0.9))}
+
+
+def figure_quads(skin, armors):
+	"""The figure and its worn armor layers (armors: [(texture, slot)])."""
+	quads = []
+	for uv, start, size, pivot, mirror in FIGURE.values():
+		quads += box_quads(skin, uv, start, size, 0.0, mirror, pivot, cull=True)
+	for texture, slot in armors:
+		for part, inflate in ARMOR_PARTS[slot]:
+			uv, start, size, pivot, mirror = FIGURE[part]
+			quads += box_quads(texture, uv, start, size, inflate, mirror, pivot)
+			if part == "head":
+				quads += box_quads(texture, (32, 0), start, size, inflate + 0.5, mirror, pivot)
+	return quads
+
+
+VIEWS = [("face", 0, 8), ("profil", -90, 8), ("dos", 180, 8), ("3/4", -35, 18)]
+ZOOMS = [("zoom 3/4 avant", -35, 18), ("zoom 3/4 arriere", 145, 18)]
+# Close-up of each slot: model y of the center of the piece, scale (pixels per model unit).
+FOCUS = {"head": (-4.5, 14), "chest": (5, 9), "feet": (17.5, 14), "all": (7, 6)}
+
+
+def checker_rect(img, x, y, w, h, cell):
+	for yy in range(0, h, cell):
+		for xx in range(0, w, cell):
+			color = (139, 139, 139, 255) if (xx // cell + yy // cell) % 2 else (124, 124, 124, 255)
+			img.rect(x + xx, y + yy, min(cell, w - xx), min(cell, h - yy), color)
+
+
+def texture_panel(img, x, y, grid, scale):
+	checker_rect(img, x, y, len(grid[0]) * scale, len(grid) * scale, scale * 2)
+	for ty, line in enumerate(grid):
+		for tx, px in enumerate(line):
+			if px[3]:
+				img.rect(x + tx * scale, y + ty * scale, scale, scale, px[:3] + (255,))
+
+
+def armor_preview(path):
+	"""tools/previews/armor_worn.png: per unique armor the figure wearing it (front, profile, back, three-quarter), two
+	close-ups and its 64 x 32 layer (x4); then the whole set; then the 3D shield (front, back, profile, three-quarter,
+	close-up) and its texture (x5)."""
+	skin = figure_skin()
+	layers = {name: (draw(), slot) for name, (draw, slot, _) in WORN_ARMORS.items()}
+	rows = [(name, [layers[name]], layers[name][1]) for name in layers]
+	rows.append(("panoplie complete", list(layers.values()), "all"))
+	cell_w, cell_h, zoom_w = 150, 236, 236
+	width = 12 + len(VIEWS) * cell_w + len(ZOOMS) * (zoom_w + 8) + 64 * 4 + 12
+	height = 12 + (len(rows) + 1) * (cell_h + 26) + 12
+	img = Image(width, height, (34, 34, 42, 255))
+	panel = (52, 54, 66, 255)
+	label = (190, 190, 200, 255)
+	y = 12
+	for title, armors, slot in rows:
+		img.text(12, y, title, 2, (255, 214, 120, 255))
+		y += 18
+		quads = figure_quads(skin, armors)
+		x = 12
+		for name, yaw, pitch in VIEWS:
+			img.rect(x, y, cell_w - 8, cell_h, panel)
+			render_quads(img, quads, yaw, pitch, 6, x + (cell_w - 8) // 2, y + 26 + 6 * 9, (x, y, x + cell_w - 8, y + cell_h))
+			img.text(x + 4, y + 4, name, 2, label)
+			x += cell_w
+		focus_y, scale = FOCUS[slot]
+		for name, yaw, pitch in ZOOMS:
+			img.rect(x, y, zoom_w, cell_h, panel)
+			render_quads(img, quads, yaw, pitch, scale, x + zoom_w // 2, y + cell_h // 2 - int(focus_y * scale),
+						 (x, y, x + zoom_w, y + cell_h))
+			img.text(x + 4, y + 4, name, 2, label)
+			x += zoom_w + 8
+		if len(armors) == 1:
+			texture_panel(img, x, y, armors[0][0], 4)
+		y += cell_h + 8
+	img.text(12, y, "egide des ames en main (modele 3d)", 2, (255, 214, 120, 255))
+	y += 18
+	sprite = egide_des_ames_in_hand()
+	quads = element_quads(sprite.frames[0], shield_elements())
+	x = 12
+	# Element space: the plate front faces +z, turned toward the viewer (yaw + 180).
+	for name, yaw, pitch, scale, w in [("face", 0, 8, 7, cell_w), ("dos", 180, 8, 7, cell_w), ("profil", -90, 8, 7, cell_w),
+									   ("3/4", -40, 20, 7, cell_w), ("zoom 3/4 avant", -35, 18, 9, zoom_w + 8),
+									   ("zoom 3/4 arriere", 145, 18, 9, zoom_w + 8)]:
+		box_w = w - 8
+		img.rect(x, y, box_w, cell_h, panel)
+		render_quads(img, quads, yaw + 180, pitch, scale, x + box_w // 2, y + cell_h // 2 + 8, (x, y, x + box_w, y + cell_h))
+		img.text(x + 4, y + 4, name, 2, label)
+		x += w
+	texture_panel(img, x, y, sprite.frames[0], 5)
+	img.save(path)
+
+
 def main():
 	sprites = all_sprites()
 	for name, sprite in sprites.items():
@@ -2100,12 +2764,14 @@ def main():
 	simple_model("parchemin_incantation_maudit", "minecraft:item/generated")
 	grimoire_model()
 	grimoire_maudit_model()
+	worn_armor_assets()
 	remove_stale()
 	pack_icon(sprites)
 	preview_sheet(os.path.join(PREVIEWS, "textures.png"), sprites)
 	animated_preview(os.path.join(PREVIEWS, "textures_animated.png"), sprites)
 	ruin_unique_preview(os.path.join(PREVIEWS, "textures_in_hand.png"))
-	print("textures, models and item definitions written to", ASSETS)
+	armor_preview(os.path.join(PREVIEWS, "armor_worn.png"))
+	print("textures, models, item definitions and equipment assets written to", ASSETS)
 
 
 if __name__ == "__main__":

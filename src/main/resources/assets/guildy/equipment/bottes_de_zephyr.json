@@ -1,0 +1,22 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "guildy:bottes_de_zephyr"
+      }
+    ],
+    "humanoid_baby": [
+      {
+        "texture": "minecraft:netherite"
+      }
+    ]
+  },
+  "trim_overrides": [
+    {
+      "palette": "minecraft:trim/netherite_darker",
+      "when": {
+        "material": "minecraft:netherite"
+      }
+    }
+  ]
+}

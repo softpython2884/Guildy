@@ -97,6 +97,26 @@ def resourcePackZip = tasks.register('resourcePackZip', Zip) {
 	from('src/main/resources/assets') {
 		into 'assets'
 	}
+	// Pack check: every asset of the mod (item models and textures, equipment assets of the unique armors) is in the zip.
+	def assetsDir = file('src/main/resources/assets')
+	doLast {
+		def entries = new HashSet<String>()
+		new java.util.zip.ZipFile(archiveFile.get().asFile).withCloseable { zip -> zip.entries().each { entries.add(it.name) } }
+		def missing = []
+		assetsDir.eachFileRecurse(groovy.io.FileType.FILES) { asset ->
+			def path = 'assets/' + assetsDir.toPath().relativize(asset.toPath()).toString().replace(File.separator, '/')
+			if (!entries.contains(path)) {
+				missing.add(path)
+			}
+		}
+		if (!entries.any { it.startsWith('assets/guildy/equipment/') && it.endsWith('.json') }
+				|| !entries.any { it.startsWith('assets/guildy/textures/entity/equipment/') && it.endsWith('.png') }) {
+			missing.add('assets/guildy/equipment (worn armor looks)')
+		}
+		if (!missing.isEmpty()) {
+			throw new GradleException('Resource pack zip incomplete: ' + missing)
+		}
+	}
 }
 
 tasks.named('assemble') {
