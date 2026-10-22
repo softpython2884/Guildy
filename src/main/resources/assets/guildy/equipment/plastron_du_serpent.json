@@ -1,0 +1,20 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "guildy:plastron_du_serpent"
+      }
+    ],
+    "humanoid_baby": [
+      {
+        "texture": "minecraft:leather",
+        "dyeable": {
+          "color_when_undyed": -6265536
+        }
+      },
+      {
+        "texture": "minecraft:leather_overlay"
+      }
+    ]
+  }
+}

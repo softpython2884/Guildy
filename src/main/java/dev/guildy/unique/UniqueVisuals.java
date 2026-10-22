@@ -5,10 +5,12 @@ import dev.guildy.core.Safe;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * Optional custom models. The item_model component is only set when a resource pack is guaranteed: the Polymer resource
- * pack mod is installed (Guildy's assets are added to its generated pack) or the admin forces it ("on": the zip built by
- * {@code gradlew resourcePackZip} is served with {@code resource-pack=} in server.properties). Otherwise the uniques keep
- * the look of their vanilla base item.
+ * Optional custom models. The item_model component (and, for the armors, the equipment asset of the equippable
+ * component: {@link UniqueEquipment}) is only set when a resource pack is guaranteed: the Polymer resource pack mod is
+ * installed (Guildy's whole assets folder, equipment assets included, is added to its generated pack) or the admin forces
+ * it ("on": the zip built by {@code gradlew resourcePackZip} is served with {@code resource-pack=} in server.properties).
+ * Otherwise the uniques keep the look of their vanilla base item (an equipment asset missing on the client would make the
+ * armor invisible).
  */
 public final class UniqueVisuals {
 	/** Mod id of Polymer's resource pack module (optional dependency). */

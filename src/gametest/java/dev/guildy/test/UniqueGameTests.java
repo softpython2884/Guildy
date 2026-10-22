@@ -36,11 +36,14 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.monster.zombie.Husk;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.UseCooldown;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.equipment.EquipmentAsset;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -50,6 +53,7 @@ import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
@@ -215,6 +219,63 @@ public class UniqueGameTests {
 			}
 		}
 		return count;
+	}
+
+	/**
+	 * Worn look of the unique armors: with the resource pack guaranteed (customModels forced on), a new unique armor is
+	 * drawn with its own equipment asset (same slot, sounds and other fields as its base item); without it the vanilla
+	 * equippable is untouched; copies in circulation follow the setting (the inventory scan calls syncVisuals).
+	 */
+	@GameTest(maxTicks = 40)
+	public void uniqueArmorsWornLookFollowsThePack(GameTestHelper helper) {
+		UniqueConfig cfg = UniqueModule.config();
+		String previous = cfg.customModels;
+		// Switched and restored within this call: no other test runs in between.
+		try {
+			cfg.customModels = "off";
+			ItemStack plain = UniqueDrops.create("couronne_du_roi_de_givre");
+			Equippable vanilla = new ItemStack(Items.DIAMOND_HELMET).get(DataComponents.EQUIPPABLE);
+			helper.assertTrue(vanilla != null && vanilla.equals(plain.get(DataComponents.EQUIPPABLE)), "no pack: the vanilla equippable");
+			helper.assertFalse(plain.getComponentsPatch().split().added().has(DataComponents.EQUIPPABLE), "no pack: equippable untouched");
+			helper.assertTrue(UniqueDrops.create("plastron_du_serpent").get(DataComponents.EQUIPPABLE)
+					.equals(new ItemStack(Items.LEATHER_CHESTPLATE).get(DataComponents.EQUIPPABLE)), "no pack: vanilla leather look");
+
+			cfg.customModels = "on";
+			Map<String, Item> armors = Map.of("couronne_du_roi_de_givre", Items.DIAMOND_HELMET, "plastron_du_serpent", Items.LEATHER_CHESTPLATE,
+					"bottes_de_zephyr", Items.NETHERITE_BOOTS, "bottes_du_coursier", Items.LEATHER_BOOTS);
+			for (Map.Entry<String, Item> entry : armors.entrySet()) {
+				String id = entry.getKey();
+				ItemStack stack = UniqueDrops.create(id);
+				helper.assertTrue(stack.is(entry.getValue()), id + ": base item " + entry.getValue());
+				Equippable base = new ItemStack(entry.getValue()).get(DataComponents.EQUIPPABLE);
+				Equippable worn = stack.get(DataComponents.EQUIPPABLE);
+				ResourceKey<EquipmentAsset> asset = UniqueItems.equipmentAsset(id);
+				helper.assertTrue(worn != null && worn.assetId().equals(Optional.of(asset)), id + ": asset_id guildy:" + id + ", got " + worn);
+				helper.assertTrue(asset.identifier().equals(Identifier.fromNamespaceAndPath("guildy", id)), id + ": guildy namespace");
+				helper.assertTrue(worn.slot() == base.slot(), id + ": same slot as " + entry.getValue());
+				helper.assertTrue(worn.equals(UniqueItems.withAsset(base, asset)), id + ": sounds and other fields of the base item");
+				helper.assertTrue(("guildy:" + id).equals(String.valueOf(stack.get(DataComponents.ITEM_MODEL))), id + ": its item model too");
+			}
+			helper.assertFalse(UniqueDrops.create("foudrelame").has(DataComponents.EQUIPPABLE), "a weapon gets no equippable");
+			ItemStack aegis = UniqueDrops.create("egide_des_ames");
+			helper.assertTrue(aegis.get(DataComponents.EQUIPPABLE).equals(new ItemStack(Items.SHIELD).get(DataComponents.EQUIPPABLE)),
+					"the shield (offhand) keeps its equippable");
+
+			// A copy made without the pack is refreshed by the inventory scan, then reverted when the pack is no longer sure.
+			UniqueConfig.UniqueDef crown = cfg.item("couronne_du_roi_de_givre");
+			helper.assertTrue(UniqueItems.syncVisuals(plain, crown), "refreshed once the pack is guaranteed");
+			helper.assertTrue(plain.get(DataComponents.EQUIPPABLE).assetId().equals(Optional.of(UniqueItems.equipmentAsset("couronne_du_roi_de_givre"))),
+					"the copy in circulation is drawn with the crown");
+			helper.assertFalse(UniqueItems.syncVisuals(plain, crown), "stable once refreshed");
+			cfg.customModels = "off";
+			helper.assertTrue(UniqueItems.syncVisuals(plain, crown), "reverted without the pack");
+			helper.assertTrue(vanilla.equals(plain.get(DataComponents.EQUIPPABLE))
+					&& !plain.getComponentsPatch().split().added().has(DataComponents.EQUIPPABLE), "back to the base item's own equippable");
+			helper.assertTrue(Identifier.withDefaultNamespace("diamond_helmet").equals(plain.get(DataComponents.ITEM_MODEL)), "and its model");
+		} finally {
+			cfg.customModels = previous;
+		}
+		helper.succeed();
 	}
 
 	/** Foudrelame, right click on an aimed monster: a visual-only bolt strikes it (damage, no fire), cooldown starts. */

@@ -1,0 +1,20 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "guildy:bottes_du_coursier"
+      }
+    ],
+    "humanoid_baby": [
+      {
+        "texture": "minecraft:leather",
+        "dyeable": {
+          "color_when_undyed": -6265536
+        }
+      },
+      {
+        "texture": "minecraft:leather_overlay"
+      }
+    ]
+  }
+}
