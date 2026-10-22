@@ -4078,7 +4078,7 @@
 
 		// Ordre des travaux : books = livres enchantes, scrolls = parchemins (un parchemin a chaque travail a la table, avec
 		// livre + papier), potions = potions et elixirs (alambic, voir alchemy.json5). L'alchimiste fait son travail prefere
-		// (son role) ; s'il est impossible (pas de table, de livres, de papier, d'alambic, d'ingredients, plafond du jour,
+		// (son role) ; s'il est impossible (pas de table, de livres, de papier, d'alambic, de poudre de blaze, plafond du jour,
 		// stocks pleins...), il passe au premier travail possible dans cet ordre (raison affichee dans son menu)
 		"jobOrder": [
 			"books",
@@ -4107,22 +4107,23 @@
 		// Fioles de potions et d'elixirs au plus par alchimiste et par jour de jeu (0 a 1000 ; 0 = jamais de potions)
 		"maxPotionsPerDay": 18,
 
-		// Duree d'un brassage en secondes (20 = alambic vanilla) ; le bonus de vitesse de travail s'applique (1 a 120)
+		// Mode 'recipes' (alchemy.json5 -> brewing.mode) : duree d'un brassage en secondes (20 = alambic vanilla) ; le bonus
+		// de vitesse de travail s'applique (1 a 120). Mode simple : duree par classe de produit dans alchemy.json5 -> brewing
 		"secondsPerBrew": 20,
 
-		// Fioles par brassage (1 a 3, comme les 3 emplacements de l'alambic) : un ingredient pour toutes
+		// Fioles par brassage (1 a 3, comme les 3 emplacements de l'alambic) : un ingredient (mode simple : un cout) pour toutes
 		"bottlesPerBrew": 3,
 
-		// Combustible des brassages, pris dans son sac puis au stockage
+		// Mode 'recipes' : combustible des brassages, pris dans son sac puis au stockage
 		"brewFuel": "minecraft:blaze_powder",
 
-		// Brassages par unite de combustible (1 a 100 ; 20 = poudre de blaze vanilla)
+		// Mode 'recipes' : brassages par unite de combustible (1 a 100 ; 20 = poudre de blaze vanilla)
 		"brewsPerFuel": 20,
 
-		// Remplir des fioles vides du stockage a une source d'eau ou un chaudron d'eau proche de l'alambic (sinon : fioles d'eau)
+		// Mode 'recipes' : remplir des fioles vides du stockage a une source d'eau ou un chaudron d'eau proche de l'alambic
 		"fillBottles": true,
 
-		// Distance maximum (blocs) entre l'alambic et l'eau qui remplit les fioles vides (1 a 16)
+		// Mode 'recipes' : distance maximum (blocs) entre l'alambic et l'eau qui remplit les fioles vides (1 a 16)
 		"waterRadius": 6,
 
 		// Intervalle (secondes) entre deux inventaires des potions et des ingredients du stockage (5 a 300)

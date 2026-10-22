@@ -1,7 +1,8 @@
 // Guildy - alchimie : potions et elixirs prepares par les villageois alchimistes a un alambic du territoire.
-// Chaque brassage transforme jusqu'a 3 fioles avec 1 ingredient, comme un alambic vanilla (duree, poudre de blaze :
-// villagers.json5 -> alchemist). L'alchimiste part de fioles d'eau (ou de fioles vides remplies a une source d'eau ou
-// a un chaudron pres de l'alambic) et enchaine les etapes jusqu'au produit voulu, puis le range au stockage.
+// Deux modes (brewing.mode) : 'simple' (defaut) = chaque fournee ne coute que de la poudre de blaze et du temps
+// (voir la section brewing) ; 'recipes' = brassage vanilla : chaque brassage transforme jusqu'a 3 fioles avec 1
+// ingredient (duree, poudre de blaze : villagers.json5 -> alchemist), l'alchimiste part de fioles d'eau (ou de fioles
+// vides remplies a une source d'eau ou a un chaudron pres de l'alambic) et enchaine les etapes de 'recipes'.
 // Produits : 'healing' (potion), 'splash:healing' (jetable), 'lingering:healing' (persistante), 'elixir:arcanique'.
 // Stocks : chaque guilde choisit combien en garder (menu de l'alchimiste -> Stocks de potions) ; ici les valeurs par
 // defaut. Commandes admin : /guild admin elixir list | give <joueur> <id> [nombre] | boosts <joueur>.
@@ -10,10 +11,75 @@
 	// Version du fichier (geree automatiquement, ne pas modifier)
 	"formatVersion": 1,
 
-	// Etapes de brassage connues : "entree + ingredient -> sortie" (produits comme ci-dessus, ingredient = id d'objet ;
-	// 'minecraft:' facultatif). Par defaut, les recettes vanilla des potions (verrue du Nether, puis l'ingredient de l'effet,
-	// redstone = plus long, poudre lumineuse = plus fort, oeil d'araignee fermente = effet inverse). Une ligne invalide est
-	// ignoree avec un avertissement dans les journaux du serveur.
+	// Mode de brassage et couts du mode simple (poudre de blaze et temps par fournee)
+	"brewing": {
+
+		// simple (defaut) = chaque fournee (jusqu'a 3 fioles, villagers.json5 -> alchemist.bottlesPerBrew) ne coute que de la
+		// poudre de blaze (prise au stockage, puis dans son sac) et du temps a un alambic du territoire : ni fiole, ni eau, ni
+		// verrue du Nether, ni ingredient. recipes = brassage vanilla avec les etapes de 'recipes' (fioles d'eau, ingredients,
+		// combustible ; reglages dans villagers.json5 -> alchemist)
+		"mode": "simple",
+
+		// Mode simple : objet consomme (poudre de blaze par defaut)
+		"item": "minecraft:blaze_powder",
+
+		// Mode simple, cout d'une fournee : {blaze: poudre de blaze, seconds: duree}. Potion buvable simple (soin, force,
+		// rapidite...) ; le bonus de vitesse de travail s'applique a la duree ; une fournee plus petite paie sa part (arrondie
+		// au-dessus), la duree ne change pas
+		"plainPotion": {
+			"blaze": 1,
+			"seconds": 20
+		},
+
+		// Potion longue (long_..., la redstone en vanilla)
+		"longPotion": {
+			"blaze": 1,
+			"seconds": 30
+		},
+
+		// Potion forte (strong_..., niveau II, la poudre lumineuse en vanilla)
+		"strongPotion": {
+			"blaze": 1,
+			"seconds": 30
+		},
+
+		// Ajoute au cout de la potion buvable pour une potion jetable (splash:...)
+		"splashExtra": {
+			"blaze": 0,
+			"seconds": 10
+		},
+
+		// Ajoute au cout de la potion buvable pour une potion persistante (lingering:...) : 2 blaze et 40 s pour une simple
+		"lingeringExtra": {
+			"blaze": 1,
+			"seconds": 20
+		},
+
+		// Elixir de Guildy sans bonus magique (colosse, bete, ombre, titan, phenix, abysses)
+		"elixir": {
+			"blaze": 2,
+			"seconds": 60
+		},
+
+		// Elixir magique (bonus des sorts : arcanique, clairvoyance, satiete)
+		"magicElixir": {
+			"blaze": 4,
+			"seconds": 90
+		},
+
+		// Mode simple : fioles d'elixirs au plus par alchimiste et par jour de jeu, comptees aussi dans
+		// alchemist.maxPotionsPerDay (0 a 1000 ; 0 = jamais d'elixir en mode simple)
+		"maxElixirsPerDay": 6,
+
+		// Mode simple : cout propre a un produit, a la place de celui de sa classe. Exemple :
+		// {"elixir:titan": {blaze: 3, seconds: 75}, "splash:strong_harming": {blaze: 2, seconds: 45}}
+		"products": {}
+	},
+
+	// Mode 'recipes' : etapes de brassage connues : "entree + ingredient -> sortie" (produits comme ci-dessus, ingredient
+	// = id d'objet ; 'minecraft:' facultatif). Par defaut, les recettes vanilla des potions (verrue du Nether, puis
+	// l'ingredient de l'effet, redstone = plus long, poudre lumineuse = plus fort, oeil d'araignee fermente = effet
+	// inverse). Une ligne invalide est ignoree avec un avertissement dans les journaux du serveur.
 	"recipes": [
 		"water + minecraft:nether_wart -> awkward",
 		"water + minecraft:fermented_spider_eye -> weakness",
@@ -67,10 +133,10 @@
 		"awkward + minecraft:stone -> infested"
 	],
 
-	// Ingredient qui rend une potion jetable (toute potion buvable + cet ingredient ; "" = jamais de potion jetable)
+	// Mode 'recipes' : ingredient qui rend une potion jetable (toute potion buvable + cet ingredient ; "" = jamais)
 	"splashReagent": "minecraft:gunpowder",
 
-	// Ingredient qui rend une potion jetable persistante ("" = jamais de potion persistante)
+	// Mode 'recipes' : ingredient qui rend une potion jetable persistante ("" = jamais de potion persistante)
 	"lingeringReagent": "minecraft:dragon_breath",
 
 	// Stocks gardes par defaut (produit -> nombre de fioles, 0 = pas de stock mais visible dans le menu) : l'alchimiste
@@ -111,8 +177,8 @@
 	// Stock maximum qu'une guilde peut demander par produit (1 a 256)
 	"maxStockTarget": 64,
 
-	// Elixirs de Guildy : potions buvables (fiole vanilla) avec leurs propres effets, couleur et nom. Recette : la potion
-	// 'base' (preparee d'abord par l'alchimiste) + l'ingredient 'reagent' (un brassage). effects : effets vanilla
+	// Elixirs de Guildy : potions buvables (fiole vanilla) avec leurs propres effets, couleur et nom. Mode 'recipes' : la
+	// potion 'base' (preparee d'abord par l'alchimiste) + l'ingredient 'reagent' (un brassage). effects : effets vanilla
 	// (level 1 = niveau I, seconds = duree). Bonus magiques (pendant magicSeconds, a la fin de la gorgee) : spellPower
 	// (0.25 = sorts +25 % : degats, soins, durees), cooldownReduction (0.3 = recharges des parchemins et grimoires -30 %),
 	// channelReduction (0.3 = incantations -30 %), foodReduction (0.5 = faim du grimoire -50 %). enabled=false : plus
