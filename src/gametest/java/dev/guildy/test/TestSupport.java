@@ -142,7 +142,9 @@ final class TestSupport {
 				lines.removeFirst();
 			}
 			lines.add(line);
-			if (CHAT.size() > 256) {
+			// Every test result is sent to every mock player: with more players than this, each result would wipe the chat
+			// that running tests are still waiting for (fight summaries, statue hints...).
+			if (CHAT.size() > 2048) {
 				CHAT.keySet().removeIf(uuid -> !uuid.equals(player));
 			}
 		}
