@@ -7,7 +7,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 4,
+	"configVersion": 5,
 
 	// Parchemins actifs (false = ils ne lancent plus rien, ils ne sont pas consommes)
 	"enabled": true,
@@ -28,7 +28,7 @@
 		"creativeCooldown": true
 	},
 
-	// Limites des effets en cours (performances)
+	// Limites des effets en cours (performances) et de ce qu'un seul sort peut faire a une meme cible (boss surtout)
 	"limits": {
 
 		// Sorts actifs en meme temps par joueur (au-dela, le parchemin n'est pas utilise)
@@ -44,7 +44,20 @@
 		"viewDistance": 96,
 
 		// Gardiens (golems invoques) vivants en meme temps par joueur
-		"maxGuardiansPerPlayer": 4
+		"maxGuardiansPerPlayer": 4,
+
+		// Rendement decroissant (0.05 a 1) : chaque nouveau coup d'un meme sort sur la meme cible fait moins mal, ses degats
+		// sont multiplies par cette valeur une fois de plus a chaque coup (0.75 : 100 %, 75 %, 56 %, 42 %... ; 1 = desactive).
+		// Un sort continu (impulsions du blizzard et de l'egide, rayon arcanique) compte un coup toutes les 5 s de degats
+		"repeatHitDecay": 0.75,
+
+		// Rendement decroissant : part minimale des degats qu'un coup garde, meme apres beaucoup de coups (0 a 1)
+		"repeatHitFloor": 0.2,
+
+		// Boss (gardiens des ruines, formes maudites comprises, boss des hordes, Wither, Ender Dragon, Warden, grand gardien) :
+		// part maximale de sa vie max qu'un seul sort d'un parchemin ou d'un grimoire peut lui retirer (0.001 a 1 ; 0.04 = 4 % ;
+		// 1 = sans limite). Les monstres ordinaires n'ont pas de limite. Le grimoire maudit a la sienne : cursedGrimoire.bossCastCap
+		"bossCastCap": 0.04
 	},
 
 	// Vente au Carrefour commercial (table "trade" : chance qu'un marchand du Carrefour propose un parchemin, un seul achat)
@@ -218,6 +231,10 @@
 
 		// Vie minimale apres le prix du sang (points de vie, 1 a 19) : en dessous, le sort est refuse
 		"minHealth": 6.0,
+
+		// Boss : part maximale de sa vie max qu'un seul sort du grimoire maudit peut lui retirer (0.001 a 1 ; 0.07 = 7 % ;
+		// 1 = sans limite ; voir limits.bossCastCap). Contre les groupes de monstres ordinaires, aucune limite
+		"bossCastCap": 0.07,
 
 		// Chance (0 a 1) que le gardien MAUDIT d'une ruine (id de ruins.json5) laisse un grimoire maudit vierge a sa mort
 		// definitive (forme finale). Aucune autre source : ni les gardiens normaux, ni les quetes, ni le Carrefour
@@ -795,10 +812,10 @@
 			],
 			"spell": "rally",
 			"params": {
-				"range": 512.0,
+				"range": 0.0,
 				"maxAllies": 8.0,
 				"acceptSeconds": 30.0,
-				"crossDimension": 0.0
+				"crossDimension": 1.0
 			},
 			"item": "minecraft:globe_banner_pattern",
 			"glint": true,

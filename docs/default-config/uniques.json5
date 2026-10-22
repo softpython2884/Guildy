@@ -6,7 +6,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 4,
+	"configVersion": 5,
 
 	// Butin : les armes uniques tombent des boss, des quetes, des expeditions et se vendent au Carrefour (false = plus aucune)
 	"dropsEnabled": true,
@@ -25,6 +25,12 @@
 
 	// Annonce a tout le serveur quand une guilde a reuni toutes les armes uniques (collection complete)
 	"announceCollection": true,
+
+	// Protection minimale des armures uniques : "netherite" = chaque piece unique portee (casque, plastron, jambieres,
+	// bottes) protege au moins comme la piece en netherite du meme emplacement (points d'armure, robustesse, resistance
+	// au recul ; une valeur superieure de la definition est gardee, les exemplaires deja obtenus sont mis a jour) ;
+	// "none" = seulement les valeurs de l'objet de base et de la definition.
+	"armorFloor": "netherite",
 
 	// Modeles et textures personnalises (pack de ressources) :
 	// "auto" = seulement si le mod Polymer (polymer-resource-pack) est installe : Guildy ajoute ses textures a son pack ;
@@ -122,7 +128,19 @@
 				"masse_du_zenith": 1.0,
 				"hache_du_seigneur_de_guerre": 1.0,
 				"plastron_du_serpent": 1.0,
-				"lame_du_pacte": 0.5
+				"lame_du_pacte": 0.5,
+				"heaume_hiver_eternel": 0.5,
+				"cuirasse_hiver_eternel": 0.5,
+				"jambieres_hiver_eternel": 0.5,
+				"solerets_hiver_eternel": 0.5,
+				"masque_guerrier_jaguar": 0.5,
+				"pectoral_guerrier_jaguar": 0.5,
+				"jambieres_guerrier_jaguar": 0.5,
+				"sandales_guerrier_jaguar": 0.5,
+				"heaume_brasier_des_ames": 0.5,
+				"cuirasse_brasier_des_ames": 0.5,
+				"greves_brasier_des_ames": 0.5,
+				"bottes_brasier_des_ames": 0.5
 			}
 		},
 		"expedition": {
@@ -201,22 +219,42 @@
 	// plus souvent la Lance du Jaguar celeste (la chance de la table ne change pas, seul le choix de l'arme change).
 	"favorites": {
 		"ruin_boss@grand_temple_maya": {
-			"lance_du_jaguar_celeste": 25.0
+			"lance_du_jaguar_celeste": 25.0,
+			"masque_guerrier_jaguar": 15.0,
+			"pectoral_guerrier_jaguar": 15.0,
+			"jambieres_guerrier_jaguar": 15.0,
+			"sandales_guerrier_jaguar": 15.0
 		},
 		"ruin_boss@bastion_de_givre": {
-			"couronne_du_roi_de_givre": 25.0
+			"couronne_du_roi_de_givre": 25.0,
+			"heaume_hiver_eternel": 15.0,
+			"cuirasse_hiver_eternel": 15.0,
+			"jambieres_hiver_eternel": 15.0,
+			"solerets_hiver_eternel": 15.0
 		},
 		"ruin_boss@temple_maya": {
-			"plastron_du_serpent": 25.0
+			"plastron_du_serpent": 25.0,
+			"masque_guerrier_jaguar": 8.0,
+			"pectoral_guerrier_jaguar": 8.0,
+			"jambieres_guerrier_jaguar": 8.0,
+			"sandales_guerrier_jaguar": 8.0
 		},
 		"ruin_boss@ziggourat_des_sables": {
 			"masse_du_zenith": 25.0
 		},
 		"nether_ruin_boss@citadelle_des_ames": {
-			"egide_des_ames": 25.0
+			"egide_des_ames": 25.0,
+			"heaume_brasier_des_ames": 15.0,
+			"cuirasse_brasier_des_ames": 15.0,
+			"greves_brasier_des_ames": 15.0,
+			"bottes_brasier_des_ames": 15.0
 		},
 		"nether_ruin_boss@autel_infernal": {
-			"hache_du_seigneur_de_guerre": 25.0
+			"hache_du_seigneur_de_guerre": 25.0,
+			"heaume_brasier_des_ames": 8.0,
+			"cuirasse_brasier_des_ames": 8.0,
+			"greves_brasier_des_ames": 8.0,
+			"bottes_brasier_des_ames": 8.0
 		},
 		"ruin_boss@cursed": {
 			"lame_du_pacte": 30.0
@@ -455,6 +493,62 @@
 			"regenSeconds": 5,
 			"regenLevel": 2,
 			"slowFallingSeconds": 4
+		},
+
+		// Panoplie de l'Hiver eternel, 4 pieces (winter_heart) - sous un seuil de vie, une nova de givre gele les monstres
+		"winterHeart": {
+			"cooldownSeconds": 60.0,
+
+			// Seuil de vie apres un coup (0.3 = 30 %), rayon de la nova, degats de froid, duree (secondes) et niveau de la lenteur
+			"healthThreshold": 0.3,
+			"radius": 6.0,
+			"damage": 6.0,
+			"freezeSeconds": 5,
+			"slowLevel": 4,
+
+			// Projection des monstres, puis Resistance (duree en secondes, niveau) et Absorption (niveau) du porteur
+			"push": 0.9,
+			"resistanceSeconds": 6,
+			"resistanceLevel": 2,
+			"absorptionLevel": 2
+		},
+
+		// Panoplie du Guerrier jaguar, 4 pieces (jaguar_ambush) - accroupi, camouflage ; l'attaque suivante est une embuscade
+		"jaguarAmbush": {
+			"cooldownSeconds": 12.0,
+
+			// Secondes accroupi et sans attaquer avant le camouflage (dans le feuillage : foliageSeconds), portee ou les monstres perdent votre trace
+			"camouflageSeconds": 1.5,
+			"foliageSeconds": 0.5,
+			"loseTrackRange": 16.0,
+
+			// Delai (secondes) pour frapper apres la fin du camouflage, degats ajoutes au coup d'embuscade
+			"strikeWindowSeconds": 2.0,
+			"damage": 10.0,
+
+			// Griffes autour de la cible : rayon, degats, nombre maximum de monstres, duree (secondes) et niveau de la lenteur
+			"radius": 3.5,
+			"clawDamage": 6.0,
+			"maxTargets": 6,
+			"slowSeconds": 3,
+			"slowLevel": 2
+		},
+
+		// Panoplie du Brasier des ames, 4 pieces (soul_pyre) - aura qui draine les ames des monstres, trainee de feu d'ame
+		"soulPyre": {
+
+			// Une pulsation toutes les pulseSeconds : degats aux monstres a radius blocs (maxTargets au plus), part rendue au porteur, soin maximum
+			"pulseSeconds": 2.0,
+			"radius": 5.0,
+			"damage": 2.0,
+			"maxTargets": 4,
+			"healRatio": 0.5,
+			"maxHeal": 3.0,
+
+			// Trainee de feu d'ame en courant : duree d'une flamme (secondes), degats de feu et embrasement (secondes) des monstres qui la touchent
+			"trailSeconds": 3.0,
+			"trailDamage": 3.0,
+			"fireSeconds": 3
 		}
 	},
 
@@ -467,7 +561,8 @@
 	// tree_feller, excavate, vein_miner, double_jump, shockwave, phoenix_arrows, tide_call, soul_harvest, jaguar_pounce,
 	// frost_crown, soul_aegis, solar_leap, pact_seal, infernal_rift, jade_gale ou vide), model (texture du pack de
 	// ressources, vide = apparence vanilla), color (couleur RGB du cuir teint, -1 = aucune), banner (bouclier : base = couleur
-	// de fond, patterns [{pattern: minecraft:skull..., color}] = motifs de banniere vanilla, visibles sans pack).
+	// de fond, patterns [{pattern: minecraft:skull..., color}] = motifs de banniere vanilla, visibles sans pack),
+	// set (id d'une panoplie de "sets" : la piece compte pour ses bonus, vide = aucune).
 	// Les objets deja obtenus suivent le pouvoir et le modele de la config ; nom, description et enchantements restent
 	// ceux de leur creation.
 	"items": [
@@ -498,7 +593,8 @@
 			"unbreakable": true,
 			"power": "storm_call",
 			"model": "foudrelame",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "croc_de_givre",
@@ -527,7 +623,8 @@
 			"unbreakable": false,
 			"power": "frost_nova",
 			"model": "croc_de_givre",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "murmure_du_neant",
@@ -561,7 +658,8 @@
 			"unbreakable": true,
 			"power": "blink_strike",
 			"model": "murmure_du_neant",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "hache_sylvestre",
@@ -582,7 +680,8 @@
 			"unbreakable": false,
 			"power": "tree_feller",
 			"model": "hache_sylvestre",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "pioche_du_titan",
@@ -610,7 +709,8 @@
 			"unbreakable": false,
 			"power": "excavate",
 			"model": "pioche_du_titan",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "pic_du_filon",
@@ -631,7 +731,8 @@
 			"unbreakable": false,
 			"power": "vein_miner",
 			"model": "pic_du_filon",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "bottes_de_zephyr",
@@ -660,7 +761,8 @@
 			"unbreakable": true,
 			"power": "double_jump",
 			"model": "bottes_de_zephyr",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "bottes_du_coursier",
@@ -693,7 +795,8 @@
 			"unbreakable": true,
 			"power": "",
 			"model": "bottes_du_coursier",
-			"color": 3833156
+			"color": 3833156,
+			"set": ""
 		},
 		{
 			"id": "marteau_du_seisme",
@@ -716,7 +819,8 @@
 			"unbreakable": false,
 			"power": "shockwave",
 			"model": "marteau_du_seisme",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "arc_du_phenix",
@@ -738,7 +842,8 @@
 			"unbreakable": true,
 			"power": "phoenix_arrows",
 			"model": "arc_du_phenix",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "arbalete_du_traqueur",
@@ -762,7 +867,8 @@
 			"unbreakable": false,
 			"power": "",
 			"model": "arbalete_du_traqueur",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "trident_du_leviathan",
@@ -791,7 +897,8 @@
 			"unbreakable": true,
 			"power": "tide_call",
 			"model": "trident_du_leviathan",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "faux_des_ames",
@@ -832,7 +939,8 @@
 			"unbreakable": true,
 			"power": "soul_harvest",
 			"model": "faux_des_ames",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "coutelas_du_contrebandier",
@@ -867,7 +975,8 @@
 			"unbreakable": false,
 			"power": "",
 			"model": "coutelas_du_contrebandier",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "lance_du_jaguar_celeste",
@@ -902,7 +1011,8 @@
 			"unbreakable": true,
 			"power": "jaguar_pounce",
 			"model": "lance_du_jaguar_celeste",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "couronne_du_roi_de_givre",
@@ -938,7 +1048,8 @@
 			"unbreakable": false,
 			"power": "frost_crown",
 			"model": "couronne_du_roi_de_givre",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "egide_des_ames",
@@ -998,7 +1109,8 @@
 						"color": "cyan"
 					}
 				]
-			}
+			},
+			"set": ""
 		},
 		{
 			"id": "masse_du_zenith",
@@ -1028,7 +1140,8 @@
 			"unbreakable": true,
 			"power": "solar_leap",
 			"model": "masse_du_zenith",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "lame_du_pacte",
@@ -1064,7 +1177,8 @@
 			"unbreakable": true,
 			"power": "pact_seal",
 			"model": "lame_du_pacte",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "hache_du_seigneur_de_guerre",
@@ -1101,7 +1215,8 @@
 			"unbreakable": false,
 			"power": "infernal_rift",
 			"model": "hache_du_seigneur_de_guerre",
-			"color": -1
+			"color": -1,
+			"set": ""
 		},
 		{
 			"id": "plastron_du_serpent",
@@ -1142,7 +1257,514 @@
 			"unbreakable": false,
 			"power": "jade_gale",
 			"model": "plastron_du_serpent",
-			"color": 3120746
+			"color": 3120746,
+			"set": ""
+		},
+		{
+			"id": "heaume_hiver_eternel",
+			"item": "minecraft:diamond_helmet",
+			"name": "Heaume de l'Hiver éternel",
+			"rarity": "EPIC",
+			"lore": [
+				"Sa visière n'a jamais dégelé :",
+				"le regard qui s'y cache non plus."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:respiration": 3,
+				"minecraft:aqua_affinity": 1,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:armor_toughness",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "head"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "heaume_hiver_eternel",
+			"color": -1,
+			"set": "hiver_eternel"
+		},
+		{
+			"id": "cuirasse_hiver_eternel",
+			"item": "minecraft:diamond_chestplate",
+			"name": "Cuirasse de l'Hiver éternel",
+			"rarity": "EPIC",
+			"lore": [
+				"Forgée dans la glace du Bastion,",
+				"elle garde au cœur un hiver qui ne finit pas."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:thorns": 2,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:max_health",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "chest"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "cuirasse_hiver_eternel",
+			"color": -1,
+			"set": "hiver_eternel"
+		},
+		{
+			"id": "jambieres_hiver_eternel",
+			"item": "minecraft:diamond_leggings",
+			"name": "Jambières de l'Hiver éternel",
+			"rarity": "EPIC",
+			"lore": [
+				"Le givre qui les couvre",
+				"éteint les flammes qui s'en approchent."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:fire_protection": 3,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:knockback_resistance",
+					"amount": 0.1,
+					"operation": "add_value",
+					"slot": "legs"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "jambieres_hiver_eternel",
+			"color": -1,
+			"set": "hiver_eternel"
+		},
+		{
+			"id": "solerets_hiver_eternel",
+			"item": "minecraft:diamond_boots",
+			"name": "Solerets de l'Hiver éternel",
+			"rarity": "EPIC",
+			"lore": [
+				"Chaque pas fige l'eau",
+				"comme le souffle du Roi de givre."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:frost_walker": 2,
+				"minecraft:feather_falling": 4,
+				"minecraft:unbreaking": 3,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:movement_speed",
+					"amount": 0.05,
+					"operation": "add_multiplied_base",
+					"slot": "feet"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "solerets_hiver_eternel",
+			"color": -1,
+			"set": "hiver_eternel"
+		},
+		{
+			"id": "masque_guerrier_jaguar",
+			"item": "minecraft:golden_helmet",
+			"name": "Masque du Guerrier jaguar",
+			"rarity": "EPIC",
+			"lore": [
+				"Le guerrier regarde le monde",
+				"par la gueule ouverte du jaguar."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:projectile_protection": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "head"
+				},
+				{
+					"attribute": "minecraft:armor_toughness",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "head"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "",
+			"model": "masque_guerrier_jaguar",
+			"color": -1,
+			"set": "guerrier_jaguar"
+		},
+		{
+			"id": "pectoral_guerrier_jaguar",
+			"item": "minecraft:golden_chestplate",
+			"name": "Pectoral du Guerrier jaguar",
+			"rarity": "EPIC",
+			"lore": [
+				"Or des prêtres, jade du fleuve,",
+				"peau du jaguar céleste."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:thorns": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 3.0,
+					"operation": "add_value",
+					"slot": "chest"
+				},
+				{
+					"attribute": "minecraft:armor_toughness",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "chest"
+				},
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "chest"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "",
+			"model": "pectoral_guerrier_jaguar",
+			"color": -1,
+			"set": "guerrier_jaguar"
+		},
+		{
+			"id": "jambieres_guerrier_jaguar",
+			"item": "minecraft:golden_leggings",
+			"name": "Jambières du Guerrier jaguar",
+			"rarity": "EPIC",
+			"lore": [
+				"Le guerrier jaguar ne fait aucun bruit",
+				"quand il se glisse sous les feuilles."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:swift_sneak": 3
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 3.0,
+					"operation": "add_value",
+					"slot": "legs"
+				},
+				{
+					"attribute": "minecraft:armor_toughness",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "legs"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "",
+			"model": "jambieres_guerrier_jaguar",
+			"color": -1,
+			"set": "guerrier_jaguar"
+		},
+		{
+			"id": "sandales_guerrier_jaguar",
+			"item": "minecraft:golden_boots",
+			"name": "Sandales du Guerrier jaguar",
+			"rarity": "EPIC",
+			"lore": [
+				"Lacées d'or et de jade,",
+				"elles bondissent de branche en branche."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:feather_falling": 4
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "feet"
+				},
+				{
+					"attribute": "minecraft:armor_toughness",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "feet"
+				},
+				{
+					"attribute": "minecraft:jump_strength",
+					"amount": 0.08,
+					"operation": "add_value",
+					"slot": "feet"
+				}
+			],
+			"glint": true,
+			"unbreakable": true,
+			"power": "",
+			"model": "sandales_guerrier_jaguar",
+			"color": -1,
+			"set": "guerrier_jaguar"
+		},
+		{
+			"id": "heaume_brasier_des_ames",
+			"item": "minecraft:netherite_helmet",
+			"name": "Heaume du Brasier des âmes",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Ses yeux brûlent d'un feu bleu",
+				"qui ne réchauffe personne."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:respiration": 3,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:max_health",
+					"amount": 2.0,
+					"operation": "add_value",
+					"slot": "head"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "heaume_brasier_des_ames",
+			"color": -1,
+			"set": "brasier_des_ames"
+		},
+		{
+			"id": "cuirasse_brasier_des_ames",
+			"item": "minecraft:netherite_chestplate",
+			"name": "Cuirasse du Brasier des âmes",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Le Champion des âmes y enfermait",
+				"les esprits des guerriers vaincus."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:thorns": 3,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 1.0,
+					"operation": "add_value",
+					"slot": "chest"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "cuirasse_brasier_des_ames",
+			"color": -1,
+			"set": "brasier_des_ames"
+		},
+		{
+			"id": "greves_brasier_des_ames",
+			"item": "minecraft:netherite_leggings",
+			"name": "Grèves du Brasier des âmes",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Des flammes d'âme courent",
+				"dans les fissures du métal noir."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:fire_protection": 4,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:knockback_resistance",
+					"amount": 0.1,
+					"operation": "add_value",
+					"slot": "legs"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "greves_brasier_des_ames",
+			"color": -1,
+			"set": "brasier_des_ames"
+		},
+		{
+			"id": "bottes_brasier_des_ames",
+			"item": "minecraft:netherite_boots",
+			"name": "Bottes du Brasier des âmes",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Elles laissent derrière elles",
+				"une traînée de flammes bleues."
+			],
+			"enchantments": {
+				"minecraft:protection": 4,
+				"minecraft:soul_speed": 3,
+				"minecraft:feather_falling": 4,
+				"minecraft:unbreaking": 4,
+				"minecraft:mending": 1
+			},
+			"attributes": [
+				{
+					"attribute": "minecraft:movement_speed",
+					"amount": 0.05,
+					"operation": "add_multiplied_base",
+					"slot": "feet"
+				}
+			],
+			"glint": true,
+			"unbreakable": false,
+			"power": "",
+			"model": "bottes_brasier_des_ames",
+			"color": -1,
+			"set": "brasier_des_ames"
+		}
+	],
+
+	// Panoplies : les armures uniques dont le champ "set" porte cet id. Portees ensemble (pieces differentes), elles
+	// donnent des bonus par palier : bonuses [{pieces (nombre de pieces portees), name, attributes [{attribute, amount,
+	// operation}] (ajoutes au joueur tant que le palier est atteint), power (frost_blood, winter_heart, jaguar_ambush,
+	// soul_pyre ou vide ; reglages dans powers)}]. Les paliers se cumulent (4 pieces = bonus 2 + bonus 4).
+	"sets": [
+		{
+			"id": "hiver_eternel",
+			"name": "&bPanoplie de l'Hiver éternel",
+			"bonuses": [
+				{
+					"pieces": 2,
+					"name": "Sang-froid",
+					"attributes": [
+						{
+							"attribute": "minecraft:armor_toughness",
+							"amount": 2.0,
+							"operation": "add_value",
+							"slot": "armor"
+						}
+					],
+					"power": "frost_blood"
+				},
+				{
+					"pieces": 4,
+					"name": "Cœur de l'hiver",
+					"attributes": [
+						{
+							"attribute": "minecraft:max_health",
+							"amount": 4.0,
+							"operation": "add_value",
+							"slot": "armor"
+						}
+					],
+					"power": "winter_heart"
+				}
+			]
+		},
+		{
+			"id": "guerrier_jaguar",
+			"name": "&6Panoplie du Guerrier jaguar",
+			"bonuses": [
+				{
+					"pieces": 2,
+					"name": "Agilité du jaguar",
+					"attributes": [
+						{
+							"attribute": "minecraft:movement_speed",
+							"amount": 0.1,
+							"operation": "add_multiplied_base",
+							"slot": "armor"
+						},
+						{
+							"attribute": "minecraft:safe_fall_distance",
+							"amount": 3.0,
+							"operation": "add_value",
+							"slot": "armor"
+						}
+					],
+					"power": ""
+				},
+				{
+					"pieces": 4,
+					"name": "Embuscade du jaguar",
+					"attributes": [
+						{
+							"attribute": "minecraft:attack_damage",
+							"amount": 1.0,
+							"operation": "add_value",
+							"slot": "armor"
+						}
+					],
+					"power": "jaguar_ambush"
+				}
+			]
+		},
+		{
+			"id": "brasier_des_ames",
+			"name": "&3Panoplie du Brasier des âmes",
+			"bonuses": [
+				{
+					"pieces": 2,
+					"name": "Flamme d'âme",
+					"attributes": [
+						{
+							"attribute": "minecraft:max_health",
+							"amount": 4.0,
+							"operation": "add_value",
+							"slot": "armor"
+						},
+						{
+							"attribute": "minecraft:burning_time",
+							"amount": -0.5,
+							"operation": "add_multiplied_base",
+							"slot": "armor"
+						}
+					],
+					"power": ""
+				},
+				{
+					"pieces": 4,
+					"name": "Bûcher des âmes",
+					"attributes": [
+						{
+							"attribute": "minecraft:armor_toughness",
+							"amount": 2.0,
+							"operation": "add_value",
+							"slot": "armor"
+						}
+					],
+					"power": "soul_pyre"
+				}
+			]
 		}
 	]
 }
