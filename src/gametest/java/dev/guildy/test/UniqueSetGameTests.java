@@ -208,9 +208,9 @@ public class UniqueSetGameTests {
 					wearer.setHealth(6);
 					wearer.damageCooldownTime = 0;
 					float before = zombie.getHealth();
-					boolean hit = wearer.hurtServer(level, level.damageSources().mobAttack(zombie), 1.0F);
-					helper.assertTrue(zombie.getHealth() < before, "the nova's cold hurts the zombie: " + zombie.getHealth() + " (hit " + hit
-							+ ", health " + wearer.getHealth() + " / " + wearer.getMaxHealth() + ", zombie at " + zombie.distanceTo(wearer) + ")");
+					wearer.hurtServer(level, level.damageSources().mobAttack(zombie), 1.0F);
+					helper.assertTrue(zombie.getHealth() < before, "the nova's cold hurts the zombie: " + zombie.getHealth() + " (wearer "
+							+ wearer.getHealth() + " / " + wearer.getMaxHealth() + ")");
 					MobEffectInstance slowness = zombie.getEffect(MobEffects.SLOWNESS);
 					helper.assertTrue(slowness != null && slowness.getAmplifier() == 3, "Slowness IV on the zombie");
 					helper.assertTrue(zombie.getTicksFrozen() > 0, "the zombie is frozen");

@@ -135,7 +135,7 @@ public final class UniqueItems {
 	/**
 	 * Set section of a piece's lore: the set and its pieces (worn ones ticked), then each bonus with its attributes, power
 	 * and recharge (reached ones lit). {@code worn} = unique ids worn by the holder, null when the piece is not carried
-	 * (neutral look).
+	 * (neutral look, also when the holder wears no piece of the set).
 	 */
 	public static List<Component> setLore(UniqueConfig.UniqueDef def, UniqueConfig.SetDef set, @Nullable Set<String> worn) {
 		UniqueConfig cfg = UniqueModule.config();
@@ -146,6 +146,10 @@ public final class UniqueItems {
 				if (worn.contains(piece)) {
 					count++;
 				}
+			}
+			if (count == 0) {
+				// The holder wears none of this set: the neutral look.
+				worn = null;
 			}
 		}
 		List<Component> lines = new ArrayList<>();
