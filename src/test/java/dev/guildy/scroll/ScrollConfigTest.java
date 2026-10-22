@@ -279,6 +279,61 @@ class ScrollConfigTest {
 		assertTrue(again.migrations().isEmpty(), "migrated once: " + again.migrations());
 	}
 
+	@Test
+	void rallyCallsEveryoneAfterTheMigration() {
+		// A scrolls.json5 of Guildy 1.12 (format 4): the rally on its old defaults (512 blocks, its own dimension only), an admin
+		// rally that crosses dimensions within 2000 blocks, no per-cast limits yet.
+		ScrollConfig written = new ScrollConfig();
+		written.configVersion = 4;
+		for (ScrollConfig.ScrollDef def : written.scrolls) {
+			if (def.id.equals("ralliement")) {
+				def.params.put("range", 512.0);
+				def.params.put("crossDimension", 0.0);
+			}
+		}
+		ScrollConfig.ScrollDef own = new ScrollConfig.ScrollDef();
+		own.id = "cor_lointain";
+		own.spell = "rally";
+		own.params = new LinkedHashMap<>(Map.of("range", 2000.0, "crossDimension", 1.0, "maxAllies", 4.0));
+		written.scrolls.add(own);
+		ScrollConfig.ScrollDef old512 = new ScrollConfig.ScrollDef();
+		old512.id = "cor_du_fort";
+		old512.spell = "rally";
+		old512.params = new LinkedHashMap<>(Map.of("range", 512.0, "crossDimension", 1.0));
+		written.scrolls.add(old512);
+		String json = Json5.GSON.toJson(written).replace("\"repeatHitDecay\"", "\"removedDecay\"").replace("\"bossCastCap\"", "\"removedCap\"");
+		ScrollConfig old = Json5.fromString(json, ScrollConfig.class);
+		assertTrue(old.rebuild(id -> true).isEmpty(), "migrated without warnings");
+		assertEquals(5, ScrollConfig.CURRENT_VERSION);
+		assertEquals(ScrollConfig.CURRENT_VERSION, old.configVersion);
+		assertEquals(0.0, old.scroll("ralliement").param("range"), "512 -> 0: every distance");
+		assertEquals(1.0, old.scroll("ralliement").param("crossDimension"), "0 -> 1: the other dimensions too");
+		assertEquals(2000.0, old.scroll("cor_lointain").param("range"), "the admin's range is kept");
+		assertEquals(4.0, old.scroll("cor_lointain").param("maxAllies"));
+		assertEquals(0.0, old.scroll("cor_du_fort").param("range"), "an admin rally on the old default range");
+		assertEquals(List.of("ralliement.range", "ralliement.crossDimension", "cor_du_fort.range"), old.migrations());
+		// The per-cast limits appear with their defaults.
+		ScrollConfig defaults = new ScrollConfig();
+		assertEquals(defaults.limits.repeatHitDecay, old.limits.repeatHitDecay);
+		assertEquals(defaults.limits.bossCastCap, old.limits.bossCastCap);
+		assertEquals(defaults.cursedGrimoire.bossCastCap, old.cursedGrimoire.bossCastCap);
+		assertTrue(defaults.cursedGrimoire.bossCastCap > defaults.limits.bossCastCap, "the cursed grimoire stays stronger");
+
+		// Once migrated, an admin who restricts the rally again keeps it.
+		ScrollConfig edited = Json5.fromString(Json5.GSON.toJson(old), ScrollConfig.class);
+		for (ScrollConfig.ScrollDef def : edited.scrolls) {
+			if (def.id.equals("ralliement")) {
+				def.params.put("range", 512.0);
+				def.params.put("crossDimension", 0.0);
+			}
+		}
+		ScrollConfig again = Json5.fromString(Json5.GSON.toJson(edited), ScrollConfig.class);
+		assertTrue(again.rebuild(id -> true).isEmpty());
+		assertEquals(512.0, again.scroll("ralliement").param("range"));
+		assertEquals(0.0, again.scroll("ralliement").param("crossDimension"));
+		assertTrue(again.migrations().isEmpty(), "migrated once: " + again.migrations());
+	}
+
 	private static void check(List<String> missing, String path) throws Exception {
 		try (InputStream in = ScrollConfigTest.class.getResourceAsStream(path)) {
 			if (in == null) {
@@ -324,6 +379,10 @@ class ScrollConfigTest {
 		cfg.casting.disabledDimensions = new ArrayList<>(List.of("The_End", "not a dimension!"));
 		cfg.limits.maxEffectsPerPlayer = 0;
 		cfg.limits.particleBudget = 1_000_000;
+		cfg.limits.repeatHitDecay = 0;
+		cfg.limits.repeatHitFloor = 3;
+		cfg.limits.bossCastCap = -1;
+		cfg.cursedGrimoire.bossCastCap = 9;
 		cfg.trade.prices = new LinkedHashMap<>(Map.of("legendary", 999_999, "COMMON", 3));
 
 		List<String> warnings = cfg.rebuild(id -> !id.contains("ender_pearl"));
@@ -357,6 +416,10 @@ class ScrollConfigTest {
 		assertTrue(cfg.dimensionDisabled("minecraft:the_end"));
 		assertEquals(1, cfg.limits.maxEffectsPerPlayer);
 		assertEquals(20000, cfg.limits.particleBudget);
+		assertEquals(0.05, cfg.limits.repeatHitDecay, "a hit always keeps some damage");
+		assertEquals(1.0, cfg.limits.repeatHitFloor);
+		assertEquals(0.001, cfg.limits.bossCastCap);
+		assertEquals(1.0, cfg.cursedGrimoire.bossCastCap, "1 = no cap");
 		assertEquals(100000, cfg.trade.prices.get("LEGENDARY"));
 		assertFalse(cfg.trade.prices.containsKey("COMMON"));
 		assertEquals(40, cfg.trade.prices.get("RARE"), "missing rarities get their default price");

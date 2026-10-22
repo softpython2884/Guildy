@@ -21,7 +21,9 @@ import java.util.UUID;
  * Pluie de météores: a red runic circle marks the area around the aimed point, then burning meteors fall one after the other
  * from behind the caster (fire trail, smoke, color-fading embers), each one announced by a shrinking warning ring; every
  * impact bursts (no real explosion, no block touched) and hurts, ignites and throws back the monsters around it. Two meteors
- * out of three are called down on a monster of the area and follow it while they fall ({@link MeteorRules}).
+ * out of three are called down on a monster of the area and follow it while they fall ({@link MeteorRules}), never on one
+ * that the meteors still falling will finish, nor on a boss that already took all this cast may take from it
+ * ({@link CastDamage}): they go to its escort, or fall at random in the area.
  */
 final class MeteorShowerSpell extends SpellEffect {
 	private static final int FLIGHT = 16;
@@ -39,9 +41,9 @@ final class MeteorShowerSpell extends SpellEffect {
 	private final float fireSeconds;
 	private final List<Meteor> meteors = new ArrayList<>();
 	private final List<Crater> craters = new ArrayList<>();
-	/** Meteors called on each monster during this cast, and the damage of those still falling on it. */
+	/** Meteors called on each monster during this cast, and those still falling on it. */
 	private final Map<UUID, Integer> aimed = new HashMap<>();
-	private final Map<UUID, Double> pending = new HashMap<>();
+	private final Map<UUID, Integer> falling = new HashMap<>();
 	private int launched;
 
 	private static final class Meteor {
@@ -125,7 +127,7 @@ final class MeteorShowerSpell extends SpellEffect {
 			meteor.last = pos;
 			if (meteor.age >= FLIGHT) {
 				if (meteor.target != null) {
-					pending.computeIfPresent(meteor.target.getUUID(), (k, v) -> v - damage > 1.0E-6 ? v - damage : null);
+					landed(meteor.target.getUUID());
 				}
 				impact(fx, meteor.impact);
 				it.remove();
@@ -153,7 +155,7 @@ final class MeteorShowerSpell extends SpellEffect {
 		if (target != null) {
 			impact = target.position();
 			aimed.merge(target.getUUID(), 1, Integer::sum);
-			pending.merge(target.getUUID(), damage, Double::sum);
+			falling.merge(target.getUUID(), 1, Integer::sum);
 		} else {
 			double angle = random.nextDouble() * Math.PI * 2;
 			double distance = Math.sqrt(random.nextDouble()) * radius;
@@ -168,17 +170,39 @@ final class MeteorShowerSpell extends SpellEffect {
 		sound(start, SoundEvents.FIRECHARGE_USE, 2.0F, 0.6F + random.nextFloat() * 0.3F);
 	}
 
-	/** The monster of the area this meteor is called on ({@link MeteorRules#pick}), or null. */
+	/**
+	 * The monster of the area this meteor is called on ({@link MeteorRules#pick}), or null. What a monster can still lose to
+	 * this cast is its health, within the boss cap; what the meteors still falling on it will deal follows the diminishing
+	 * returns of the cast.
+	 */
 	private @Nullable LivingEntity pickTarget() {
 		List<LivingEntity> around = SpellTargets.hostiles(ctx, level, center, reach(), 16);
 		List<MeteorRules.Candidate> candidates = new ArrayList<>(around.size());
 		for (LivingEntity monster : around) {
 			UUID id = monster.getUUID();
-			candidates.add(new MeteorRules.Candidate(monster.getHealth() + monster.getAbsorptionAmount(), pending.getOrDefault(id, 0.0),
-					aimed.getOrDefault(id, 0), SpellTargets.distance(monster, center)));
+			double health = Math.min(monster.getHealth() + monster.getAbsorptionAmount(), SpellTargets.room(ctx, monster));
+			double pending = SpellTargets.expected(ctx, monster, damage, falling.getOrDefault(id, 0));
+			candidates.add(new MeteorRules.Candidate(health, pending, aimed.getOrDefault(id, 0), SpellTargets.distance(monster, center)));
 		}
 		int index = MeteorRules.pick(candidates);
+		if (index < 0) {
+			// Nothing left to hurt: the meteors keep raining on a boss that took all this cast may take (for show), else at random.
+			List<MeteorRules.Candidate> bosses = new ArrayList<>(around.size());
+			for (int i = 0; i < around.size(); i++) {
+				LivingEntity monster = around.get(i);
+				MeteorRules.Candidate c = candidates.get(i);
+				// Capped, not dying: its health is above what this cast may still take from it.
+				boolean show = SpellTargets.isBoss(monster) && monster.getHealth() > c.health() + c.pending();
+				bosses.add(new MeteorRules.Candidate(show ? 1 : 0, 0, c.aimed(), c.distance()));
+			}
+			index = MeteorRules.pick(bosses);
+		}
 		return index < 0 ? null : around.get(index);
+	}
+
+	/** A meteor called on this monster landed (or lost it): one less falling on it. */
+	private void landed(UUID monster) {
+		falling.computeIfPresent(monster, (k, v) -> v > 1 ? v - 1 : null);
 	}
 
 	/** Monsters within this distance of the aimed point may be called on (and are followed while they stay in it). */
@@ -193,7 +217,7 @@ final class MeteorShowerSpell extends SpellEffect {
 			return;
 		}
 		if (!target.isAlive() || target.isRemoved() || target.level() != level || SpellTargets.distance(target, center) > reach() + 2) {
-			pending.computeIfPresent(target.getUUID(), (k, v) -> v - damage > 1.0E-6 ? v - damage : null);
+			landed(target.getUUID());
 			meteor.target = null;
 			return;
 		}

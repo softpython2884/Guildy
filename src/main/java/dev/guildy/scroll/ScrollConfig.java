@@ -40,9 +40,15 @@ public final class ScrollConfig implements Validatable {
 	 * from 0.4 s to 1 s when still at the old default. 3 (Guildy 1.10): stronger damage spells (spell damage ignores armor
 	 * and the default damage is raised): a scroll whose damage is still the old default of its spell gets the new one.
 	 * 4 (Guildy 1.12): six new spell scrolls ({@link #NEW_SCROLLS}) added once to the definitions, to the drop tables and to
-	 * the cursed grimoire's per-spell settings, only where absent.
+	 * the cursed grimoire's per-spell settings, only where absent. 5 (Guildy 1.13): the rally calls every online member by
+	 * default ({@link #migrateRally}: range 512 -> 0 = unlimited, crossDimension 0 -> 1, where still at the old defaults);
+	 * the per-cast limits of the damage spells ({@code limits.repeatHitDecay}, {@code limits.repeatHitFloor},
+	 * {@code limits.bossCastCap}, {@code cursedGrimoire.bossCastCap}) appear with their defaults.
 	 */
-	public static final int CURRENT_VERSION = 4;
+	public static final int CURRENT_VERSION = 5;
+	/** Ralliement before format 5: range (blocks) and crossDimension defaults. */
+	static final double OLD_RALLY_RANGE = 512;
+	static final double OLD_RALLY_CROSS = 0;
 	/** The scrolls of format 4, added once to older files (a definition or an entry removed afterwards stays removed). */
 	public static final List<String> NEW_SCROLLS = List.of("banniere_de_guerre", "fleau", "permutation", "ralliement", "chaines_spectrales",
 			"hate_du_vent");
@@ -72,7 +78,7 @@ public final class ScrollConfig implements Validatable {
 	@Comment("Incantation (clic droit maintenu)")
 	public Casting casting = new Casting();
 
-	@Comment("Limites des effets en cours (performances)")
+	@Comment("Limites des effets en cours (performances) et de ce qu'un seul sort peut faire a une meme cible (boss surtout)")
 	public Limits limits = new Limits();
 
 	@Comment("Vente au Carrefour commercial (table \"trade\" : chance qu'un marchand du Carrefour propose un parchemin, un seul achat)")
@@ -145,6 +151,20 @@ public final class ScrollConfig implements Validatable {
 		public int viewDistance = 96;
 		@Comment("Gardiens (golems invoques) vivants en meme temps par joueur")
 		public int maxGuardiansPerPlayer = 4;
+		@Comment({
+				"Rendement decroissant (0.05 a 1) : chaque nouveau coup d'un meme sort sur la meme cible fait moins mal, ses degats",
+				"sont multiplies par cette valeur une fois de plus a chaque coup (0.75 : 100 %, 75 %, 56 %, 42 %... ; 1 = desactive).",
+				"Un sort continu (impulsions du blizzard et de l'egide, rayon arcanique) compte un coup toutes les 5 s de degats"
+		})
+		public double repeatHitDecay = 0.75;
+		@Comment("Rendement decroissant : part minimale des degats qu'un coup garde, meme apres beaucoup de coups (0 a 1)")
+		public double repeatHitFloor = 0.2;
+		@Comment({
+				"Boss (gardiens des ruines, formes maudites comprises, boss des hordes, Wither, Ender Dragon, Warden, grand gardien) :",
+				"part maximale de sa vie max qu'un seul sort d'un parchemin ou d'un grimoire peut lui retirer (0.001 a 1 ; 0.04 = 4 % ;",
+				"1 = sans limite). Les monstres ordinaires n'ont pas de limite. Le grimoire maudit a la sienne : cursedGrimoire.bossCastCap"
+		})
+		public double bossCastCap = 0.04;
 	}
 
 	@Json5.Section
@@ -255,6 +275,11 @@ public final class ScrollConfig implements Validatable {
 		public Map<String, Integer> bloodCost = defaultBloodCost();
 		@Comment("Vie minimale apres le prix du sang (points de vie, 1 a 19) : en dessous, le sort est refuse")
 		public double minHealth = 6;
+		@Comment({
+				"Boss : part maximale de sa vie max qu'un seul sort du grimoire maudit peut lui retirer (0.001 a 1 ; 0.07 = 7 % ;",
+				"1 = sans limite ; voir limits.bossCastCap). Contre les groupes de monstres ordinaires, aucune limite"
+		})
+		public double bossCastCap = 0.07;
 		@Comment({
 				"Chance (0 a 1) que le gardien MAUDIT d'une ruine (id de ruins.json5) laisse un grimoire maudit vierge a sa mort",
 				"definitive (forme finale). Aucune autre source : ni les gardiens normaux, ni les quetes, ni le Carrefour"
@@ -420,7 +445,7 @@ public final class ScrollConfig implements Validatable {
 			Guildy.LOGGER.warn("[scrolls.json5] {}", warning);
 		}
 		if (!migrations.isEmpty()) {
-			Guildy.LOGGER.info("[scrolls.json5] migrated (new damage of the scrolls left on the old defaults, +new scrolls): {}",
+			Guildy.LOGGER.info("[scrolls.json5] migrated (values left on old defaults: damage, rally range and dimensions; +new scrolls): {}",
 					String.join(", ", migrations));
 		}
 	}
@@ -453,6 +478,38 @@ public final class ScrollConfig implements Validatable {
 			migrations = new ArrayList<>(migrations);
 			migrations.addAll(addNewScrolls());
 		}
+		if (configVersion < 5) {
+			migrations = new ArrayList<>(migrations);
+			migrations.addAll(migrateRally(scrolls));
+		}
+	}
+
+	/**
+	 * Format 5 (pure): every rally scroll (default or added by the admin) whose range is still the old default (512 blocks)
+	 * calls at any distance (0), and whose crossDimension is still the old default (0) calls the other dimensions too (1);
+	 * any other value is kept. @return the values changed ("id.range", "id.crossDimension")
+	 */
+	static List<String> migrateRally(@Nullable List<ScrollDef> scrolls) {
+		List<String> changed = new ArrayList<>();
+		if (scrolls == null) {
+			return changed;
+		}
+		for (ScrollDef def : scrolls) {
+			if (def == null || def.params == null || Spell.byId(def.spell) != Spell.RALLY) {
+				continue;
+			}
+			Double range = def.params.get("range");
+			if (range != null && Math.abs(range - OLD_RALLY_RANGE) < 1.0E-9) {
+				def.params.put("range", Spell.RALLY.param("range").defaultValue());
+				changed.add(def.id + ".range");
+			}
+			Double cross = def.params.get("crossDimension");
+			if (cross != null && Math.abs(cross - OLD_RALLY_CROSS) < 1.0E-9) {
+				def.params.put("crossDimension", Spell.RALLY.param("crossDimension").defaultValue());
+				changed.add(def.id + ".crossDimension");
+			}
+		}
+		return changed;
 	}
 
 	/**
@@ -633,6 +690,7 @@ public final class ScrollConfig implements Validatable {
 		c.foodCost = rarityMap(c.foodCost, defaultCursedFoodCost(), 0, 20, "cursedGrimoire.foodCost", warnings);
 		c.bloodCost = rarityMap(c.bloodCost, defaultBloodCost(), 0, 20, "cursedGrimoire.bloodCost", warnings);
 		c.minHealth = clamp(c.minHealth, 1, 19);
+		c.bossCastCap = clamp(c.bossCastCap, 0.001, 1);
 		Map<String, Double> chances = new LinkedHashMap<>();
 		if (c.ruinDrops != null) {
 			for (Map.Entry<String, Double> entry : c.ruinDrops.entrySet()) {
@@ -677,6 +735,9 @@ public final class ScrollConfig implements Validatable {
 		limits.particleBudget = (int) clamp(limits.particleBudget, 100, 20000);
 		limits.viewDistance = (int) clamp(limits.viewDistance, 16, 256);
 		limits.maxGuardiansPerPlayer = (int) clamp(limits.maxGuardiansPerPlayer, 1, 16);
+		limits.repeatHitDecay = clamp(limits.repeatHitDecay, 0.05, 1);
+		limits.repeatHitFloor = clamp(limits.repeatHitFloor, 0, 1);
+		limits.bossCastCap = clamp(limits.bossCastCap, 0.001, 1);
 		if (trade == null) {
 			trade = new Trade();
 		}

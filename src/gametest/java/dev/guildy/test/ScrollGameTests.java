@@ -4,6 +4,7 @@ import dev.guildy.core.GuildyItems;
 import dev.guildy.core.ScrollDrops;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
+import dev.guildy.scroll.CastDamage;
 import dev.guildy.scroll.ScrollConfig;
 import dev.guildy.scroll.ScrollItems;
 import dev.guildy.scroll.ScrollModule;
@@ -329,7 +330,7 @@ public class ScrollGameTests {
 	/**
 	 * Balance (Guildy 1.10): a meteor shower on an armored guardian (armor 30, toughness 20: four fifths of a vanilla hit
 	 * absorbed) and its escort. Spell damage ignores armor and two meteors out of three follow a monster: the escort dies,
-	 * the guardian takes several full meteors.
+	 * the guardian takes several meteors (each further one of the cast a little weaker).
 	 */
 	@GameTest(environment = ENV, maxTicks = 260)
 	public void meteorShowerDentsAnArmoredGuardian(GameTestHelper helper) {
@@ -362,8 +363,14 @@ public class ScrollGameTests {
 					// Logged with the chat of the test players (balance figures).
 					scene.caster().sendSystemMessage(Component.literal("meteor shower: " + dealt + " health points through armor "
 							+ guardian.getArmorValue() + " (" + count + " meteors of " + meteor + ")"));
-					// At least three full meteors (seven are called, two of them on the escort); never more than every meteor.
-					helper.assertTrue(dealt >= 3 * meteor - 0.01, "several full meteors through the armor, dealt " + dealt);
+					// At least three meteors (seven are called, two of them on the escort), each one after the first a little weaker
+					// (diminishing returns of one cast on one target, Guildy 1.13); never more than every meteor.
+					ScrollConfig.Limits limits = ScrollModule.config().limits;
+					double three = 0;
+					for (int k = 0; k < 3; k++) {
+						three += meteor * CastDamage.factor(limits.repeatHitDecay, limits.repeatHitFloor, k);
+					}
+					helper.assertTrue(dealt >= three - 0.01, "several meteors through the armor, dealt " + dealt + " (at least " + three + ")");
 					helper.assertTrue(dealt <= count * meteor + 0.01, "at most every meteor once, dealt " + dealt);
 					untouched(helper, scene);
 					guardian.discard();

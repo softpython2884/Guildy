@@ -126,7 +126,8 @@ final class AegisSpell extends SpellEffect {
 				SpellTargets.push(target, new Vec3(away.x * push * 0.35, 0.08, away.z * push * 0.35));
 			}
 			if (age % 20 == 0) {
-				SpellTargets.hurt(ctx, target, SpellTargets.Element.ARCANE, damage);
+				// A pulse of a continuous spell: a fraction of a hit for the diminishing returns.
+				SpellTargets.hurt(ctx, target, SpellTargets.Element.ARCANE, damage, CastDamage.continuous(20));
 				fx.burst(ParticleTypes.ENCHANTED_HIT, target.getX(), target.getY(0.5), target.getZ(), 10, 0.3, 0.4, 0.3, 0.2);
 			}
 			fx.burst(ParticleTypes.ELECTRIC_SPARK, target.getX(), target.getY(0.5), target.getZ(), 2, 0.3, 0.4, 0.3, 0.05);
