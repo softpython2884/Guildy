@@ -7,7 +7,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 5,
+	"configVersion": 6,
 
 	// Parchemins actifs (false = ils ne lancent plus rien, ils ne sont pas consommes)
 	"enabled": true,
@@ -45,6 +45,10 @@
 
 		// Gardiens (golems invoques) vivants en meme temps par joueur
 		"maxGuardiansPerPlayer": 4,
+
+		// Fusees de feu d'artifice (Grand spectacle) en vol en meme temps sur tout le serveur, tous spectacles confondus (8 a 512) :
+		// au-dela, des fusees du spectacle sont sautees (chaque spectacle en a deja 40 au plus, 48 pour le grimoire maudit)
+		"maxFireworks": 120,
 
 		// Rendement decroissant (0.05 a 1) : chaque nouveau coup d'un meme sort sur la meme cible fait moins mal, ses degats
 		// sont multiplies par cette valeur une fois de plus a chaque coup (0.75 : 100 %, 75 %, 56 %, 42 %... ; 1 = desactive).
@@ -273,7 +277,8 @@
 				"permutation": 5.0,
 				"hate_du_vent": 5.0,
 				"ralliement": 4.0,
-				"chaines_spectrales": 4.0
+				"chaines_spectrales": 4.0,
+				"grand_spectacle": 1.0
 			}
 		},
 		"nether_ruin_boss": {
@@ -298,7 +303,8 @@
 				"chaines_spectrales": 4.0,
 				"permutation": 4.0,
 				"ralliement": 3.0,
-				"hate_du_vent": 3.0
+				"hate_du_vent": 3.0,
+				"grand_spectacle": 1.0
 			}
 		},
 		"boss": {
@@ -363,7 +369,8 @@
 				"singularite": 1.0,
 				"chaines_spectrales": 4.0,
 				"banniere_de_guerre": 3.0,
-				"fleau": 3.0
+				"fleau": 3.0,
+				"grand_spectacle": 3.0
 			}
 		},
 		"quest": {
@@ -381,7 +388,8 @@
 				"permutation": 6.0,
 				"ralliement": 6.0,
 				"banniere_de_guerre": 3.0,
-				"fleau": 2.0
+				"fleau": 2.0,
+				"grand_spectacle": 3.0
 			}
 		},
 		"expedition": {
@@ -398,7 +406,8 @@
 				"hate_du_vent": 8.0,
 				"permutation": 6.0,
 				"ralliement": 6.0,
-				"banniere_de_guerre": 2.0
+				"banniere_de_guerre": 2.0,
+				"grand_spectacle": 4.0
 			}
 		},
 		"trade": {
@@ -421,14 +430,15 @@
 				"ralliement": 6.0,
 				"banniere_de_guerre": 4.0,
 				"fleau": 4.0,
-				"chaines_spectrales": 2.0
+				"chaines_spectrales": 2.0,
+				"grand_spectacle": 4.0
 			}
 		}
 	},
 
 	// Parchemins : id (minuscules, chiffres, _), name, rarity (RARE, EPIC, LEGENDARY, MYTHIC), lore (histoire, codes &),
 	// spell (meteor_shower, chain_storm, blizzard, solar_nova, singularity, aegis, recall, guardians, blessing, revelation,
-	// earthquake, arcane_ray, war_banner, scourge, swap, rally, spectral_chains, tailwind), params (reglages du sort ;
+	// earthquake, arcane_ray, war_banner, scourge, swap, rally, spectral_chains, tailwind, fireworks), params (reglages du sort ;
 	// degats et soins en points de vie : 2 = 1 coeur ; pourcentages : 25 = +25 % ; les parametres
 	// absents prennent leur valeur par defaut, tous sont bornes), item (objet vanilla simple de base : papier, motif de
 	// banniere...), glint (brillance), maxStack (1 a 64), channelSeconds (duree de l'incantation, 0.25 a 10), animation
@@ -876,6 +886,30 @@
 			"cooldownGroup": "soutien",
 			"cooldownSeconds": 30.0,
 			"model": "parchemin_hate_du_vent"
+		},
+		{
+			"id": "grand_spectacle",
+			"name": "Grand spectacle",
+			"rarity": "EPIC",
+			"lore": [
+				"Le carnet d'un artificier royal :",
+				"chaque rune est une gerbe qui attend la nuit."
+			],
+			"spell": "fireworks",
+			"params": {
+				"duration": 40.0,
+				"width": 18.0,
+				"points": 9.0,
+				"height": 26.0
+			},
+			"item": "minecraft:flower_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 3.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "spectacle",
+			"cooldownSeconds": 120.0,
+			"model": "parchemin_grand_spectacle"
 		}
 	]
 }

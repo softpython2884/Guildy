@@ -4054,7 +4054,8 @@
 			"permutation": 4.0,
 			"ralliement": 1.0,
 			"banniere_de_guerre": 1.0,
-			"fleau": 1.0
+			"fleau": 1.0,
+			"grand_spectacle": 1.0
 		},
 
 		// Parchemins par defaut deja proposes a ce fichier (gere automatiquement) : un nouveau parchemin par defaut d'une mise a
@@ -4071,7 +4072,8 @@
 			"permutation",
 			"ralliement",
 			"banniere_de_guerre",
-			"fleau"
+			"fleau",
+			"grand_spectacle"
 		],
 
 		// Ordre des travaux : books = livres enchantes, scrolls = parchemins (un parchemin a chaque travail a la table, avec

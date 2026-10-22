@@ -9,7 +9,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 3,
+	"configVersion": 4,
 
 	// Boss des ruines actifs (false = plus aucun boss ne se reveille ; les cartes restent possibles)
 	"bossesEnabled": true,
@@ -144,7 +144,67 @@
 		"uniqueChancePerLevel": 0.05,
 
 		// Chance d'un tirage de parchemin de sort supplementaire par niveau au-dela de I
-		"scrollChancePerLevel": 0.08
+		"scrollChancePerLevel": 0.08,
+
+		// Forme redoutable : a partir de ce niveau de menace (7 = Menace VII), le gardien, normal ou maudit, devient tout autre
+		// chose (voir 'dread' et la liste 'dreadAbilities' de chaque ruine). 0 = jamais
+		"dreadThreshold": 7,
+
+		// Le gardien redoutable : vie, degats, rythme, capacites, recompenses
+		"dread": {
+
+			// Forme redoutable active (false = les gardiens restent les memes a tous les niveaux de menace)
+			"enabled": true,
+
+			// Vie du gardien redoutable (multiplicateur, en plus de la menace, du groupe et de la malediction) : healthMultiplier au
+			// seuil, plus healthPerLevel par niveau au-dela, au plus maxHealthMultiplier. La vie depasse le plafond vanilla (1024) :
+			// au-dela, chaque coup recu est divise d'autant (vie effective, affichee sur la barre du boss)
+			"healthMultiplier": 2.5,
+			"healthPerLevel": 0.5,
+			"maxHealthMultiplier": 8.0,
+
+			// Vie effective maximale par joueur compte a l'apparition (0 = sans plafond ; 8000 = un groupe de 4 : 32000 au plus)
+			"healthCapPerPlayer": 8000.0,
+
+			// Degats aux joueurs (multiplicateur applique apres leur armure, a toutes les attaques du gardien et de son escorte) :
+			// damageMultiplier au seuil (1.5 = +50 %), plus damagePerLevel par niveau au-dela (X : +125 %), au plus maxDamageMultiplier
+			"damageMultiplier": 1.5,
+			"damagePerLevel": 0.25,
+			"maxDamageMultiplier": 4.0,
+
+			// Ce bonus ne fait jamais depasser a un coup cette part de la vie maximale du joueur touche (0.8 = 80 % ; un coup deja
+			// plus fort sans le bonus reste tel quel ; 0 = sans limite)
+			"maxHitHealthRatio": 0.8,
+
+			// Vie des sbires de l'escorte d'un gardien redoutable (multiplicateur)
+			"escortHealthMultiplier": 1.5,
+
+			// Rythme : recharges de toutes ses capacites multipliees par cooldownFactor au seuil, moins cooldownPerLevel par niveau
+			// au-dela, jamais sous minCooldownFactor (en plus de la menace, de la rage et de la malediction)
+			"cooldownFactor": 0.8,
+			"cooldownPerLevel": 0.05,
+			"minCooldownFactor": 0.5,
+
+			// Capacites redoutables (liste 'dreadAbilities' de chaque ruine) : delai avant la premiere, delai minimal entre deux,
+			// nombre au plus en meme temps, et duree de l'alerte (cercles rouges, lignes, cones) avant qu'elles ne frappent
+			"firstAttackSeconds": 6.0,
+			"globalCooldownSeconds": 4.0,
+			"maxRunning": 2,
+			"telegraphSeconds": 1.25,
+
+			// Recompenses : or et XP de guilde multiplies (goldMultiplier au seuil + goldPerLevel par niveau au-dela), tirages en plus
+			// dans la table de butin, chance d'un tirage de parchemin et d'arme unique en plus
+			"goldMultiplier": 1.5,
+			"goldPerLevel": 0.1,
+			"xpMultiplier": 1.5,
+			"xpPerLevel": 0.1,
+			"extraLootRolls": 1,
+			"extraScrollChance": 0.25,
+			"extraUniqueChance": 0.1,
+
+			// Particules envoyees au maximum par tick pour toutes les capacites redoutables (au-dela, l'animation est allegee)
+			"particleBudget": 900
+		}
 	},
 
 	// Resurrection : un gardien abattu trop vite (moins de fastKillSeconds apres son apparition) refuse de mourir. Il
@@ -515,6 +575,151 @@
 
 			// Chance (0 a 1) qu'un contrat legendaire termine donne un parchemin maudit
 			"legendaryQuestChance": 0.1
+		},
+
+		// L'Avatar : une etoile du Nether posee au sol dans le cercle quand le rituel maudit s'acheve est consommee et le gardien
+		// se leve sous sa forme supreme (jamais avec le parchemin normal). Admin : /guild admin ruin awaken cursed avatar
+		"avatar": {
+
+			// Avatar actif (false = une etoile du Nether dans le cercle ne change rien au rituel maudit)
+			"enabled": true,
+
+			// Objet a poser au sol dans le cercle du rituel maudit pour appeler l'Avatar (consomme a l'apparition)
+			"item": "minecraft:nether_star",
+
+			// L'Avatar se bat au moins comme un gardien de ce niveau de menace (statistiques, forme redoutable), 1 a 50
+			"minThreat": 10,
+
+			// Vie : multiplicateur en plus de la malediction (et de la menace, du groupe, de la forme redoutable), puis bornee par
+			// joueur compte a l'apparition : au moins healthMinPerPlayer, au plus healthCapPerPlayer (vie effective)
+			"healthMultiplier": 2.0,
+			"healthMinPerPlayer": 10000.0,
+			"healthCapPerPlayer": 16000.0,
+
+			// Degats aux joueurs (apres armure) multiplies, en plus de ceux de la forme redoutable (et de la malediction)
+			"damageMultiplier": 1.2,
+
+			// Ce bonus ne fait jamais depasser a un coup cette part de la vie maximale du joueur (0 = sans limite)
+			"maxHitHealthRatio": 0.9,
+
+			// Vie des sbires de l'Avatar (escorte et creatures des failles du Nether), multiplicateur
+			"escortHealthMultiplier": 2.0,
+
+			// Ses capacites redoutables (celles de sa ruine) : degats multiplies et une repetition de plus (cercles, lignes...)
+			"themeDamageMultiplier": 1.25,
+			"themeCountBonus": 1,
+
+			// Attaques de l'Avatar : delai minimal entre deux, nombre au plus en meme temps, recharges de sa forme finale (facteur)
+			"globalCooldownSeconds": 3.0,
+			"maxRunning": 3,
+			"finalFormCooldownFactor": 0.75,
+
+			// Attaques du Nether et des ames (type, phase a partir de laquelle il les utilise, recharge, degats, rayon, nombre,
+			// duree) : soul_pillars (piliers de feu des ames), wither_skulls (tetes de wither a tete chercheuse), nether_rifts
+			// (failles qui liberent blazes et wither squelettes), ghast_rain (pluie de boules de feu), soul_chains (chaines d'ames :
+			// rester pres de lui), collapsing_ring (anneau de feu des ames qui se referme : se placer dans une breche)
+			"attacks": [
+				{
+					"type": "soul_pillars",
+					"phase": 1,
+					"cooldownSeconds": 14.0,
+					"damage": 6.0,
+					"radius": 2.2,
+					"count": 4,
+					"durationSeconds": 3.0,
+					"amplifier": 1
+				},
+				{
+					"type": "wither_skulls",
+					"phase": 1,
+					"cooldownSeconds": 12.0,
+					"damage": 8.0,
+					"radius": 1.6,
+					"count": 8,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "nether_rifts",
+					"phase": 2,
+					"cooldownSeconds": 30.0,
+					"damage": 0.0,
+					"radius": 2.5,
+					"count": 2,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "ghast_rain",
+					"phase": 2,
+					"cooldownSeconds": 22.0,
+					"damage": 12.0,
+					"radius": 3.0,
+					"count": 12,
+					"durationSeconds": 5.0,
+					"amplifier": 1
+				},
+				{
+					"type": "soul_chains",
+					"phase": 3,
+					"cooldownSeconds": 20.0,
+					"damage": 8.0,
+					"radius": 7.0,
+					"count": 3,
+					"durationSeconds": 6.0,
+					"amplifier": 1
+				},
+				{
+					"type": "collapsing_ring",
+					"phase": 3,
+					"cooldownSeconds": 24.0,
+					"damage": 16.0,
+					"radius": 18.0,
+					"count": 3,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				}
+			],
+
+			// Creatures des failles du Nether {entite: poids} et nombre de ces creatures vivantes au plus
+			"riftMobs": {
+				"minecraft:blaze": 2,
+				"minecraft:wither_skeleton": 2
+			},
+			"riftMaxAlive": 6,
+
+			// Mise en scene : ciel rouge sombre (teinte rouge de l'ecran des joueurs de l'arene, comme pres de la bordure du monde),
+			// musique de boss, annonce a tout le serveur a son apparition et a sa chute
+			"redSky": true,
+			"bossMusic": true,
+			"announce": true,
+
+			// Recompenses de sa chute (en plus de celles d'un gardien maudit)
+			"rewards": {
+
+				// Or et XP de guilde multiplies (en plus de la malediction, de la menace et de la forme redoutable)
+				"goldMultiplier": 1.5,
+				"xpMultiplier": 2.0,
+
+				// Tirages en plus dans la table de butin
+				"extraLootRolls": 2,
+
+				// Tentatives d'arme unique en plus et nombre maximal d'armes uniques (remplace celui de la malediction)
+				"extraUniqueRolls": 3,
+				"maxUniques": 3,
+
+				// Tirages de parchemin de sort en plus (un parchemin reste garanti)
+				"extraScrollRolls": 2,
+
+				// Chance (0 a 1) d'un grimoire vierge en plus
+				"grimoireChance": 1.0,
+
+				// Trophee "Coeur de l'Avatar" (un objet de collection a l'image de l'etoile, sans autre usage) donne au vainqueur
+				"trophy": true
+			},
+
+			// Particules envoyees au maximum par tick pour un combat contre l'Avatar (aura, attaques)
+			"particleBudget": 1400
 		}
 	},
 
@@ -748,6 +953,16 @@
 	// embuscade : degats damage a moins de radius blocs), roar (rugissement en cone de longueur radius : Lenteur de niveau
 	// amplifier et Faiblesse), spirit_jaguars (count esprits jaguars temporaires, morsure damage, a moins de radius blocs) ;
 	// styles gold (Lenteur), jade (Poison), solar (brule) ; violet et noir sous la forme maudite.
+	// dreadAbilities [{type, cooldownSeconds, damage, radius, count, durationSeconds, amplifier}] : capacites de la forme
+	// redoutable (a partir de escalation.dreadThreshold), toutes annoncees (cercles, lignes, cones rouges) avant de frapper :
+	// grasping_graves (tombes qui s'ouvrent sous les joueurs : enracines), bone_prison (cage d'os qui se referme : en sortir
+	// a temps), bone_spikes / ice_spikes (lignes de pointes qui jaillissent du sol), arcane_barrage / wither_skulls
+	// (projectiles a tete chercheuse), mirror_clones (copies illusoires), gravity_well / quicksand (attirent vers le centre),
+	// mummy_curse (marque qui explose sur les joueurs proches : s'ecarter), sandstorm / blizzard_dome (tempete : seul l'oeil
+	// est sur), frozen_ground / lava_geysers / soul_pillars (zones au sol), feather_storm (spirale de plumes), dive_bomb /
+	// pounce_chain (plongeon / bonds sur un joueur marque), poison_rain / magma_meteors / ghast_rain (pluie de projectiles),
+	// stunning_roar (cone qui etourdit), solar_beam (rayon qui balaie), molten_ring / soul_eruption / collapsing_ring (anneau
+	// avec des breches), soul_chains (rester pres du gardien), wither_aura (s'en eloigner), nether_rifts (failles du Nether).
 	// rewards : goldMin/goldMax (lingots), goldPerEscort (lingots en plus par sbire de l'escorte tue pendant le combat, au plus
 	// escortGoldMax ; avant les bonus de menace, de groupe, de resurrection et de malediction), xp (XP de guilde partagee
 	// entre les guildes des participants), lootTable +
@@ -846,6 +1061,38 @@
 					"style": "",
 					"healthBelow": 0.3,
 					"amplifier": 0
+				}
+			],
+			"dreadAbilities": [
+				{
+					"type": "grasping_graves",
+					"phase": 1,
+					"cooldownSeconds": 16.0,
+					"damage": 6.0,
+					"radius": 2.5,
+					"count": 2,
+					"durationSeconds": 2.5,
+					"amplifier": 1
+				},
+				{
+					"type": "bone_spikes",
+					"phase": 1,
+					"cooldownSeconds": 13.0,
+					"damage": 8.0,
+					"radius": 14.0,
+					"count": 3,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "bone_prison",
+					"phase": 1,
+					"cooldownSeconds": 22.0,
+					"damage": 3.0,
+					"radius": 5.0,
+					"count": 1,
+					"durationSeconds": 3.0,
+					"amplifier": 1
 				}
 			],
 			"rewards": {
@@ -984,6 +1231,38 @@
 					"amplifier": 1
 				}
 			],
+			"dreadAbilities": [
+				{
+					"type": "arcane_barrage",
+					"phase": 1,
+					"cooldownSeconds": 12.0,
+					"damage": 5.0,
+					"radius": 1.2,
+					"count": 6,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "gravity_well",
+					"phase": 1,
+					"cooldownSeconds": 18.0,
+					"damage": 4.0,
+					"radius": 7.0,
+					"count": 1,
+					"durationSeconds": 4.0,
+					"amplifier": 1
+				},
+				{
+					"type": "mirror_clones",
+					"phase": 1,
+					"cooldownSeconds": 26.0,
+					"damage": 0.0,
+					"radius": 20.0,
+					"count": 3,
+					"durationSeconds": 15.0,
+					"amplifier": 1
+				}
+			],
 			"rewards": {
 				"goldMin": 20,
 				"goldMax": 32,
@@ -1110,6 +1389,38 @@
 					"count": 1,
 					"style": "",
 					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"dreadAbilities": [
+				{
+					"type": "quicksand",
+					"phase": 1,
+					"cooldownSeconds": 16.0,
+					"damage": 3.0,
+					"radius": 4.5,
+					"count": 1,
+					"durationSeconds": 4.0,
+					"amplifier": 1
+				},
+				{
+					"type": "mummy_curse",
+					"phase": 1,
+					"cooldownSeconds": 20.0,
+					"damage": 10.0,
+					"radius": 4.0,
+					"count": 1,
+					"durationSeconds": 4.0,
+					"amplifier": 1
+				},
+				{
+					"type": "sandstorm",
+					"phase": 1,
+					"cooldownSeconds": 28.0,
+					"damage": 2.0,
+					"radius": 4.0,
+					"count": 1,
+					"durationSeconds": 6.0,
 					"amplifier": 1
 				}
 			],
@@ -1249,6 +1560,38 @@
 					"amplifier": 1
 				}
 			],
+			"dreadAbilities": [
+				{
+					"type": "ice_spikes",
+					"phase": 1,
+					"cooldownSeconds": 12.0,
+					"damage": 9.0,
+					"radius": 16.0,
+					"count": 4,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "frozen_ground",
+					"phase": 1,
+					"cooldownSeconds": 16.0,
+					"damage": 2.0,
+					"radius": 3.0,
+					"count": 3,
+					"durationSeconds": 6.0,
+					"amplifier": 2
+				},
+				{
+					"type": "blizzard_dome",
+					"phase": 1,
+					"cooldownSeconds": 30.0,
+					"damage": 3.0,
+					"radius": 4.0,
+					"count": 1,
+					"durationSeconds": 6.0,
+					"amplifier": 2
+				}
+			],
 			"rewards": {
 				"goldMin": 28,
 				"goldMax": 42,
@@ -1385,6 +1728,38 @@
 					"count": 1,
 					"style": "",
 					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"dreadAbilities": [
+				{
+					"type": "lava_geysers",
+					"phase": 1,
+					"cooldownSeconds": 13.0,
+					"damage": 12.0,
+					"radius": 2.5,
+					"count": 3,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "magma_meteors",
+					"phase": 1,
+					"cooldownSeconds": 20.0,
+					"damage": 10.0,
+					"radius": 3.0,
+					"count": 10,
+					"durationSeconds": 4.0,
+					"amplifier": 1
+				},
+				{
+					"type": "molten_ring",
+					"phase": 1,
+					"cooldownSeconds": 22.0,
+					"damage": 14.0,
+					"radius": 18.0,
+					"count": 3,
+					"durationSeconds": 0.0,
 					"amplifier": 1
 				}
 			],
@@ -1545,6 +1920,38 @@
 					"amplifier": 2
 				}
 			],
+			"dreadAbilities": [
+				{
+					"type": "soul_chains",
+					"phase": 1,
+					"cooldownSeconds": 18.0,
+					"damage": 6.0,
+					"radius": 7.0,
+					"count": 2,
+					"durationSeconds": 6.0,
+					"amplifier": 1
+				},
+				{
+					"type": "wither_aura",
+					"phase": 1,
+					"cooldownSeconds": 22.0,
+					"damage": 4.0,
+					"radius": 6.0,
+					"count": 1,
+					"durationSeconds": 5.0,
+					"amplifier": 1
+				},
+				{
+					"type": "soul_eruption",
+					"phase": 1,
+					"cooldownSeconds": 16.0,
+					"damage": 14.0,
+					"radius": 18.0,
+					"count": 3,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				}
+			],
 			"rewards": {
 				"goldMin": 50,
 				"goldMax": 75,
@@ -1676,6 +2083,38 @@
 					"count": 1,
 					"style": "",
 					"healthBelow": 0.3,
+					"amplifier": 1
+				}
+			],
+			"dreadAbilities": [
+				{
+					"type": "feather_storm",
+					"phase": 1,
+					"cooldownSeconds": 18.0,
+					"damage": 4.0,
+					"radius": 16.0,
+					"count": 5,
+					"durationSeconds": 4.0,
+					"amplifier": 1
+				},
+				{
+					"type": "dive_bomb",
+					"phase": 1,
+					"cooldownSeconds": 14.0,
+					"damage": 12.0,
+					"radius": 4.0,
+					"count": 1,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "poison_rain",
+					"phase": 1,
+					"cooldownSeconds": 20.0,
+					"damage": 5.0,
+					"radius": 2.0,
+					"count": 14,
+					"durationSeconds": 4.0,
 					"amplifier": 1
 				}
 			],
@@ -1859,6 +2298,38 @@
 					"style": "",
 					"healthBelow": 0.3,
 					"amplifier": 2
+				}
+			],
+			"dreadAbilities": [
+				{
+					"type": "pounce_chain",
+					"phase": 1,
+					"cooldownSeconds": 18.0,
+					"damage": 14.0,
+					"radius": 4.0,
+					"count": 3,
+					"durationSeconds": 0.0,
+					"amplifier": 1
+				},
+				{
+					"type": "stunning_roar",
+					"phase": 1,
+					"cooldownSeconds": 20.0,
+					"damage": 6.0,
+					"radius": 12.0,
+					"count": 1,
+					"durationSeconds": 2.0,
+					"amplifier": 1
+				},
+				{
+					"type": "solar_beam",
+					"phase": 1,
+					"cooldownSeconds": 22.0,
+					"damage": 4.0,
+					"radius": 20.0,
+					"count": 1,
+					"durationSeconds": 3.0,
+					"amplifier": 1
 				}
 			],
 			"rewards": {
