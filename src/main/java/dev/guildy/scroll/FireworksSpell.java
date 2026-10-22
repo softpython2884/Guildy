@@ -101,7 +101,8 @@ final class FireworksSpell extends SpellEffect {
 	private int skipped;
 	private boolean watched = true;
 	private ShowPlan.@Nullable Span shown;
-	private int[] from = new int[2];
+	/** Colours of the circles when the act last changed (they shift to the new act's colours in one second). */
+	private int[] from;
 	private int changed;
 
 	FireworksSpell(SpellContext ctx, Stage stage) {

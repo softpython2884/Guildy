@@ -94,12 +94,16 @@ public class ShowGameTests {
 		return level.getEntitiesOfClass(FireworkRocketEntity.class, box, rocket -> rocket.entityTags().contains(TAG));
 	}
 
-	/** A firework rocket that explodes by itself (vanilla lifetime), with a large ball. */
+	/**
+	 * A firework rocket with a large ball that hangs where it is put (shot "at an angle" with no speed: no lift) and explodes
+	 * there by itself at the end of its vanilla lifetime (half a second to a second), hurting what stands within 5 blocks.
+	 */
 	private static FireworkRocketEntity rocket(ServerLevel level, Vec3 at, boolean show) {
 		ItemStack stack = new ItemStack(Items.FIREWORK_ROCKET);
 		stack.set(DataComponents.FIREWORKS, new Fireworks(0, List.of(new FireworkExplosion(FireworkExplosion.Shape.LARGE_BALL,
 				IntList.of(0xFF0000), IntList.of(), false, false))));
-		FireworkRocketEntity rocket = new FireworkRocketEntity(level, at.x, at.y, at.z, stack);
+		FireworkRocketEntity rocket = new FireworkRocketEntity(level, stack, at.x, at.y, at.z, true);
+		rocket.setDeltaMovement(Vec3.ZERO);
 		if (show) {
 			rocket.addTag(TAG);
 		}
