@@ -5,6 +5,9 @@ import dev.guildy.core.Msg;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.gui.GuiUtil;
+import dev.guildy.rune.RuneConfig;
+import dev.guildy.rune.RuneForge;
+import dev.guildy.rune.RuneModule;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -99,6 +102,13 @@ final class CraftJobs {
 		}
 		if (data.anvilsWorn > 0) {
 			lore.add(Lang.get("villager.gui.lore.stat.anvils", data.anvilsWorn));
+		}
+		if (data.runes > 0) {
+			lore.add(Lang.get("villager.gui.lore.stat.runes", data.runes, data.runesToday(today), RuneForge.settings().maxPerDay));
+			RuneConfig.RuneDef last = RuneModule.config().rune(data.lastRune);
+			if (last != null) {
+				lore.add(Lang.get("villager.gui.lore.stat.last_rune", last.tier().color + last.name));
+			}
 		}
 		AlchemistConfig alchemist = VillagerModule.config().alchemist;
 		int scrollsToday = data.scrollsToday(today);

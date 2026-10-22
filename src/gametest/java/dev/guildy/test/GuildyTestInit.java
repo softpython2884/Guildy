@@ -3,6 +3,7 @@ package dev.guildy.test;
 import dev.guildy.data.GuildStorage;
 import dev.guildy.event.EventModule;
 import dev.guildy.ruin.RuinModule;
+import dev.guildy.rune.RuneModule;
 import dev.guildy.trade.TradeModule;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -34,6 +35,8 @@ public class GuildyTestInit implements ModInitializer {
 			RuinModule.config().generic.guards = false;
 			// Many ruin scenarios run at once (fights and rituals): the server-wide cap must never refuse one of them.
 			RuinModule.config().encounter.maxActive = 64;
+			// Blacksmiths never inscribe a rune by chance: RuneGameTests force the chance.
+			RuneModule.config().inscription.chance = 0;
 		});
 	}
 }

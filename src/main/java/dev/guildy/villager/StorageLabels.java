@@ -74,6 +74,9 @@ final class StorageLabels {
 		if (chest.isFree()) {
 			return Component.literal(Lang.raw("villager.storage.label.reserve"));
 		}
+		if (chest.isContent()) {
+			return Component.literal(Lang.raw("villager.storage.label.content"));
+		}
 		if (chest.isFilter()) {
 			return withArgument("villager.storage.label.filter", FilterNames.component(chest.filter));
 		}

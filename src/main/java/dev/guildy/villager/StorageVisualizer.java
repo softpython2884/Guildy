@@ -161,7 +161,7 @@ final class StorageVisualizer {
 			return !chest.isDeposit() && !chest.isFree() && StorageGroups.baseKey(filter.substring(GROUP.length())).equals(StorageGroups.keyOf(chest));
 		}
 		if (filter.equals(FILTERS)) {
-			return chest.isFilter();
+			return chest.isFilter() || chest.isContent();
 		}
 		return !chest.isDeposit() && !chest.isFree() && !chest.isFilter() && Storage.effectiveCategory(chest).equalsIgnoreCase(filter);
 	}
@@ -254,7 +254,7 @@ final class StorageVisualizer {
 		if (chest.isFree()) {
 			return RESERVE_CODE;
 		}
-		if (chest.role == StorageChest.Role.FILTER) {
+		if (chest.role == StorageChest.Role.FILTER || chest.isContent()) {
 			return FILTER_CODE;
 		}
 		int index = Storage.categories().indexOf(Storage.effectiveCategory(chest));

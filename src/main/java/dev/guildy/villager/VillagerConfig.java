@@ -640,7 +640,8 @@ public final class VillagerConfig implements Validatable {
 				"  enchantements') ; \"*\" = categorie transversale : ses regles s'appliquent a tous les objets, quelle que soit",
 				"  leur categorie (ex. 'Equipement enchante' : @enchanted).",
 				"Ou va un objet (le trieur prend le premier coffre qui a de la place, le plus proche d'abord a egalite) :",
-				"  1. coffre filtre qui liste l'objet ; 2. coffre filtre de sa matiere ('diorite') ; 3. coffre filtre de son type",
+				"  1. coffre filtre qui liste l'objet, ou coffre d'une salle filtree qui en contient deja ; 2. coffre filtre de",
+				"  sa matiere ('diorite') ; 3. coffre filtre de son type",
 				"  ('laine') ; 4. coffre d'une categorie transversale qui le prend ; 5. coffre de sa sous-categorie la plus precise,",
 				"  puis de la categorie parente... jusqu'a la categorie principale ; 6. coffre 'Divers' ; 7. il reste au depot.",
 				"  Sans coffre 'Livres enchantes', un livre enchante va donc dans les coffres 'Livres et enchantements', sinon",
@@ -739,6 +740,31 @@ public final class VillagerConfig implements Validatable {
 		public int roomMaxShift = 3;
 		@Comment("Salles des coffres : intervalle (secondes) entre deux verifications de la repartition des categories")
 		public int roomPlanSeconds = 30;
+		@Comment({
+				"Salles filtrees (menu de la salle -> Mode de la salle) : chaque coffre automatique ne recoit que les sortes",
+				"d'objets qu'il contient deja (plusieurs sortes possibles ; un coffre vide ne recoit rien ; ajoutez a la main",
+				"un objet d'une nouvelle sorte pour qu'il l'accepte). Les trieurs n'en sortent jamais rien, n'y laissent jamais",
+				"une sorte disparaitre et ne font que fusionner et ranger les piles a l'interieur de chaque coffre.",
+				"false = on ne peut plus rendre une salle filtree (celles qui le sont deja continuent de fonctionner)"
+		})
+		public boolean filteredRooms = true;
+		@Comment({
+				"Salles filtrees : quand deux potions (ou fleches a effet) sont de la meme sorte : 'type' = meme effet,",
+				"versions longue et renforcee comprises (potion de soin et potion de soin II) ; 'exact' = meme variante ;",
+				"'item' = toutes les potions de cet objet ensemble. Les autres objets : meme objet (nom, usure et",
+				"enchantements ignores)"
+		})
+		public String filteredRoomPotions = "type";
+		@Comment({
+				"Salles filtrees : livres enchantes : 'item' = tous les livres enchantes ensemble ; 'enchantments' = memes",
+				"enchantements (niveaux ignores : un coffre de livres Solidite accepte Solidite I a III)"
+		})
+		public String filteredRoomBooks = "item";
+		@Comment({
+				"Salles filtrees : coffres relus par tick pour voir ce que les joueurs y ajoutent ou retirent a la main",
+				"(ils sont aussi relus avant chaque depot) (1 a 1024)"
+		})
+		public int filteredRoomReadsPerTick = 32;
 	}
 
 	@Json5.Section
@@ -1173,6 +1199,11 @@ public final class VillagerConfig implements Validatable {
 		storage.roomIdleMinutes = clamp(storage.roomIdleMinutes, 1, 10080);
 		storage.roomMaxShift = clamp(storage.roomMaxShift, 0, 20);
 		storage.roomPlanSeconds = clamp(storage.roomPlanSeconds, 5, 600);
+		ContentKeys.PotionMatch potions = ContentKeys.PotionMatch.parse(storage.filteredRoomPotions);
+		storage.filteredRoomPotions = (potions == null ? ContentKeys.Rules.DEFAULT.potions() : potions).id();
+		ContentKeys.BookMatch books = ContentKeys.BookMatch.parse(storage.filteredRoomBooks);
+		storage.filteredRoomBooks = (books == null ? ContentKeys.Rules.DEFAULT.books() : books).id();
+		storage.filteredRoomReadsPerTick = clamp(storage.filteredRoomReadsPerTick, 1, 1024);
 		defeatLeaveChance = clamp(defeatLeaveChance, 0.0, 1.0);
 		names = names == null ? new ArrayList<>() : new ArrayList<>(names);
 		names.removeIf(name -> name == null || name.isBlank());

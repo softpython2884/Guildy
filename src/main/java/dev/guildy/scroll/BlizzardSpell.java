@@ -93,7 +93,8 @@ final class BlizzardSpell extends SpellEffect {
 			if (target.canFreeze()) {
 				target.setTicksFrozen(Math.max(target.getTicksFrozen(), target.getTicksRequiredToFreeze() + PULSE * 2));
 			}
-			SpellTargets.hurt(ctx, target, SpellTargets.Element.FROST, damage);
+			// A pulse of a continuous spell: a fraction of a hit for the diminishing returns.
+			SpellTargets.hurt(ctx, target, SpellTargets.Element.FROST, damage, CastDamage.continuous(PULSE));
 			fx.burst(ParticleTypes.SNOWFLAKE, target.getX(), target.getY(0.5), target.getZ(), 10, 0.3, 0.5, 0.3, 0.03);
 			fx.burst(ParticleTypes.ITEM_SNOWBALL, target.getX(), target.getY(0.6), target.getZ(), 4, 0.2, 0.3, 0.2, 0.05);
 		}

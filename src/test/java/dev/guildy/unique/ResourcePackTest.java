@@ -342,6 +342,25 @@ class ResourcePackTest {
 	}
 
 	@Test
+	void setPiecesShipped() throws Exception {
+		Path root = assets().getParent().getParent();
+		for (String id : UniqueConfig.SET_UNIQUES) {
+			assertEquals("guildy:item/" + id, json(assets().resolve("items/" + id + ".json")).getAsJsonObject("model").get("model").getAsString(),
+					id + ": item definition");
+			assertEquals("minecraft:item/generated", json(assets().resolve("models/item/" + id + ".json")).get("parent").getAsString());
+			assertTrue(Files.isRegularFile(assets().resolve("textures/item/" + id + ".png.mcmeta")), id + ": animated icon");
+			String slot = UniqueEquipment.ASSETS.get(id);
+			assertNotNull(slot, id + ": worn look");
+			assertTrue(Files.isRegularFile(root.resolve(UniqueEquipment.texturePath(id, slot))), id + ": worn texture");
+		}
+		// The leggings are drawn on the inner layer.
+		for (String id : List.of("jambieres_hiver_eternel", "jambieres_guerrier_jaguar", "greves_brasier_des_ames")) {
+			JsonObject layers = json(root.resolve(UniqueEquipment.definitionPath(id))).getAsJsonObject("layers");
+			assertTrue(layers.has("humanoid_leggings") && !layers.has("humanoid"), id + ": humanoid_leggings layer only");
+		}
+	}
+
+	@Test
 	void uniqueArmorsHaveTheirWornLook() throws Exception {
 		Path root = assets().getParent().getParent();
 		Set<String> definitions = new TreeSet<>();

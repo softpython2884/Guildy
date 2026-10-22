@@ -23,6 +23,7 @@ import dev.guildy.level.LevelLang;
 import dev.guildy.quest.QuestModule;
 import dev.guildy.scroll.ScrollModule;
 import dev.guildy.ruin.RuinModule;
+import dev.guildy.rune.RuneModule;
 import dev.guildy.shop.ShopModule;
 import dev.guildy.structure.StructureModule;
 import dev.guildy.trade.TradeModule;
@@ -71,6 +72,7 @@ public final class Guildy implements ModInitializer {
 		UniqueModule.init(); // unique weapons: implements the core UniqueDrops hook
 		ScrollModule.init(); // spell scrolls: implements the core ScrollDrops hook
 		AlchemyModule.init(); // potions and elixirs of the alchemists: implements the core MagicBoost hook
+		RuneModule.init(); // runes inscribed by the blacksmiths on the armor of the armor stands, removed at the grindstone
 		RuinModule.init(); // ruins guarded by bosses + cartographer (uses the structure and villager modules)
 
 		List<String> errors = ConfigManager.loadAll();

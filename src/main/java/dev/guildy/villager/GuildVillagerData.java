@@ -49,6 +49,8 @@ public class GuildVillagerData {
 	transient @Nullable StorageIndex storageIndex;
 	/** Bumped when a registered container changes role, category, filter, room or position ({@link Storage#changed}). */
 	transient int storageVersion;
+	/** What the chests of the filtered rooms hold (not saved), see {@link RoomContents}. */
+	transient @Nullable ContentIndex contentIndex;
 
 	/** The chest list, counting its modifications. */
 	public static final class ChestList extends ArrayList<StorageChest> {
@@ -78,6 +80,20 @@ public class GuildVillagerData {
 	/** A registered container changed (role, category, filter, room, position): the storage index is rebuilt. */
 	public void storageChanged() {
 		storageVersion++;
+	}
+
+	/**
+	 * Contents of the filtered-room chests (runtime only, created at the first use; forgotten when the identity rules of
+	 * villagers.json5 change, the chests are then read again).
+	 */
+	ContentIndex contents() {
+		ContentIndex index = contentIndex;
+		if (index == null) {
+			index = new ContentIndex();
+			contentIndex = index;
+		}
+		index.useRules(RoomContents.rules());
+		return index;
 	}
 
 	/** A fanion block to remove later; only removed if the banner there still carries {@link #name}. */
@@ -208,12 +224,28 @@ public class GuildVillagerData {
 			}
 			room.sanitize();
 		}
-		// Room gone (edited data): its free chests leave the storage, the others stay as manual chests of their category.
-		chests.removeIf(chest -> chest.room > 0 && room(chest.room) == null && chest.isFree());
+		// Room gone (edited data): its free and filtered chests leave the storage, the others stay as manual chests of their
+		// category.
+		chests.removeIf(chest -> chest.room > 0 && room(chest.room) == null && (chest.isFree() || chest.isContent()));
 		for (StorageChest chest : chests) {
 			if (chest.room > 0 && room(chest.room) == null) {
 				chest.room = 0;
 				chest.auto = false;
+			}
+		}
+		// The automatic chests follow the mode of their room: filtered by their contents, or planned categories.
+		chests.removeIf(chest -> chest.isContent() && room(chest.room) == null);
+		for (StorageChest chest : chests) {
+			ChestRoom room = room(chest.room);
+			if (room == null || !chest.auto) {
+				continue;
+			}
+			if (room.filtered() && !chest.isContent()) {
+				chest.role = StorageChest.Role.CONTENT;
+				chest.category = "";
+			} else if (!room.filtered() && chest.isContent()) {
+				chest.role = StorageChest.Role.CATEGORY;
+				chest.category = "";
 			}
 		}
 		if (storageOrder == null) {

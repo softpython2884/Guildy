@@ -2,6 +2,9 @@ package dev.guildy.scroll;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -9,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Ralliement: who is called, and the acceptance window of [Rejoindre] (nobody moves without clicking it in time).
+ * Ralliement: who is called (every online member anywhere by default), why nobody is (with the numbers), and the acceptance
+ * window of [Rejoindre] (nobody moves without clicking it in time).
  */
 class RallyRulesTest {
 	private static final long NOW = 1000;
@@ -31,6 +35,60 @@ class RallyRulesTest {
 		assertTrue(RallyRules.called(false, true, true, true, RallyRules.NEAR + 0.1, 512, false));
 		assertFalse(RallyRules.called(false, true, true, false, 0, 512, false), "another dimension");
 		assertTrue(RallyRules.called(false, true, true, false, 0, 512, true), "another dimension when the call crosses them");
+	}
+
+	@Test
+	void theDefaultsCallEveryOnlineMemberAnywhere() {
+		double range = Spell.RALLY.param("range").defaultValue();
+		boolean cross = Spell.RALLY.param("crossDimension").defaultValue() > 0;
+		assertEquals(0.0, range, "range 0 = every distance");
+		assertTrue(cross, "the other dimensions too");
+		assertTrue(RallyRules.unlimited(range));
+		assertFalse(RallyRules.unlimited(512));
+		// The member 2000 blocks away and the one in the Nether: both called (they were not with 512 / same dimension).
+		assertEquals(RallyRules.Reason.CALLED, RallyRules.reason(false, true, true, true, 2000, range, cross));
+		assertEquals(RallyRules.Reason.CALLED, RallyRules.reason(false, true, true, false, Double.MAX_VALUE, range, cross));
+		assertEquals(RallyRules.Reason.FAR, RallyRules.reason(false, true, true, true, 2000, 512, false), "the old defaults: too far");
+		assertEquals(RallyRules.Reason.OTHER_DIMENSION, RallyRules.reason(false, true, true, false, 0, 512, false), "the old defaults: Nether");
+		// Never the caster, nobody offline, asleep or already here.
+		assertEquals(RallyRules.Reason.CASTER, RallyRules.reason(true, true, true, true, 0, range, cross));
+		assertEquals(RallyRules.Reason.OFFLINE, RallyRules.reason(false, false, false, false, 0, range, cross));
+		assertEquals(RallyRules.Reason.UNAVAILABLE, RallyRules.reason(false, true, false, false, 0, range, cross), "asleep in the Nether");
+		assertEquals(RallyRules.Reason.NEAR, RallyRules.reason(false, true, true, true, 3, range, cross));
+		assertEquals(RallyRules.Reason.NEAR, RallyRules.reason(false, true, true, true, RallyRules.NEAR, range, cross));
+		assertEquals(RallyRules.Reason.CALLED, RallyRules.reason(false, true, true, true, RallyRules.NEAR + 0.01, range, cross));
+	}
+
+	@Test
+	void nobodyCalledSaysWhy() {
+		// Someone called: no refusal.
+		assertNull(RallyRules.refusal(RallyRules.census(List.of(RallyRules.Reason.CASTER, RallyRules.Reason.CALLED, RallyRules.Reason.NEAR)), 0));
+		// Alone online (the others offline, or nobody else in the guild).
+		assertEquals("scroll.fail.rally.alone", RallyRules.refusal(RallyRules.census(List.of(RallyRules.Reason.CASTER)), 0).key());
+		assertEquals("scroll.fail.rally.alone",
+				RallyRules.refusal(RallyRules.census(List.of(RallyRules.Reason.CASTER, RallyRules.Reason.OFFLINE, RallyRules.Reason.OFFLINE)), 0).key());
+		// One reason for everyone: its own message with the number of members.
+		RallyRules.Refusal near = RallyRules.refusal(RallyRules.census(List.of(RallyRules.Reason.CASTER, RallyRules.Reason.NEAR,
+				RallyRules.Reason.NEAR, RallyRules.Reason.OFFLINE)), 0);
+		assertEquals("scroll.fail.rally.near", near.key());
+		assertEquals(List.of(2, 8), near.args(), "2 members within 8 blocks");
+		assertEquals("scroll.fail.rally.unavailable",
+				RallyRules.refusal(RallyRules.census(List.of(RallyRules.Reason.UNAVAILABLE)), 0).key());
+		RallyRules.Refusal far = RallyRules.refusal(RallyRules.census(List.of(RallyRules.Reason.FAR, RallyRules.Reason.FAR, RallyRules.Reason.FAR)), 300);
+		assertEquals("scroll.fail.rally.far", far.key());
+		assertEquals(List.of(3, 300), far.args(), "3 members beyond the admin's 300 blocks");
+		assertEquals("scroll.fail.rally.dimension", RallyRules.refusal(RallyRules.census(List.of(RallyRules.Reason.OTHER_DIMENSION)), 0).key());
+		// Several reasons: every one with its number.
+		Map<RallyRules.Reason, Integer> mixed = RallyRules.census(List.of(RallyRules.Reason.NEAR, RallyRules.Reason.UNAVAILABLE,
+				RallyRules.Reason.UNAVAILABLE, RallyRules.Reason.OFFLINE));
+		assertEquals("scroll.fail.rally.mixed", RallyRules.refusal(mixed, 0).key());
+		List<RallyRules.Refusal> parts = RallyRules.parts(mixed, 0);
+		assertEquals(2, parts.size());
+		assertEquals("scroll.rally.reason.near", parts.get(0).key());
+		assertEquals(List.of(1, 8), parts.get(0).args());
+		assertEquals("scroll.rally.reason.unavailable", parts.get(1).key());
+		assertEquals(List.of(2), parts.get(1).args());
+		assertEquals(0, RallyRules.census(List.of()).get(RallyRules.Reason.CALLED));
 	}
 
 	@Test

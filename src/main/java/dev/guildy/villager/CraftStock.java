@@ -68,13 +68,14 @@ final class CraftStock {
 		return Storage.gives(chest, stack);
 	}
 
-	/** Plain items of that kind the chest may give. */
+	/** Plain items of that kind the chest may give (a filtered-room chest keeps one of each kind: {@link Storage.Spare}). */
 	static int available(Container container, StorageChest chest, Item item) {
+		Storage.Spare spare = Storage.Spare.of(chest, container);
 		int count = 0;
 		for (int i = 0; i < container.getContainerSize(); i++) {
 			ItemStack stack = container.getItem(i);
 			if (plain(stack, item) && gives(chest, stack)) {
-				count += stack.getCount();
+				count += spare.take(stack, stack.getCount());
 			}
 		}
 		return count;
@@ -132,12 +133,16 @@ final class CraftStock {
 			return 0;
 		}
 		int left = amount;
+		Storage.Spare spare = Storage.Spare.of(chest, container);
 		for (int i = 0; i < container.getContainerSize() && left > 0; i++) {
 			ItemStack stack = container.getItem(i);
 			if (!plain(stack, item) || !gives(chest, stack)) {
 				continue;
 			}
-			left -= container.removeItem(i, Math.min(left, stack.getCount())).getCount();
+			int take = spare.take(stack, Math.min(left, stack.getCount()));
+			if (take > 0) {
+				left -= container.removeItem(i, take).getCount();
+			}
 		}
 		int moved = amount - left;
 		container.setChanged();
@@ -159,13 +164,14 @@ final class CraftStock {
 		return count;
 	}
 
-	/** Items of that kind the chest may give. */
+	/** Items of that kind the chest may give (a filtered-room chest keeps one of each kind: {@link Storage.Spare}). */
 	static int available(Container container, StorageChest chest, Predicate<ItemStack> match) {
+		Storage.Spare spare = Storage.Spare.of(chest, container);
 		int count = 0;
 		for (int i = 0; i < container.getContainerSize(); i++) {
 			ItemStack stack = container.getItem(i);
 			if (!stack.isEmpty() && match.test(stack) && gives(chest, stack)) {
-				count += stack.getCount();
+				count += spare.take(stack, stack.getCount());
 			}
 		}
 		return count;
@@ -206,12 +212,13 @@ final class CraftStock {
 		}
 		int left = wanted;
 		int moved = 0;
+		Storage.Spare spare = Storage.Spare.of(chest, container);
 		for (int i = 0; i < container.getContainerSize() && left > 0; i++) {
 			ItemStack stack = container.getItem(i);
 			if (stack.isEmpty() || !match.test(stack) || !gives(chest, stack)) {
 				continue;
 			}
-			int take = Math.min(Math.min(left, stack.getCount()), roomFor(ctx, stack));
+			int take = spare.take(stack, Math.min(Math.min(left, stack.getCount()), roomFor(ctx, stack)));
 			if (take <= 0) {
 				continue;
 			}

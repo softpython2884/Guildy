@@ -83,11 +83,15 @@ alchemy/      AlchemyModule, AlchemyConfig (alchemy.json5), BrewBook (pur : éta
               ElixirDrinks, MagicBoosts + MagicBoostRules (pur) → core/MagicBoost (bonus des sorts), AlchemyCommands
 fly/          FlyModule, GuildFly (vol de guilde), FlyRules (pur, testé), FlyLang ; core/FlightOwnership (pur) +
               FlightGrants : propriété partagée de `mayfly` (vol de guilde, double saut)
+rune/         RuneModule, RuneConfig (runes.json5), RuneRules (pur, testé), RuneItems (gravure/retrait), RuneForge,
+              RunePowers + RuneMythics, RuneFx, RuneGrinding + rune/mixin (meule, table de forgeron), RuneCommands ;
+              villager/BlacksmithRunes
 level/        LevelCurve, LevelScaling, LevelRewardRules (purs, testés), LevelUps (montées de niveau, récompenses,
               annonces), LevelLang
 unique/       UniqueItems (fabrique), UniqueRolls (tables de butin), UniquePowers + Combat/Lightning/MiningPowers,
               DoubleJump, UniqueTracker (annonces), UniqueVisuals + PolymerBridge (modèles), UniqueConfig ; armes des
-              ruines : Leaps, JaguarPowers, SolarPowers, DefensePowers, CursePowers, InfernalPowers, UniqueFx
+              ruines : Leaps, JaguarPowers, SolarPowers, DefensePowers, CursePowers, InfernalPowers, UniqueFx ;
+              panoplies : UniqueSets (pur), SetBonuses, SetPowers, SetPower ; protection minimale : ArmorFloor (pur)
 scroll/       ScrollModule (implémente ScrollDrops), ScrollConfig, objets (custom_data kind `scroll`), sorts animés,
               EffectRunner (effets par tick, budget de particules), TargetRules (pur), scroll/mixin (fin d'incantation)
 ruin/         RuinModule, RuinIndex + RuinStore (ruins.json), MarkerCapture + ruin/mixin (marqueurs DATA à la génération),
@@ -547,6 +551,43 @@ schématiques) : `tools/ruins/`.
     et `item/shield_blocking` (`condition using_item`), texture 32×32 animée ; GUI = icône 2D. Textures dans
     `tools/gen_textures.py` (`WORN_ARMORS`), aperçu `tools/previews/armor_worn.png` ; `resourcePackZip` vérifie que le zip
     contient tous les assets.
+
+68. **Panoplies** (uniques.json5 format 5 ; `UniqueSets` pur et testé, `SetBonuses`, `SetPowers`) : 3 panoplies de 4
+    pièces (12 uniques, 33 en tout) liées par `UniqueDef.set`, section `sets` (paliers cumulés {pieces, name, attributes,
+    power}) ; ajoutées une fois (`addSetUniques` : définitions, panoplies, `legendary_quest`, favoris des gardiens).
+    `UniqueSets` : pièces différentes comptées par panoplie, modificateurs à id stable `guildy:set_<panoplie>_<pièces>_<n>`.
+    `SetBonuses` : emplacements d'armure relus sur `ServerEntityEvents.EQUIPMENT_CHANGE` (fin de tick), à la connexion, à la
+    réapparition, au rechargement et toutes les 10 ticks ; modificateurs **transitoires** ; lore réécrite (✔ des pièces
+    portées). Pouvoirs (monstres seulement, recharge via le groupe `use_cooldown` `guildy:set/<panoplie>`) : `winter_heart`
+    (nova `guildy:givre` sous le seuil), `jaguar_ambush` (camouflage + perte de trace sauf boss, embuscade), `soul_pyre`
+    (aura de drain, traînée de feu d'âme). Couche `humanoid_leggings` pour les jambières. **Protection minimale**
+    (`ArmorFloor` pur, `armorFloor` netherite / none) : une unique portée dans un emplacement d'armure atteint au moins la
+    pièce netherite (3/8/6/3, robustesse 3, recul 0,1) via des modificateurs `guildy:unique_floor_<emplacement>_*`
+    (`UniqueItems.syncArmorFloor`, dans `syncVisuals` : création et scan d'inventaire).
+69. **Runes du forgeron** (`rune/`, `runes.json5`, `villager/BlacksmithRunes`) : occasion = pièce d'armure réparée jusqu'au
+    bout ou **examen** (porte-armure dont une pièce peut recevoir une rune, au plus une fois par `inspectionMinutes`) ;
+    chance, plafond par forgeron et par jour, niveau de guilde, matériau pris au stockage. `RuneRules` (pur) : rang tiré
+    parmi ceux qui ont une rune pour la pièce (mythiques : `mythicItems` + emplacement plastron), puis la rune par poids.
+    Objet : `custom_data` kind `rune` + id, modificateurs `guildy:rune_<id>_<slot>[_n]`, lignes de lore marquées ;
+    `RuneItems.strip` les retire exactement. Meule : HEAD de `GrindstoneMenu.computeResult` (pièce seule gravée → copie sans
+    rune, enchantements gardés, pas d'XP), RETURN (fusion → jamais de rune) ; `SmithingTransformRecipe.assemble` RETURN :
+    modificateurs recalculés. Pouvoirs (`RunePowers`, joueurs seulement) : AFTER_DAMAGE (étincelles, braise, lueur), cache
+    des runes portées (rebond, renard, écho, Dragon) ; Phénix sur ALLOW_DEATH (avant le totem, jamais
+    `BYPASSES_INVULNERABILITY`, recharge sur le plastron) ; Dragon = composant `glider` + souffle sur saut + accroupi.
+70. **Ralliement pour toute la guilde, limites par sort** (scrolls.json5 format 5) : `RallyRules.reason` (pur) classe chaque
+    membre (lanceur, hors ligne, indisponible, autre dimension, déjà à 8 blocs, trop loin) ; défauts `range` 0 = illimitée
+    et `crossDimension` 1 (migrés s'ils valaient encore 512 / 0) ; refus détaillé avec les nombres ; arrivée par
+    `teleportTo` vers la dimension du ralliement. Dégâts : `CastDamage` (pur, un par `SpellContext`) traversé par
+    `SpellTargets.hurt` (seul chemin des dégâts de sort) : coup n° k × `repeatHitDecay`^k (plancher `repeatHitFloor`), un
+    tic de sort continu pèse 1 coup / 5 s ; boss (`SpellTargets.isBoss`) plafonné à `bossCastCap` × vie max par sort
+    (`cursedGrimoire.bossCastCap` pour le grimoire maudit) ; météores visés sur ce que le sort peut encore retirer.
+71. **Salles filtrées** (`ChestRoom.mode` FILTERED ; rôle `StorageChest.Role.CONTENT`) : un coffre ne reçoit que les sortes
+    d'objets qu'il contient déjà, rien s'il est vide. Sorte = `ContentKeys` (pur : id, composants ignorés ; potions = id +
+    potion, `filteredRoomPotions` ; livres enchantés ensemble ou par enchantements, `filteredRoomBooks`). `ContentIndex`
+    (pur, par guilde, jamais sauvegardé) tenu à jour par `RoomContents` (`filteredRoomReadsPerTick` coffres relus par tick,
+    relecture avant chaque dépôt, salle entière à la conversion). `StorageRouting` : `CONTENT_TIER` = 0 (palier de la liste
+    exacte). `Tidier` : groupe `room:content`, rien à sortir, chaque coffre rangé avec ses seuls objets. `Storage.Spare` :
+    forge, alchimie, plantations et gardes laissent le dernier objet de chaque sorte. `ChestRooms.setFiltered` (menu Mode).
 
 ## Notes API Minecraft 26.3
 

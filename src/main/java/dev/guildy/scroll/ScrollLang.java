@@ -77,8 +77,19 @@ final class ScrollLang {
 				+ "{stunSeconds} s, un allié de la guilde est protégé\n{shieldSeconds} s (Résistance II). Jamais dans un mur,\n"
 				+ "dans la lave ou au-dessus du vide.");
 		m.put("scroll.spell.rally.name", "Ralliement");
-		m.put("scroll.spell.rally.lore", "Après une longue incantation, sonne le\nralliement : les membres de la guilde à {range}\n"
-				+ "blocs reçoivent [Rejoindre] pendant {acceptSeconds} s ;\nles {maxAllies} premiers qui cliquent vous rejoignent.");
+		// Guildy 1.13: every member, any distance, any dimension by default (one text per setting, see Spell.loreKey).
+		m.put("scroll.spell.rally.lore.everywhere", "Après une longue incantation, sonne le\nralliement : tous les membres de la guilde\n"
+				+ "en ligne, où qu'ils soient (autres dimensions\ncomprises), reçoivent [Rejoindre] pendant\n"
+				+ "{acceptSeconds} s ; les {maxAllies} premiers qui cliquent\nvous rejoignent.");
+		m.put("scroll.spell.rally.lore.dimension", "Après une longue incantation, sonne le\nralliement : tous les membres de la guilde\n"
+				+ "en ligne dans votre dimension reçoivent\n[Rejoindre] pendant {acceptSeconds} s ; les {maxAllies} premiers\n"
+				+ "qui cliquent vous rejoignent.");
+		m.put("scroll.spell.rally.lore.range_cross", "Après une longue incantation, sonne le\nralliement : les membres de la guilde à {range}\n"
+				+ "blocs (et ceux des autres dimensions)\nreçoivent [Rejoindre] pendant {acceptSeconds} s ; les\n"
+				+ "{maxAllies} premiers qui cliquent vous rejoignent.");
+		m.put("scroll.spell.rally.lore.range", "Après une longue incantation, sonne le\nralliement : les membres de la guilde à {range}\n"
+				+ "blocs dans votre dimension reçoivent\n[Rejoindre] pendant {acceptSeconds} s ; les {maxAllies} premiers\n"
+				+ "qui cliquent vous rejoignent.");
 		m.put("scroll.spell.spectral_chains.name", "Chaînes spectrales");
 		m.put("scroll.spell.spectral_chains.lore", "Des chaînes jaillissent du sol et enchaînent\nle monstre visé et ses voisins ({count} au plus,\n"
 				+ "{radius} blocs) pendant {duration} s (boss : {bossShare}\ndu temps), puis se brisent ({damage} ❤).");
@@ -104,7 +115,19 @@ final class ScrollLang {
 		m.put("scroll.fail.swap_blocked", "&cPas assez de place à l'arrivée : la permutation est annulée.");
 		m.put("scroll.fail.swap_hazard", "&cDestination dangereuse (lave, feu, cactus...) : la permutation est annulée.");
 		m.put("scroll.fail.swap_fall", "&cLe vide sous la cible : la permutation est annulée.");
-		m.put("scroll.fail.no_members", "&7Aucun membre de la guilde à appeler : le parchemin est intact.");
+		// Nobody to call: why, with the number of members concerned (RallyRules.refusal).
+		m.put("scroll.fail.rally.alone", "&7Aucun autre membre de la guilde n'est en ligne : le parchemin est intact.");
+		m.put("scroll.fail.rally.near", "&7Les membres en ligne ({0}) sont déjà à moins de {1} blocs de vous : le parchemin est intact.");
+		m.put("scroll.fail.rally.unavailable", "&7Les membres en ligne ({0}) dorment, sont morts ou spectateurs : le parchemin est intact.");
+		m.put("scroll.fail.rally.far", "&7Les membres en ligne ({0}) sont à plus de {1} blocs, la portée du ralliement : le parchemin est intact.");
+		m.put("scroll.fail.rally.dimension", "&7Les membres en ligne ({0}) sont dans une autre dimension et le ralliement ne la traverse pas : "
+				+ "le parchemin est intact.");
+		m.put("scroll.fail.rally.mixed", "&7Aucun membre à appeler ({0}) : le parchemin est intact.");
+		m.put("scroll.rally.reason.near", "{0} déjà à moins de {1} blocs de vous");
+		m.put("scroll.rally.reason.unavailable", "{0} endormi(s), mort(s) ou spectateur(s)");
+		m.put("scroll.rally.reason.far", "{0} à plus de {1} blocs");
+		m.put("scroll.rally.reason.dimension", "{0} dans une autre dimension");
+		m.put("scroll.rally.reason.separator", ", ");
 		m.put("scroll.fail.rally_unsafe", "&cImpossible de sonner le ralliement ici (vide, lave ou feu sous vos pieds).");
 		m.put("scroll.recall.pulled", "&b{0}&3 vous ramène à la guilde !");
 		m.put("scroll.swap.swapped", "&d{0}&5 a échangé sa place avec vous !");
@@ -125,6 +148,7 @@ final class ScrollLang {
 		m.put("scroll.rally.fail.dimension", "&cVous n'êtes plus dans la dimension du ralliement.");
 		m.put("scroll.rally.fail.unavailable", "&cImpossible de rejoindre le ralliement maintenant.");
 		m.put("scroll.rally.fail.unsafe", "&cLe point de ralliement n'est plus sûr : impossible de vous y téléporter.");
+		m.put("scroll.rally.fail.teleport", "&cLe voyage jusqu'au ralliement a échoué : cliquez à nouveau sur [Rejoindre].");
 		m.put("scroll.revelation.count", "&b{0} &3monstre(s) révélé(s).");
 		m.put("scroll.guardian.name", "&7Gardien de {0}");
 		// rewards

@@ -8,7 +8,7 @@ one palette per sprite: 1-pixel hue-shifted outlines, light from the top-left, 3
 frame-by-frame animation layers; the spell scrolls are drawn from simple shapes (rolled parchment + rune). The script
 writes, under src/main/resources/assets/guildy/:
   textures/item/<name>.png (+ .png.mcmeta when animated), models/item/<name>.json, items/<name>.json,
-  equipment/<name>.json + textures/entity/equipment/humanoid/<name>.png (worn look of the unique armors)
+  equipment/<name>.json + textures/entity/equipment/humanoid[_leggings]/<name>.png (worn look of the unique armors)
 and tools/resourcepack/pack.png (pack icon); stale files of those generated folders are removed. No Minecraft texture
 is used or copied: models only reference vanilla *parent models* (item/handheld, item/bow, item/crossbow...) for their
 in-hand transforms (the 3D shield copies the display numbers of the vanilla shield models) and the equipment assets
@@ -174,7 +174,8 @@ def still(rows, palette):
 WRITTEN = set()
 GENERATED_DIRS = [os.path.join(ASSETS, "textures", "item"), os.path.join(ASSETS, "models", "item"),
 				  os.path.join(ASSETS, "items"), os.path.join(ASSETS, "equipment"),
-				  os.path.join(ASSETS, "textures", "entity", "equipment", "humanoid")]
+				  os.path.join(ASSETS, "textures", "entity", "equipment", "humanoid"),
+				  os.path.join(ASSETS, "textures", "entity", "equipment", "humanoid_leggings")]
 
 
 def write_sprite(name, sprite):
@@ -1592,6 +1593,398 @@ def ruin_unique_preview(path):
 	img.save(path)
 
 
+# ---------------------------------------------------------------------------------------------------------- armor sets
+# The three armor sets of the ruins (uniques.json5 format 5), four pieces each: inventory icons drawn like the vanilla
+# armor icons (helmet, chestplate, leggings, boots silhouettes) and their worn layers (see the worn armor section).
+
+FROST_PALETTE = {"O": "#0b2238", "W": "#ffffff", "L": "#dbe8f4", "M": "#9fb9d4", "D": "#6482a8", "N": "#3f5b85",
+				 "B": "#3a7ccc", "b": "#1f4a8a", "I": "#c8f6ff", "C": "#5ad0f2", "c": "#2a8ccc", "K": "#0b1e34", "E": "#8ff4ff"}
+
+
+def frost_frames(rows, gems, frames=10, frametime=2):
+	"""Frost steel: a cold glint sweeps over the steel (W, L, M cells), the frost gems (cells drawn 'E') breathe."""
+	base = paint(rows, FROST_PALETTE)
+	steel = cells(rows, "WLM")
+	out = []
+	pulse = ["#8ff4ff", "#c8fbff", "#ffffff", "#c8fbff", "#8ff4ff", "#5ad8f8", "#3ab8ec", "#5ad8f8"]
+	for f in range(frames):
+		g = copy(base)
+		shine(g, steel, -14 + f * 4, (0.6, 0.25), "#ffffff")
+		put(g, cells(rows, gems), pulse[f % len(pulse)])
+		out.append(g)
+	return Sprite(out, anim(frametime))
+
+
+def heaume_hiver_eternel():
+	"""
+	Great helm of the eternal winter: frosted steel lit from the top-left, a crest of three ice spikes on a sapphire band,
+	a T visor whose eyes glow with frost, a sapphire rim. A cold glint crosses the steel, the eyes breathe.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		".......WI.......",
+		"...W...IC...C...",
+		"...IC..IC..IC...",
+		"..bBCBBICBBCBb..",
+		"..LWLLLLLLLLMD..",
+		"..LKEEKKKKEEKD..",
+		"..LWLLMKKMLLMD..",
+		"..LLLMMKKMMMDN..",
+		"..LLMMDKKDMDDN..",
+		"..bBBBbKKbBBbb..",
+		"...c........c...",
+		"................",
+		"................",
+		"................",
+	])
+	return frost_frames(rows, "E")
+
+
+def cuirasse_hiver_eternel():
+	"""
+	Cuirass of the eternal winter: frosted steel plates under sapphire-trimmed pauldrons crowned with ice spikes, a frost
+	crystal set in the chest, a sapphire belt. The glint crosses the plates, the crystal breathes.
+	"""
+	rows = outlined([
+		"................",
+		".C............C.",
+		".IC..........CI.",
+		".BBBb......bBBb.",
+		".LWLLB....BLMMD.",
+		".LWLLLBBBBLLMMD.",
+		".DLWLLcIIcLLMDN.",
+		"...LWcIEEIcLM...",
+		"...LLLcIIcLMM...",
+		"...LLMMMMMMMD...",
+		"...LWLLLLLMMD...",
+		"...bBBBBBBBBb...",
+		"...LMMMMMMDDN...",
+		"................",
+		"................",
+		"................",
+	])
+	return frost_frames(rows, "E")
+
+
+def jambieres_hiver_eternel():
+	"""
+	Leggings of the eternal winter: a sapphire belt set with a frost gem, frosted plates, sapphire knee guards set with ice
+	crystals, dark steel at the ankles. The glint runs down the plates, the gem and the crystals breathe.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		"...bBBBEEBBBb...",
+		"...LWLLLLLLMD...",
+		"...LWLLLLLMMD...",
+		"...LWLD..LLMD...",
+		"...LLMD..LLMD...",
+		"...BEBb..BEBb...",
+		"...LLMD..LLMD...",
+		"...LLMD..LMMD...",
+		"...LMMD..LMDD...",
+		"...NNDN..NDDN...",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return frost_frames(rows, "E")
+
+
+def solerets_hiver_eternel():
+	"""
+	Sabatons of the eternal winter: rime-white cuffs, frosted steel, a sapphire strap, a frost gem on the instep, an ice spur
+	at the heel, dark steel soles. The glint runs over the steel, the gems breathe.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		"................",
+		"..IIIc....IIIc..",
+		"...LMD....LMD...",
+		"...LMD....LMD...",
+		"...BBb....BBb...",
+		"...LMDC...LMDC..",
+		"..LLMD....LMMD..",
+		"..LEMD....LEMD..",
+		".LLMMD....LMMMD.",
+		".bbbbb....bbbbb.",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return frost_frames(rows, "E")
+
+
+JAGUAR_SET_PALETTE = {"O": "#2a1406", "P": "#d98a34", "p": "#a8611f", "q": "#6e3c12", "S": "#2e1a0a", "G": "#ffe066",
+					  "g": "#e8b020", "h": "#a86a14", "Y": "#fff8c8", "J": "#4fd090", "j": "#1f8a5a", "W": "#fff6e0", "w": "#d8c8a8",
+					  "K": "#1a0c04", "R": "#ff5a3a", "r": "#a82418", "F": "#3ccf78", "f": "#1c7a44", "l": "#6a3a1a", "L": "#9a5a30",
+					  "k": "#45230e", "e": "#d8f060"}
+
+
+def jaguar_frames(rows, frames=10, frametime=2):
+	"""Gold and jade: a sun glint runs over the gold (G, g, Y cells), the jade beads (J) sparkle one after the other."""
+	base = paint(rows, JAGUAR_SET_PALETTE)
+	gold = cells(rows, "GgY")
+	beads = sorted(cells(rows, "J"))
+	out = []
+	for f in range(frames):
+		g = copy(base)
+		shine(g, gold, -12 + f * 3, (0.7, 0.3), "#ffffff")
+		if beads:
+			put(g, [beads[f % len(beads)]], "#c8ffe4")
+		out.append(g)
+	return Sprite(out, anim(frametime))
+
+
+def masque_guerrier_jaguar():
+	"""
+	Mask of the jaguar warrior: a jaguar head of spotted pelt with its ears and jade eyes, a quetzal plume (green feathers,
+	red tips) on the top, a golden band set with jade beads over the brow, the warrior's face in the open jaws (white
+	fangs). A sun glint runs over the gold, the jade beads sparkle.
+	"""
+	rows = outlined([
+		".......RR.......",
+		"......RFFR......",
+		"..Pp..fFFf..pP..",
+		"..PPp..gG..pPq..",
+		"..PPPPSPPSPPpq..",
+		".PSPeSPPPPeSPpq.",
+		".PPPPPSppSPPpqq.",
+		".gGYGJGGGGJGgGh.",
+		".PPWKKKKKKKKWpq.",
+		".PPwKKKKKKKKwpq.",
+		".PpKKKKKKKKKKpq.",
+		".qq..........qq.",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return jaguar_frames(rows)
+
+
+def pectoral_guerrier_jaguar():
+	"""
+	Pectoral of the jaguar warrior: a tunic of spotted jaguar pelt, a wide golden collar set with jade beads around the
+	neck, a golden belt, a fringe of quetzal feathers. A sun glint runs over the gold, the jade beads sparkle.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		".PSPG......GPSq.",
+		".PPPYg....gGPpq.",
+		".PSPPYGJJGgPSpq.",
+		".qPSPPGggGPPpqq.",
+		"...PPSPPPPSPq...",
+		"...PSPPPSPPpq...",
+		"...PPPSPPPSpq...",
+		"...PSPPPPPPpq...",
+		"...gGYGJGGGgh...",
+		"...RFRFRFRFRF...",
+		"...r.f.r.f.r....",
+		"................",
+		"................",
+		"................",
+	])
+	return jaguar_frames(rows)
+
+
+def jambieres_guerrier_jaguar():
+	"""
+	Leggings of the jaguar warrior: spotted pelt, a golden belt with a jade buckle, golden knee bands set with jade. A sun
+	glint runs over the gold, the jade sparkles.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		"...gGYGJJGGgh...",
+		"...PSPPPPPSpq...",
+		"...PPPSPPSPpq...",
+		"...PSPp..PSpq...",
+		"...PPPq..PPpq...",
+		"...GJgh..GJgh...",
+		"...PSPq..PSpq...",
+		"...PPpq..PPpq...",
+		"...PSpq..PSpq...",
+		"...pqqS..pqqS...",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return jaguar_frames(rows)
+
+
+def sandales_guerrier_jaguar():
+	"""
+	Sandals of the jaguar warrior: anklets of spotted pelt, golden straps crossing over the dark leather, a jade stud on the
+	instep, golden soles. A sun glint runs over the gold, the jade sparkles.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		"................",
+		"..PSPp....PSPp..",
+		"...Llk....Llk...",
+		"...GGg....GGg...",
+		"...Llk....Llk...",
+		"...GGg....GGg...",
+		"..LLlk....LLlk..",
+		"..LJlk....LJlk..",
+		".LLllk....LLllk.",
+		".gGGGh....gGGGh.",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return jaguar_frames(rows)
+
+
+SOUL_SET_PALETTE = {"O": "#04121a", "L": "#6e6878", "M": "#4c4756", "D": "#302b38", "N": "#1c1922", "K": "#0a080e",
+					"A": "#7ff6ff", "a": "#e4ffff", "d": "#1d7486", "F": "#5ff0ff", "f": "#1aa8c0", "B": "#eaf6f2", "b": "#94bcc0"}
+SOUL_FLICKER = [("#5ff0ff", "#1aa8c0", "#7ff6ff"), ("#8ffbff", "#2ac4dc", "#bffcff"), ("#3fd8f0", "#128ca4", "#5ff0ff"),
+				("#8ffbff", "#2ac4dc", "#e4ffff"), ("#5ff0ff", "#1aa8c0", "#7ff6ff"), ("#3fd8f0", "#128ca4", "#3fd8f0")]
+
+
+def soul_frames(rows, frametime=3):
+	"""Soul fire: the flames (F, f) flicker and the cracks / eyes (A) pulse."""
+	out = []
+	for flame, ember, glow in SOUL_FLICKER:
+		out.append(paint(rows, dict(SOUL_SET_PALETTE, F=flame, f=ember, A=glow)))
+	return Sprite(out, anim(frametime))
+
+
+def heaume_brasier_des_ames():
+	"""
+	Helm of the soul pyre: blackened soul-steel with two bone horns, a crest of soul fire, eyes and cracks glowing with
+	the souls it holds. The flames flicker, the eyes pulse.
+	"""
+	rows = outlined([
+		"................",
+		".B.....FF.....B.",
+		".Bb...fFFf...bB.",
+		"..Bb..dLLd..bB..",
+		"..bLLLLLLLLMMb..",
+		"..LLMLLLLLLMMD..",
+		"..LKAAKddKAAKD..",
+		"..LMLMKddKMMDD..",
+		"..MMdMKddKMdDN..",
+		"..MDDDKKKKDDNN..",
+		"..dDN......NDd..",
+		"................",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return soul_frames(rows)
+
+
+def cuirasse_brasier_des_ames():
+	"""
+	Cuirass of the soul pyre: blackened soul-steel, a ribcage of bone over a chest of soul fire, flames rising from the
+	pauldrons, a belt with cyan studs. The flames flicker, the soul fire pulses between the ribs.
+	"""
+	rows = outlined([
+		"................",
+		".F............F.",
+		".fF..........Ff.",
+		".LMMd......dMMD.",
+		".LLMDd....dLMMD.",
+		".LLMMLddddLMMDN.",
+		"...LMBbBBbBMD...",
+		"...LMdAAAAdMD...",
+		"...LMBbBBbBMD...",
+		"...LMMdAAdMMD...",
+		"...LMMMBBMMDD...",
+		"...dDDADDADDd...",
+		"...MDDDDDDDDN...",
+		"................",
+		"................",
+		"................",
+	])
+	return soul_frames(rows)
+
+
+def greves_brasier_des_ames():
+	"""
+	Greaves of the soul pyre: blackened soul-steel veined with soul fire, a belt with a bone skull buckle, knee guards with
+	a glowing core. The soul fire pulses in the cracks.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		"...dDDDAADDDd...",
+		"...LLMMddMMDN...",
+		"...LMMMMMMMDN...",
+		"...LMAD..LMAN...",
+		"...LMMD..LMMD...",
+		"...dAdD..dAdN...",
+		"...LMMD..LMDN...",
+		"...LMAD..LMAN...",
+		"...LMMD..MDDN...",
+		"...DDNN..DNNN...",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return soul_frames(rows)
+
+
+def bottes_brasier_des_ames():
+	"""
+	Boots of the soul pyre: blackened soul-steel, soul fire burning around the ankles, cyan cracks, bone toe caps. The
+	flames flicker, the cracks pulse.
+	"""
+	rows = outlined([
+		"................",
+		"................",
+		"..F.F.....F.F...",
+		"..fFfF....fFfF..",
+		"...LMD....LMD...",
+		"...LAD....LAD...",
+		"...dDd....dDd...",
+		"...LMD....LMD...",
+		"..LLMD....LMMD..",
+		"..LAMD....LAMD..",
+		".BbMMD....BbMMD.",
+		".NNDDN....NDDNN.",
+		"................",
+		"................",
+		"................",
+		"................",
+	])
+	return soul_frames(rows)
+
+
+SET_PIECES = {
+	# name: (draw, parent model)
+	"heaume_hiver_eternel": (heaume_hiver_eternel, "minecraft:item/generated"),
+	"cuirasse_hiver_eternel": (cuirasse_hiver_eternel, "minecraft:item/generated"),
+	"jambieres_hiver_eternel": (jambieres_hiver_eternel, "minecraft:item/generated"),
+	"solerets_hiver_eternel": (solerets_hiver_eternel, "minecraft:item/generated"),
+	"masque_guerrier_jaguar": (masque_guerrier_jaguar, "minecraft:item/generated"),
+	"pectoral_guerrier_jaguar": (pectoral_guerrier_jaguar, "minecraft:item/generated"),
+	"jambieres_guerrier_jaguar": (jambieres_guerrier_jaguar, "minecraft:item/generated"),
+	"sandales_guerrier_jaguar": (sandales_guerrier_jaguar, "minecraft:item/generated"),
+	"heaume_brasier_des_ames": (heaume_brasier_des_ames, "minecraft:item/generated"),
+	"cuirasse_brasier_des_ames": (cuirasse_brasier_des_ames, "minecraft:item/generated"),
+	"greves_brasier_des_ames": (greves_brasier_des_ames, "minecraft:item/generated"),
+	"bottes_brasier_des_ames": (bottes_brasier_des_ames, "minecraft:item/generated"),
+}
+
+
+def set_piece_sprites():
+	"""Texture name -> Sprite of the armor set pieces (inventory icons)."""
+	return {name: draw() for name, (draw, _) in SET_PIECES.items()}
+
+
 # ---------------------------------------------------------------------------------------------------------- 3D shield
 # The Egide des Ames in hand: a JSON element model instead of the vanilla shield (special model drawing banner patterns).
 # The vanilla shield renderer draws its entity model (plate 12 x 22 x 1, handle 2 x 6 x 6) flipped by the item
@@ -1788,7 +2181,8 @@ def egide_des_ames_in_hand():
 # The unique armors on the player: equipment assets assets/guildy/equipment/<name>.json, each with its 64 x 32 layer
 # textures/entity/equipment/humanoid/<name>.png. Layout = top half of the player skin: head 0,0 (+ hat 32,0), right leg
 # 0,16, body 16,16, right arm 40,16, the left limbs mirror the right ones. Helmet and chestplate use the player model
-# inflated by 1, the boots the legs inflated by 0.9 (leggings would use the humanoid_leggings layer, inflated by 0.5).
+# inflated by 1, the boots the legs inflated by 0.9; the leggings use the humanoid_leggings layer (textures/entity/equipment/
+# humanoid_leggings/<name>.png, same layout: body inflated by 0.5, legs by 0.4).
 # These layers are not dyeable (the drawing replaces the dyed leather) and baby mobs keep the vanilla look of the base
 # item (other layout). Equipment textures are plain textures, not atlas sprites: Minecraft does not animate them.
 
@@ -1962,12 +2356,353 @@ def coursier_worn():
 	return layer.grid
 
 
+# ---------------------------------------------------------------------- worn layers of the armor sets
+# Helmets, chestplates and boots on the humanoid layer, leggings on the humanoid_leggings layer (body box = the waist, leg
+# boxes = thighs to shins, under the boots). The helmets also draw on the hat box (head inflated by half a pixel more):
+# crests, ears and horns stand out of the helm.
+
+def mirror(rows):
+	"""The rows of a face seen from the other side (left side of a head drawn from its right side)."""
+	return [row[::-1] for row in rows]
+
+
+def frost_worn_head():
+	"""
+	Great helm of the eternal winter: frosted steel, a sapphire brow band and rim, a T visor whose eyes glow with frost,
+	frost crystals on the ear guards, a crest of ice along the top (on the hat box, standing out of the helm).
+	"""
+	layer = Layer(FROST_PALETTE)
+	side = ["MLLLLLWL", "MLLLLWLL", "bBBBBBBb", "DMLLLLLK", "DMLcIcLL", "DMMLcLLL", "NDMMMMML", "bBBBBBBb"]
+	front = ["LWLLLLMD", "LWLLLMMD", "bBBBBBBb", "KEEKKEEK", "LWLKKLMD", "LLMKKMMD", "LMMKKMDN", "bBBbbBBb"]
+	back = ["MLLWLLLM", "MLLWLLMD", "bBBBBBBb", "DMLLLLMD", "DMLIcLMD", "DMLLcLMD", "NDMMMMDN", "bBBBBBBb"]
+	layer.draw("head", "ring", [side[y] + front[y] + mirror(side)[y] + back[y] for y in range(8)])
+	layer.draw("head", "top", ["MLLIcLMD", "LWLIcLMD", "LWLIcLLD", "LWLIcLMD", "LLLIcLMD", "LWLIcLMD", "LLLIcLMD", "bBBIcBBb"])
+	layer.draw("head", "bottom", ["NDDDDDDN"] * 8)
+	# The ice crest, half a pixel above the helm: a ridge from the brow to the nape.
+	layer.draw("hat", "top", ["...WI..."] + ["...Ic..."] * 6 + ["...IC..."])
+	layer.draw("hat", "ring", ["........" + "...IC..." + "........" + "...cI..."] + ["................................"] * 7)
+	return layer.grid
+
+
+def frost_worn_chest():
+	"""
+	Cuirass of the eternal winter: frosted steel plates under a sapphire collar, a frost snowflake on the chest, a sapphire
+	spine down the back, a belt set with a frost gem; sapphire-trimmed pauldrons set with ice crystals, steel sleeves and
+	cuffs of rime.
+	"""
+	layer = Layer(FROST_PALETTE)
+	layer.draw("body", "front", ["bBBBBBBb", "LLcLLcLD", "LLLIILMD", "LcIEEIcD", "LWLIILMD", "LLcLLcMD", "MMMMMMMD", "LWLLLLMD",
+								 "LWLLLMMD", "MMMMMMDN", "bBBEEBBb", "LMMMMMDN"])
+	layer.draw("body", "back", ["bBBBBBBb", "MLLBBLLM", "MLLbBLLD", "MLWBbLMD", "MLLbBLMD", "MMMBBMMD", "MLLbBLMD", "MLLBbLMD",
+								"MLLbBMMD", "MMMBBMDN", "bBBBBBBb", "MMMMMDDN"])
+	sides = ["bBBb", "LLMD", "LWMD", "LLMD", "LLMD", "LLMD", "MMMD", "LLMD", "LMMD", "MMDN", "bBBb", "MMDN"]
+	layer.draw("body", "right", sides).draw("body", "left", mirror(sides))
+	layer.draw("body", "top", ["bBBBBBBb", "LWLLLLMD", "LLLLLLMD", "bBBBBBBb"])
+	layer.draw("body", "bottom", ["MMMMMMDN"] * 4)
+	layer.draw("arm", "ring", [
+		"bBBb" + "bBBb" + "bBBb" + "bBBb",
+		"cIIc" + "LWLM" + "LLMD" + "LLMD",
+		"IEcI" + "LWLM" + "LMMD" + "MLMD",
+		"cIIc" + "LWLM" + "LMMD" + "LLMD",
+		"bBBb" + "bBBb" + "bBBb" + "bBBb",
+		"LMMD" + "LWMD" + "MMDN" + "LMMD",
+		"LLMD" + "LWMD" + "MMDN" + "LMMD",
+		"LMMD" + "LLMD" + "MDDN" + "LMDD",
+		"bBBb" + "bBBb" + "bBBb" + "bBBb",
+		"IcIc" + "cIcI" + "IcIc" + "cIcI",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+	])
+	layer.draw("arm", "top", ["bIcb", "IEcI", "cIIc", "bBBb"])
+	return layer.grid
+
+
+def frost_worn_legs():
+	"""
+	Leggings of the eternal winter: a sapphire belt set with a frost gem and frosted tassets at the waist, steel thigh
+	plates, sapphire knee guards set with a frost crystal, steel greaves.
+	"""
+	layer = Layer(FROST_PALETTE)
+	empty = ["........"] * 8
+	layer.draw("body", "front", empty + ["bBBEEBBb", "LWLLLLMD", "LWLMMLMD", "LLMDDMMD"])
+	layer.draw("body", "back", empty + ["bBBBBBBb", "MLLLLLMD", "MLLMMLMD", "DMMDDMMN"])
+	sides = ["...."] * 8 + ["bBBb", "LLMD", "LLMD", "MMDN"]
+	layer.draw("body", "right", sides).draw("body", "left", mirror(sides))
+	layer.draw("leg", "ring", [
+		"LLMD" + "LWLM" + "LMMD" + "MMMD",
+		"LLMD" + "LWLM" + "LMMD" + "LMMD",
+		"LLMD" + "LWLD" + "MMDN" + "LMMD",
+		"bBBb" + "bBBb" + "bBBb" + "bBBb",
+		"IcIc" + "BEEb" + "BcBb" + "bBBb",
+		"bBBb" + "bBBb" + "bBBb" + "bBBb",
+		"LLMD" + "LWLM" + "LMMD" + "LMMD",
+		"LLMD" + "LWLM" + "MMDN" + "LMMD",
+		"LMMD" + "LLMD" + "MMDN" + "MMDD",
+		"MMDN" + "LMMD" + "MDDN" + "MMDN",
+		"bBBb" + "bBBb" + "bBBb" + "bBBb",
+		"...." + "...." + "...." + "....",
+	])
+	layer.draw("leg", "top", ["LLMD", "LWMD", "LLMD", "MMDN"])
+	return layer.grid
+
+
+def frost_worn_feet():
+	"""
+	Sabatons of the eternal winter: cuffs of white rime, frosted steel, a sapphire strap set with a frost gem on the
+	instep, sapphire soles.
+	"""
+	layer = Layer(FROST_PALETTE)
+	layer.draw("leg", "ring", [
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"IWII" + "IWII" + "IIIc" + "IIIc",
+		"cIcc" + "IcIc" + "cIcc" + "cccc",
+		"LLMD" + "LWLM" + "LMMD" + "LMMD",
+		"LLMD" + "LWEM" + "LMMD" + "LMMD",
+		"LLMD" + "LWLM" + "LMMD" + "LMMD",
+		"LMMD" + "LWMD" + "MMDN" + "MMDN",
+		"bbbb" + "bBBb" + "bbbb" + "bbbb",
+	])
+	layer.draw("leg", "bottom", ["bbbb", "bBBb", "bbbb", "bbbb"])
+	return layer.grid
+
+
+JAGUAR_ROSETTES = ["PPSPPPPP", "PSpSPPPP", "PPSPPPPS", "PPPPPPPP", "PPPPPSPP", "SPPPSpPP", "PPPPPSSP", "PPPPPPPP"]
+
+
+def pelt(width, height, start=0, shift=0):
+	"""Rows of spotted jaguar pelt (open rosettes on ochre) for a face; start / shift move the pattern."""
+	return ["".join(JAGUAR_ROSETTES[(start + y) % 8][(shift + x) % 8] for x in range(width)) for y in range(height)]
+
+
+def over(rows, *changes):
+	"""The rows with some of them replaced: changes = (row index, text); '_' in a text keeps the pixel below."""
+	out = list(rows)
+	for y, text in changes:
+		out[y] = "".join(old if new == "_" else new for old, new in zip(out[y], text))
+	return out
+
+
+def jaguar_worn_head():
+	"""
+	Mask of the jaguar warrior: the jaguar's head of spotted pelt over the warrior's head, its jade-yellow eyes above a
+	golden band set with jade, the face in its open jaws (fangs at the corners), its ears standing up and a quetzal plume
+	running over the top and hanging down the back (on the hat box).
+	"""
+	layer = Layer(JAGUAR_SET_PALETTE)
+	front = over(pelt(8, 8, 3, 1), (1, "_e____e_"), (2, "gGJGGJGg"), (3, "PW....WP"), (4, "Pw....wP"), (5, "P......P"),
+				 (6, "p......p"), (7, "pWqppqWp"))
+	side = over(pelt(8, 8, 1, 2), (2, "gGgGJGgG"), (7, "qp____pq"))
+	back = over(pelt(8, 8, 5, 3), (2, "gGgGGgGg"), (7, "qp____pq"))
+	for y in range(8):
+		back[y] = back[y][:3] + ("Rr" if y >= 6 else "Ff") + back[y][5:]
+	layer.draw("head", "ring", [side[y] + front[y] + mirror(side)[y] + back[y] for y in range(8)])
+	top = pelt(8, 8, 2, 4)
+	layer.draw("head", "top", [row[:3] + "Ff" + row[5:] for row in top])
+	layer.draw("head", "bottom", ["qqqqqqqq"] * 8)
+	# Ears at the front corners, the plume standing over the top and falling down the back.
+	layer.draw("hat", "ring", [
+		"........" + "Pp....pP" + "........" + "...Ff...",
+		"........" + "pq....qp" + "........" + "...Ff...",
+		"........" + "........" + "........" + "...Ff...",
+		"........" + "........" + "........" + "...Ff...",
+		"........" + "........" + "........" + "...Rr...",
+		"........" + "........" + "........" + "........",
+		"........" + "........" + "........" + "........",
+		"........" + "........" + "........" + "........",
+	])
+	layer.draw("hat", "top", ["...Ff..."] * 5 + ["...gG...", "........", "........"])
+	return layer.grid
+
+
+def jaguar_worn_chest():
+	"""
+	Pectoral of the jaguar warrior: a tunic of spotted jaguar pelt, a wide golden gorget set with jade beads and a jade
+	pendant, a golden belt with a fringe of quetzal feathers (green and red); pelt mantles on the shoulders held by golden
+	arm bands set with jade, bare forearms.
+	"""
+	layer = Layer(JAGUAR_SET_PALETTE)
+	layer.draw("body", "front", over(pelt(8, 12, 0, 0), (0, "GgJGGJgG"), (1, "gGGJJGGg"), (2, "PgGYYGgP"), (3, "_PgJJgP_"),
+									 (4, "___gg___"), (10, "gGYGJGgh"), (11, "RFRFRFRF")))
+	layer.draw("body", "back", over(pelt(8, 12, 4, 2), (0, "gGGGGGGg"), (1, "PgGGGGgP"), (10, "gGgGGgGh"), (11, "FRFRFRFR")))
+	sides = over(pelt(4, 12, 2, 5), (0, "gGGg"), (10, "gGgh"), (11, "RFRF"))
+	layer.draw("body", "right", sides).draw("body", "left", mirror(sides))
+	layer.draw("body", "top", ["gGJGGJGg", "GgGGGGgG", "gGGGGGGg", "PPSPPSPP"])
+	layer.draw("body", "bottom", ["FRFRFRFR"] * 4)
+	arm = over(pelt(16, 12, 1, 0), (4, "gGJg" + "gGJg" + "gGgh" + "gGJg"))
+	layer.draw("arm", "ring", arm[:5] + ["................"] * 7)
+	layer.draw("arm", "top", pelt(4, 4, 6, 1))
+	return layer.grid
+
+
+def jaguar_worn_legs():
+	"""
+	Leggings of the jaguar warrior: a golden belt with a jade buckle, a red loincloth with a golden fringe hanging at the
+	front, spotted pelt down the legs, golden knee bands set with jade.
+	"""
+	layer = Layer(JAGUAR_SET_PALETTE)
+	empty = ["........"] * 8
+	layer.draw("body", "front", empty + ["gGYGJGgh", "PSRRRRSP", "PPRrrRPp", "pPRYYRpq"])
+	layer.draw("body", "back", empty + over(pelt(8, 4, 3, 1), (0, "gGgGGgGh")))
+	sides = ["...."] * 8 + over(pelt(4, 4, 5, 2), (0, "gGgh"))
+	layer.draw("body", "right", sides).draw("body", "left", mirror(sides))
+	legs = over(pelt(16, 12, 2, 3), (0, "____" + "__Rr" + "________"), (1, "____" + "__Rr" + "________"),
+				(2, "____" + "__rR" + "________"), (3, "____" + "__YG" + "________"),
+				(4, "gGJg" + "gGJg" + "gGgh" + "gGgh"), (9, "pPPq" + "pPpq" + "ppqq" + "pPPq"))
+	layer.draw("leg", "ring", legs[:10] + ["................"] * 2)
+	layer.draw("leg", "top", pelt(4, 4, 0, 2))
+	return layer.grid
+
+
+def jaguar_worn_feet():
+	"""
+	Sandals of the jaguar warrior: anklets of spotted pelt, a golden strap set with jade, golden straps crossing over the
+	leg down to the leather soles.
+	"""
+	layer = Layer(JAGUAR_SET_PALETTE)
+	layer.draw("leg", "ring", [
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"SPPS" + "PSPP" + "SPPS" + "PPSP",
+		"pPSp" + "PPSp" + "pSPp" + "SPPp",
+		"gGgh" + "gGJg" + "gGgh" + "gGgh",
+		"G..g" + ".GG." + "G..g" + ".gg.",
+		".GG." + "G..G" + ".gg." + "G..g",
+		"G..g" + "gGJg" + "G..g" + ".gg.",
+		"lllk" + "LLlk" + "llkk" + "lkkk",
+	])
+	layer.draw("leg", "bottom", ["lllk", "Llkk", "llkk", "lkkk"])
+	return layer.grid
+
+
+def soul_worn_head():
+	"""
+	Helm of the soul pyre: blackened soul-steel, eyes and cracks glowing with souls, a soul gem at each ear, a crest of
+	soul fire along the top and two bone horns rising from the temples (on the hat box).
+	"""
+	layer = Layer(dict(SOUL_SET_PALETTE, F="#5ff0ff", f="#1aa8c0", A="#7ff6ff"))
+	front = ["MLLddLLM", "LMMdAMMD", "LMMMMMMD", "KAAKKAAK", "MDDKKDDM", "LMdKKdMD", "MDDKKDDN", "dNNbbNNd"]
+	side = ["DMLLLLLM", "DMLMLLLM", "NDMMdMLL", "NDMdAdLL", "NDMMdMLM", "NDDMMMMM", "NNDDDDMD", "dNNNNNDd"]
+	back = ["MLLddLLM", "MLMdAMLM", "DMMdAMMD", "DMLMdMMD", "DMMMdMMD", "DDMMdMDN", "NDDDdDNN", "dNNNNNNd"]
+	layer.draw("head", "ring", [side[y] + front[y] + mirror(side)[y] + back[y] for y in range(8)])
+	layer.draw("head", "top", ["DMLdAMMD", "MLLdAMMD", "MLLdAMMD", "MLLdAMMD", "MLLdAMMD", "MLLdAMMD", "DMMdAMMN", "dDDdADDd"])
+	layer.draw("head", "bottom", ["NNNNNNNN"] * 8)
+	horn = ["....bB..", "...bB...", "...b....", "........", "........", "........", "........", "........"]
+	tip = ["...fF..."] + ["........"] * 7
+	layer.draw("hat", "ring", [horn[y] + tip[y] + mirror(horn)[y] + mirror(tip)[y] for y in range(8)])
+	layer.draw("hat", "top", ["........", "...Ff...", "...fF...", "...Ff...", "...fF...", "...Ff...", "...fF...", "........"])
+	return layer.grid
+
+
+def soul_worn_chest():
+	"""
+	Cuirass of the soul pyre: blackened soul-steel, a ribcage of bone over a chest of soul fire, a bone spine down the back,
+	a belt with a soul gem; pauldrons rimmed with soul fire and set with a bone spike, dark sleeves and cuffs.
+	"""
+	layer = Layer(SOUL_SET_PALETTE)
+	layer.draw("body", "front", ["dMMMMMMd", "LMMBbMMD", "LbBBbBbD", "LMAdbAMD", "LbBBbBbD", "LMAdbAMD", "LMbBbBMD", "LMMdAMMD",
+								 "LMMMMMMD", "MMDDDDDN", "dDDAADDd", "MDDDDDDN"])
+	layer.draw("body", "back", ["dMMMMMMd", "MLMBbMMD", "MLdbBdMD", "MLMBbMMD", "MLdbBdMD", "MLMBbMMD", "MLdbBdMD", "MMMBbMMD",
+								"MLMbBMMD", "MMDDDDDN", "dDDddDDd", "MDDDDDDN"])
+	sides = ["dMMd", "LMMD", "LMMD", "LMdD", "LMMD", "LMMD", "LdMD", "LMMD", "LMMD", "MDDN", "dDDd", "MDDN"]
+	layer.draw("body", "right", sides).draw("body", "left", mirror(sides))
+	layer.draw("body", "top", ["dMMMMMMd", "LMMMMMMD", "LMMMMMMD", "dDDDDDDd"])
+	layer.draw("body", "bottom", ["NDDDDDDN"] * 4)
+	layer.draw("arm", "ring", [
+		"dAAd" + "dAAd" + "dAAd" + "dAAd",
+		"LBbD" + "LMMD" + "MMDN" + "LMMD",
+		"LbMD" + "LMAD" + "MMDN" + "LMMD",
+		"LMMD" + "LMMD" + "MDDN" + "LMdD",
+		"dDDd" + "dDDd" + "dDDd" + "dDDd",
+		"MDDN" + "MMDN" + "DDNN" + "MDDN",
+		"MDDN" + "MMDN" + "DDNN" + "MDDN",
+		"MDdN" + "MMDN" + "DDNN" + "MDDN",
+		"dAAd" + "dAAd" + "dAAd" + "dAAd",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+	])
+	layer.draw("arm", "top", ["dAAd", "LBbD", "LbMD", "dDDd"])
+	return layer.grid
+
+
+def soul_worn_legs():
+	"""
+	Greaves of the soul pyre: a belt with a soul gem buckle and dark tassets at the waist, blackened soul-steel veined with
+	soul fire down the legs, knee guards with a glowing core.
+	"""
+	layer = Layer(SOUL_SET_PALETTE)
+	empty = ["........"] * 8
+	layer.draw("body", "front", empty + ["dDDAADDd", "LMMddMMD", "LMMDDMMN", "MDDNNDDN"])
+	layer.draw("body", "back", empty + ["dDDDDDDd", "LMMMMMMD", "LMMDDMMN", "MDDNNDDN"])
+	sides = ["...."] * 8 + ["dDDd", "LMMD", "LMMD", "MDDN"]
+	layer.draw("body", "right", sides).draw("body", "left", mirror(sides))
+	layer.draw("leg", "ring", [
+		"LMMD" + "LMMD" + "MDDN" + "LMMD",
+		"LAMD" + "LMAD" + "MDDN" + "LMdD",
+		"LMMD" + "LMMD" + "MDDN" + "LMMD",
+		"dDDd" + "dDDd" + "dDDd" + "dDDd",
+		"LMMD" + "dAAd" + "MDDN" + "LMMD",
+		"dDDd" + "dDDd" + "dDDd" + "dDDd",
+		"LMMD" + "LMMD" + "MDDN" + "LMMD",
+		"LMdD" + "LAMD" + "MDDN" + "LdMD",
+		"LMMD" + "LMMD" + "MDDN" + "LMMD",
+		"MMDN" + "LMMD" + "DDNN" + "MMDN",
+		"dDDd" + "dDDd" + "dDDd" + "dDDd",
+		"...." + "...." + "...." + "....",
+	])
+	layer.draw("leg", "top", ["LMMD", "LMMD", "MMDN", "MDDN"])
+	return layer.grid
+
+
+def soul_worn_feet():
+	"""
+	Boots of the soul pyre: tongues of soul fire around the ankles above a glowing cuff, blackened soul-steel with cyan
+	cracks, bone toe caps, dark soles.
+	"""
+	layer = Layer(dict(SOUL_SET_PALETTE, F="#5ff0ff", f="#1aa8c0", A="#7ff6ff"))
+	layer.draw("leg", "ring", [
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		"...." + "...." + "...." + "....",
+		".F.f" + "F.F." + ".f.F" + "f.F.",
+		"fFfF" + "FfFf" + "fFfF" + "FfFf",
+		"dAAd" + "dAAd" + "dAAd" + "dAAd",
+		"LMMD" + "LMMD" + "MDDN" + "LMMD",
+		"LAMD" + "LMAD" + "MDDN" + "LMdD",
+		"LMMD" + "LMMD" + "MDDN" + "MMDN",
+		"LMMD" + "BbbB" + "MDDN" + "MDDN",
+		"NNNN" + "NBbN" + "NNNN" + "NNNN",
+	])
+	layer.draw("leg", "bottom", ["NNNN", "NNNN", "NNNN", "NNNN"])
+	return layer.grid
+
+
 WORN_ARMORS = {
 	# name: (draw, slot, vanilla material of the base item)
 	"couronne_du_roi_de_givre": (couronne_worn, "head", "diamond"),
 	"plastron_du_serpent": (plastron_worn, "chest", "leather"),
 	"bottes_de_zephyr": (zephyr_worn, "feet", "netherite"),
 	"bottes_du_coursier": (coursier_worn, "feet", "leather"),
+	"heaume_hiver_eternel": (frost_worn_head, "head", "diamond"),
+	"cuirasse_hiver_eternel": (frost_worn_chest, "chest", "diamond"),
+	"jambieres_hiver_eternel": (frost_worn_legs, "legs", "diamond"),
+	"solerets_hiver_eternel": (frost_worn_feet, "feet", "diamond"),
+	"masque_guerrier_jaguar": (jaguar_worn_head, "head", "gold"),
+	"pectoral_guerrier_jaguar": (jaguar_worn_chest, "chest", "gold"),
+	"jambieres_guerrier_jaguar": (jaguar_worn_legs, "legs", "gold"),
+	"sandales_guerrier_jaguar": (jaguar_worn_feet, "feet", "gold"),
+	"heaume_brasier_des_ames": (soul_worn_head, "head", "netherite"),
+	"cuirasse_brasier_des_ames": (soul_worn_chest, "chest", "netherite"),
+	"greves_brasier_des_ames": (soul_worn_legs, "legs", "netherite"),
+	"bottes_brasier_des_ames": (soul_worn_feet, "feet", "netherite"),
 }
 
 EQUIPMENT_DIR = os.path.join(ASSETS, "equipment")
@@ -1992,7 +2727,7 @@ def worn_armor_assets():
 		else:
 			layers["humanoid_baby"] = [{"texture": "minecraft:" + material}]
 		data = {"layers": layers}
-		if material in ("diamond", "netherite"):
+		if material in ("diamond", "netherite", "gold"):
 			# Same trim palettes as the base armor (a trim of the armor's own material is drawn darker).
 			data["trim_overrides"] = [{"palette": "minecraft:trim/%s_darker" % material, "when": {"material": "minecraft:" + material}}]
 		write_json(os.path.join(EQUIPMENT_DIR, name + ".json"), data)
@@ -2271,6 +3006,7 @@ def all_sprites():
 	for state in CROSSBOW_STATES:
 		sprites["arbalete_du_traqueur" + ("" if state == "standby" else "_" + state)] = arbalete_du_traqueur(state)
 	sprites.update(ruin_unique_sprites())
+	sprites.update(set_piece_sprites())
 	for name, (rune, palette, seal) in SCROLL_RUNES.items():
 		sprites["parchemin_" + name] = scroll(rune, palette, seal)
 	sprites["parchemin_incantation"] = parchemin_incantation()
@@ -2374,8 +3110,9 @@ class Image:
 
 
 def preview_groups(sprites):
-	weapons = [n for n in sprites if not n.startswith(("parchemin_", "grimoire"))]
+	weapons = [n for n in sprites if not n.startswith(("parchemin_", "grimoire")) and n not in SET_PIECES]
 	return [("armes uniques", weapons),
+			("panoplies (armures uniques par ensembles de 4)", [n for n in sprites if n in SET_PIECES]),
 			("grimoire (un modele par sort - sinon endormi)", [n for n in sprites if n.startswith("grimoire")]),
 			("parchemins", [n for n in sprites if n.startswith("parchemin_")])]
 
@@ -2656,9 +3393,10 @@ FIGURE = {
 	"right_leg": ((0, 16), (-2, 0, -2), (4, 12, 4), (-1.9, 12, 0), False),
 	"left_leg": ((0, 16), (-2, 0, -2), (4, 12, 4), (1.9, 12, 0), True),
 }
-# Armor model of each slot: parts and inflation (HumanoidModel.createArmorMeshSet: helmet/chestplate 1, boots 0.9).
+# Armor model of each slot: parts and inflation (HumanoidModel.createArmorMeshSet: helmet/chestplate 1, leggings 0.5 for
+# the body and 0.4 for the legs, boots 0.9).
 ARMOR_PARTS = {"head": (("head", 1.0),), "chest": (("body", 1.0), ("right_arm", 1.0), ("left_arm", 1.0)),
-			   "feet": (("right_leg", 0.9), ("left_leg", 0.9))}
+			   "legs": (("body", 0.5), ("right_leg", 0.4), ("left_leg", 0.4)), "feet": (("right_leg", 0.9), ("left_leg", 0.9))}
 
 
 def figure_quads(skin, armors):
@@ -2676,6 +3414,9 @@ def figure_quads(skin, armors):
 
 
 VIEWS = [("face", 0, 8), ("profil", -90, 8), ("dos", 180, 8), ("3/4", -35, 18)]
+# Rows of the armor sets in the preview: title, suffix of the ids of their pieces.
+SET_PREVIEWS = [("panoplie hiver eternel (4 pieces)", "_hiver_eternel"), ("panoplie guerrier jaguar (4 pieces)", "_guerrier_jaguar"),
+				("panoplie brasier des ames (4 pieces)", "_brasier_des_ames")]
 ZOOMS = [("zoom 3/4 avant", -35, 18), ("zoom 3/4 arriere", 145, 18)]
 # Close-up of each slot: model y of the center of the piece, scale (pixels per model unit).
 FOCUS = {"head": (-4.5, 14), "chest": (5, 9), "feet": (17.5, 14), "all": (7, 6)}
@@ -2697,13 +3438,16 @@ def texture_panel(img, x, y, grid, scale):
 
 
 def armor_preview(path):
-	"""tools/previews/armor_worn.png: per unique armor the figure wearing it (front, profile, back, three-quarter), two
-	close-ups and its 64 x 32 layer (x4); then the whole set; then the 3D shield (front, back, profile, three-quarter,
-	close-up) and its texture (x5)."""
+	"""tools/previews/armor_worn.png: per unique armor outside the sets the figure wearing it (front, profile, back,
+	three-quarter), two close-ups and its 64 x 32 layer (x4), then all of them together; each armor set worn complete with
+	its four layers (x2); then the 3D shield (front, back, profile, three-quarter, close-up) and its texture (x5)."""
 	skin = figure_skin()
 	layers = {name: (draw(), slot) for name, (draw, slot, _) in WORN_ARMORS.items()}
-	rows = [(name, [layers[name]], layers[name][1]) for name in layers]
-	rows.append(("panoplie complete", list(layers.values()), "all"))
+	single = [name for name in layers if name not in SET_PIECES]
+	rows = [(name, [layers[name]], layers[name][1]) for name in single]
+	rows.append(("armures uniques ensemble", [layers[name] for name in single], "all"))
+	for title, suffix in SET_PREVIEWS:
+		rows.append((title, [layers[name] for name in SET_PIECES if name.endswith(suffix)], "set"))
 	cell_w, cell_h, zoom_w = 150, 236, 236
 	width = 12 + len(VIEWS) * cell_w + len(ZOOMS) * (zoom_w + 8) + 64 * 4 + 12
 	height = 12 + (len(rows) + 1) * (cell_h + 26) + 12
@@ -2721,7 +3465,7 @@ def armor_preview(path):
 			render_quads(img, quads, yaw, pitch, 6, x + (cell_w - 8) // 2, y + 26 + 6 * 9, (x, y, x + cell_w - 8, y + cell_h))
 			img.text(x + 4, y + 4, name, 2, label)
 			x += cell_w
-		focus_y, scale = FOCUS[slot]
+		focus_y, scale = FOCUS["all" if slot == "set" else slot]
 		for name, yaw, pitch in ZOOMS:
 			img.rect(x, y, zoom_w, cell_h, panel)
 			render_quads(img, quads, yaw, pitch, scale, x + zoom_w // 2, y + cell_h // 2 - int(focus_y * scale),
@@ -2730,6 +3474,10 @@ def armor_preview(path):
 			x += zoom_w + 8
 		if len(armors) == 1:
 			texture_panel(img, x, y, armors[0][0], 4)
+		elif slot == "set":
+			# The four layers of the set: helmet, chestplate, leggings (humanoid_leggings), boots.
+			for i, (texture, _) in enumerate(armors):
+				texture_panel(img, x + (i % 2) * 132, y + (i // 2) * 70, texture, 2)
 		y += cell_h + 8
 	img.text(12, y, "egide des ames en main (modele 3d)", 2, (255, 214, 120, 255))
 	y += 18
@@ -2758,6 +3506,8 @@ def main():
 	bow_model("arc_du_phenix")
 	crossbow_model("arbalete_du_traqueur")
 	ruin_unique_models()
+	for name, (_, parent) in SET_PIECES.items():
+		simple_model(name, parent)
 	for name in SCROLL_RUNES:
 		simple_model("parchemin_" + name, "minecraft:item/generated")
 	simple_model("parchemin_incantation", "minecraft:item/generated")

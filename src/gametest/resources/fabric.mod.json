@@ -29,15 +29,19 @@
 			"dev.guildy.test.UniqueGameTests",
 			"dev.guildy.test.UniqueRegistryGameTests",
 			"dev.guildy.test.UniqueRuinGameTests",
+			"dev.guildy.test.UniqueSetGameTests",
 			"dev.guildy.test.ScrollGameTests",
 			"dev.guildy.test.GrimoireGameTests",
 			"dev.guildy.test.CursedGrimoireGameTests",
 			"dev.guildy.test.TacticalScrollGameTests",
+			"dev.guildy.test.SpellRallyGameTests",
+			"dev.guildy.test.SpellBalanceGameTests",
 			"dev.guildy.test.VillageSignGameTests",
 			"dev.guildy.test.WorkGameTests",
 			"dev.guildy.test.StorageGameTests",
 			"dev.guildy.test.TidyGameTests",
 			"dev.guildy.test.FilterGameTests",
+			"dev.guildy.test.FilteredRoomGameTests",
 			"dev.guildy.test.StorageScaleGameTests",
 			"dev.guildy.test.ChunkLoadGameTests",
 			"dev.guildy.test.VitalityGameTests",
@@ -55,7 +59,8 @@
 			"dev.guildy.test.RuinStatsGameTests",
 			"dev.guildy.test.RuinJaguarGameTests",
 			"dev.guildy.test.RuinStatueGameTests",
-			"dev.guildy.test.ShortcutGameTests"
+			"dev.guildy.test.ShortcutGameTests",
+			"dev.guildy.test.RuneGameTests"
 		]
 	},
 	"depends": {

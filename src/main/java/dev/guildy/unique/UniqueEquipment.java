@@ -13,11 +13,24 @@ import java.util.Map;
  */
 public final class UniqueEquipment {
 	/** Equipment assets of the pack: asset name (= the model of the unique) -> armor slot it is drawn for. */
-	public static final Map<String, String> ASSETS = Map.of(
-			"couronne_du_roi_de_givre", "head",
-			"plastron_du_serpent", "chest",
-			"bottes_de_zephyr", "feet",
-			"bottes_du_coursier", "feet");
+	public static final Map<String, String> ASSETS = Map.ofEntries(
+			Map.entry("couronne_du_roi_de_givre", "head"),
+			Map.entry("plastron_du_serpent", "chest"),
+			Map.entry("bottes_de_zephyr", "feet"),
+			Map.entry("bottes_du_coursier", "feet"),
+			// The three armor sets (uniques.json5 format 5): the leggings use the humanoid_leggings layer.
+			Map.entry("heaume_hiver_eternel", "head"),
+			Map.entry("cuirasse_hiver_eternel", "chest"),
+			Map.entry("jambieres_hiver_eternel", "legs"),
+			Map.entry("solerets_hiver_eternel", "feet"),
+			Map.entry("masque_guerrier_jaguar", "head"),
+			Map.entry("pectoral_guerrier_jaguar", "chest"),
+			Map.entry("jambieres_guerrier_jaguar", "legs"),
+			Map.entry("sandales_guerrier_jaguar", "feet"),
+			Map.entry("heaume_brasier_des_ames", "head"),
+			Map.entry("cuirasse_brasier_des_ames", "chest"),
+			Map.entry("greves_brasier_des_ames", "legs"),
+			Map.entry("bottes_brasier_des_ames", "feet"));
 
 	private UniqueEquipment() {
 	}

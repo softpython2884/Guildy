@@ -14,9 +14,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Unit;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
@@ -47,7 +49,8 @@ import java.util.Set;
  * Unique items are vanilla items with components: custom_data {"guildy": {"kind": "unique", "id": ...}}, colored item
  * name, lore (rarity, story, power), enchantments (vanilla + guildy), extra attribute modifiers, glint, unbreakable,
  * dyed color, a cooldown group for right-click powers and, only when a resource pack is guaranteed, an item_model (and,
- * for the armors, an equippable drawn with their own equipment asset).
+ * for the armors, an equippable drawn with their own equipment asset). The armors also get the protection floor of
+ * uniques.json5 ({@link ArmorFloor}), and the set pieces the set section of their lore and their set's cooldown group.
  */
 public final class UniqueItems {
 	public static final String KIND = "unique";
@@ -57,6 +60,8 @@ public final class UniqueItems {
 	private static final String SERIAL = "serial";
 	/** custom_data key of the source of an offered (not yet registered) stack. */
 	private static final String PENDING = "pending";
+	/** custom_data key of a set piece: number of lore lines before its set section (rewritten for what the holder wears). */
+	private static final String LORE_BASE = "lore_base";
 	private static final Set<String> WARNED = new HashSet<>();
 
 	private UniqueItems() {
@@ -77,7 +82,19 @@ public final class UniqueItems {
 		GuildyItems.tag(stack, KIND, extra);
 		stack.set(DataComponents.ITEM_NAME, name(def));
 		stack.set(DataComponents.RARITY, def.rarity() == UniqueRarity.RARE ? Rarity.RARE : Rarity.EPIC);
-		stack.set(DataComponents.LORE, new ItemLore(lore(def)));
+		List<Component> lines = lore(def);
+		UniqueConfig.SetDef set = setOf(def);
+		if (set != null) {
+			// The set section follows the item's own lore: it is rewritten for what the holder wears (see syncSetLore).
+			int base = lines.size();
+			CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+				CompoundTag inner = tag.getCompoundOrEmpty(GuildyItems.ROOT);
+				inner.putInt(LORE_BASE, base);
+				tag.put(GuildyItems.ROOT, inner);
+			});
+			lines.addAll(setLore(def, set, null));
+		}
+		stack.set(DataComponents.LORE, new ItemLore(lines));
 		applyEnchantments(stack, def, registries);
 		applyAttributes(stack, def);
 		if (def.glint) {
@@ -97,9 +114,130 @@ public final class UniqueItems {
 			// Own cooldown group: the vanilla cooldown overlay shows the power recharge on this item only.
 			float seconds = (float) Math.max(0.05, UniqueModule.config().cooldownSeconds(power));
 			stack.set(DataComponents.USE_COOLDOWN, new UseCooldown(seconds, Optional.of(cooldownGroup(def.id))));
+		} else if (set != null) {
+			// The set's cooldown group: the recharge of its power shows on every piece (equipping by right click: one tick).
+			stack.set(DataComponents.USE_COOLDOWN, new UseCooldown(0.05F, Optional.of(setCooldownGroup(set.id))));
 		}
 		syncVisuals(stack, def);
 		return stack;
+	}
+
+	/** Set of a definition (null when none or unknown). */
+	static UniqueConfig.@Nullable SetDef setOf(UniqueConfig.UniqueDef def) {
+		return def.set == null || def.set.isEmpty() ? null : UniqueModule.config().set(def.set);
+	}
+
+	/** Cooldown group of a set's power: guildy:set/{id} (shown on the pieces that carry it). */
+	public static Identifier setCooldownGroup(String setId) {
+		return Identifier.fromNamespaceAndPath(Guildy.MOD_ID, "set/" + setId);
+	}
+
+	/**
+	 * Set section of a piece's lore: the set and its pieces (worn ones ticked), then each bonus with its attributes, power
+	 * and recharge (reached ones lit). {@code worn} = unique ids worn by the holder, null when the piece is not carried
+	 * (neutral look, also when the holder wears no piece of the set).
+	 */
+	public static List<Component> setLore(UniqueConfig.UniqueDef def, UniqueConfig.SetDef set, @Nullable Set<String> worn) {
+		UniqueConfig cfg = UniqueModule.config();
+		List<String> pieces = cfg.piecesOf(set.id);
+		int count = 0;
+		if (worn != null) {
+			for (String piece : pieces) {
+				if (worn.contains(piece)) {
+					count++;
+				}
+			}
+			if (count == 0) {
+				// The holder wears none of this set: the neutral look.
+				worn = null;
+			}
+		}
+		List<Component> lines = new ArrayList<>();
+		lines.add(Component.empty());
+		String setName = Lang.colorize(set.name);
+		lines.add(worn == null ? Lang.get("unique.set.header", setName, pieces.size()) : Lang.get("unique.set.header_worn", setName, count, pieces.size()));
+		for (String piece : pieces) {
+			UniqueConfig.UniqueDef other = cfg.item(piece);
+			String name = other == null ? piece : Lang.strip(Lang.colorize(other.name));
+			String key = worn == null ? "unique.set.piece" : worn.contains(piece) ? "unique.set.piece.worn" : "unique.set.piece.missing";
+			lines.add(Lang.get(key, name));
+		}
+		for (UniqueConfig.SetBonus bonus : set.bonuses()) {
+			String state = worn == null ? "neutral" : count >= bonus.pieces ? "on" : "off";
+			lines.add(Lang.get("unique.set.bonus." + state, bonus.pieces, bonus.name));
+			for (String line : bonusLines(bonus)) {
+				lines.add(Lang.get("unique.set.line." + state, line));
+			}
+		}
+		List<Component> out = new ArrayList<>(lines.size());
+		for (Component line : lines) {
+			out.add(Component.empty().append(line).withStyle(style -> style.withItalic(false)));
+		}
+		return out;
+	}
+
+	/** Description of a set bonus: one line per attribute ("+2 Robustesse"), its power, its recharge. */
+	static List<String> bonusLines(UniqueConfig.SetBonus bonus) {
+		List<String> lines = new ArrayList<>();
+		for (UniqueConfig.AttributeEntry attribute : bonus.attributes) {
+			lines.add(attributeText(attribute));
+		}
+		SetPower power = bonus.power();
+		if (power != null) {
+			lines.addAll(List.of(Lang.raw(power.langKey() + ".lore", setPowerArgs(power)).split("\n")));
+			double cooldown = UniqueModule.config().cooldownSeconds(power);
+			if (cooldown >= 1 && power != SetPower.SOUL_PYRE) {
+				lines.add(Lang.raw("unique.set.cooldown", number(cooldown)));
+			}
+		}
+		return lines;
+	}
+
+	/** "+2 Robustesse", "+10 % Vitesse", "-50 % Durée de combustion" (French attribute names of lang.json). */
+	static String attributeText(UniqueConfig.AttributeEntry attribute) {
+		String path = attribute.attribute.contains(":") ? attribute.attribute.substring(attribute.attribute.indexOf(':') + 1) : attribute.attribute;
+		String key = "unique.attribute." + path;
+		String name = Lang.has(key) ? Lang.raw(key) : path;
+		boolean percent = !"add_value".equals(attribute.operation);
+		double shown = percent ? attribute.amount * 100 : "knockback_resistance".equals(path) ? attribute.amount * 10 : attribute.amount;
+		String sign = shown < 0 ? "-" : "+";
+		return Lang.raw(percent ? "unique.attribute.percent" : "unique.attribute.value", sign + number(Math.abs(shown)), name);
+	}
+
+	private static Object[] setPowerArgs(SetPower power) {
+		UniqueConfig.Powers p = UniqueModule.config().powers;
+		return switch (power) {
+			case WINTER_HEART -> new Object[] {number(p.winterHeart.healthThreshold * 100), number(p.winterHeart.radius),
+					hearts(p.winterHeart.damage), roman(p.winterHeart.slowLevel), p.winterHeart.freezeSeconds, roman(p.winterHeart.resistanceLevel),
+					p.winterHeart.resistanceSeconds};
+			case JAGUAR_AMBUSH -> new Object[] {number(p.jaguarAmbush.camouflageSeconds), hearts(p.jaguarAmbush.damage),
+					number(p.jaguarAmbush.radius), hearts(p.jaguarAmbush.clawDamage)};
+			case SOUL_PYRE -> new Object[] {number(p.soulPyre.pulseSeconds), number(p.soulPyre.radius), hearts(p.soulPyre.damage),
+					number(p.soulPyre.healRatio * 100)};
+			default -> new Object[0];
+		};
+	}
+
+	/**
+	 * Rewrites the set section of a piece's lore for what its holder wears ({@code worn} = unique ids in his armor slots, null
+	 * when the piece is not carried: neutral look). The lines before it (the item's own lore) are kept.
+	 *
+	 * @return true when the stack changed
+	 */
+	public static boolean syncSetLore(ItemStack stack, UniqueConfig.@Nullable UniqueDef def, @Nullable Set<String> worn) {
+		UniqueConfig.SetDef set = def == null ? null : setOf(def);
+		int base = GuildyItems.data(stack).getIntOr(LORE_BASE, -1);
+		ItemLore current = stack.get(DataComponents.LORE);
+		if (set == null || base < 0 || current == null || base > current.lines().size()) {
+			return false;
+		}
+		List<Component> lines = new ArrayList<>(current.lines().subList(0, base));
+		lines.addAll(setLore(def, set, worn));
+		if (lines.equals(current.lines())) {
+			return false;
+		}
+		stack.set(DataComponents.LORE, new ItemLore(lines));
+		return true;
 	}
 
 	/** Colored, non-italic item name ("&6&lFoudrelame"); names starting with '&' keep their own colors. */
@@ -230,7 +368,7 @@ public final class UniqueItems {
 		stack.set(DataComponents.ATTRIBUTE_MODIFIERS, modifiers);
 	}
 
-	private static AttributeModifier.Operation operation(String name) {
+	static AttributeModifier.Operation operation(String name) {
 		return switch (name) {
 			case "add_multiplied_base" -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
 			case "add_multiplied_total" -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
@@ -356,12 +494,72 @@ public final class UniqueItems {
 
 	/**
 	 * Custom model (and worn look of the armors) only when a resource pack is guaranteed (Polymer or forced in the config);
-	 * otherwise the vanilla model and look of the base item. Also reverts items created while models were enabled.
+	 * otherwise the vanilla model and look of the base item. Also reverts items created while models were enabled, and
+	 * keeps the protection floor of the armors in line with the config ({@link #syncArmorFloor}).
 	 *
 	 * @return true when the stack changed
 	 */
 	public static boolean syncVisuals(ItemStack stack, UniqueConfig.@Nullable UniqueDef def) {
-		return syncModel(stack, def) | syncEquipment(stack, def);
+		return syncModel(stack, def) | syncEquipment(stack, def) | syncArmorFloor(stack);
+	}
+
+	/**
+	 * Protection floor of a unique worn in an armor slot ({@link ArmorFloor}): the item's own armor, toughness and
+	 * knockback resistance for its slot (base item + definition, the floor modifiers left out) are completed up to the
+	 * floor of uniques.json5 {@code armorFloor} with modifiers {@code guildy:unique_floor_<slot>_<stat>}; no floor (or a
+	 * higher value) = no modifier. Copies in circulation are brought in line by the inventory scan (worn armor included).
+	 *
+	 * @return true when the stack changed
+	 */
+	public static boolean syncArmorFloor(ItemStack stack) {
+		Equippable equippable = stack.getPrototype().get(DataComponents.EQUIPPABLE);
+		if (equippable == null || equippable.slot().getType() != EquipmentSlot.Type.HUMANOID_ARMOR) {
+			return false;
+		}
+		EquipmentSlot slot = equippable.slot();
+		String slotName = slot.getSerializedName();
+		ItemAttributeModifiers current = stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
+		List<ItemAttributeModifiers.Entry> kept = new ArrayList<>();
+		double armor = 0;
+		double toughness = 0;
+		double knockback = 0;
+		for (ItemAttributeModifiers.Entry entry : current.modifiers()) {
+			Identifier id = entry.modifier().id();
+			if (Guildy.MOD_ID.equals(id.getNamespace()) && ArmorFloor.isFloorModifier(id.getPath())) {
+				continue;
+			}
+			kept.add(entry);
+			if (entry.modifier().operation() != AttributeModifier.Operation.ADD_VALUE || !entry.slot().test(slot)) {
+				continue;
+			}
+			if (entry.attribute().equals(Attributes.ARMOR)) {
+				armor += entry.modifier().amount();
+			} else if (entry.attribute().equals(Attributes.ARMOR_TOUGHNESS)) {
+				toughness += entry.modifier().amount();
+			} else if (entry.attribute().equals(Attributes.KNOCKBACK_RESISTANCE)) {
+				knockback += entry.modifier().amount();
+			}
+		}
+		ArmorFloor.Stats missing = ArmorFloor.missing(ArmorFloor.floor(UniqueModule.config().armorFloor, slotName),
+				new ArmorFloor.Stats(armor, toughness, knockback));
+		List<ItemAttributeModifiers.Entry> wanted = new ArrayList<>(kept);
+		EquipmentSlotGroup group = EquipmentSlotGroup.bySlot(slot);
+		addFloor(wanted, Attributes.ARMOR, slotName, "armor", missing.armor(), group);
+		addFloor(wanted, Attributes.ARMOR_TOUGHNESS, slotName, "toughness", missing.toughness(), group);
+		addFloor(wanted, Attributes.KNOCKBACK_RESISTANCE, slotName, "knockback", missing.knockback(), group);
+		if (wanted.equals(current.modifiers())) {
+			return false;
+		}
+		stack.set(DataComponents.ATTRIBUTE_MODIFIERS, new ItemAttributeModifiers(List.copyOf(wanted)));
+		return true;
+	}
+
+	private static void addFloor(List<ItemAttributeModifiers.Entry> entries, Holder<Attribute> attribute, String slot, String stat, double amount,
+			EquipmentSlotGroup group) {
+		if (amount > 0) {
+			Identifier id = Identifier.fromNamespaceAndPath(Guildy.MOD_ID, ArmorFloor.modifierPath(slot, stat));
+			entries.add(new ItemAttributeModifiers.Entry(attribute, new AttributeModifier(id, amount, AttributeModifier.Operation.ADD_VALUE), group));
+		}
 	}
 
 	private static boolean syncModel(ItemStack stack, UniqueConfig.@Nullable UniqueDef def) {

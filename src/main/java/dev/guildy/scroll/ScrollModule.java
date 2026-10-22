@@ -6,6 +6,7 @@ import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Lang;
 import dev.guildy.core.ScrollDrops;
 import dev.guildy.stats.FightTracker;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -138,6 +139,21 @@ public final class ScrollModule {
 	 */
 	public static @Nullable String pendingRally(UUID member) {
 		return RallySpell.pendingCommand(member);
+	}
+
+	/**
+	 * Why {@code caster} could not sound the rally of the default Ralliement scroll right now (the message they would read,
+	 * colors stripped), or null when they could (tests).
+	 */
+	public static @Nullable String rallyRefusal(ServerPlayer caster) {
+		ScrollConfig.ScrollDef def = null;
+		for (ScrollConfig.ScrollDef candidate : config().usable()) {
+			if (candidate.spell() == Spell.RALLY && (def == null || candidate.id.equals("ralliement"))) {
+				def = candidate;
+			}
+		}
+		String failure = def == null ? "scroll.fail.unknown" : RallySpell.check(new SpellContext(caster, def));
+		return failure == null ? null : Lang.strip(Lang.raw(SpellFailure.key(failure), SpellFailure.args(failure)));
 	}
 
 	/** Meteors of the meteor showers cast by this player that landed since the server started (statistics, tests). */

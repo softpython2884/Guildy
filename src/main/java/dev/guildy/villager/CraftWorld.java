@@ -81,6 +81,14 @@ final class CraftWorld {
 		return level.getEntitiesOfClass(ArmorStand.class, box, stand -> stand.isAlive() && mostDamaged(stand) != null);
 	}
 
+	/** Live armor stands of the chunk (repairs and rune inspections). */
+	static List<ArmorStand> stands(ServerLevel level, LevelChunk chunk) {
+		int x0 = chunk.getPos().getMinBlockX();
+		int z0 = chunk.getPos().getMinBlockZ();
+		AABB box = new AABB(x0, level.getMinY(), z0, x0 + 16, level.getMaxY() + 1, z0 + 16);
+		return level.getEntitiesOfClass(ArmorStand.class, box, ArmorStand::isAlive);
+	}
+
 	// ------------------------------------------------------------------ anvils
 
 	/** Height of the slot's item on a standing armor stand (particles). */

@@ -1,5 +1,7 @@
 package dev.guildy.villager;
 
+import dev.guildy.rune.RuneRules;
+
 /**
  * Blacksmith / alchemist data of a guild villager (persisted in {@link VillagerRecord#craft}, created the first time
  * one of these tasks works): statistics and the alchemist's daily count. Kept when the task changes.
@@ -14,6 +16,14 @@ public class CraftData {
 	public long repairSteps;
 	/** Anvils used until they broke. */
 	public long anvilsWorn;
+	/** Runes inscribed on the armor of the armor stands. */
+	public long runes;
+	/** Id of the last rune inscribed, "" before the first one. */
+	public String lastRune = "";
+	/** Claim-level day of {@link #runesToday} (-1 = none yet). */
+	public long runeDay = -1;
+	/** Runes of that day (daily cap: runes.json5 inscription.maxPerDay). */
+	public int runesToday;
 
 	// alchemist
 	/** Enchanted books made. */
@@ -73,6 +83,22 @@ public class CraftData {
 		}
 	}
 
+	/** Runes inscribed on {@code today}. */
+	public int runesToday(long today) {
+		return RuneRules.madeToday(runeDay, runesToday, today);
+	}
+
+	/** Counts one rune inscribed on {@code today}. */
+	public void countRune(long today, String id) {
+		if (runeDay != today) {
+			runesToday = 0;
+			runeDay = today;
+		}
+		runesToday++;
+		runes++;
+		lastRune = id == null ? "" : id;
+	}
+
 	/** Counts the bottles of a finished batch of {@code today}. */
 	public void countPotions(long today, int bottles) {
 		rollDay(today);
@@ -102,6 +128,11 @@ public class CraftData {
 		if (lastPotion == null) {
 			lastPotion = "";
 		}
+		if (lastRune == null) {
+			lastRune = "";
+		}
+		runes = Math.max(0, runes);
+		runesToday = Math.max(0, runesToday);
 		if (role == null || AlchemyJob.parse(role) == null) {
 			role = "";
 		}

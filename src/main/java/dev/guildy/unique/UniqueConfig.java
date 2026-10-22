@@ -32,9 +32,11 @@ import java.util.regex.Pattern;
 public final class UniqueConfig implements Validatable {
 	/**
 	 * Current file format: 2 = drop tables of the ruin bosses added to older files, 3 = crossbow model, 4 = the seven uniques
-	 * of the ruins (definitions and drop table entries added to older files).
+	 * of the ruins (definitions and drop table entries added to older files), 5 = the three armor sets (twelve pieces, set
+	 * definitions, drop table and favourite entries added to older files) and the protection floor of the unique armors
+	 * ({@link #armorFloor}, "netherite" for the older files, which do not have it).
 	 */
-	public static final int CURRENT_VERSION = 4;
+	public static final int CURRENT_VERSION = 5;
 	/** Drop sources used by the other modules (UniqueDrops.roll). */
 	public static final List<String> SOURCES = List.of("boss", "blood_boss", "quest", "legendary_quest", "expedition", "trade",
 			"ruin_boss", "nether_ruin_boss");
@@ -43,6 +45,13 @@ public final class UniqueConfig implements Validatable {
 	/** Uniques added by format 4 (ruin guardians, cursed guardians, legendary contracts). */
 	public static final List<String> RUIN_UNIQUES = List.of("lance_du_jaguar_celeste", "couronne_du_roi_de_givre", "egide_des_ames",
 			"masse_du_zenith", "lame_du_pacte", "hache_du_seigneur_de_guerre", "plastron_du_serpent");
+	/** The armor sets added by format 5 (helmet, chestplate, leggings, boots of each). */
+	public static final List<String> SET_IDS = List.of("hiver_eternel", "guerrier_jaguar", "brasier_des_ames");
+	/** The twelve set pieces added by format 5, set by set. */
+	public static final List<String> SET_UNIQUES = List.of(
+			"heaume_hiver_eternel", "cuirasse_hiver_eternel", "jambieres_hiver_eternel", "solerets_hiver_eternel",
+			"masque_guerrier_jaguar", "pectoral_guerrier_jaguar", "jambieres_guerrier_jaguar", "sandales_guerrier_jaguar",
+			"heaume_brasier_des_ames", "cuirasse_brasier_des_ames", "greves_brasier_des_ames", "bottes_brasier_des_ames");
 	/** Separator of the drop context in a source ("ruin_boss@grand_temple_maya,cursed"), see {@link #effectiveTable}. */
 	public static final char CONTEXT = '@';
 	private static final Set<String> DYES = Set.of("white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray", "light_gray",
@@ -76,6 +85,14 @@ public final class UniqueConfig implements Validatable {
 
 	@Comment("Annonce a tout le serveur quand une guilde a reuni toutes les armes uniques (collection complete)")
 	public boolean announceCollection = true;
+
+	@Comment({
+			"Protection minimale des armures uniques : \"netherite\" = chaque piece unique portee (casque, plastron, jambieres,",
+			"bottes) protege au moins comme la piece en netherite du meme emplacement (points d'armure, robustesse, resistance",
+			"au recul ; une valeur superieure de la definition est gardee, les exemplaires deja obtenus sont mis a jour) ;",
+			"\"none\" = seulement les valeurs de l'objet de base et de la definition."
+	})
+	public String armorFloor = ArmorFloor.NETHERITE;
 
 	@Comment({
 			"Modeles et textures personnalises (pack de ressources) :",
@@ -121,13 +138,24 @@ public final class UniqueConfig implements Validatable {
 			"tree_feller, excavate, vein_miner, double_jump, shockwave, phoenix_arrows, tide_call, soul_harvest, jaguar_pounce,",
 			"frost_crown, soul_aegis, solar_leap, pact_seal, infernal_rift, jade_gale ou vide), model (texture du pack de",
 			"ressources, vide = apparence vanilla), color (couleur RGB du cuir teint, -1 = aucune), banner (bouclier : base = couleur",
-			"de fond, patterns [{pattern: minecraft:skull..., color}] = motifs de banniere vanilla, visibles sans pack).",
+			"de fond, patterns [{pattern: minecraft:skull..., color}] = motifs de banniere vanilla, visibles sans pack),",
+			"set (id d'une panoplie de \"sets\" : la piece compte pour ses bonus, vide = aucune).",
 			"Les objets deja obtenus suivent le pouvoir et le modele de la config ; nom, description et enchantements restent",
 			"ceux de leur creation."
 	})
 	public List<UniqueDef> items = defaultItems();
 
+	@Comment({
+			"Panoplies : les armures uniques dont le champ \"set\" porte cet id. Portees ensemble (pieces differentes), elles",
+			"donnent des bonus par palier : bonuses [{pieces (nombre de pieces portees), name, attributes [{attribute, amount,",
+			"operation}] (ajoutes au joueur tant que le palier est atteint), power (frost_blood, winter_heart, jaguar_ambush,",
+			"soul_pyre ou vide ; reglages dans powers)}]. Les paliers se cumulent (4 pieces = bonus 2 + bonus 4)."
+	})
+	public List<SetDef> sets = defaultSets();
+
 	private transient Map<String, UniqueDef> byId = new LinkedHashMap<>();
+	private transient Map<String, SetDef> setsById = new LinkedHashMap<>();
+	private transient Map<String, List<String>> piecesBySet = new LinkedHashMap<>();
 	private transient UniquenessMode mode = UniquenessMode.GUILD;
 	private transient Set<UniqueRarity> announced = EnumSet.of(UniqueRarity.LEGENDARY, UniqueRarity.MYTHIC);
 
@@ -199,6 +227,61 @@ public final class UniqueConfig implements Validatable {
 		public InfernalRift infernalRift = new InfernalRift();
 		@Comment("Plastron du Serpent a plumes (jade_gale) - sous un seuil de vie, souffle de jade qui repousse les monstres")
 		public JadeGale jadeGale = new JadeGale();
+		@Comment("Panoplie de l'Hiver eternel, 4 pieces (winter_heart) - sous un seuil de vie, une nova de givre gele les monstres")
+		public WinterHeart winterHeart = new WinterHeart();
+		@Comment("Panoplie du Guerrier jaguar, 4 pieces (jaguar_ambush) - accroupi, camouflage ; l'attaque suivante est une embuscade")
+		public JaguarAmbush jaguarAmbush = new JaguarAmbush();
+		@Comment("Panoplie du Brasier des ames, 4 pieces (soul_pyre) - aura qui draine les ames des monstres, trainee de feu d'ame")
+		public SoulPyre soulPyre = new SoulPyre();
+	}
+
+	@Json5.Section
+	public static final class WinterHeart {
+		public double cooldownSeconds = 60;
+		@Comment("Seuil de vie apres un coup (0.3 = 30 %), rayon de la nova, degats de froid, duree (secondes) et niveau de la lenteur")
+		public double healthThreshold = 0.3;
+		public double radius = 6;
+		public double damage = 6;
+		public int freezeSeconds = 5;
+		public int slowLevel = 4;
+		@Comment("Projection des monstres, puis Resistance (duree en secondes, niveau) et Absorption (niveau) du porteur")
+		public double push = 0.9;
+		public int resistanceSeconds = 6;
+		public int resistanceLevel = 2;
+		public int absorptionLevel = 2;
+	}
+
+	@Json5.Section
+	public static final class JaguarAmbush {
+		public double cooldownSeconds = 12;
+		@Comment("Secondes accroupi et sans attaquer avant le camouflage (dans le feuillage : foliageSeconds), portee ou les monstres perdent votre trace")
+		public double camouflageSeconds = 1.5;
+		public double foliageSeconds = 0.5;
+		public double loseTrackRange = 16;
+		@Comment("Delai (secondes) pour frapper apres la fin du camouflage, degats ajoutes au coup d'embuscade")
+		public double strikeWindowSeconds = 2;
+		public double damage = 10;
+		@Comment("Griffes autour de la cible : rayon, degats, nombre maximum de monstres, duree (secondes) et niveau de la lenteur")
+		public double radius = 3.5;
+		public double clawDamage = 6;
+		public int maxTargets = 6;
+		public int slowSeconds = 3;
+		public int slowLevel = 2;
+	}
+
+	@Json5.Section
+	public static final class SoulPyre {
+		@Comment("Une pulsation toutes les pulseSeconds : degats aux monstres a radius blocs (maxTargets au plus), part rendue au porteur, soin maximum")
+		public double pulseSeconds = 2;
+		public double radius = 5;
+		public double damage = 2;
+		public int maxTargets = 4;
+		public double healRatio = 0.5;
+		public double maxHeal = 3;
+		@Comment("Trainee de feu d'ame en courant : duree d'une flamme (secondes), degats de feu et embrasement (secondes) des monstres qui la touchent")
+		public double trailSeconds = 3;
+		public double trailDamage = 3;
+		public int fireSeconds = 3;
 	}
 
 	@Json5.Section
@@ -438,6 +521,7 @@ public final class UniqueConfig implements Validatable {
 		public String model = "";
 		public int color = -1;
 		public @Nullable Banner banner;
+		public String set = "";
 
 		private transient UniqueRarity parsedRarity = UniqueRarity.RARE;
 		private transient @Nullable UniquePower parsedPower;
@@ -484,6 +568,47 @@ public final class UniqueConfig implements Validatable {
 		}
 	}
 
+	/** An armor set: the uniques whose {@code set} is this id, and its bonuses per number of pieces worn. */
+	public static final class SetDef {
+		public String id = "";
+		public String name = "";
+		public List<SetBonus> bonuses = new ArrayList<>();
+
+		/** Bonuses by increasing number of pieces (after {@link #rebuild}). */
+		public List<SetBonus> bonuses() {
+			return bonuses;
+		}
+
+		SetDef bonus(int pieces, String name, @Nullable SetPower power, AttributeEntry... attributes) {
+			SetBonus bonus = new SetBonus();
+			bonus.pieces = pieces;
+			bonus.name = name;
+			bonus.power = power == null ? "" : power.id;
+			bonus.attributes.addAll(List.of(attributes));
+			bonuses.add(bonus);
+			return this;
+		}
+	}
+
+	/** One tier of a set: reached with {@code pieces} different pieces worn; attribute modifiers on the player and a power. */
+	public static final class SetBonus {
+		public int pieces = 2;
+		public String name = "";
+		public List<AttributeEntry> attributes = new ArrayList<>();
+		public String power = "";
+
+		private transient @Nullable SetPower parsedPower;
+
+		public @Nullable SetPower power() {
+			return parsedPower;
+		}
+	}
+
+	/** An attribute of a set bonus (on the player: no equipment slot). */
+	static AttributeEntry bonusAttr(String attribute, double amount, String operation) {
+		return new AttributeEntry(attribute, amount, operation, "armor");
+	}
+
 	// ================================================================== queries
 
 	/** Valid definition (after {@link #rebuild}), or null. */
@@ -494,6 +619,22 @@ public final class UniqueConfig implements Validatable {
 	/** Valid definitions, in file order. */
 	public Collection<UniqueDef> usable() {
 		return byId.values();
+	}
+
+	/** Valid set (after {@link #rebuild}), or null. */
+	public @Nullable SetDef set(@Nullable String id) {
+		return id == null ? null : setsById.get(id.trim().toLowerCase(Locale.ROOT));
+	}
+
+	/** Valid sets that have pieces, in file order. */
+	public Collection<SetDef> usableSets() {
+		return setsById.values();
+	}
+
+	/** Ids of the valid pieces of a set, in file order (empty for an unknown set). */
+	public List<String> piecesOf(@Nullable String setId) {
+		List<String> pieces = setId == null ? null : piecesBySet.get(setId.trim().toLowerCase(Locale.ROOT));
+		return pieces == null ? List.of() : pieces;
 	}
 
 	/** Drop table of a source, or null. */
@@ -600,12 +741,121 @@ public final class UniqueConfig implements Validatable {
 		}
 		mode = parsed;
 		uniqueness = parsed.id();
+		String floor = ArmorFloor.parse(armorFloor);
+		if (floor == null) {
+			warnings.add("armorFloor '" + armorFloor + "' unknown (netherite, none): netherite used");
+			floor = ArmorFloor.NETHERITE;
+		}
+		armorFloor = floor;
 		rebuildAnnounce(warnings);
+		rebuildSets(warnings);
 		rebuildItems(itemExists, warnings);
+		linkSets(warnings);
 		rebuildDrops(warnings);
 		rebuildFavorites(warnings);
 		rebuildPowers();
 		return warnings;
+	}
+
+	/** Set definitions: ids, names, bonuses (tiers sorted by pieces, one per number of pieces), attributes and powers. */
+	private void rebuildSets(List<String> warnings) {
+		if (sets == null) {
+			sets = defaultSets();
+		}
+		Map<String, SetDef> valid = new LinkedHashMap<>();
+		for (SetDef set : sets) {
+			if (set == null) {
+				continue;
+			}
+			set.id = set.id == null ? "" : set.id.trim().toLowerCase(Locale.ROOT);
+			if (!ID.matcher(set.id).matches()) {
+				warnings.add("set '" + set.id + "': invalid id (a-z, 0-9, _): ignored");
+				continue;
+			}
+			if (valid.containsKey(set.id)) {
+				warnings.add("set '" + set.id + "': duplicate id: ignored");
+				continue;
+			}
+			if (set.name == null || set.name.isBlank()) {
+				set.name = set.id;
+			}
+			Map<Integer, SetBonus> tiers = new java.util.TreeMap<>();
+			if (set.bonuses != null) {
+				for (SetBonus bonus : set.bonuses) {
+					if (bonus == null) {
+						continue;
+					}
+					if (bonus.pieces < 1 || bonus.pieces > 16) {
+						warnings.add("set '" + set.id + "': bonus for " + bonus.pieces + " pieces (1 to 16): ignored");
+						continue;
+					}
+					if (tiers.containsKey(bonus.pieces)) {
+						warnings.add("set '" + set.id + "': two bonuses for " + bonus.pieces + " pieces: the second one is ignored");
+						continue;
+					}
+					bonus.name = bonus.name == null ? "" : bonus.name;
+					List<AttributeEntry> attributes = new ArrayList<>();
+					if (bonus.attributes != null) {
+						for (AttributeEntry attribute : bonus.attributes) {
+							if (attribute != null && (attribute.slot == null || attribute.slot.isBlank())) {
+								attribute.slot = "armor";
+							}
+							String problem = checkAttribute(attribute);
+							if (problem != null) {
+								warnings.add("set '" + set.id + "' (" + bonus.pieces + " pieces): " + problem + ": ignored");
+							} else {
+								attributes.add(attribute);
+							}
+						}
+					}
+					bonus.attributes = attributes;
+					bonus.power = bonus.power == null ? "" : bonus.power.trim().toLowerCase(Locale.ROOT);
+					bonus.parsedPower = SetPower.byId(bonus.power);
+					if (!bonus.power.isEmpty() && bonus.parsedPower == null) {
+						warnings.add("set '" + set.id + "' (" + bonus.pieces + " pieces): unknown power '" + bonus.power + "' ("
+								+ String.join(", ", SetPower.ids()) + "): none");
+						bonus.power = "";
+					}
+					tiers.put(bonus.pieces, bonus);
+				}
+			}
+			set.bonuses = new ArrayList<>(tiers.values());
+			valid.put(set.id, set);
+		}
+		setsById = valid;
+	}
+
+	/** Pieces of each set (after the items): an unknown set id on an item is cleared, a set without pieces is unused. */
+	private void linkSets(List<String> warnings) {
+		Map<String, List<String>> pieces = new LinkedHashMap<>();
+		for (UniqueDef def : byId.values()) {
+			def.set = def.set == null ? "" : def.set.trim().toLowerCase(Locale.ROOT);
+			if (def.set.isEmpty()) {
+				continue;
+			}
+			if (!setsById.containsKey(def.set)) {
+				warnings.add("item '" + def.id + "': unknown set '" + def.set + "': none");
+				def.set = "";
+				continue;
+			}
+			pieces.computeIfAbsent(def.set, key -> new ArrayList<>()).add(def.id);
+		}
+		Map<String, SetDef> used = new LinkedHashMap<>();
+		for (SetDef set : setsById.values()) {
+			List<String> own = pieces.get(set.id);
+			if (own == null || own.isEmpty()) {
+				warnings.add("set '" + set.id + "': no item has \"set\": \"" + set.id + "\" (unused)");
+				continue;
+			}
+			for (SetBonus bonus : set.bonuses) {
+				if (bonus.pieces > own.size()) {
+					warnings.add("set '" + set.id + "': bonus for " + bonus.pieces + " pieces, but the set has " + own.size() + " (never reached)");
+				}
+			}
+			used.put(set.id, set);
+		}
+		setsById = used;
+		piecesBySet = pieces;
 	}
 
 	private void rebuildFavorites(List<String> warnings) {
@@ -905,6 +1155,63 @@ public final class UniqueConfig implements Validatable {
 		p.soulHarvest.heal = clamp(p.soulHarvest.heal, 0, 40);
 		p.soulHarvest.speedSeconds = (int) clamp(p.soulHarvest.speedSeconds, 0, 60);
 		rebuildRuinPowers(p);
+		rebuildSetPowers(p);
+	}
+
+	/** Bounds of the set powers added by format 5. */
+	private static void rebuildSetPowers(Powers p) {
+		if (p.winterHeart == null) {
+			p.winterHeart = new WinterHeart();
+		}
+		WinterHeart wh = p.winterHeart;
+		wh.cooldownSeconds = clamp(wh.cooldownSeconds, 1, 3600);
+		wh.healthThreshold = clamp(wh.healthThreshold, 0.05, 0.95);
+		wh.radius = clamp(wh.radius, 1, 16);
+		wh.damage = clamp(wh.damage, 0, 200);
+		wh.freezeSeconds = (int) clamp(wh.freezeSeconds, 0, 60);
+		wh.slowLevel = (int) clamp(wh.slowLevel, 1, 6);
+		wh.push = clamp(wh.push, 0, 4);
+		wh.resistanceSeconds = (int) clamp(wh.resistanceSeconds, 0, 60);
+		wh.resistanceLevel = (int) clamp(wh.resistanceLevel, 1, 4);
+		wh.absorptionLevel = (int) clamp(wh.absorptionLevel, 0, 5);
+		if (p.jaguarAmbush == null) {
+			p.jaguarAmbush = new JaguarAmbush();
+		}
+		JaguarAmbush ja = p.jaguarAmbush;
+		ja.cooldownSeconds = clamp(ja.cooldownSeconds, 1, 600);
+		ja.camouflageSeconds = clamp(ja.camouflageSeconds, 0.25, 30);
+		ja.foliageSeconds = clamp(ja.foliageSeconds, 0.25, ja.camouflageSeconds);
+		ja.loseTrackRange = clamp(ja.loseTrackRange, 0, 48);
+		ja.strikeWindowSeconds = clamp(ja.strikeWindowSeconds, 0, 30);
+		ja.damage = clamp(ja.damage, 0, 200);
+		ja.radius = clamp(ja.radius, 0, 10);
+		ja.clawDamage = clamp(ja.clawDamage, 0, 200);
+		ja.maxTargets = (int) clamp(ja.maxTargets, 0, 24);
+		ja.slowSeconds = (int) clamp(ja.slowSeconds, 0, 60);
+		ja.slowLevel = (int) clamp(ja.slowLevel, 1, 6);
+		if (p.soulPyre == null) {
+			p.soulPyre = new SoulPyre();
+		}
+		SoulPyre sp = p.soulPyre;
+		sp.pulseSeconds = clamp(sp.pulseSeconds, 0.5, 60);
+		sp.radius = clamp(sp.radius, 1, 12);
+		sp.damage = clamp(sp.damage, 0, 200);
+		sp.maxTargets = (int) clamp(sp.maxTargets, 1, 24);
+		sp.healRatio = clamp(sp.healRatio, 0, 2);
+		sp.maxHeal = clamp(sp.maxHeal, 0, 40);
+		sp.trailSeconds = clamp(sp.trailSeconds, 0, 10);
+		sp.trailDamage = clamp(sp.trailDamage, 0, 200);
+		sp.fireSeconds = (int) clamp(sp.fireSeconds, 0, 60);
+	}
+
+	/** Recharge of a set power (seconds; the pulse of the soul pyre aura), 0 for a passive one. */
+	public double cooldownSeconds(SetPower power) {
+		return switch (power) {
+			case WINTER_HEART -> powers.winterHeart.cooldownSeconds;
+			case JAGUAR_AMBUSH -> powers.jaguarAmbush.cooldownSeconds;
+			case SOUL_PYRE -> powers.soulPyre.pulseSeconds;
+			default -> 0;
+		};
 	}
 
 	/** Bounds of the powers added by format 4. */
@@ -1064,6 +1371,86 @@ public final class UniqueConfig implements Validatable {
 		if (configVersion < 4) {
 			addRuinUniques();
 		}
+		if (configVersion < 5) {
+			addSetUniques();
+			// The armor floor is new in format 5: an older file never chose it, the default applies.
+			if (armorFloor == null || armorFloor.isBlank()) {
+				armorFloor = ArmorFloor.NETHERITE;
+			}
+		}
+	}
+
+	/**
+	 * Format 5: the twelve set pieces (definitions absent from the file), the three set definitions (absent ids), their
+	 * entries in the legendary_quest table and in the favourites of their guardians (only where absent: a definition, a set
+	 * or an entry removed after the migration stays removed; a table removed by the admin is never added back; a favourite
+	 * key of a guardian missing from the file gets only the set pieces).
+	 */
+	private void addSetUniques() {
+		if (items != null) {
+			Set<String> present = new java.util.HashSet<>();
+			for (UniqueDef def : items) {
+				if (def != null && def.id != null) {
+					present.add(def.id.trim().toLowerCase(Locale.ROOT));
+				}
+			}
+			for (UniqueDef def : defaultItems()) {
+				if (SET_UNIQUES.contains(def.id) && !present.contains(def.id)) {
+					items.add(def);
+				}
+			}
+		}
+		if (sets != null) {
+			Set<String> present = new java.util.HashSet<>();
+			for (SetDef set : sets) {
+				if (set != null && set.id != null) {
+					present.add(set.id.trim().toLowerCase(Locale.ROOT));
+				}
+			}
+			for (SetDef set : defaultSets()) {
+				if (!present.contains(set.id)) {
+					sets.add(set);
+				}
+			}
+		}
+		if (drops != null) {
+			Map<String, DropTable> defaults = defaultDrops();
+			for (Map.Entry<String, DropTable> entry : drops.entrySet()) {
+				DropTable table = entry.getValue();
+				DropTable reference = entry.getKey() == null ? null : defaults.get(entry.getKey().trim().toLowerCase(Locale.ROOT));
+				if (table == null || reference == null) {
+					continue;
+				}
+				if (table.items == null) {
+					table.items = new LinkedHashMap<>();
+				}
+				for (String id : SET_UNIQUES) {
+					Double weight = reference.items.get(id);
+					if (weight != null) {
+						table.items.putIfAbsent(id, weight);
+					}
+				}
+			}
+		}
+		if (favorites != null) {
+			for (Map.Entry<String, Map<String, Double>> entry : defaultFavorites().entrySet()) {
+				Map<String, Double> pieces = new LinkedHashMap<>();
+				for (Map.Entry<String, Double> weight : entry.getValue().entrySet()) {
+					if (SET_UNIQUES.contains(weight.getKey())) {
+						pieces.put(weight.getKey(), weight.getValue());
+					}
+				}
+				if (pieces.isEmpty()) {
+					continue;
+				}
+				Map<String, Double> existing = favorites.get(entry.getKey());
+				if (existing == null) {
+					favorites.put(entry.getKey(), pieces);
+				} else {
+					pieces.forEach(existing::putIfAbsent);
+				}
+			}
+		}
 	}
 
 	/** Format 4: the new definitions and their drop table entries, only where absent. */
@@ -1125,6 +1512,10 @@ public final class UniqueConfig implements Validatable {
 				// The uniques of the ruins: rarely in a legendary contract.
 				.add("lance_du_jaguar_celeste", 1).add("couronne_du_roi_de_givre", 1).add("egide_des_ames", 1).add("masse_du_zenith", 1)
 				.add("hache_du_seigneur_de_guerre", 1).add("plastron_du_serpent", 1).add("lame_du_pacte", 0.5));
+		// The armor set pieces: rarely in a legendary contract (their guardians favour them, see defaultFavorites).
+		for (String id : SET_UNIQUES) {
+			map.get("legendary_quest").add(id, 0.5);
+		}
 		map.put("expedition", new DropTable(0.02, true)
 				.add("coutelas_du_contrebandier", 10).add("bottes_du_coursier", 10).add("pic_du_filon", 8)
 				.add("hache_sylvestre", 4).add("croc_de_givre", 3).add("arbalete_du_traqueur", 3).add("bottes_de_zephyr", 1));
@@ -1146,7 +1537,11 @@ public final class UniqueConfig implements Validatable {
 		return map;
 	}
 
-	/** Each new unique favoured by the guardian of its ruin; the cursed blade by every cursed guardian. */
+	/**
+	 * Each new unique favoured by the guardian of its ruin; the cursed blade by every cursed guardian; the pieces of each
+	 * armor set by the guardians of its ruins (they never drop from the plain tables of the ruins: only there, and rarely
+	 * from a legendary contract).
+	 */
 	public static Map<String, Map<String, Double>> defaultFavorites() {
 		Map<String, Map<String, Double>> map = new LinkedHashMap<>();
 		map.put("ruin_boss@grand_temple_maya", new LinkedHashMap<>(Map.of("lance_du_jaguar_celeste", 25.0)));
@@ -1157,7 +1552,44 @@ public final class UniqueConfig implements Validatable {
 		map.put("nether_ruin_boss@autel_infernal", new LinkedHashMap<>(Map.of("hache_du_seigneur_de_guerre", 25.0)));
 		map.put("ruin_boss@cursed", new LinkedHashMap<>(Map.of("lame_du_pacte", 30.0)));
 		map.put("nether_ruin_boss@cursed", new LinkedHashMap<>(Map.of("lame_du_pacte", 30.0)));
+		addSetFavorites(map, "ruin_boss@bastion_de_givre", "hiver_eternel", 15);
+		addSetFavorites(map, "ruin_boss@grand_temple_maya", "guerrier_jaguar", 15);
+		addSetFavorites(map, "ruin_boss@temple_maya", "guerrier_jaguar", 8);
+		addSetFavorites(map, "nether_ruin_boss@citadelle_des_ames", "brasier_des_ames", 15);
+		addSetFavorites(map, "nether_ruin_boss@autel_infernal", "brasier_des_ames", 8);
 		return map;
+	}
+
+	/** The four pieces of a default set (SET_UNIQUES, in order) favoured by a guardian with this weight each. */
+	private static void addSetFavorites(Map<String, Map<String, Double>> map, String key, String set, double weight) {
+		int index = SET_IDS.indexOf(set);
+		for (String id : SET_UNIQUES.subList(index * 4, index * 4 + 4)) {
+			map.get(key).put(id, weight);
+		}
+	}
+
+	/** The three armor sets of the ruins (format 5): a passive bonus with two pieces, a power with four. */
+	public static List<SetDef> defaultSets() {
+		List<SetDef> list = new ArrayList<>();
+		list.add(setDef("hiver_eternel", "&bPanoplie de l'Hiver éternel")
+				.bonus(2, "Sang-froid", SetPower.FROST_BLOOD, bonusAttr("minecraft:armor_toughness", 2, "add_value"))
+				.bonus(4, "Cœur de l'hiver", SetPower.WINTER_HEART, bonusAttr("minecraft:max_health", 4, "add_value")));
+		list.add(setDef("guerrier_jaguar", "&6Panoplie du Guerrier jaguar")
+				.bonus(2, "Agilité du jaguar", null, bonusAttr("minecraft:movement_speed", 0.1, "add_multiplied_base"),
+						bonusAttr("minecraft:safe_fall_distance", 3, "add_value"))
+				.bonus(4, "Embuscade du jaguar", SetPower.JAGUAR_AMBUSH, bonusAttr("minecraft:attack_damage", 1, "add_value")));
+		list.add(setDef("brasier_des_ames", "&3Panoplie du Brasier des âmes")
+				.bonus(2, "Flamme d'âme", null, bonusAttr("minecraft:max_health", 4, "add_value"),
+						bonusAttr("minecraft:burning_time", -0.5, "add_multiplied_base"))
+				.bonus(4, "Bûcher des âmes", SetPower.SOUL_PYRE, bonusAttr("minecraft:armor_toughness", 2, "add_value")));
+		return list;
+	}
+
+	private static SetDef setDef(String id, String name) {
+		SetDef set = new SetDef();
+		set.id = id;
+		set.name = name;
+		return set;
 	}
 
 	public static List<UniqueDef> defaultItems() {
@@ -1224,7 +1656,85 @@ public final class UniqueConfig implements Validatable {
 				.attr("minecraft:attack_speed", 0.4, "add_value", "mainhand")
 				.attr("minecraft:luck", 1, "add_value", "mainhand"));
 		list.addAll(ruinItems());
+		list.addAll(setItems());
 		return list;
+	}
+
+	/**
+	 * The twelve pieces of the three armor sets (format 5): good armors on their own (enchantments, attributes), no power of
+	 * their own (the power comes from the set, see {@link #defaultSets}). The jaguar warrior's gold is unbreakable (golden
+	 * armor wears out too fast for a unique).
+	 */
+	private static List<UniqueDef> setItems() {
+		List<UniqueDef> list = new ArrayList<>();
+		// Hiver éternel: frost-steel plates of the Bastion de givre (diamond).
+		list.add(piece("heaume_hiver_eternel", "diamond_helmet", "Heaume de l'Hiver éternel", UniqueRarity.EPIC, "hiver_eternel", false)
+				.story("Sa visière n'a jamais dégelé :", "le regard qui s'y cache non plus.")
+				.ench("minecraft:protection", 4).ench("minecraft:respiration", 3).ench("minecraft:aqua_affinity", 1)
+				.ench("minecraft:unbreaking", 3).ench("minecraft:mending", 1)
+				.attr("minecraft:armor_toughness", 1, "add_value", "head"));
+		list.add(piece("cuirasse_hiver_eternel", "diamond_chestplate", "Cuirasse de l'Hiver éternel", UniqueRarity.EPIC, "hiver_eternel", false)
+				.story("Forgée dans la glace du Bastion,", "elle garde au cœur un hiver qui ne finit pas.")
+				.ench("minecraft:protection", 4).ench("minecraft:thorns", 2).ench("minecraft:unbreaking", 3).ench("minecraft:mending", 1)
+				.attr("minecraft:max_health", 2, "add_value", "chest"));
+		list.add(piece("jambieres_hiver_eternel", "diamond_leggings", "Jambières de l'Hiver éternel", UniqueRarity.EPIC, "hiver_eternel", false)
+				.story("Le givre qui les couvre", "éteint les flammes qui s'en approchent.")
+				.ench("minecraft:protection", 4).ench("minecraft:fire_protection", 3).ench("minecraft:unbreaking", 3).ench("minecraft:mending", 1)
+				.attr("minecraft:knockback_resistance", 0.1, "add_value", "legs"));
+		list.add(piece("solerets_hiver_eternel", "diamond_boots", "Solerets de l'Hiver éternel", UniqueRarity.EPIC, "hiver_eternel", false)
+				.story("Chaque pas fige l'eau", "comme le souffle du Roi de givre.")
+				.ench("minecraft:protection", 4).ench("minecraft:frost_walker", 2).ench("minecraft:feather_falling", 4)
+				.ench("minecraft:unbreaking", 3).ench("minecraft:mending", 1)
+				.attr("minecraft:movement_speed", 0.05, "add_multiplied_base", "feet"));
+		// Guerrier jaguar: gold, spotted pelt and jade of the Mayan temples (gold, unbreakable).
+		list.add(piece("masque_guerrier_jaguar", "golden_helmet", "Masque du Guerrier jaguar", UniqueRarity.EPIC, "guerrier_jaguar", true)
+				.story("Le guerrier regarde le monde", "par la gueule ouverte du jaguar.")
+				.ench("minecraft:protection", 4).ench("minecraft:projectile_protection", 3)
+				.attr("minecraft:armor", 2, "add_value", "head")
+				.attr("minecraft:armor_toughness", 1, "add_value", "head"));
+		list.add(piece("pectoral_guerrier_jaguar", "golden_chestplate", "Pectoral du Guerrier jaguar", UniqueRarity.EPIC, "guerrier_jaguar", true)
+				.story("Or des prêtres, jade du fleuve,", "peau du jaguar céleste.")
+				.ench("minecraft:protection", 4).ench("minecraft:thorns", 1)
+				.attr("minecraft:armor", 3, "add_value", "chest")
+				.attr("minecraft:armor_toughness", 1, "add_value", "chest")
+				.attr("minecraft:attack_damage", 1, "add_value", "chest"));
+		list.add(piece("jambieres_guerrier_jaguar", "golden_leggings", "Jambières du Guerrier jaguar", UniqueRarity.EPIC, "guerrier_jaguar", true)
+				.story("Le guerrier jaguar ne fait aucun bruit", "quand il se glisse sous les feuilles.")
+				.ench("minecraft:protection", 4).ench("minecraft:swift_sneak", 3)
+				.attr("minecraft:armor", 3, "add_value", "legs")
+				.attr("minecraft:armor_toughness", 1, "add_value", "legs"));
+		list.add(piece("sandales_guerrier_jaguar", "golden_boots", "Sandales du Guerrier jaguar", UniqueRarity.EPIC, "guerrier_jaguar", true)
+				.story("Lacées d'or et de jade,", "elles bondissent de branche en branche.")
+				.ench("minecraft:protection", 4).ench("minecraft:feather_falling", 4)
+				.attr("minecraft:armor", 2, "add_value", "feet")
+				.attr("minecraft:armor_toughness", 1, "add_value", "feet")
+				.attr("minecraft:jump_strength", 0.08, "add_value", "feet"));
+		// Brasier des âmes: blackened soul-steel of the Citadelle des âmes (netherite).
+		list.add(piece("heaume_brasier_des_ames", "netherite_helmet", "Heaume du Brasier des âmes", UniqueRarity.LEGENDARY, "brasier_des_ames", false)
+				.story("Ses yeux brûlent d'un feu bleu", "qui ne réchauffe personne.")
+				.ench("minecraft:protection", 4).ench("minecraft:respiration", 3).ench("minecraft:unbreaking", 4).ench("minecraft:mending", 1)
+				.attr("minecraft:max_health", 2, "add_value", "head"));
+		list.add(piece("cuirasse_brasier_des_ames", "netherite_chestplate", "Cuirasse du Brasier des âmes", UniqueRarity.LEGENDARY, "brasier_des_ames",
+				false)
+				.story("Le Champion des âmes y enfermait", "les esprits des guerriers vaincus.")
+				.ench("minecraft:protection", 4).ench("minecraft:thorns", 3).ench("minecraft:unbreaking", 4).ench("minecraft:mending", 1)
+				.attr("minecraft:attack_damage", 1, "add_value", "chest"));
+		list.add(piece("greves_brasier_des_ames", "netherite_leggings", "Grèves du Brasier des âmes", UniqueRarity.LEGENDARY, "brasier_des_ames", false)
+				.story("Des flammes d'âme courent", "dans les fissures du métal noir.")
+				.ench("minecraft:protection", 4).ench("minecraft:fire_protection", 4).ench("minecraft:unbreaking", 4).ench("minecraft:mending", 1)
+				.attr("minecraft:knockback_resistance", 0.1, "add_value", "legs"));
+		list.add(piece("bottes_brasier_des_ames", "netherite_boots", "Bottes du Brasier des âmes", UniqueRarity.LEGENDARY, "brasier_des_ames", false)
+				.story("Elles laissent derrière elles", "une traînée de flammes bleues.")
+				.ench("minecraft:protection", 4).ench("minecraft:soul_speed", 3).ench("minecraft:feather_falling", 4)
+				.ench("minecraft:unbreaking", 4).ench("minecraft:mending", 1)
+				.attr("minecraft:movement_speed", 0.05, "add_multiplied_base", "feet"));
+		return list;
+	}
+
+	private static UniqueDef piece(String id, String item, String name, UniqueRarity rarity, String set, boolean unbreakable) {
+		UniqueDef def = def(id, item, name, rarity, null, unbreakable);
+		def.set = set;
+		return def;
 	}
 
 	/** The seven uniques of the ruins (format 4): one per themed guardian, the cursed blade of the cursed guardians. */

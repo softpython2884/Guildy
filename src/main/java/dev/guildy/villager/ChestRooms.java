@@ -33,7 +33,8 @@ import java.util.UUID;
  * runs at creation, when the order changes, and while a sorter works: one room every {@code roomPlanSeconds} / number of
  * rooms (each room every {@code roomPlanSeconds}, never all rooms in the same tick); a chest whose category changes is
  * renamed and the sorters move its items. A room reserved to some categories ({@link ChestRoom#categories}) plans only
- * those (each keeps at least one line). Runtime state (empty since, last plan) is not saved.
+ * those (each keeps at least one line). A filtered room ({@link #setFiltered}) is never planned: its automatic chests
+ * receive what they already hold ({@link RoomContents}). Runtime state (empty since, last plan) is not saved.
  */
 final class ChestRooms {
 	/** Chest position → scheduler tick since which it is empty. */
@@ -198,7 +199,7 @@ final class ChestRooms {
 			if (budget <= 0) {
 				continue;
 			}
-			StorageChest chest = new StorageChest(at, StorageChest.Role.CATEGORY, "");
+			StorageChest chest = new StorageChest(at, room.filtered() ? StorageChest.Role.CONTENT : StorageChest.Role.CATEGORY, "");
 			chest.auto = true;
 			chest.room = room.id;
 			// Added together at the end: the index (lookups above) is not rebuilt for every new chest.
@@ -238,6 +239,44 @@ final class ChestRooms {
 		UNPLACED.remove(guild.id + ":" + room.id);
 		Tidier.invalidate(guild);
 		GuildManager.markDirty();
+	}
+
+	/**
+	 * Turns a room into a filtered room (each automatic chest then receives the kinds of items it holds now; nothing is
+	 * moved) or back into an automatic room (its automatic chests go back to the reserve and the room is planned again
+	 * from scratch: the sorters then move the items to their categories). Manual chests keep their role.
+	 *
+	 * @return number of automatic chests converted
+	 */
+	static int setFiltered(ServerLevel level, Guild guild, ChestRoom room, boolean filtered) {
+		if (room.filtered() == filtered) {
+			return 0;
+		}
+		room.mode = filtered ? ChestRoom.Mode.FILTERED : null;
+		int converted = 0;
+		for (StorageChest chest : chests(guild, room)) {
+			if (!chest.auto) {
+				continue;
+			}
+			chest.role = filtered ? StorageChest.Role.CONTENT : StorageChest.Role.CATEGORY;
+			chest.category = "";
+			chest.filter = null;
+			EMPTY_SINCE.remove(chest.pos);
+			converted++;
+		}
+		UNPLACED.remove(guild.id + ":" + room.id);
+		Storage.changed(guild);
+		if (filtered) {
+			RoomContents.refreshRoom(level, guild, room);
+		} else {
+			plan(level, guild, room, true, Scheduler.ticks());
+		}
+		for (StorageChest chest : chests(guild, room)) {
+			StorageLabels.sync(level, guild, chest);
+		}
+		Tidier.invalidate(guild);
+		GuildManager.markDirty();
+		return converted;
 	}
 
 	private static String nextName(Guild guild) {
@@ -301,6 +340,10 @@ final class ChestRooms {
 	 * @return number of chests whose category changed, -1 when a chest of the room is not loaded (nothing done)
 	 */
 	static int plan(ServerLevel level, Guild guild, ChestRoom room, boolean fresh, long now) {
+		if (room.filtered()) {
+			// Nothing to plan: each chest receives what it already holds.
+			return 0;
+		}
 		VillagerConfig.Storage config = VillagerModule.config().storage;
 		List<StorageChest> chests = distinctChests(level, guild, room);
 		if (chests.isEmpty()) {
