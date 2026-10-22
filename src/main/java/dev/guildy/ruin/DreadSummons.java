@@ -180,10 +180,15 @@ final class DreadSummons {
 			}
 			Rifts rifts = new Rifts(def, style, telegraph);
 			String probe = avatar.riftMobs.keySet().iterator().next();
-			for (int i = 0; i < Math.min(room, Math.max(1, def.count)) * 3 && rifts.rifts.size() < Math.min(room, Math.max(1, def.count)); i++) {
-				Vec3 spot = DreadAttacks.arenaSpot(ctx, 3, DreadAttacks.reach(ctx));
-				BlockPos fit = BossFactory.standable(ctx.level, BlockPos.containing(spot), probe, 1);
-				if (fit != null) {
+			int wanted = Math.min(room, Math.max(1, def.count));
+			double far = Math.max(3, Math.min(DreadAttacks.reach(ctx), 7));
+			for (int i = 0; i < wanted * 8 && rifts.rifts.size() < wanted; i++) {
+				// Around the Avatar, inside its arena: a floor where the Nether mob fits, away from the other rifts.
+				double a = ctx.random.nextDouble() * Math.PI * 2;
+				double d = 2.5 + ctx.random.nextDouble() * (far - 2.5);
+				BlockPos around = BlockPos.containing(ctx.boss.getX() + Math.cos(a) * d, ctx.boss.getY(), ctx.boss.getZ() + Math.sin(a) * d);
+				BlockPos fit = BossFactory.standable(ctx.level, around, probe, 1);
+				if (fit != null && rifts.rifts.stream().noneMatch(r -> r.distanceToSqr(Vec3.atBottomCenterOf(fit)) < 4)) {
 					rifts.rifts.add(Vec3.atBottomCenterOf(fit));
 				}
 			}

@@ -87,11 +87,19 @@ public final class DreadRules {
 	}
 
 	/**
+	 * Intended health of a guardian: its configured health times the threat level, the group, the curse and the dread form
+	 * (the multipliers the game would flatten at 1024).
+	 */
+	public static double intendedHealth(double configured, double threat, double group, double curse, double dread) {
+		return Math.max(1, configured) * Math.max(0, threat) * Math.max(0, group) * Math.max(0, curse) * Math.max(0, dread);
+	}
+
+	/**
 	 * How much more health the guardian really has than its {@code max_health} attribute (capped at 1024 by the game): the
-	 * damage it takes and the health it regains are divided by this factor (1 = none).
+	 * damage it takes and the health it regains are divided by this factor (1 = none; a rounding difference is none).
 	 */
 	public static double vitality(double effective, double realMax) {
-		if (!(realMax > 0) || !(effective > realMax)) {
+		if (!(realMax > 0) || !(effective > realMax * (1 + 1.0E-4))) {
 			return 1.0;
 		}
 		return effective / realMax;
@@ -265,10 +273,17 @@ public final class DreadRules {
 		if (angle <= Math.max(0, maxTurn) || angle < 1.0E-6) {
 			return b;
 		}
-		double t = Math.max(0, maxTurn) / angle;
-		double[] mixed = {a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t};
-		double length = Math.sqrt(mixed[0] * mixed[0] + mixed[1] * mixed[1] + mixed[2] * mixed[2]);
-		return length < 1.0E-6 ? b : normalize(mixed);
+		// Rotated toward the target in their common plane by exactly maxTurn.
+		double[] perp = {b[0] - a[0] * cos, b[1] - a[1] * cos, b[2] - a[2] * cos};
+		double length = Math.sqrt(perp[0] * perp[0] + perp[1] * perp[1] + perp[2] * perp[2]);
+		if (length < 1.0E-9) {
+			// Straight behind: any side will do.
+			perp = Math.abs(a[1]) < 0.9 ? new double[] {-a[2], 0, a[0]} : new double[] {1, 0, 0};
+		}
+		perp = normalize(perp);
+		double c = Math.cos(maxTurn);
+		double s = Math.sin(maxTurn);
+		return normalize(new double[] {a[0] * c + perp[0] * s, a[1] * c + perp[1] * s, a[2] * c + perp[2] * s});
 	}
 
 	static double[] normalize(double[] v) {

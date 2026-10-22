@@ -485,16 +485,21 @@ final class DreadZones {
 				return null;
 			}
 			Storm storm = new Storm(def, style, telegraph);
-			double reach = DreadAttacks.reach(ctx);
 			for (int i = 0; i < Math.max(1, def.count); i++) {
 				Vec3 spot = null;
-				for (int attempt = 0; attempt < 8 && spot == null; attempt++) {
-					Vec3 candidate = DreadAttacks.arenaSpot(ctx, 3.5, reach * 0.8);
-					if (DreadAttacks.horizontal(candidate, ctx.boss.position()) >= 3.5 && Math.abs(candidate.y - ctx.encounter.spawn.getY()) <= 4) {
+				for (int attempt = 0; attempt < 12 && spot == null; attempt++) {
+					// A few steps from a player (reachable during the warning), away from the guardian, on a clear floor.
+					ServerPlayer near = ctx.targets.get(ctx.random.nextInt(ctx.targets.size()));
+					double a = ctx.random.nextDouble() * Math.PI * 2;
+					double d = 3 + ctx.random.nextDouble() * 4;
+					Vec3 candidate = DreadAttacks.floor(ctx.level, near.getX() + Math.cos(a) * d, near.getY() + 1, near.getZ() + Math.sin(a) * d);
+					if (DreadAttacks.horizontal(candidate, ctx.boss.position()) >= 3.5 && Math.abs(candidate.y - near.getY()) <= 2
+							&& !DreadAttacks.solid(ctx.level, candidate.add(0, 0.5, 0)) && !DreadAttacks.solid(ctx.level, candidate.add(0, 1.5, 0))) {
 						spot = candidate;
 					}
 				}
-				storm.eyes.add(spot != null ? spot : DreadAttacks.arenaSpot(ctx, 3, reach * 0.6));
+				storm.eyes.add(spot != null ? spot : DreadAttacks.floor(ctx.level, ctx.encounter.spawn.getX() + 0.5, ctx.encounter.spawn.getY() + 0.5,
+						ctx.encounter.spawn.getZ() + 0.5));
 			}
 			boolean sand = "sand".equals(style);
 			DreadAttacks.warn(ctx.targets, sand ? "sandstorm" : "blizzard_dome");

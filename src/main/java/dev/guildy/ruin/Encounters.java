@@ -644,30 +644,42 @@ public final class Encounters {
 	}
 
 	/**
-	 * The dread form / the Avatar of a guardian about to appear (its other multipliers applied): its effective health (the
-	 * configured health times the threat, the group, the curse, the dread and Avatar multipliers, within their caps) becomes
-	 * its vitality over the real {@code max_health} (capped at 1024 by the game), its damage on the players, its name.
+	 * The intended health of a guardian about to appear (its other multipliers applied): the configured health times the
+	 * threat, the group, the curse, the dread form and the Avatar (within their caps). The game caps {@code max_health} at
+	 * 1024: beyond, the guardian keeps its real (capped) maximum and its vitality (intended / real) divides every hit it takes,
+	 * for every guardian (not only the dread ones: the threat, the curse and the group are never flattened). Then its damage
+	 * on the players and its name in its dread form / as the Avatar.
 	 */
 	private static void empower(Encounter encounter, Mob mob, RuinConfig cfg) {
 		DreadRules.Stats dread = encounter.dread;
 		AvatarSettings a = cfg.cursed.avatar;
-		double uncapped = encounter.def.boss.health * encounter.scaling.health() * encounter.party.health()
-				* (encounter.cursed != null ? encounter.cursed.stats.health() : 1.0) * dread.health();
-		double effective;
+		double intended = DreadRules.intendedHealth(encounter.def.boss.health, encounter.scaling.health(), encounter.party.health(),
+				encounter.cursed != null ? encounter.cursed.stats.health() : 1.0, dread.health());
+		double effective = intended;
 		if (encounter.avatar != null) {
-			effective = AvatarRules.health(uncapped, encounter.party.players(), a);
+			effective = AvatarRules.health(intended, encounter.party.players(), a);
 			encounter.playerDamage = AvatarRules.playerDamage(dread.damage(), a);
 			encounter.maxHitRatio = a.maxHitHealthRatio;
 		} else if (dread.active()) {
-			effective = DreadRules.effectiveHealth(uncapped, encounter.party.players(), cfg.escalation.dread.healthCapPerPlayer);
+			effective = DreadRules.effectiveHealth(intended, encounter.party.players(), cfg.escalation.dread.healthCapPerPlayer);
 			encounter.playerDamage = dread.damage();
 			encounter.maxHitRatio = dread.maxHitRatio();
-		} else {
-			return;
 		}
 		encounter.vitality = DreadRules.vitality(effective, mob.getMaxHealth());
 		mob.setHealth(mob.getMaxHealth());
-		applyName(encounter, mob);
+		if (encounter.avatar != null || dread.active()) {
+			applyName(encounter, mob);
+		}
+	}
+
+	/**
+	 * Max health of an entity as the fights count it: a guardian's real maximum times its vitality (its intended health:
+	 * the spells' per-cast boss cap is a share of it), the real one for every other entity.
+	 */
+	public static float effectiveMaxHealth(LivingEntity entity) {
+		Encounter encounter = BY_MOB.isEmpty() ? null : BY_MOB.get(entity.getUUID());
+		return encounter != null && encounter.vitality > 1.0 && entity.getUUID().equals(encounter.boss)
+				? (float) (entity.getMaxHealth() * encounter.vitality) : entity.getMaxHealth();
 	}
 
 	/** The name of the guardian in its current state: cursed, risen, dread form, Avatar. */
