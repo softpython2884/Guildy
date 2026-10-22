@@ -8,16 +8,19 @@ import dev.guildy.core.ScrollDrops;
 import dev.guildy.stats.FightTracker;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
 /**
  * Spell scrolls ("parchemins de sort"): single-use vanilla items (custom data + components) defined in
- * config/guildy/scrolls.json5, cast with a vanilla channel animation, eighteen spells with long animated particle shows (PvE
- * only, no block ever changed), drop tables per source and the admin commands; the grimoire binds up to four scrolls and
+ * config/guildy/scrolls.json5, cast with a vanilla channel animation, nineteen spells with long animated particle shows (PvE
+ * only, no block ever changed; one of them is a real fireworks show), drop tables per source and the admin commands; the
+ * grimoire binds up to four scrolls and
  * casts their spells for food, the cursed grimoire (dropped only by the cursed guardians of {@code cursedGrimoire.ruinDrops})
  * casts them much stronger for food and blood. Implements the core {@link ScrollDrops} hook used by the ruin bosses, the hordes, the quests,
  * the merchants, the expeditions and the alchemist villagers.
@@ -44,6 +47,8 @@ public final class ScrollModule {
 		Vulnerability.init();
 		TailwindSpell.init();
 		RallySpell.registerCommand();
+		ShowLang.register();
+		FireworksSpell.init();
 		// Fight statistics: the hits of a summoned guardian count for its caster.
 		FightTracker.addOwnerResolver(GuardiansSpell::summoner);
 		ScrollDrops.roller = ScrollModule::roll;
@@ -154,6 +159,44 @@ public final class ScrollModule {
 		}
 		String failure = def == null ? "scroll.fail.unknown" : RallySpell.check(new SpellContext(caster, def));
 		return failure == null ? null : Lang.strip(Lang.raw(SpellFailure.key(failure), SpellFailure.args(failure)));
+	}
+
+	/**
+	 * A running Grand spectacle: launch points, length and age (ticks), rockets planned, launched, burst, in flight and
+	 * skipped (nobody watching, server limit), cursed show, launch points (left to right as the audience sees them).
+	 */
+	public record ShowStatus(int points, int ticks, int age, int planned, int launched, int exploded, int flying, int skipped, boolean cursed,
+			List<Vec3> spots) {
+	}
+
+	/** The fireworks show this player is running, or null (tests). */
+	public static @Nullable ShowStatus show(UUID caster) {
+		FireworksSpell show = FireworksSpell.of(caster);
+		return show == null ? null : show.status();
+	}
+
+	/** Launch points the default Grand spectacle scroll would get if {@code caster} read it now (tests). */
+	public static List<Vec3> showStage(ServerPlayer caster) {
+		ScrollConfig.ScrollDef def = null;
+		for (ScrollConfig.ScrollDef candidate : config().usable()) {
+			if (candidate.spell() == Spell.FIREWORKS && (def == null || candidate.id.equals("grand_spectacle"))) {
+				def = candidate;
+			}
+		}
+		return def == null ? List.of() : FireworksSpell.stage(new SpellContext(caster, def)).spots();
+	}
+
+	/** Ends the fireworks show of this player at once, its rockets removed (tests). */
+	public static void endShow(UUID caster) {
+		FireworksSpell show = FireworksSpell.of(caster);
+		if (show != null) {
+			show.stopNow();
+		}
+	}
+
+	/** Rockets of the fireworks shows in flight on the server (tests). */
+	public static int fireworksInFlight() {
+		return FireworksSpell.inFlight();
 	}
 
 	/** Meteors of the meteor showers cast by this player that landed since the server started (statistics, tests). */

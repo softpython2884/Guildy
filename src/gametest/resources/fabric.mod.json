@@ -36,6 +36,7 @@
 			"dev.guildy.test.TacticalScrollGameTests",
 			"dev.guildy.test.SpellRallyGameTests",
 			"dev.guildy.test.SpellBalanceGameTests",
+			"dev.guildy.test.ShowGameTests",
 			"dev.guildy.test.VillageSignGameTests",
 			"dev.guildy.test.WorkGameTests",
 			"dev.guildy.test.StorageGameTests",

@@ -129,6 +129,13 @@
           "type": "minecraft:model",
           "model": "guildy:item/grimoire_maudit_hate_du_vent"
         }
+      },
+      {
+        "when": "grand_spectacle",
+        "model": {
+          "type": "minecraft:model",
+          "model": "guildy:item/grimoire_maudit_grand_spectacle"
+        }
       }
     ],
     "fallback": {

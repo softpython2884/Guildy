@@ -32,7 +32,7 @@ class ScrollConfigTest {
 		List<String> warnings = cfg.rebuild(id -> true);
 		assertTrue(warnings.isEmpty(), "scrolls.json5 defaults: " + warnings);
 		assertEquals(cfg.scrolls.size(), cfg.usable().size(), "every default scroll is usable");
-		assertEquals(18, cfg.usable().size(), "eighteen scrolls");
+		assertEquals(19, cfg.usable().size(), "nineteen scrolls");
 		Set<Spell> spells = EnumSet.noneOf(Spell.class);
 		Set<UniqueRarity> rarities = EnumSet.noneOf(UniqueRarity.class);
 		for (ScrollConfig.ScrollDef def : cfg.usable()) {
@@ -230,9 +230,9 @@ class ScrollConfigTest {
 		// admin), a cursed grimoire section without the new spells, the expedition table removed by the admin.
 		ScrollConfig written = new ScrollConfig();
 		written.configVersion = 3;
-		written.scrolls.removeIf(def -> ScrollConfig.NEW_SCROLLS.contains(def.id));
+		written.scrolls.removeIf(def -> ScrollConfig.NEW_SCROLLS.contains(def.id) || ScrollConfig.SHOW_SCROLLS.contains(def.id));
 		for (ScrollConfig.DropTable table : written.drops.values()) {
-			table.items.keySet().removeIf(ScrollConfig.NEW_SCROLLS::contains);
+			table.items.keySet().removeIf(id -> ScrollConfig.NEW_SCROLLS.contains(id) || ScrollConfig.SHOW_SCROLLS.contains(id));
 		}
 		written.drops.get("boss").items.put("rappel", 99.0);
 		written.drops.remove("expedition");
@@ -244,7 +244,8 @@ class ScrollConfigTest {
 		ScrollConfig old = Json5.fromString(Json5.GSON.toJson(written), ScrollConfig.class);
 		assertTrue(old.rebuild(id -> true).isEmpty(), "migrated without warnings");
 		assertEquals(ScrollConfig.CURRENT_VERSION, old.configVersion);
-		assertEquals(18, old.usable().size(), "the six new scrolls are added");
+		assertEquals(19, old.usable().size(), "the six new scrolls (and the fireworks of format 6) are added");
+		assertTrue(old.migrations().contains("+grand_spectacle"), "format 6 too: " + old.migrations());
 		for (String id : ScrollConfig.NEW_SCROLLS) {
 			assertNotNull(old.scroll(id), id + " added");
 			assertTrue(old.migrations().contains("+" + id), id + " reported: " + old.migrations());
@@ -304,7 +305,7 @@ class ScrollConfigTest {
 		String json = Json5.GSON.toJson(written).replace("\"repeatHitDecay\"", "\"removedDecay\"").replace("\"bossCastCap\"", "\"removedCap\"");
 		ScrollConfig old = Json5.fromString(json, ScrollConfig.class);
 		assertTrue(old.rebuild(id -> true).isEmpty(), "migrated without warnings");
-		assertEquals(5, ScrollConfig.CURRENT_VERSION);
+		assertEquals(6, ScrollConfig.CURRENT_VERSION);
 		assertEquals(ScrollConfig.CURRENT_VERSION, old.configVersion);
 		assertEquals(0.0, old.scroll("ralliement").param("range"), "512 -> 0: every distance");
 		assertEquals(1.0, old.scroll("ralliement").param("crossDimension"), "0 -> 1: the other dimensions too");
@@ -332,6 +333,60 @@ class ScrollConfigTest {
 		assertEquals(512.0, again.scroll("ralliement").param("range"));
 		assertEquals(0.0, again.scroll("ralliement").param("crossDimension"));
 		assertTrue(again.migrations().isEmpty(), "migrated once: " + again.migrations());
+	}
+
+	@Test
+	void showScrollIsAddedOnce() {
+		// A scrolls.json5 of Guildy 1.13 (format 5): no Grand spectacle, no weight for it, the quest table removed by the
+		// admin, an admin weight in the trade table, no limits.maxFireworks yet.
+		ScrollConfig written = new ScrollConfig();
+		written.configVersion = 5;
+		written.scrolls.removeIf(def -> ScrollConfig.SHOW_SCROLLS.contains(def.id));
+		for (ScrollConfig.DropTable table : written.drops.values()) {
+			table.items.keySet().removeIf(ScrollConfig.SHOW_SCROLLS::contains);
+		}
+		written.drops.remove("quest");
+		written.drops.get("trade").items.put("rappel", 42.0);
+		String json = Json5.GSON.toJson(written).replace("\"maxFireworks\"", "\"removedFireworks\"");
+		ScrollConfig old = Json5.fromString(json, ScrollConfig.class);
+		assertTrue(old.rebuild(id -> true).isEmpty(), "migrated without warnings");
+		assertEquals(ScrollConfig.CURRENT_VERSION, old.configVersion);
+		assertEquals(List.of("+grand_spectacle"), old.migrations());
+		ScrollConfig.ScrollDef show = old.scroll("grand_spectacle");
+		assertNotNull(show, "the fireworks scroll is added");
+		assertEquals(Spell.FIREWORKS, show.spell());
+		assertEquals(UniqueRarity.EPIC, show.rarity(), "epic: the alchemist may write it at a level-30 table");
+		assertEquals("spectacle", show.cooldownGroup);
+		ScrollConfig defaults = new ScrollConfig();
+		defaults.rebuild(id -> true);
+		for (String source : List.of("trade", "expedition", "legendary_quest", "ruin_boss", "nether_ruin_boss")) {
+			assertNotNull(defaults.table(source).items.get("grand_spectacle"), source + " drops it by default");
+			assertEquals(defaults.table(source).items.get("grand_spectacle"), old.table(source).items.get("grand_spectacle"), source);
+		}
+		assertNull(old.table("quest"), "a table removed by the admin is not brought back");
+		assertEquals(42.0, old.table("trade").items.get("rappel"), "the admin's weight is kept");
+		assertEquals(new ScrollConfig().limits.maxFireworks, old.limits.maxFireworks, "the server limit of rockets appears");
+		// Never from the horde bosses; rarely from the ruins, mostly from the trade hub and the expeditions.
+		assertNull(defaults.table("boss").items.get("grand_spectacle"));
+		assertNull(defaults.table("blood_boss").items.get("grand_spectacle"));
+		assertTrue(defaults.table("ruin_boss").items.get("grand_spectacle") < defaults.table("trade").items.get("grand_spectacle"));
+
+		// Once migrated, an admin who removes it keeps it removed.
+		ScrollConfig edited = Json5.fromString(Json5.GSON.toJson(old), ScrollConfig.class);
+		edited.scrolls.removeIf(def -> def.id.equals("grand_spectacle"));
+		for (ScrollConfig.DropTable table : edited.drops.values()) {
+			table.items.remove("grand_spectacle");
+		}
+		ScrollConfig again = Json5.fromString(Json5.GSON.toJson(edited), ScrollConfig.class);
+		assertTrue(again.rebuild(id -> true).isEmpty());
+		assertNull(again.scroll("grand_spectacle"));
+		assertTrue(again.migrations().isEmpty(), "migrated once: " + again.migrations());
+
+		// Bounds of the server limit of rockets.
+		ScrollConfig bad = new ScrollConfig();
+		bad.limits.maxFireworks = 2;
+		bad.rebuild(id -> true);
+		assertEquals(8, bad.limits.maxFireworks);
 	}
 
 	private static void check(List<String> missing, String path) throws Exception {

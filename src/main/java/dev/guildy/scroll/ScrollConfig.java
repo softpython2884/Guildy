@@ -43,15 +43,19 @@ public final class ScrollConfig implements Validatable {
 	 * the cursed grimoire's per-spell settings, only where absent. 5 (Guildy 1.13): the rally calls every online member by
 	 * default ({@link #migrateRally}: range 512 -> 0 = unlimited, crossDimension 0 -> 1, where still at the old defaults);
 	 * the per-cast limits of the damage spells ({@code limits.repeatHitDecay}, {@code limits.repeatHitFloor},
-	 * {@code limits.bossCastCap}, {@code cursedGrimoire.bossCastCap}) appear with their defaults.
+	 * {@code limits.bossCastCap}, {@code cursedGrimoire.bossCastCap}) appear with their defaults. 6 (Guildy 1.14): the Grand
+	 * spectacle fireworks scroll ({@link #SHOW_SCROLLS}) added once to the definitions and to the drop tables, only where
+	 * absent; {@code limits.maxFireworks} appears with its default.
 	 */
-	public static final int CURRENT_VERSION = 5;
+	public static final int CURRENT_VERSION = 6;
 	/** Ralliement before format 5: range (blocks) and crossDimension defaults. */
 	static final double OLD_RALLY_RANGE = 512;
 	static final double OLD_RALLY_CROSS = 0;
 	/** The scrolls of format 4, added once to older files (a definition or an entry removed afterwards stays removed). */
 	public static final List<String> NEW_SCROLLS = List.of("banniere_de_guerre", "fleau", "permutation", "ralliement", "chaines_spectrales",
 			"hate_du_vent");
+	/** The scroll of format 6 (the fireworks show), added once to older files like the scrolls of format 4. */
+	public static final List<String> SHOW_SCROLLS = List.of("grand_spectacle");
 	/** Channel of the grimoire before format 2 (too short to see the circle form). */
 	static final double OLD_GRIMOIRE_CHANNEL = 0.4;
 	/** Default damage (health points) of the damage spells before format 3. */
@@ -112,7 +116,7 @@ public final class ScrollConfig implements Validatable {
 	@Comment({
 			"Parchemins : id (minuscules, chiffres, _), name, rarity (RARE, EPIC, LEGENDARY, MYTHIC), lore (histoire, codes &),",
 			"spell (meteor_shower, chain_storm, blizzard, solar_nova, singularity, aegis, recall, guardians, blessing, revelation,",
-			"earthquake, arcane_ray, war_banner, scourge, swap, rally, spectral_chains, tailwind), params (reglages du sort ;",
+			"earthquake, arcane_ray, war_banner, scourge, swap, rally, spectral_chains, tailwind, fireworks), params (reglages du sort ;",
 			"degats et soins en points de vie : 2 = 1 coeur ; pourcentages : 25 = +25 % ; les parametres",
 			"absents prennent leur valeur par defaut, tous sont bornes), item (objet vanilla simple de base : papier, motif de",
 			"banniere...), glint (brillance), maxStack (1 a 64), channelSeconds (duree de l'incantation, 0.25 a 10), animation",
@@ -151,6 +155,11 @@ public final class ScrollConfig implements Validatable {
 		public int viewDistance = 96;
 		@Comment("Gardiens (golems invoques) vivants en meme temps par joueur")
 		public int maxGuardiansPerPlayer = 4;
+		@Comment({
+				"Fusees de feu d'artifice (Grand spectacle) en vol en meme temps sur tout le serveur, tous spectacles confondus (8 a 512) :",
+				"au-dela, des fusees du spectacle sont sautees (chaque spectacle en a deja 40 au plus, 48 pour le grimoire maudit)"
+		})
+		public int maxFireworks = 120;
 		@Comment({
 				"Rendement decroissant (0.05 a 1) : chaque nouveau coup d'un meme sort sur la meme cible fait moins mal, ses degats",
 				"sont multiplies par cette valeur une fois de plus a chaque coup (0.75 : 100 %, 75 %, 56 %, 42 %... ; 1 = desactive).",
@@ -482,6 +491,10 @@ public final class ScrollConfig implements Validatable {
 			migrations = new ArrayList<>(migrations);
 			migrations.addAll(migrateRally(scrolls));
 		}
+		if (configVersion < 6) {
+			migrations = new ArrayList<>(migrations);
+			migrations.addAll(addScrolls(SHOW_SCROLLS, List.of()));
+		}
 	}
 
 	/**
@@ -517,6 +530,15 @@ public final class ScrollConfig implements Validatable {
 	 * grimoire's settings of their spells, each only where absent (admin edits are kept). @return what was added ("+id")
 	 */
 	List<String> addNewScrolls() {
+		return addScrolls(NEW_SCROLLS, List.of(Spell.WAR_BANNER, Spell.SCOURGE, Spell.SWAP, Spell.RALLY, Spell.SPECTRAL_CHAINS, Spell.TAILWIND));
+	}
+
+	/**
+	 * Adds once (pure) the default scrolls {@code ids}: their definitions, their weights in the existing drop tables and the
+	 * cursed grimoire's default settings of {@code cursedSpells}, each only where absent (admin edits are kept; a table the
+	 * admin removed is not brought back). @return what was added ("+id")
+	 */
+	List<String> addScrolls(List<String> ids, List<Spell> cursedSpells) {
 		List<String> added = new ArrayList<>();
 		if (scrolls != null) {
 			Set<String> present = new java.util.HashSet<>();
@@ -526,7 +548,7 @@ public final class ScrollConfig implements Validatable {
 				}
 			}
 			for (ScrollDef def : defaultScrolls()) {
-				if (NEW_SCROLLS.contains(def.id) && !present.contains(def.id)) {
+				if (ids.contains(def.id) && !present.contains(def.id)) {
 					scrolls.add(def);
 					added.add("+" + def.id);
 				}
@@ -543,7 +565,7 @@ public final class ScrollConfig implements Validatable {
 				if (table.items == null) {
 					table.items = new LinkedHashMap<>();
 				}
-				for (String id : NEW_SCROLLS) {
+				for (String id : ids) {
 					Double weight = reference.items.get(id);
 					if (weight != null) {
 						table.items.putIfAbsent(id, weight);
@@ -553,7 +575,7 @@ public final class ScrollConfig implements Validatable {
 		}
 		if (cursedGrimoire != null && cursedGrimoire.spells != null) {
 			Map<String, Map<String, Double>> defaults = defaultCursedSpells();
-			for (Spell spell : List.of(Spell.WAR_BANNER, Spell.SCOURGE, Spell.SWAP, Spell.RALLY, Spell.SPECTRAL_CHAINS, Spell.TAILWIND)) {
+			for (Spell spell : cursedSpells) {
 				Map<String, Double> own = defaults.get(spell.id);
 				if (own != null && !cursedGrimoire.spells.containsKey(spell.id)) {
 					cursedGrimoire.spells.put(spell.id, new LinkedHashMap<>(own));
@@ -735,6 +757,7 @@ public final class ScrollConfig implements Validatable {
 		limits.particleBudget = (int) clamp(limits.particleBudget, 100, 20000);
 		limits.viewDistance = (int) clamp(limits.viewDistance, 16, 256);
 		limits.maxGuardiansPerPlayer = (int) clamp(limits.maxGuardiansPerPlayer, 1, 16);
+		limits.maxFireworks = (int) clamp(limits.maxFireworks, 8, 512);
 		limits.repeatHitDecay = clamp(limits.repeatHitDecay, 0.05, 1);
 		limits.repeatHitFloor = clamp(limits.repeatHitFloor, 0, 1);
 		limits.bossCastCap = clamp(limits.bossCastCap, 0.001, 1);
@@ -1002,7 +1025,21 @@ public final class ScrollConfig implements Validatable {
 				.add("rappel", 8).add("benediction", 8).add("revelation", 8).add("seisme", 5).add("tempete_de_foudre", 5).add("blizzard", 5)
 				.add("egide", 4).add("nova_solaire", 2).add("pluie_de_meteores", 2).add("gardiens", 2).add("hate_du_vent", 7)
 				.add("permutation", 6).add("ralliement", 6).add("banniere_de_guerre", 4).add("fleau", 4).add("chaines_spectrales", 2));
+		addShowDrops(map);
 		return map;
+	}
+
+	/**
+	 * Grand spectacle (Guildy 1.14): mostly from the trade hub, the expeditions and the quests, rarely from the ruins, never
+	 * from the horde bosses.
+	 */
+	private static void addShowDrops(Map<String, DropTable> map) {
+		map.get("trade").add("grand_spectacle", 4);
+		map.get("expedition").add("grand_spectacle", 4);
+		map.get("quest").add("grand_spectacle", 3);
+		map.get("legendary_quest").add("grand_spectacle", 3);
+		map.get("ruin_boss").add("grand_spectacle", 1);
+		map.get("nether_ruin_boss").add("grand_spectacle", 1);
 	}
 
 	public static List<ScrollDef> defaultScrolls() {
@@ -1048,6 +1085,9 @@ public final class ScrollConfig implements Validatable {
 				.story("Forgées dans les limbes", "pour les âmes qui refusaient de partir."));
 		list.add(def("hate_du_vent", "Hâte du vent", UniqueRarity.RARE, Spell.TAILWIND, "guster_banner_pattern", 1.0, "soutien", 30)
 				.story("Une plume de brise cousue", "dans la reliure du parchemin."));
+		// Guildy 1.14: the fireworks show.
+		list.add(def("grand_spectacle", "Grand spectacle", UniqueRarity.EPIC, Spell.FIREWORKS, "flower_banner_pattern", 3.0, "spectacle", 120)
+				.story("Le carnet d'un artificier royal :", "chaque rune est une gerbe qui attend la nuit."));
 		return list;
 	}
 
