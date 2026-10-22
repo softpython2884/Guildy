@@ -1,0 +1,385 @@
+// Guildy - alchimie : potions et elixirs prepares par les villageois alchimistes a un alambic du territoire.
+// Chaque brassage transforme jusqu'a 3 fioles avec 1 ingredient, comme un alambic vanilla (duree, poudre de blaze :
+// villagers.json5 -> alchemist). L'alchimiste part de fioles d'eau (ou de fioles vides remplies a une source d'eau ou
+// a un chaudron pres de l'alambic) et enchaine les etapes jusqu'au produit voulu, puis le range au stockage.
+// Produits : 'healing' (potion), 'splash:healing' (jetable), 'lingering:healing' (persistante), 'elixir:arcanique'.
+// Stocks : chaque guilde choisit combien en garder (menu de l'alchimiste -> Stocks de potions) ; ici les valeurs par
+// defaut. Commandes admin : /guild admin elixir list | give <joueur> <id> [nombre] | boosts <joueur>.
+{
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"formatVersion": 1,
+
+	// Etapes de brassage connues : "entree + ingredient -> sortie" (produits comme ci-dessus, ingredient = id d'objet ;
+	// 'minecraft:' facultatif). Par defaut, les recettes vanilla des potions (verrue du Nether, puis l'ingredient de l'effet,
+	// redstone = plus long, poudre lumineuse = plus fort, oeil d'araignee fermente = effet inverse). Une ligne invalide est
+	// ignoree avec un avertissement dans les journaux du serveur.
+	"recipes": [
+		"water + minecraft:nether_wart -> awkward",
+		"water + minecraft:fermented_spider_eye -> weakness",
+		"weakness + minecraft:redstone -> long_weakness",
+		"awkward + minecraft:glistering_melon_slice -> healing",
+		"healing + minecraft:glowstone_dust -> strong_healing",
+		"awkward + minecraft:spider_eye -> poison",
+		"poison + minecraft:redstone -> long_poison",
+		"poison + minecraft:glowstone_dust -> strong_poison",
+		"healing + minecraft:fermented_spider_eye -> harming",
+		"strong_healing + minecraft:fermented_spider_eye -> strong_harming",
+		"poison + minecraft:fermented_spider_eye -> harming",
+		"long_poison + minecraft:fermented_spider_eye -> harming",
+		"strong_poison + minecraft:fermented_spider_eye -> strong_harming",
+		"harming + minecraft:glowstone_dust -> strong_harming",
+		"awkward + minecraft:ghast_tear -> regeneration",
+		"regeneration + minecraft:redstone -> long_regeneration",
+		"regeneration + minecraft:glowstone_dust -> strong_regeneration",
+		"awkward + minecraft:blaze_powder -> strength",
+		"strength + minecraft:redstone -> long_strength",
+		"strength + minecraft:glowstone_dust -> strong_strength",
+		"awkward + minecraft:sugar -> swiftness",
+		"swiftness + minecraft:redstone -> long_swiftness",
+		"swiftness + minecraft:glowstone_dust -> strong_swiftness",
+		"swiftness + minecraft:fermented_spider_eye -> slowness",
+		"long_swiftness + minecraft:fermented_spider_eye -> long_slowness",
+		"awkward + minecraft:rabbit_foot -> leaping",
+		"leaping + minecraft:redstone -> long_leaping",
+		"leaping + minecraft:glowstone_dust -> strong_leaping",
+		"leaping + minecraft:fermented_spider_eye -> slowness",
+		"long_leaping + minecraft:fermented_spider_eye -> long_slowness",
+		"slowness + minecraft:redstone -> long_slowness",
+		"slowness + minecraft:glowstone_dust -> strong_slowness",
+		"awkward + minecraft:magma_cream -> fire_resistance",
+		"fire_resistance + minecraft:redstone -> long_fire_resistance",
+		"awkward + minecraft:golden_carrot -> night_vision",
+		"night_vision + minecraft:redstone -> long_night_vision",
+		"night_vision + minecraft:fermented_spider_eye -> invisibility",
+		"long_night_vision + minecraft:fermented_spider_eye -> long_invisibility",
+		"invisibility + minecraft:redstone -> long_invisibility",
+		"awkward + minecraft:pufferfish -> water_breathing",
+		"water_breathing + minecraft:redstone -> long_water_breathing",
+		"awkward + minecraft:turtle_helmet -> turtle_master",
+		"turtle_master + minecraft:redstone -> long_turtle_master",
+		"turtle_master + minecraft:glowstone_dust -> strong_turtle_master",
+		"awkward + minecraft:phantom_membrane -> slow_falling",
+		"slow_falling + minecraft:redstone -> long_slow_falling",
+		"awkward + minecraft:breeze_rod -> wind_charged",
+		"awkward + minecraft:cobweb -> weaving",
+		"awkward + minecraft:slime_block -> oozing",
+		"awkward + minecraft:stone -> infested"
+	],
+
+	// Ingredient qui rend une potion jetable (toute potion buvable + cet ingredient ; "" = jamais de potion jetable)
+	"splashReagent": "minecraft:gunpowder",
+
+	// Ingredient qui rend une potion jetable persistante ("" = jamais de potion persistante)
+	"lingeringReagent": "minecraft:dragon_breath",
+
+	// Stocks gardes par defaut (produit -> nombre de fioles, 0 = pas de stock mais visible dans le menu) : l'alchimiste
+	// prepare en priorite le produit le plus en dessous de son stock. Cette liste donne aussi l'ordre du menu des stocks ;
+	// les elixirs absents de la liste y sont ajoutes a 0. Les stocks se comptent dans tous les coffres du stockage.
+	"stock": {
+		"healing": 6,
+		"strong_healing": 3,
+		"splash:healing": 3,
+		"regeneration": 2,
+		"strength": 4,
+		"strong_strength": 2,
+		"swiftness": 2,
+		"fire_resistance": 4,
+		"night_vision": 2,
+		"water_breathing": 2,
+		"slow_falling": 2,
+		"invisibility": 0,
+		"leaping": 0,
+		"turtle_master": 0,
+		"long_fire_resistance": 0,
+		"splash:harming": 0,
+		"splash:poison": 0,
+		"splash:weakness": 0,
+		"splash:slowness": 0,
+		"lingering:healing": 0,
+		"elixir:arcanique": 2,
+		"elixir:satiete": 2,
+		"elixir:colosse": 2,
+		"elixir:bete": 1,
+		"elixir:ombre": 1,
+		"elixir:phenix": 1,
+		"elixir:titan": 0,
+		"elixir:clairvoyance": 0,
+		"elixir:abysses": 0
+	},
+
+	// Stock maximum qu'une guilde peut demander par produit (1 a 256)
+	"maxStockTarget": 64,
+
+	// Elixirs de Guildy : potions buvables (fiole vanilla) avec leurs propres effets, couleur et nom. Recette : la potion
+	// 'base' (preparee d'abord par l'alchimiste) + l'ingredient 'reagent' (un brassage). effects : effets vanilla
+	// (level 1 = niveau I, seconds = duree). Bonus magiques (pendant magicSeconds, a la fin de la gorgee) : spellPower
+	// (0.25 = sorts +25 % : degats, soins, durees), cooldownReduction (0.3 = recharges des parchemins et grimoires -30 %),
+	// channelReduction (0.3 = incantations -30 %), foodReduction (0.5 = faim du grimoire -50 %). enabled=false : plus
+	// prepare ni bu (les fioles deja faites restent des potions sans bonus magique).
+	"elixirs": [
+		{
+			"id": "colosse",
+			"name": "&6Élixir du colosse",
+			"color": "#8E3B1F",
+			"base": "strong_strength",
+			"reagent": "minecraft:armadillo_scute",
+			"effects": [
+				{
+					"effect": "minecraft:strength",
+					"level": 2,
+					"seconds": 180
+				},
+				{
+					"effect": "minecraft:resistance",
+					"level": 1,
+					"seconds": 180
+				}
+			],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.0,
+			"magicSeconds": 0,
+			"lore": [
+				"Une potion de force II épaissie d'écailles",
+				"de tatou : la peau devient de la pierre."
+			],
+			"enabled": true
+		},
+		{
+			"id": "bete",
+			"name": "&2Élixir de la bête",
+			"color": "#6B8E23",
+			"base": "strength",
+			"reagent": "minecraft:rabbit_foot",
+			"effects": [
+				{
+					"effect": "minecraft:strength",
+					"level": 1,
+					"seconds": 180
+				},
+				{
+					"effect": "minecraft:speed",
+					"level": 1,
+					"seconds": 180
+				},
+				{
+					"effect": "minecraft:jump_boost",
+					"level": 1,
+					"seconds": 180
+				}
+			],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.0,
+			"magicSeconds": 0,
+			"lore": [
+				"Force, vitesse et bonds du fauve."
+			],
+			"enabled": true
+		},
+		{
+			"id": "ombre",
+			"name": "&8Élixir de l'ombre",
+			"color": "#3B3355",
+			"base": "invisibility",
+			"reagent": "minecraft:phantom_membrane",
+			"effects": [
+				{
+					"effect": "minecraft:invisibility",
+					"level": 1,
+					"seconds": 240
+				},
+				{
+					"effect": "minecraft:night_vision",
+					"level": 1,
+					"seconds": 240
+				},
+				{
+					"effect": "minecraft:speed",
+					"level": 1,
+					"seconds": 240
+				}
+			],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.0,
+			"magicSeconds": 0,
+			"lore": [
+				"Voir sans être vu, et filer avant l'aube."
+			],
+			"enabled": true
+		},
+		{
+			"id": "titan",
+			"name": "&eÉlixir du titan",
+			"color": "#E8B730",
+			"base": "strong_healing",
+			"reagent": "minecraft:golden_apple",
+			"effects": [
+				{
+					"effect": "minecraft:health_boost",
+					"level": 2,
+					"seconds": 240
+				},
+				{
+					"effect": "minecraft:absorption",
+					"level": 2,
+					"seconds": 240
+				}
+			],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.0,
+			"magicSeconds": 0,
+			"lore": [
+				"Quatre cœurs de plus, et un bouclier doré."
+			],
+			"enabled": true
+		},
+		{
+			"id": "phenix",
+			"name": "&cÉlixir du phénix",
+			"color": "#FF6A1A",
+			"base": "fire_resistance",
+			"reagent": "minecraft:ghast_tear",
+			"effects": [
+				{
+					"effect": "minecraft:fire_resistance",
+					"level": 1,
+					"seconds": 240
+				},
+				{
+					"effect": "minecraft:regeneration",
+					"level": 2,
+					"seconds": 45
+				}
+			],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.0,
+			"magicSeconds": 0,
+			"lore": [
+				"Renaître des flammes, encore et encore."
+			],
+			"enabled": true
+		},
+		{
+			"id": "abysses",
+			"name": "&3Élixir des abysses",
+			"color": "#1E6F8F",
+			"base": "water_breathing",
+			"reagent": "minecraft:heart_of_the_sea",
+			"effects": [
+				{
+					"effect": "minecraft:water_breathing",
+					"level": 1,
+					"seconds": 480
+				},
+				{
+					"effect": "minecraft:conduit_power",
+					"level": 1,
+					"seconds": 480
+				},
+				{
+					"effect": "minecraft:dolphins_grace",
+					"level": 1,
+					"seconds": 480
+				}
+			],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.0,
+			"magicSeconds": 0,
+			"lore": [
+				"Le cœur de la mer bat dans vos veines."
+			],
+			"enabled": true
+		},
+		{
+			"id": "arcanique",
+			"name": "&dÉlixir arcanique",
+			"color": "#A64DFF",
+			"base": "awkward",
+			"reagent": "minecraft:amethyst_shard",
+			"effects": [],
+			"spellPower": 0.25,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.0,
+			"magicSeconds": 300,
+			"lore": [
+				"L'améthyste chante : vos sorts frappent",
+				"plus fort, soignent mieux et durent plus longtemps."
+			],
+			"enabled": true
+		},
+		{
+			"id": "clairvoyance",
+			"name": "&bÉlixir de clairvoyance",
+			"color": "#6FE3E8",
+			"base": "night_vision",
+			"reagent": "minecraft:echo_shard",
+			"effects": [
+				{
+					"effect": "minecraft:night_vision",
+					"level": 1,
+					"seconds": 300
+				}
+			],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.3,
+			"channelReduction": 0.3,
+			"foodReduction": 0.0,
+			"magicSeconds": 300,
+			"lore": [
+				"L'écho du vide guide la main : incantations",
+				"plus rapides, recharges plus courtes."
+			],
+			"enabled": true
+		},
+		{
+			"id": "satiete",
+			"name": "&aÉlixir de satiété mystique",
+			"color": "#8FD14F",
+			"base": "awkward",
+			"reagent": "minecraft:glow_berries",
+			"effects": [],
+			"spellPower": 0.0,
+			"cooldownReduction": 0.0,
+			"channelReduction": 0.0,
+			"foodReduction": 0.5,
+			"magicSeconds": 360,
+			"lore": [
+				"Les baies lumineuses nourrissent l'esprit :",
+				"le grimoire a moins faim."
+			],
+			"enabled": true
+		}
+	],
+
+	// Bonus magiques des elixirs : plafonds quand plusieurs elixirs sont bus, affichage
+	"magic": {
+
+		// Bonus de puissance des sorts au plus, tous elixirs confondus (1.0 = +100 %)
+		"maxPowerBonus": 1.0,
+
+		// Reduction des recharges au plus (0.75 = -75 %)
+		"maxCooldownReduction": 0.75,
+
+		// Reduction du temps d'incantation au plus (0.75 = -75 %)
+		"maxChannelReduction": 0.75,
+
+		// Reduction de la faim du grimoire au plus (1.0 = gratuit)
+		"maxFoodReduction": 1.0,
+
+		// Affichage des bonus en cours : bossbar (barre violette en haut de l'ecran), actionbar ou none
+		"display": "bossbar"
+	}
+}

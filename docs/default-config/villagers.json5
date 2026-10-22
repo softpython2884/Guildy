@@ -4,7 +4,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 7,
+	"configVersion": 8,
 
 	// Arrivees de nouveaux villageois
 	"arrivals": {
@@ -1372,6 +1372,16 @@
 		// Bois ; boutons, plaques de pression et rails dans Redstone ; dalles, escaliers et murets suivent leur matiere
 		// (pierre, bois, Nether, End...), sinon Blocs de construction. Un coffre dont la categorie n'existe plus sert de
 		// coffre 'Divers'.
+		// parent (facultatif) : "" = categorie principale ; le nom d'une autre categorie = sous-categorie : elle ne prend
+		//   que des objets de sa categorie parente, choisis par ses propres regles (ex. 'Livres enchantes' dans 'Livres et
+		//   enchantements') ; "*" = categorie transversale : ses regles s'appliquent a tous les objets, quelle que soit
+		//   leur categorie (ex. 'Equipement enchante' : @enchanted).
+		// Ou va un objet (le trieur prend le premier coffre qui a de la place, le plus proche d'abord a egalite) :
+		//   1. coffre filtre qui liste l'objet ; 2. coffre filtre de sa matiere ('diorite') ; 3. coffre filtre de son type
+		//   ('laine') ; 4. coffre d'une categorie transversale qui le prend ; 5. coffre de sa sous-categorie la plus precise,
+		//   puis de la categorie parente... jusqu'a la categorie principale ; 6. coffre 'Divers' ; 7. il reste au depot.
+		//   Sans coffre 'Livres enchantes', un livre enchante va donc dans les coffres 'Livres et enchantements', sinon
+		//   'Divers' : les coffres existants continuent de recevoir leurs objets.
 		"categories": {
 			"Bois": {
 				"icon": "minecraft:oak_log",
@@ -1490,6 +1500,43 @@
 					"@tab:colored_blocks"
 				]
 			},
+			"Laine et tapis": {
+				"icon": "minecraft:white_wool",
+				"description": "Laine, tapis, dalles et escaliers en laine des 16 couleurs",
+				"parent": "Blocs de construction",
+				"rules": [
+					"#minecraft:wool",
+					"#minecraft:wool_carpets",
+					"#minecraft:wool_slabs",
+					"#minecraft:wool_stairs"
+				]
+			},
+			"Verre": {
+				"icon": "minecraft:glass",
+				"description": "Verre, verre teinté et vitres de toutes les couleurs",
+				"parent": "Blocs de construction",
+				"rules": [
+					"#c:glass_blocks",
+					"#c:glass_panes",
+					"*glass",
+					"*glass_pane"
+				]
+			},
+			"Béton et terre cuite": {
+				"icon": "minecraft:white_concrete",
+				"description": "Béton, béton en poudre, terre cuite et terre cuite émaillée",
+				"parent": "Blocs de construction",
+				"rules": [
+					"#minecraft:terracotta",
+					"#minecraft:glazed_terracotta",
+					"#minecraft:concrete",
+					"#minecraft:concrete_powders",
+					"#minecraft:concrete_slabs",
+					"#minecraft:concrete_stairs",
+					"#c:concretes",
+					"#c:glazed_terracottas"
+				]
+			},
 			"Mobilier et décoration": {
 				"icon": "minecraft:lantern",
 				"description": "Établis, fours, coffres, tonneaux, enclumes, lits, torches, lanternes, bougies, chaînes, échelles, tableaux, cadres, pots, bannières, tessons, disques",
@@ -1556,6 +1603,24 @@
 					"@music_disc",
 					"@banner_pattern",
 					"@tab:functional_blocks"
+				]
+			},
+			"Éclairage": {
+				"icon": "minecraft:lantern",
+				"description": "Torches, lanternes, bougies, feux de camp, lanternes aquatiques, citrouilles-lanternes, champilampes",
+				"parent": "Mobilier et décoration",
+				"rules": [
+					"#minecraft:candles",
+					"#minecraft:lanterns",
+					"#c:froglights",
+					"minecraft:torch",
+					"minecraft:soul_torch",
+					"minecraft:copper_torch",
+					"minecraft:sea_lantern",
+					"minecraft:jack_o_lantern",
+					"minecraft:campfire",
+					"minecraft:soul_campfire",
+					"*froglight"
 				]
 			},
 			"Minerais et lingots": {
@@ -1749,6 +1814,35 @@
 					"@enchanted_book"
 				]
 			},
+			"Livres enchantés": {
+				"icon": "minecraft:enchanted_book",
+				"description": "Livres enchantés seulement : le bâtiment des enchantements",
+				"parent": "Livres et enchantements",
+				"rules": [
+					"minecraft:enchanted_book",
+					"@enchanted_book"
+				]
+			},
+			"Parchemins et grimoires": {
+				"icon": "minecraft:knowledge_book",
+				"description": "Parchemins de sort, grimoires et parchemins d'incantation de Guildy",
+				"parent": "Livres et enchantements",
+				"rules": [
+					"@magic"
+				]
+			},
+			"Livres et papier": {
+				"icon": "minecraft:book",
+				"description": "Livres, livres et plumes, livres écrits, papier",
+				"parent": "Livres et enchantements",
+				"rules": [
+					"minecraft:book",
+					"minecraft:writable_book",
+					"minecraft:written_book",
+					"minecraft:knowledge_book",
+					"minecraft:paper"
+				]
+			},
 			"Potions et alchimie": {
 				"icon": "minecraft:potion",
 				"description": "Potions, potions jetables et persistantes, fioles, alambics, chaudrons, poudre de blaze, œil d'araignée fermenté, melon scintillant, souffle de dragon",
@@ -1766,6 +1860,19 @@
 					"minecraft:glistering_melon_slice",
 					"minecraft:dragon_breath",
 					"minecraft:ominous_bottle",
+					"@potion"
+				]
+			},
+			"Potions": {
+				"icon": "minecraft:potion",
+				"description": "Potions, potions jetables et persistantes, fioles sinistres",
+				"parent": "Potions et alchimie",
+				"rules": [
+					"minecraft:potion",
+					"minecraft:splash_potion",
+					"minecraft:lingering_potion",
+					"minecraft:ominous_bottle",
+					"#c:potions",
 					"@potion"
 				]
 			},
@@ -1788,6 +1895,25 @@
 					"minecraft:dried_kelp_block",
 					"@food",
 					"@tab:food_and_drinks"
+				]
+			},
+			"Cultures": {
+				"icon": "minecraft:wheat",
+				"description": "Récoltes des champs : blé, carottes, pommes de terre, betteraves, pastèques, citrouilles, baies, bottes de foin",
+				"parent": "Nourriture",
+				"rules": [
+					"minecraft:wheat",
+					"minecraft:carrot",
+					"minecraft:potato",
+					"minecraft:poisonous_potato",
+					"minecraft:beetroot",
+					"minecraft:melon_slice",
+					"minecraft:melon",
+					"minecraft:pumpkin",
+					"minecraft:hay_block",
+					"minecraft:sweet_berries",
+					"minecraft:glow_berries",
+					"#c:crops"
 				]
 			},
 			"Graines et pousses": {
@@ -1987,6 +2113,56 @@
 					"#c:dyes",
 					"@dye"
 				]
+			},
+			"Équipement enchanté": {
+				"icon": "minecraft:diamond_sword",
+				"description": "Outils, armes et armures enchantés (pris dans toutes les catégories)",
+				"parent": "*",
+				"rules": [
+					"@enchanted"
+				]
+			},
+			"Objets rares": {
+				"icon": "minecraft:nether_star",
+				"description": "Disques, têtes et crânes, totems, étoiles du Nether, cœurs de la mer, élytres, œuf de dragon, modèles de forge, pommes dorées enchantées",
+				"parent": "*",
+				"rules": [
+					"@music_disc",
+					"#c:music_discs",
+					"minecraft:disc_fragment_5",
+					"#minecraft:skulls",
+					"minecraft:totem_of_undying",
+					"minecraft:nether_star",
+					"minecraft:heart_of_the_sea",
+					"minecraft:dragon_egg",
+					"minecraft:elytra",
+					"minecraft:heavy_core",
+					"minecraft:enchanted_golden_apple",
+					"minecraft:echo_shard",
+					"minecraft:sniffer_egg",
+					"minecraft:beacon",
+					"minecraft:conduit",
+					"*_smithing_template",
+					"@smithing_template"
+				]
+			},
+			"Ingrédients d'alchimie": {
+				"icon": "minecraft:brewing_stand",
+				"description": "Poudre de blaze, verrues du Nether, larmes de ghast, crème de magma, yeux d'araignée, melon scintillant, pattes de lapin, membranes, souffle de dragon, fioles",
+				"parent": "*",
+				"rules": [
+					"minecraft:blaze_powder",
+					"minecraft:nether_wart",
+					"minecraft:ghast_tear",
+					"minecraft:magma_cream",
+					"minecraft:fermented_spider_eye",
+					"minecraft:spider_eye",
+					"minecraft:glistering_melon_slice",
+					"minecraft:rabbit_foot",
+					"minecraft:phantom_membrane",
+					"minecraft:dragon_breath",
+					"minecraft:glass_bottle"
+				]
 			}
 		},
 
@@ -1994,8 +2170,50 @@
 		// pas de coffre dedie (ou dont les coffres sont pleins). Sans coffre 'Divers', ces objets restent au depot.
 		"fallbackCategory": "Divers",
 
-		// Nombre maximum de conteneurs enregistres par guilde hors des salles des coffres (voir maxRoomChests)
-		"maxChests": 48,
+		// Categories par defaut deja proposees a ce fichier (gere automatiquement) : une categorie ajoutee aux valeurs
+		// par defaut d'une version suivante de Guildy est ajoutee ici une seule fois ; supprimee ensuite, elle ne revient pas
+		"knownCategories": [
+			"Bois",
+			"Pierre",
+			"Terre, sable et gravier",
+			"Blocs de construction",
+			"Laine et tapis",
+			"Verre",
+			"Béton et terre cuite",
+			"Mobilier et décoration",
+			"Éclairage",
+			"Minerais et lingots",
+			"Redstone",
+			"Outils",
+			"Armes",
+			"Armures",
+			"Livres et enchantements",
+			"Livres enchantés",
+			"Parchemins et grimoires",
+			"Livres et papier",
+			"Potions et alchimie",
+			"Potions",
+			"Nourriture",
+			"Cultures",
+			"Graines et pousses",
+			"Plantes et fleurs",
+			"Butin de monstres",
+			"Nether",
+			"End",
+			"Colorants",
+			"Équipement enchanté",
+			"Objets rares",
+			"Ingrédients d'alchimie"
+		],
+
+		// Nombre maximum de conteneurs enregistres par guilde hors des salles des coffres et des coffres filtres
+		// (0 = illimite). Les trieurs ne lisent que les coffres utiles a chaque objet : des milliers de coffres restent legers.
+		"maxChests": 0,
+
+		// Un groupe de plus de N coffres (une categorie dans une salle, ou hors des salles) est range par parties de N
+		// coffres au plus, consecutives dans l'ordre de lecture : chaque partie est parfaitement rangee, sans melanger
+		// les parties. Garde le cout d'une verification de rangement borne (0 = jamais de parties ; 16 a 100000)
+		"maxGroupChests": 128,
 
 		// Nommer les conteneurs enregistres (titre affiche a l'ouverture : 'Depot', 'Minerais et lingots'...)
 		"labelChests": true,
@@ -2015,9 +2233,11 @@
 		// l'ordre de lecture (rangee par rangee).
 		"defaultChestLayout": "columns",
 
-		// Coffres filtres (contenu impose : une famille comme 'diorite' ou 'laine', ou une liste d'objets) : nombre
-		// maximum par guilde (en plus de maxChests et maxRoomChests ; 0 = desactive)
-		"maxFilterChests": 256,
+		// Coffres filtres (contenu impose : une famille comme 'diorite' ou 'laine', ou une liste d'objets) : actives
+		"filterChests": true,
+
+		// Coffres filtres : nombre maximum par guilde (en plus de maxChests et maxRoomChests ; 0 = illimite)
+		"maxFilterChests": 0,
 
 		// Filtre d'apres le contenu d'un coffre : une liste exacte d'objets est proposee jusqu'a N objets differents
 		// (au-dela, sans famille commune, le coffre devient un coffre de categorie ou reste tel quel) (1 a 54)
@@ -2027,28 +2247,32 @@
 		// categorie principale si elle represente au moins N % de ses piles (50 a 100)
 		"scanCategoryPercent": 75,
 
-		// Commande scan : rayon maximum (chunks) autour du joueur (1 a 16)
-		"scanMaxChunks": 8,
+		// Commande scan : rayon maximum (chunks) autour du joueur (1 a 32)
+		"scanMaxChunks": 16,
 
 		// Commande scan : chunks lus par tick (le scan est reparti sur plusieurs ticks) (1 a 64)
 		"scanChunksPerTick": 4,
 
-		// Commande scan : nombre maximum de conteneurs lus par scan (16 a 4096)
-		"scanMaxContainers": 1024,
+		// Commande scan : nombre maximum de conteneurs lus par scan (16 a 65536)
+		"scanMaxContainers": 4096,
 
 		// Commande scan : duree (secondes) de validite de l'apercu avant [Appliquer] (30 a 900)
 		"scanPreviewSeconds": 120,
 
 		// Salles des coffres (menu Stockage) : tous les coffres de la zone entre deux coffres-coins deviennent automatiques ;
 		// les trieurs leur donnent une categorie par colonnes (ou rangees) entieres, dans l'ordre des categories ci-dessus,
-		// 'Divers' a la fin, le reste en reserve. Nombre maximum de salles par guilde (0 = desactive)
-		"maxRooms": 4,
+		// 'Divers' a la fin, le reste en reserve. Une salle peut etre reservee a quelques categories (menu de la salle) :
+		// elle ne recoit alors que celles-ci. Salles des coffres actives
+		"chestRooms": true,
 
-		// Salles des coffres : nombre maximum de coffres automatiques par guilde (en plus de maxChests)
-		"maxRoomChests": 192,
+		// Salles des coffres : nombre maximum de salles par guilde (0 = illimite)
+		"maxRooms": 0,
 
-		// Salles des coffres : cote maximum (blocs) de la zone entre les deux coins
-		"maxRoomSize": 32,
+		// Salles des coffres : nombre maximum de coffres automatiques par guilde (en plus de maxChests ; 0 = illimite)
+		"maxRoomChests": 0,
+
+		// Salles des coffres : cote maximum (blocs) de la zone entre les deux coins (2 a 256)
+		"maxRoomSize": 64,
 
 		// Salles des coffres : marge (%) ajoutee a ce que contient une categorie pour choisir son nombre de colonnes
 		"roomHeadroomPercent": 25,
@@ -3766,7 +3990,7 @@
 		// bibliotheques (15 bibliotheques : niveau 30 ; table seule : niveau 1 a 8)
 		"secondsPerLevel": 6,
 
-		// Livres enchantes (et parchemins) au plus par alchimiste et par jour de jeu (1 a 1000)
+		// Livres enchantes au plus par alchimiste et par jour de jeu (1 a 1000) ; parchemins et potions ont leur propre plafond
 		"maxBooksPerDay": 8,
 
 		// Lapis-lazuli consomme par livre (0 a 3) ; 0 = seulement du temps et des livres. Pris dans son sac puis dans les
@@ -3779,7 +4003,7 @@
 		// Intervalle minimum (secondes) entre deux recherches des tables d'enchantement du territoire (10 a 3600)
 		"scanIntervalSeconds": 120,
 
-		// Chance (0 a 1) qu'un travail termine donne un parchemin de sort au lieu d'un livre enchante (0 = jamais). Le
+		// Travail 'Livres' : chance (0 a 1) qu'un livre termine devienne un parchemin de sort (0 = jamais). Le
 		// parchemin utilise le meme livre (et le lapis) plus scrollPaper feuilles de papier ; sans papier : un livre enchante.
 		// Il est range dans le coffre de sa categorie de stockage (sinon un coffre Divers, sinon un coffre de depot)
 		"scrollChance": 0.15,
@@ -3787,7 +4011,7 @@
 		// Feuilles de papier par parchemin (0 a 64), prises dans son sac puis dans les coffres du stockage comme les livres
 		"scrollPaper": 2,
 
-		// Parchemins au plus par alchimiste et par jour de jeu, compris dans maxBooksPerDay (0 a maxBooksPerDay ; 0 = jamais)
+		// Parchemins au plus par alchimiste et par jour de jeu, travail 'Parchemins' compris (0 a 1000 ; 0 = jamais)
 		"maxScrollsPerDay": 2,
 
 		// Niveau d'enchantement minimum (1 a 30) pour ecrire un parchemin plus rare que RARE (EPIC, LEGENDARY, MYTHIC) ; en
@@ -3803,8 +4027,82 @@
 			"blizzard": 1.0,
 			"seisme": 1.0,
 			"egide": 1.0,
-			"tempete_de_foudre": 1.0
-		}
+			"tempete_de_foudre": 1.0,
+			"hate_du_vent": 5.0,
+			"permutation": 4.0,
+			"ralliement": 1.0,
+			"banniere_de_guerre": 1.0,
+			"fleau": 1.0
+		},
+
+		// Parchemins par defaut deja proposes a ce fichier (gere automatiquement) : un nouveau parchemin par defaut d'une mise a
+		// jour est ajoute une seule fois a 'scrolls' ; un parchemin retire de 'scrolls' n'y revient jamais
+		"knownScrolls": [
+			"rappel",
+			"benediction",
+			"revelation",
+			"blizzard",
+			"seisme",
+			"egide",
+			"tempete_de_foudre",
+			"hate_du_vent",
+			"permutation",
+			"ralliement",
+			"banniere_de_guerre",
+			"fleau"
+		],
+
+		// Ordre des travaux : books = livres enchantes, scrolls = parchemins (un parchemin a chaque travail a la table, avec
+		// livre + papier), potions = potions et elixirs (alambic, voir alchemy.json5). L'alchimiste fait son travail prefere
+		// (son role) ; s'il est impossible (pas de table, de livres, de papier, d'alambic, d'ingredients, plafond du jour,
+		// stocks pleins...), il passe au premier travail possible dans cet ordre (raison affichee dans son menu)
+		"jobOrder": [
+			"books",
+			"scrolls",
+			"potions"
+		],
+
+		// Repartition des roles entre les alchimistes d'une guilde : balanced = selon roleWeights parmi les travaux possibles
+		// pour la guilde (5 alchimistes : 2 livres, 1 parchemins, 2 potions), priority = tous preferent le premier travail de
+		// jobOrder. Un role choisi dans le menu de l'alchimiste (Livres / Parchemins / Potions) remplace la repartition
+		"distribution": "balanced",
+
+		// Parts de chaque travail dans la repartition balanced (0 = aucun alchimiste n'y est affecte d'office)
+		"roleWeights": {
+			"books": 2.0,
+			"scrolls": 1.0,
+			"potions": 2.0
+		},
+
+		// Intervalle (secondes) entre deux repartitions des roles (10 a 3600)
+		"roleIntervalSeconds": 60,
+
+		// Un alchimiste au role choisi dans son menu passe lui aussi aux autres travaux quand le sien est impossible
+		"manualRoleFallback": true,
+
+		// Fioles de potions et d'elixirs au plus par alchimiste et par jour de jeu (0 a 1000 ; 0 = jamais de potions)
+		"maxPotionsPerDay": 18,
+
+		// Duree d'un brassage en secondes (20 = alambic vanilla) ; le bonus de vitesse de travail s'applique (1 a 120)
+		"secondsPerBrew": 20,
+
+		// Fioles par brassage (1 a 3, comme les 3 emplacements de l'alambic) : un ingredient pour toutes
+		"bottlesPerBrew": 3,
+
+		// Combustible des brassages, pris dans son sac puis au stockage
+		"brewFuel": "minecraft:blaze_powder",
+
+		// Brassages par unite de combustible (1 a 100 ; 20 = poudre de blaze vanilla)
+		"brewsPerFuel": 20,
+
+		// Remplir des fioles vides du stockage a une source d'eau ou un chaudron d'eau proche de l'alambic (sinon : fioles d'eau)
+		"fillBottles": true,
+
+		// Distance maximum (blocs) entre l'alambic et l'eau qui remplit les fioles vides (1 a 16)
+		"waterRadius": 6,
+
+		// Intervalle (secondes) entre deux inventaires des potions et des ingredients du stockage (5 a 300)
+		"stockScanSeconds": 10
 	},
 
 	// Chargement des chunks : les villageois au travail gardent leurs chunks actifs pour continuer sans joueur a

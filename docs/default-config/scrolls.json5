@@ -7,7 +7,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 3,
+	"configVersion": 4,
 
 	// Parchemins actifs (false = ils ne lancent plus rien, ils ne sont pas consommes)
 	"enabled": true,
@@ -188,6 +188,12 @@
 			},
 			"arcane_ray": {
 				"width": 1.5
+			},
+			"scourge": {
+				"vulnerability": 1.4
+			},
+			"spectral_chains": {
+				"bossShare": 1.3
 			}
 		},
 
@@ -244,7 +250,13 @@
 				"nova_solaire": 4.0,
 				"gardiens": 3.0,
 				"rayon_arcanique": 3.0,
-				"singularite": 1.0
+				"singularite": 1.0,
+				"banniere_de_guerre": 5.0,
+				"fleau": 5.0,
+				"permutation": 5.0,
+				"hate_du_vent": 5.0,
+				"ralliement": 4.0,
+				"chaines_spectrales": 4.0
 			}
 		},
 		"nether_ruin_boss": {
@@ -263,7 +275,13 @@
 				"gardiens": 3.0,
 				"singularite": 3.0,
 				"revelation": 3.0,
-				"blizzard": 1.0
+				"blizzard": 1.0,
+				"fleau": 5.0,
+				"banniere_de_guerre": 4.0,
+				"chaines_spectrales": 4.0,
+				"permutation": 4.0,
+				"ralliement": 3.0,
+				"hate_du_vent": 3.0
 			}
 		},
 		"boss": {
@@ -281,7 +299,13 @@
 				"nova_solaire": 2.0,
 				"pluie_de_meteores": 2.0,
 				"gardiens": 2.0,
-				"rayon_arcanique": 1.0
+				"rayon_arcanique": 1.0,
+				"hate_du_vent": 7.0,
+				"permutation": 6.0,
+				"ralliement": 5.0,
+				"banniere_de_guerre": 5.0,
+				"fleau": 4.0,
+				"chaines_spectrales": 1.0
 			}
 		},
 		"blood_boss": {
@@ -298,7 +322,13 @@
 				"benediction": 3.0,
 				"rayon_arcanique": 3.0,
 				"gardiens": 3.0,
-				"singularite": 1.0
+				"singularite": 1.0,
+				"banniere_de_guerre": 5.0,
+				"fleau": 5.0,
+				"chaines_spectrales": 3.0,
+				"permutation": 3.0,
+				"hate_du_vent": 3.0,
+				"ralliement": 2.0
 			}
 		},
 		"legendary_quest": {
@@ -313,7 +343,10 @@
 				"tempete_de_foudre": 4.0,
 				"blizzard": 4.0,
 				"rayon_arcanique": 3.0,
-				"singularite": 1.0
+				"singularite": 1.0,
+				"chaines_spectrales": 4.0,
+				"banniere_de_guerre": 3.0,
+				"fleau": 3.0
 			}
 		},
 		"quest": {
@@ -326,7 +359,12 @@
 				"rappel": 10.0,
 				"seisme": 4.0,
 				"tempete_de_foudre": 3.0,
-				"blizzard": 3.0
+				"blizzard": 3.0,
+				"hate_du_vent": 8.0,
+				"permutation": 6.0,
+				"ralliement": 6.0,
+				"banniere_de_guerre": 3.0,
+				"fleau": 2.0
 			}
 		},
 		"expedition": {
@@ -339,7 +377,11 @@
 				"benediction": 8.0,
 				"blizzard": 3.0,
 				"seisme": 3.0,
-				"tempete_de_foudre": 2.0
+				"tempete_de_foudre": 2.0,
+				"hate_du_vent": 8.0,
+				"permutation": 6.0,
+				"ralliement": 6.0,
+				"banniere_de_guerre": 2.0
 			}
 		},
 		"trade": {
@@ -356,14 +398,21 @@
 				"egide": 4.0,
 				"nova_solaire": 2.0,
 				"pluie_de_meteores": 2.0,
-				"gardiens": 2.0
+				"gardiens": 2.0,
+				"hate_du_vent": 7.0,
+				"permutation": 6.0,
+				"ralliement": 6.0,
+				"banniere_de_guerre": 4.0,
+				"fleau": 4.0,
+				"chaines_spectrales": 2.0
 			}
 		}
 	},
 
 	// Parchemins : id (minuscules, chiffres, _), name, rarity (RARE, EPIC, LEGENDARY, MYTHIC), lore (histoire, codes &),
 	// spell (meteor_shower, chain_storm, blizzard, solar_nova, singularity, aegis, recall, guardians, blessing, revelation,
-	// earthquake, arcane_ray), params (reglages du sort ; degats et soins en points de vie : 2 = 1 coeur ; les parametres
+	// earthquake, arcane_ray, war_banner, scourge, swap, rally, spectral_chains, tailwind), params (reglages du sort ;
+	// degats et soins en points de vie : 2 = 1 coeur ; pourcentages : 25 = +25 % ; les parametres
 	// absents prennent leur valeur par defaut, tous sont bornes), item (objet vanilla simple de base : papier, motif de
 	// banniere...), glint (brillance), maxStack (1 a 64), channelSeconds (duree de l'incantation, 0.25 a 10), animation
 	// (toot_horn, spyglass, bow, trident, brush, block...), cooldownGroup (les parchemins d'un meme groupe partagent la
@@ -661,6 +710,155 @@
 			"cooldownGroup": "attaque",
 			"cooldownSeconds": 25.0,
 			"model": "parchemin_rayon_arcanique"
+		},
+		{
+			"id": "banniere_de_guerre",
+			"name": "Bannière de guerre",
+			"rarity": "EPIC",
+			"lore": [
+				"Cousue du fil des étendards",
+				"qui n'ont jamais reculé."
+			],
+			"spell": "war_banner",
+			"params": {
+				"radius": 8.0,
+				"duration": 20.0,
+				"strengthLevel": 2.0,
+				"hasteLevel": 2.0
+			},
+			"item": "minecraft:bordure_indented_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.25,
+			"animation": "toot_horn",
+			"cooldownGroup": "soutien",
+			"cooldownSeconds": 40.0,
+			"model": "parchemin_banniere_de_guerre"
+		},
+		{
+			"id": "fleau",
+			"name": "Fléau",
+			"rarity": "EPIC",
+			"lore": [
+				"L'encre a la couleur du venin",
+				"et l'odeur des marais maudits."
+			],
+			"spell": "scourge",
+			"params": {
+				"range": 24.0,
+				"radius": 6.0,
+				"duration": 10.0,
+				"vulnerability": 25.0,
+				"bossShare": 50.0,
+				"weaknessLevel": 1.0,
+				"slowLevel": 2.0
+			},
+			"item": "minecraft:skull_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.25,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 30.0,
+			"model": "parchemin_fleau"
+		},
+		{
+			"id": "permutation",
+			"name": "Permutation",
+			"rarity": "RARE",
+			"lore": [
+				"Deux sceaux jumeaux, un seul nom :",
+				"celui qui lit prend la place de l'autre."
+			],
+			"spell": "swap",
+			"params": {
+				"range": 32.0,
+				"stunSeconds": 2.0,
+				"shieldSeconds": 3.0
+			},
+			"item": "minecraft:flow_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 0.75,
+			"animation": "toot_horn",
+			"cooldownGroup": "permutation",
+			"cooldownSeconds": 20.0,
+			"model": "parchemin_permutation"
+		},
+		{
+			"id": "ralliement",
+			"name": "Ralliement",
+			"rarity": "EPIC",
+			"lore": [
+				"Le vieux cor des guildes résonne",
+				"jusqu'aux confins du monde."
+			],
+			"spell": "rally",
+			"params": {
+				"range": 512.0,
+				"maxAllies": 8.0,
+				"acceptSeconds": 30.0,
+				"crossDimension": 0.0
+			},
+			"item": "minecraft:globe_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 4.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "rappel",
+			"cooldownSeconds": 90.0,
+			"model": "parchemin_ralliement"
+		},
+		{
+			"id": "chaines_spectrales",
+			"name": "Chaînes spectrales",
+			"rarity": "LEGENDARY",
+			"lore": [
+				"Forgées dans les limbes",
+				"pour les âmes qui refusaient de partir."
+			],
+			"spell": "spectral_chains",
+			"params": {
+				"range": 32.0,
+				"radius": 4.0,
+				"count": 3.0,
+				"duration": 5.0,
+				"bossShare": 50.0,
+				"damage": 12.0
+			},
+			"item": "minecraft:creeper_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "attaque",
+			"cooldownSeconds": 30.0,
+			"model": "parchemin_chaines_spectrales"
+		},
+		{
+			"id": "hate_du_vent",
+			"name": "Hâte du vent",
+			"rarity": "RARE",
+			"lore": [
+				"Une plume de brise cousue",
+				"dans la reliure du parchemin."
+			],
+			"spell": "tailwind",
+			"params": {
+				"radius": 8.0,
+				"duration": 30.0,
+				"speedLevel": 2.0,
+				"jumpLevel": 2.0,
+				"noFall": 1.0
+			},
+			"item": "minecraft:guster_banner_pattern",
+			"glint": true,
+			"maxStack": 16,
+			"channelSeconds": 1.0,
+			"animation": "toot_horn",
+			"cooldownGroup": "soutien",
+			"cooldownSeconds": 30.0,
+			"model": "parchemin_hate_du_vent"
 		}
 	]
 }
