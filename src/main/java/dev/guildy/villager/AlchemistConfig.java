@@ -272,6 +272,7 @@ public final class AlchemistConfig {
 		map.put("ralliement", 1.0);
 		map.put("banniere_de_guerre", 1.0);
 		map.put("fleau", 1.0);
+		map.put("grand_spectacle", 1.0);
 		return map;
 	}
 

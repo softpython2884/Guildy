@@ -2994,6 +2994,24 @@ def scroll(rune, palette, seal):
 	return Sprite(render(c, styles, "#2a1a0c", frames=4), {"animation": {"frametime": 4, "interpolate": False}})
 
 
+# ---------------------------------------------------------------------------------------------------------- Grand spectacle
+# The fireworks show scroll of Guildy 1.14 (scrolls.json5 format 6). Scroll: a rocket rising from the lower left corner to
+# a burst, its pixels cycling through the colours of a show (red, gold, green, blue). Grimoire and cursed grimoire pages:
+# a burst above its rocket stick, glowing in brighter tones of the same colours (the dark covers). Added here so that the
+# grimoire select lists it last.
+
+SCROLL_RUNES["grand_spectacle"] = ([
+	"...#.#.#",
+	"....###.",
+	"...##.##",
+	"....###.",
+	"..##.#.#",
+	"##......",
+], ["#e8283c", "#e0920c", "#24a044", "#2a62d8"], "#ffb000")
+GRIMOIRE_SIGILS["grand_spectacle"] = [".#.#.#.", "..###..", ".##.##.", "..###..", ".#.#.#.", "...#...", "...#..."]
+GRIMOIRE_GLOW["grand_spectacle"] = ["#ff5a6a", "#ffd24a", "#6aff8a", "#5ab8ff"]
+
+
 # ---------------------------------------------------------------------------------------------------------- outputs
 
 def all_sprites():

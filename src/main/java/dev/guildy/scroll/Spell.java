@@ -116,7 +116,17 @@ public enum Spell {
 			p("duration", 30, 5, 120, Unit.SECONDS),
 			p("speedLevel", 2, 1, 4, Unit.LEVEL),
 			p("jumpLevel", 2, 1, 4, Unit.LEVEL),
-			p("noFall", 1, 0, 1, Unit.FLAG));
+			p("noFall", 1, 0, 1, Unit.FLAG)),
+	/**
+	 * Grand spectacle (Guildy 1.14): a fireworks show (no target, no damage) from {@code points} rune circles over
+	 * {@code width} blocks behind the caster, bursts up to about {@code height} blocks; the show itself is bounded to
+	 * 20 s .. 2 min, the stage to 32 blocks, the height to 44 blocks whatever the power of the cast.
+	 */
+	FIREWORKS("fireworks", 0xFFD24A, 0xFF4FD8, false,
+			p("duration", 40, 20, 120, Unit.SECONDS),
+			p("width", 18, 8, 32, Unit.BLOCKS),
+			p("points", 9, 3, 15, Unit.COUNT),
+			p("height", 26, 14, 40, Unit.BLOCKS));
 
 	/** How a parameter is shown in the item description. */
 	public enum Unit {

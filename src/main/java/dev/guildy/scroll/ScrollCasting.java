@@ -387,6 +387,12 @@ public final class ScrollCasting {
 			long elapsed = now - channel.start();
 			boolean cursed = grimoire && GrimoireItems.isCursed(using);
 			Safe.run("scroll.channel.fx", () -> drawChannel(player, def.spell(), elapsed, channel.ticks(), cursed));
+			if (def.spell() == Spell.FIREWORKS) {
+				// Grand spectacle: the circles of the stage draw themselves behind the caster.
+				SpellPower power = grimoire ? GrimoireItems.power(def, cursed) : SpellPower.NONE;
+				Safe.run("scroll.channel.stage", () -> FireworksSpell.preview(new SpellContext(player, def, power),
+						ChannelRules.drawProgress(elapsed, channel.ticks()), elapsed));
+			}
 		}
 		for (UUID uuid : ended) {
 			CHANNELS.remove(uuid);

@@ -25,6 +25,7 @@ final class Spells {
 			case SWAP -> SwapSpell.check(ctx);
 			case RALLY -> RallySpell.check(ctx);
 			case SPECTRAL_CHAINS -> SpectralChainsSpell.firstTarget(ctx) == null ? "scroll.fail.no_target" : null;
+			case FIREWORKS -> FireworksSpell.check(ctx);
 			default -> null;
 		};
 	}
@@ -91,6 +92,7 @@ final class Spells {
 				EffectRunner.start(new SpectralChainsSpell(ctx, first));
 			}
 			case TAILWIND -> EffectRunner.start(new TailwindSpell(ctx));
+			case FIREWORKS -> EffectRunner.start(new FireworksSpell(ctx, FireworksSpell.stage(ctx)));
 		}
 		FightTracker.spellCast(ctx.caster);
 		return null;
