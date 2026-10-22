@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,8 +46,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class TestSupport {
 	private static final Logger LOGGER = LoggerFactory.getLogger("GuildyTest");
 	private static final AtomicInteger REGIONS = new AtomicInteger();
-	/** Chat received by the mock players (see {@link #chat}). */
-	private static final Map<UUID, List<String>> CHAT = new HashMap<>();
+	/**
+	 * Chat received by the mock players (see {@link #chat}), the 256 players who received or read a message last: the
+	 * least recently active one is dropped first, so a test still waiting on its player's chat keeps it however many
+	 * other tests run at the same time.
+	 */
+	private static final Map<UUID, List<String>> CHAT = new LinkedHashMap<>(64, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<UUID, List<String>> eldest) {
+			return size() > 256;
+		}
+	};
 	/** Random per run: the test world is reused, so avoid the blocks left by previous runs. */
 	private static final int BASE_X = 40000 + (int) (Math.random() * 400) * 65536;
 	/**
@@ -142,9 +151,6 @@ final class TestSupport {
 				lines.removeFirst();
 			}
 			lines.add(line);
-			if (CHAT.size() > 256) {
-				CHAT.keySet().removeIf(uuid -> !uuid.equals(player));
-			}
 		}
 	}
 
