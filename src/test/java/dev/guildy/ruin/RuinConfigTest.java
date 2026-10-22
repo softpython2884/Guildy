@@ -609,4 +609,101 @@ class RuinConfigTest {
 		assertEquals(6, read.summon.drainHealth);
 		assertEquals(written.cartography.incantationsPerResearch, read.cartography.incantationsPerResearch);
 	}
+
+	@Test
+	void everyGuardianHasItsDreadAbilities() {
+		RuinConfig cfg = new RuinConfig();
+		assertTrue(rebuild(cfg).isEmpty());
+		Set<String> used = new HashSet<>();
+		for (Map.Entry<String, RuinConfig.RuinDef> entry : cfg.ruins.entrySet()) {
+			List<RuinConfig.DreadAbilityDef> dread = entry.getValue().dreadAbilities;
+			assertTrue(dread.size() >= 2 && dread.size() <= 3, entry.getKey() + ": 2 or 3 dread abilities, got " + dread.size());
+			for (RuinConfig.DreadAbilityDef def : dread) {
+				assertTrue(RuinConfig.DREAD_TYPES.contains(def.type), def.type);
+				used.add(def.type);
+			}
+		}
+		for (RuinConfig.DreadAbilityDef def : cfg.cursed.avatar.attacks) {
+			used.add(def.type);
+		}
+		assertEquals(RuinConfig.DREAD_TYPES, used, "every dread type is used by a default guardian or the Avatar");
+		assertEquals(3, RuinDefaults.generic(2, false).dreadAbilities.size(), "the generic guardian too");
+		assertEquals(3, RuinDefaults.generic(4, true).dreadAbilities.size());
+		assertEquals(7, cfg.escalation.dreadThreshold);
+		assertEquals(10, cfg.cursed.avatar.minThreat);
+		assertEquals("minecraft:nether_star", cfg.cursed.avatar.item);
+		assertNotNull(RuinDefaults.defaultDread("soul_pillars"), "an Avatar attack has default settings");
+		assertNotNull(RuinDefaults.defaultDread("pounce_chain"));
+	}
+
+	@Test
+	void dreadAndAvatarSettingsAreFixed() {
+		RuinConfig cfg = new RuinConfig();
+		cfg.escalation.dreadThreshold = 99;
+		cfg.escalation.dread.healthMultiplier = -3;
+		cfg.escalation.dread.maxHealthMultiplier = 0.5;
+		cfg.escalation.dread.telegraphSeconds = 0;
+		cfg.escalation.dread.maxRunning = 40;
+		cfg.cursed.avatar.minThreat = 0;
+		cfg.cursed.avatar.healthCapPerPlayer = 100;
+		cfg.cursed.avatar.riftMobs = new java.util.LinkedHashMap<>(Map.of("minecraft:not_a_mob", 3));
+		RuinConfig.DreadAbilityDef unknown = new RuinConfig.DreadAbilityDef();
+		unknown.type = "Not_A_Type";
+		RuinConfig.DreadAbilityDef wild = RuinDefaults.dread("BONE_SPIKES", 0, 999, 99, 99, 99, 99);
+		wild.phase = 9;
+		cfg.ruins.get("crypte_oubliee").dreadAbilities = new ArrayList<>(List.of(unknown, wild));
+		List<String> warnings = cfg.rebuild(id -> !id.equals("minecraft:not_a_mob"), id -> true, id -> true);
+		assertTrue(warnings.stream().anyMatch(w -> w.contains("riftMobs")), warnings.toString());
+		assertEquals(AvatarSettings.defaultRiftMobs(), cfg.cursed.avatar.riftMobs, "back to the blazes and wither skeletons");
+		assertTrue(warnings.stream().anyMatch(w -> w.contains("not_a_type")), warnings.toString());
+		assertEquals(ThreatRules.MAX_LEVEL, cfg.escalation.dreadThreshold);
+		assertEquals(1, cfg.escalation.dread.healthMultiplier);
+		assertTrue(cfg.escalation.dread.maxHealthMultiplier >= cfg.escalation.dread.healthMultiplier);
+		assertEquals(0.5, cfg.escalation.dread.telegraphSeconds, 1.0E-9, "always a dodge window");
+		assertEquals(8, cfg.escalation.dread.maxRunning);
+		assertEquals(1, cfg.cursed.avatar.minThreat);
+		assertEquals(cfg.cursed.avatar.healthMinPerPlayer, cfg.cursed.avatar.healthCapPerPlayer, 1.0E-9, "the cap is never under the floor");
+		List<RuinConfig.DreadAbilityDef> crypt = cfg.ruins.get("crypte_oubliee").dreadAbilities;
+		assertEquals(1, crypt.size(), "the unknown type is dropped");
+		RuinConfig.DreadAbilityDef fixed = crypt.getFirst();
+		assertEquals("bone_spikes", fixed.type);
+		assertEquals(2, fixed.cooldownSeconds, 1.0E-9);
+		assertEquals(200, fixed.damage, 1.0E-9);
+		assertEquals(16, fixed.count);
+		assertEquals(3, fixed.phase);
+		assertEquals(9, fixed.amplifier);
+		assertEquals(32, fixed.radius, 1.0E-9);
+		assertEquals(30, fixed.durationSeconds, 1.0E-9);
+	}
+
+	@Test
+	void dreadAbilitiesAreMigrated() {
+		// A ruins.json5 of Guildy 1.13 (format 3): no dread ability yet; the admin wrote one list already.
+		RuinConfig written = new RuinConfig();
+		written.configVersion = 3;
+		written.knownDefaults = new ArrayList<>(EIGHT);
+		for (RuinConfig.RuinDef def : written.ruins.values()) {
+			def.dreadAbilities = new ArrayList<>();
+		}
+		written.ruins.get("tour_du_mage").dreadAbilities = new ArrayList<>(List.of(RuinDefaults.dread("ice_spikes", 10, 5, 10, 2, 0, 1)));
+		RuinConfig old = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		assertTrue(rebuild(old).isEmpty());
+		assertEquals(RuinConfig.CURRENT_VERSION, old.configVersion);
+		for (String id : EIGHT) {
+			assertFalse(old.ruins.get(id).dreadAbilities.isEmpty(), id + ": dread abilities");
+		}
+		assertEquals(RuinDefaults.cryptDread().size(), old.ruins.get("crypte_oubliee").dreadAbilities.size());
+		assertEquals("grasping_graves", old.ruins.get("crypte_oubliee").dreadAbilities.getFirst().type);
+		assertEquals(1, old.ruins.get("tour_du_mage").dreadAbilities.size(), "the admin's list is kept");
+		assertEquals("ice_spikes", old.ruins.get("tour_du_mage").dreadAbilities.getFirst().type);
+		assertEquals(7, old.migrations().size(), "seven lists filled: " + old.migrations());
+		assertTrue(old.migrations().contains("grand_temple_maya.dreadAbilities"));
+
+		// Already version 4: an empty list stays empty (the admin removed them).
+		RuinConfig current = Json5.fromString(Json5.GSON.toJson(written), RuinConfig.class);
+		current.configVersion = RuinConfig.CURRENT_VERSION;
+		assertTrue(rebuild(current).isEmpty());
+		assertTrue(current.ruins.get("crypte_oubliee").dreadAbilities.isEmpty());
+		assertTrue(current.migrations().isEmpty());
+	}
 }

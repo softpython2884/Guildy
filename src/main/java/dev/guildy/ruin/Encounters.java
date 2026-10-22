@@ -7,6 +7,7 @@ import dev.guildy.core.Msg;
 import dev.guildy.core.Safe;
 import dev.guildy.core.Scheduler;
 import dev.guildy.ruin.RuinConfig.AbilityDef;
+import dev.guildy.ruin.RuinConfig.DreadAbilityDef;
 import dev.guildy.ruin.RuinConfig.RuinDef;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -14,6 +15,7 @@ import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
@@ -32,6 +34,9 @@ import net.minecraft.world.entity.ConversionType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
@@ -50,7 +55,10 @@ import java.util.UUID;
  * a survival player approaches the guardian), boss bar, arena leash, abilities, reset when nobody is around, cancellation
  * when the guardian is unloaded, rewards on its death. The ruin's threat level ("Menace") makes the guardian stronger at
  * each return; a guardian killed too fast refuses to die once and rises again, enraged ({@link Resurrection}), and a cursed
- * one always rises once at the end of its last phase (its final form, in the colours of the curse). Runs once
+ * one always rises once at the end of its last phase (its final form, in the colours of the curse). From the threat level
+ * {@code escalation.dreadThreshold} (VII) a guardian takes its dread form ({@link DreadRules}: an effective health beyond the
+ * vanilla cap, more damage to the players after their armour, its dread abilities); a cursed one summoned with a Nether star
+ * in the circle is the Avatar ({@link AvatarEncounter}). Runs once
  * per second (the animations, the resurrection and the aura of a risen guardian every tick); every loop is bounded by the
  * players online and the running fights.
  */
@@ -66,6 +74,7 @@ public final class Encounters {
 	private static final int PRESENCE_FORGET_TICKS = 2 * 60 * 20;
 	/** Smallest particle budget of one resurrection per tick when several run at once. */
 	private static final int MIN_RISING_SHARE = 150;
+	private static final Identifier DREAD_MINION_HEALTH = Identifier.fromNamespaceAndPath("guildy", "ruin_dread_minion_health");
 	private static long seconds;
 
 	private record Presence(String ruinKey, long seen) {
@@ -152,6 +161,113 @@ public final class Encounters {
 			}
 		}
 		return list;
+	}
+
+	/** Running fights with dread abilities or an Avatar ({@link DreadFights} ticks them). */
+	static List<Encounter> dreadFights() {
+		List<Encounter> list = new ArrayList<>();
+		for (Encounter encounter : ACTIVE.values()) {
+			if (encounter.dreadFight != null || encounter.avatar != null) {
+				list.add(encounter);
+			}
+		}
+		return list;
+	}
+
+	/** The guardian of this ruin fights in its dread form (Menace VII and more). */
+	public static boolean dreadActive(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter != null && encounter.dread.active();
+	}
+
+	/** The running fight of this ruin is against its Avatar. */
+	public static boolean isAvatar(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter != null && encounter.avatar != null;
+	}
+
+	/** Effective health factor of the running guardian (1 = its real health), 0 without a fight. */
+	public static double vitality(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter == null ? 0 : encounter.vitality;
+	}
+
+	/** Damage factor on the players (after armour) of the running fight, 0 without one. */
+	public static double playerDamage(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter == null ? 0 : encounter.playerDamage;
+	}
+
+	/** Effective health (and maximum) of the running guardian: {health, max}, null without a fight. */
+	public static double @Nullable [] effectiveHealth(RuinRecord ruin) {
+		Mob boss = boss(ruin);
+		Encounter encounter = ACTIVE.get(ruin.key);
+		if (boss == null || encounter == null) {
+			return null;
+		}
+		return new double[] {boss.getHealth() * encounter.vitality, boss.getMaxHealth() * encounter.vitality};
+	}
+
+	/** Types of the dread abilities of the running fight (configured, in their order). */
+	public static List<String> dreadAbilities(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		if (encounter == null || encounter.dreadFight == null) {
+			return List.of();
+		}
+		List<String> types = new ArrayList<>();
+		for (DreadAbilityDef def : encounter.dreadFight.abilities) {
+			types.add(def.type);
+		}
+		return types;
+	}
+
+	/** Types of the dread attacks running now. */
+	public static List<String> dreadRunning(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter == null || encounter.dreadFight == null ? List.of() : encounter.dreadFight.runningTypes();
+	}
+
+	/** A dread attack of this type runs and is still telegraphed (true), strikes (false), or none runs (null). */
+	public static @Nullable Boolean dreadWarning(RuinRecord ruin, String type) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter == null || encounter.dreadFight == null ? null : encounter.dreadFight.warning(type);
+	}
+
+	/** Centers of the floor zones of the running dread attacks (tests). */
+	public static List<Vec3> dreadZones(RuinRecord ruin) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter == null || encounter.dreadFight == null ? List.of() : encounter.dreadFight.zones();
+	}
+
+	/** Errors thrown by the dread attacks since the server started (logged; tests expect none). */
+	public static int dreadErrors() {
+		return DreadEncounter.errors();
+	}
+
+	/** The red sky of an Avatar fight is shown to this player. */
+	public static boolean redSky(RuinRecord ruin, ServerPlayer player) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		return encounter != null && encounter.avatar != null && encounter.avatar.tinted(player.getUUID());
+	}
+
+	/**
+	 * Admin / tests: the guardian of this ruin uses the dread ability (or Avatar attack) {@code type} now, cooldowns ignored
+	 * (any fight: a guardian below the threshold borrows it for the preview).
+	 *
+	 * @return false without a fight, a target, or while the guardian is frozen
+	 */
+	public static boolean forceDread(RuinRecord ruin, String type) {
+		Encounter encounter = ACTIVE.get(ruin.key);
+		MinecraftServer server = GuildyServer.server();
+		ServerLevel level = encounter == null || server == null ? null : server.getLevel(encounter.dimension);
+		Mob boss = level == null ? null : encounter.bossEntity(level);
+		if (boss == null || !RuinConfig.DREAD_TYPES.contains(type)) {
+			return false;
+		}
+		if (encounter.dreadFight == null) {
+			encounter.dreadFight = new DreadEncounter(List.of(), Scheduler.ticks(), 3600);
+		}
+		return encounter.dreadFight.force(type, level, encounter, boss, RuinModule.config());
 	}
 
 	/** Tracks a mob of a fight spawned outside the escort spawns (shadow clones) as part of its escort. */
@@ -386,6 +502,14 @@ public final class Encounters {
 	 * statistics, purple boss bar, three phases instead of the resurrection ({@link CursedEncounter}).
 	 */
 	public static @Nullable String awaken(ServerLevel level, RuinRecord ruin, @Nullable RuinDef forcedDef, boolean forced, boolean cursed) {
+		return awaken(level, ruin, forcedDef, forced, cursed, false);
+	}
+
+	/**
+	 * Spawns the guardian and its escort; cursed and {@code avatar}: its Avatar (the Nether star of the cursed ritual, admin),
+	 * at least at {@code cursed.avatar.minThreat}, red sky, its own attacks.
+	 */
+	public static @Nullable String awaken(ServerLevel level, RuinRecord ruin, @Nullable RuinDef forcedDef, boolean forced, boolean cursed, boolean avatar) {
 		if (ACTIVE.containsKey(ruin.key)) {
 			return "ruin.admin.already_awake";
 		}
@@ -412,10 +536,17 @@ public final class Encounters {
 		if (!loaded(level, spawn)) {
 			return "ruin.admin.not_loaded";
 		}
+		boolean avatarFight = cursed && avatar;
 		ServerBossEvent bar = new ServerBossEvent(UUID.randomUUID(), Component.literal(Lang.colorize(def.boss.name)),
-				cursed ? BossEvent.BossBarColor.PURPLE : barColor(def.bossBarColor), cursed ? BossEvent.BossBarOverlay.NOTCHED_6 : BossEvent.BossBarOverlay.NOTCHED_10);
-		bar.setDarkenScreen(cfg.encounter.darkenSky);
-		int threat = threatLevel(ruin);
+				avatarFight ? BossEvent.BossBarColor.RED : cursed ? BossEvent.BossBarColor.PURPLE : barColor(def.bossBarColor),
+				avatarFight ? BossEvent.BossBarOverlay.NOTCHED_20 : cursed ? BossEvent.BossBarOverlay.NOTCHED_6 : BossEvent.BossBarOverlay.NOTCHED_10);
+		bar.setDarkenScreen(cfg.encounter.darkenSky || avatarFight);
+		if (avatarFight) {
+			bar.setCreateWorldFog(true);
+			bar.setPlayBossMusic(cfg.cursed.avatar.bossMusic);
+		}
+		// The Avatar always fights at least as a guardian of its minimal threat level (dread form included).
+		int threat = avatarFight ? AvatarRules.threat(threatLevel(ruin), cfg.cursed.avatar.minThreat) : threatLevel(ruin);
 		ThreatRules.Scaling scaling = ThreatRules.scaling(cfg.escalation, threat);
 		// No fast-kill window for a cursed guardian: it always rises once, at the end of its last phase (its final form).
 		long window = cursed ? 0 : ThreatRules.windowTicks(fastKillSeconds(def, threat));
@@ -425,8 +556,12 @@ public final class Encounters {
 		int fighters = Math.max(1, fighters(level, ruin, spawn, cfg));
 		GroupScaling.Party party = GroupScaling.party(cfg.scaling, fighters);
 		encounter.party = party;
+		encounter.dread = DreadRules.stats(cfg.escalation, threat);
 		if (cursed) {
 			encounter.cursed = new CursedEncounter(cfg.cursed);
+		}
+		if (avatarFight) {
+			encounter.avatar = new AvatarEncounter();
 		}
 		Mob boss = BossFactory.spawnBoss(level, def.boss, spawn, scaling, mob -> {
 			encounter.boss = mob.getUUID();
@@ -439,6 +574,8 @@ public final class Encounters {
 				// The curse multiplies on top of the threat level and the group.
 				encounter.cursed.apply(level, mob, Lang.colorize(def.boss.name));
 			}
+			// The dread form / the Avatar: an effective health beyond the vanilla cap, more damage on the players, its name.
+			empower(encounter, mob, cfg);
 			return true;
 		});
 		if (boss == null) {
@@ -456,17 +593,31 @@ public final class Encounters {
 		if (encounter.cursed != null) {
 			escort = CursedRules.escort(escort, cfg.cursed.guardian.escortMultiplier, cfg.cursed.guardian.escortBonus, encounter.maxAlive());
 		}
+		List<DreadAbilityDef> dread = avatarFight ? AvatarRules.abilities(def.dreadAbilities, cfg.cursed.avatar.attacks, cfg.cursed.avatar)
+				: encounter.dread.active() ? def.dreadAbilities : List.of();
+		if (!dread.isEmpty()) {
+			encounter.dreadFight = new DreadEncounter(dread, Scheduler.ticks(), cfg.escalation.dread.firstAttackSeconds);
+		}
 		spawnMinions(level, encounter, escort);
 		awakenEffects(level, boss);
 		Component title = Component.literal(Lang.colorize(def.name));
 		Component subtitle = Lang.get("ruin.awaken.subtitle", Lang.colorize(def.boss.name));
 		String label = threatLabel(threat);
-		if (encounter.cursed != null) {
+		if (encounter.avatar != null) {
+			encounter.avatar.announce(level, encounter, boss, present);
+		} else if (encounter.cursed != null) {
 			encounter.cursed.announce(level, encounter, boss, present, label);
 		}
+		for (ServerPlayer player : encounter.cursed != null && encounter.dread.active() && encounter.avatar == null ? present : List.<ServerPlayer>of()) {
+			Msg.send(player, "ruin.dread.awaken.cursed", label, DreadRules.shown(boss.getMaxHealth(), encounter.vitality), GroupScaling.percent(encounter.playerDamage));
+		}
 		for (ServerPlayer player : encounter.cursed != null ? List.<ServerPlayer>of() : present) {
-			Msg.title(player, title, subtitle, 10, 60, 20);
+			Msg.title(player, title, encounter.dread.active() ? Lang.get("ruin.dread.awaken.subtitle", Lang.colorize(def.boss.name)) : subtitle, 10, 60, 20);
 			Msg.send(player, "ruin.awaken.chat", Lang.colorize(def.boss.name), Lang.colorize(def.name));
+			if (encounter.dread.active()) {
+				Msg.send(player, "ruin.dread.awaken.chat", label, DreadRules.shown(boss.getMaxHealth(), encounter.vitality),
+						GroupScaling.percent(encounter.playerDamage));
+			}
 			if (window > 0) {
 				Msg.send(player, "ruin.awaken.threat.chrono", label, ThreatRules.clock(window / 20));
 			}
@@ -495,6 +646,116 @@ public final class Encounters {
 			}
 		}
 		return count;
+	}
+
+	/**
+	 * The intended health of a guardian about to appear (its other multipliers applied): the configured health times the
+	 * threat, the group, the curse, the dread form and the Avatar (within their caps). The game caps {@code max_health} at
+	 * 1024: beyond, the guardian keeps its real (capped) maximum and its vitality (intended / real) divides every hit it takes,
+	 * for every guardian (not only the dread ones: the threat, the curse and the group are never flattened). Then its damage
+	 * on the players and its name in its dread form / as the Avatar.
+	 */
+	private static void empower(Encounter encounter, Mob mob, RuinConfig cfg) {
+		DreadRules.Stats dread = encounter.dread;
+		AvatarSettings a = cfg.cursed.avatar;
+		double intended = DreadRules.intendedHealth(encounter.def.boss.health, encounter.scaling.health(), encounter.party.health(),
+				encounter.cursed != null ? encounter.cursed.stats.health() : 1.0, dread.health());
+		double effective = intended;
+		if (encounter.avatar != null) {
+			effective = AvatarRules.health(intended, encounter.party.players(), a);
+			encounter.playerDamage = AvatarRules.playerDamage(dread.damage(), a);
+			encounter.maxHitRatio = a.maxHitHealthRatio;
+		} else if (dread.active()) {
+			effective = DreadRules.effectiveHealth(intended, encounter.party.players(), cfg.escalation.dread.healthCapPerPlayer);
+			encounter.playerDamage = dread.damage();
+			encounter.maxHitRatio = dread.maxHitRatio();
+		}
+		encounter.vitality = DreadRules.vitality(effective, mob.getMaxHealth());
+		mob.setHealth(mob.getMaxHealth());
+		if (encounter.avatar != null || dread.active()) {
+			applyName(encounter, mob);
+		}
+	}
+
+	/**
+	 * Max health of an entity as the fights count it: a guardian's real maximum times its vitality (its intended health:
+	 * the spells' per-cast boss cap is a share of it), the real one for every other entity.
+	 */
+	public static float effectiveMaxHealth(LivingEntity entity) {
+		Encounter encounter = BY_MOB.isEmpty() ? null : BY_MOB.get(entity.getUUID());
+		return encounter != null && encounter.vitality > 1.0 && entity.getUUID().equals(encounter.boss)
+				? (float) (entity.getMaxHealth() * encounter.vitality) : entity.getMaxHealth();
+	}
+
+	/** The name of the guardian in its current state: cursed, risen, dread form, Avatar. */
+	static void applyName(Encounter encounter, Mob mob) {
+		String boss = Lang.colorize(encounter.def.boss.name);
+		String name;
+		if (encounter.avatar != null) {
+			name = AvatarEncounter.name(boss, encounter.risen).getString();
+		} else {
+			name = encounter.cursed != null ? Lang.raw(encounter.risen ? "ruin.cursed.risen.name" : "ruin.cursed.name", boss)
+					: encounter.risen ? Lang.raw("ruin.risen.name", boss) : boss;
+			if (encounter.dread.active()) {
+				name = Lang.raw("ruin.dread.name", name);
+			}
+		}
+		mob.setCustomName(Component.literal(name));
+		mob.setCustomNameVisible(true);
+	}
+
+	/** An escort mob of a dread fight / of the Avatar: more health. */
+	private static void empowerMinion(Encounter encounter, Mob mob) {
+		double multiplier = encounter.avatar != null ? RuinModule.config().cursed.avatar.escortHealthMultiplier
+				: encounter.dread.active() ? encounter.dread.escortHealth() : 1.0;
+		AttributeInstance health = mob.getAttribute(Attributes.MAX_HEALTH);
+		if (health != null && multiplier > 1.0 + 1.0E-4) {
+			health.addOrReplacePermanentModifier(new AttributeModifier(DREAD_MINION_HEALTH, multiplier - 1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+			mob.setHealth(mob.getMaxHealth());
+		}
+	}
+
+	/** "Menace VII — Forme redoutable" (the threat label of a fight). */
+	static String threatLine(Encounter encounter) {
+		String label = threatLabel(encounter.threat);
+		return encounter.dread.active() && encounter.avatar == null ? Lang.raw("ruin.dread.bar", label) : label;
+	}
+
+	// ================================================================== damage of the dread fights (mixin)
+
+	/**
+	 * A hit after armour and enchantments ({@code LivingEntity.actuallyHurt}): divided by the vitality of a guardian whose
+	 * effective health is beyond the cap; on a player, multiplied by the dread / Avatar factor of the fight its attacker
+	 * belongs to (guardian, escort, its projectiles), never beyond its share of the player's health. Never throws.
+	 */
+	public static float adjustDamage(LivingEntity victim, DamageSource source, float damage) {
+		if (BY_MOB.isEmpty() || !(damage > 0) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+			return damage;
+		}
+		try {
+			if (victim instanceof ServerPlayer player) {
+				Entity attacker = source.getEntity();
+				Encounter encounter = attacker == null ? null : BY_MOB.get(attacker.getUUID());
+				return encounter == null ? damage : DreadRules.toPlayer(damage, encounter.playerDamage, encounter.maxHitRatio, player.getMaxHealth());
+			}
+			Encounter encounter = BY_MOB.get(victim.getUUID());
+			if (encounter != null && encounter.vitality > 1.0 && victim.getUUID().equals(encounter.boss)) {
+				return DreadRules.toGuardian(damage, encounter.vitality);
+			}
+		} catch (Throwable t) {
+			Safe.log("ruin.dread.damage", t);
+		}
+		return damage;
+	}
+
+	/** A heal of a guardian whose effective health is beyond the cap: divided by its vitality (same effective health). */
+	public static float adjustHeal(LivingEntity entity, float amount) {
+		if (BY_MOB.isEmpty() || !(amount > 0)) {
+			return amount;
+		}
+		Encounter encounter = BY_MOB.get(entity.getUUID());
+		return encounter != null && encounter.vitality > 1.0 && entity.getUUID().equals(encounter.boss) ? DreadRules.toGuardian(amount, encounter.vitality)
+				: amount;
 	}
 
 	/** Players counted by the group scaling of the running fight (1 when alone or disabled), 0 without a fight. */
@@ -557,6 +818,7 @@ public final class Encounters {
 			if (encounter.cursed != null) {
 				encounter.cursed.curseMinion(m);
 			}
+			empowerMinion(encounter, m);
 			return true;
 		});
 		if (mob == null) {
@@ -665,7 +927,7 @@ public final class Encounters {
 					() -> BossAbilities.use(level, encounter, boss, scaled, targets, RANDOM, Encounters::summon), false);
 			if (used) {
 				encounter.readyAt[index] = now + RuinRules.cooldownTicks(ability.cooldownSeconds, encounter.cooldownFactor());
-				encounter.nextAbilityTick = now + cfg.encounter.abilityGlobalCooldownSeconds * 20L;
+				encounter.nextAbilityTick = now + Math.round(cfg.encounter.abilityGlobalCooldownSeconds * 20L * (encounter.dread.active() ? encounter.dread.cooldown() : 1.0));
 				return;
 			}
 		}
@@ -748,11 +1010,14 @@ public final class Encounters {
 	 * while it rises.
 	 */
 	private static Component barName(Encounter encounter, float health, float max) {
+		if (encounter.avatar != null) {
+			return encounter.avatar.barName(encounter, health, max);
+		}
 		if (encounter.cursed != null) {
 			return encounter.cursed.barName(encounter, health, max);
 		}
 		String name = Lang.colorize(encounter.def.boss.name);
-		String threat = threatLabel(encounter.threat);
+		String threat = threatLine(encounter);
 		if (encounter.rising != null) {
 			return Lang.get("ruin.bar.rising", name, threat);
 		}
@@ -760,7 +1025,7 @@ public final class Encounters {
 		if (encounter.party.group()) {
 			title = Lang.raw("ruin.bar.group", title, encounter.party.players());
 		}
-		Component bar = Lang.get("ruin.bar", title, (int) Math.ceil(health), (int) Math.ceil(max));
+		Component bar = Lang.get("ruin.bar", title, DreadRules.shown(health, encounter.vitality), DreadRules.shown(max, encounter.vitality));
 		if (!encounter.risen) {
 			long left = ThreatRules.secondsLeft(Scheduler.ticks() - encounter.startedTick, encounter.fastKillTicks);
 			if (left > 0) {
@@ -798,8 +1063,14 @@ public final class Encounters {
 		}
 		if (level != null) {
 			Mob boss = encounter.bossEntity(level);
+			if (encounter.dreadFight != null) {
+				Safe.run("ruin.dread.end", () -> encounter.dreadFight.end(level));
+			}
+			if (encounter.avatar != null) {
+				Safe.run("ruin.avatar.vanish", () -> encounter.avatar.vanish(level, encounter, announce));
+			}
 			if (encounter.cursed != null) {
-				Safe.run("ruin.cursed.vanish", () -> encounter.cursed.vanish(level, encounter, boss, announce));
+				Safe.run("ruin.cursed.vanish", () -> encounter.cursed.vanish(level, encounter, boss, announce && encounter.avatar == null));
 			}
 			if (boss != null) {
 				RuinFx.burst(level, ParticleTypes.LARGE_SMOKE, boss.position().add(0, 1, 0), 30, 0.5, 0.05);
@@ -860,6 +1131,7 @@ public final class Encounters {
 		HINTS.clear();
 		RuinFx.clear();
 		Felines.clear();
+		Roots.clear();
 	}
 
 	// ================================================================== events
@@ -930,6 +1202,15 @@ public final class Encounters {
 		}
 		victoryEffects(level, boss);
 		Safe.run("ruin.stats.victory", () -> RuinFightStats.victory(level, encounter, boss, source, present));
+		if (encounter.dreadFight != null) {
+			Safe.run("ruin.dread.end", () -> encounter.dreadFight.end(level));
+		}
+		if (encounter.avatar != null) {
+			// The Avatar falls: its own titles and announcement.
+			Safe.run("ruin.avatar.victory", () -> encounter.avatar.victory(level, encounter, boss, present));
+			forget(encounter);
+			return;
+		}
 		if (encounter.cursed != null) {
 			// The curse is broken: its own titles and announcement.
 			Safe.run("ruin.cursed.victory", () -> encounter.cursed.victory(level, encounter, boss, present, threat, threat > stored));
@@ -938,6 +1219,9 @@ public final class Encounters {
 		}
 		String bossName = Lang.colorize(encounter.def.boss.name);
 		String ruinName = Lang.colorize(encounter.def.name);
+		if (encounter.dread.active()) {
+			bossName = Lang.raw("ruin.dread.name", bossName);
+		}
 		// No note on the threat here: its level shows on the boss bar, the maps and the atelier.
 		for (ServerPlayer player : present) {
 			if (encounter.risen) {
@@ -997,11 +1281,15 @@ public final class Encounters {
 				encounter.cursed.reapply(converted, Lang.colorize(encounter.def.boss.name));
 			}
 			converted.setHealth(Math.max(1.0F, ratio * converted.getMaxHealth()));
+			if (encounter.dread.active() || encounter.avatar != null) {
+				applyName(encounter, converted);
+			}
 		} else if (encounter.minions.remove(previous.getUUID())) {
 			encounter.minions.add(converted.getUUID());
 			if (encounter.cursed != null) {
 				encounter.cursed.curseMinion(converted);
 			}
+			empowerMinion(encounter, converted);
 		}
 	}
 
@@ -1068,12 +1356,15 @@ public final class Encounters {
 		RitualFx fx = new RitualFx(level, rising.anchor, Math.max(400, cfg.resurrection.particleBudget), cfg.summon.viewDistance);
 		Safe.run("ruin.rising.begin", () -> rising.begin(level, boss, fx));
 		fx.flush();
-		encounter.bar.setColor(cursed ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
+		encounter.bar.setColor(cursed && encounter.avatar == null ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
 		encounter.bar.setName(barName(encounter, boss.getHealth(), boss.getMaxHealth()));
 		encounter.bar.setProgress(0.0F);
 		String bossName = Lang.colorize(encounter.def.boss.name);
 		for (ServerPlayer player : present(level, encounter.ruin, cfg.encounter.presenceMargin)) {
-			if (cursed) {
+			if (encounter.avatar != null) {
+				Msg.title(player, Lang.get("ruin.avatar.risen.title"), Lang.get("ruin.avatar.risen.subtitle", bossName), 5, 80, 15);
+				Msg.send(player, "ruin.avatar.risen.chat", bossName);
+			} else if (cursed) {
 				Msg.title(player, Lang.get("ruin.cursed.risen.title"), Lang.get("ruin.cursed.risen.subtitle", bossName), 5, 80, 15);
 				Msg.send(player, "ruin.cursed.risen.chat", bossName);
 			} else {
@@ -1158,8 +1449,7 @@ public final class Encounters {
 		boss.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 160, 1, false, true));
 		boss.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, MobEffectInstance.INFINITE_DURATION, 0, false, false));
 		String bossName = Lang.colorize(encounter.def.boss.name);
-		boss.setCustomName(Lang.get(cursed ? "ruin.cursed.risen.name" : "ruin.risen.name", bossName));
-		boss.setCustomNameVisible(true);
+		applyName(encounter, boss);
 		long now = Scheduler.ticks();
 		for (int i = 0; i < encounter.readyAt.length; i++) {
 			encounter.readyAt[i] = Math.min(encounter.readyAt[i], now + 40 + i * 20L);
@@ -1168,7 +1458,10 @@ public final class Encounters {
 		if (cursed) {
 			encounter.cursed.afterRising();
 		}
-		encounter.bar.setColor(cursed ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
+		if (encounter.dreadFight != null) {
+			encounter.dreadFight.resume(now);
+		}
+		encounter.bar.setColor(cursed && encounter.avatar == null ? BossEvent.BossBarColor.PURPLE : BossEvent.BossBarColor.RED);
 		encounter.bar.setName(barName(encounter, boss.getHealth(), boss.getMaxHealth()));
 		encounter.bar.setProgress(Mth.clamp(boss.getHealth() / Math.max(1.0F, boss.getMaxHealth()), 0.0F, 1.0F));
 		RitualFx fx = new RitualFx(level, rising.anchor, Math.max(800, r.particleBudget), cfg.summon.viewDistance);
@@ -1178,7 +1471,7 @@ public final class Encounters {
 		List<ServerPlayer> present = present(level, encounter.ruin, cfg.encounter.presenceMargin);
 		ServerPlayer nearest = null;
 		for (ServerPlayer player : present) {
-			String key = cursed ? "ruin.cursed.risen.back" : "ruin.risen.back";
+			String key = encounter.avatar != null ? "ruin.avatar.risen.back" : cursed ? "ruin.cursed.risen.back" : "ruin.risen.back";
 			Msg.title(player, Lang.get(key + ".title"), Lang.get(key + ".subtitle", bossName), 0, 60, 20);
 			Msg.send(player, key + ".chat", bossName);
 			if (BossAbilities.valid(player, level) && (nearest == null || player.distanceToSqr(boss) < nearest.distanceToSqr(boss))) {

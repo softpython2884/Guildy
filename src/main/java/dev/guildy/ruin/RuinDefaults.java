@@ -2,11 +2,13 @@ package dev.guildy.ruin;
 
 import dev.guildy.ruin.RuinConfig.AbilityDef;
 import dev.guildy.ruin.RuinConfig.BossDef;
+import dev.guildy.ruin.RuinConfig.DreadAbilityDef;
 import dev.guildy.ruin.RuinConfig.EffectDef;
 import dev.guildy.ruin.RuinConfig.ItemDrop;
 import dev.guildy.ruin.RuinConfig.MinionDef;
 import dev.guildy.ruin.RuinConfig.RewardDef;
 import dev.guildy.ruin.RuinConfig.RuinDef;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -60,6 +62,7 @@ final class RuinDefaults {
 				ability("summon", 22, 0, 4, 2, "", 0.8),
 				ability("life_drain", 18, 3, 10, 1, "", 0.6),
 				enrage(0.3, 0)));
+		def.dreadAbilities = cryptDread();
 		def.rewards = rewards(GOLD_MIN[0], GOLD_MAX[0], 80, "guildy:chests/ruin/rare", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 4, 8, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:wither_skeleton_skull", 1, 1, 0.15));
@@ -80,6 +83,7 @@ final class RuinDefaults {
 				ability("fire_ring", 15, 6, 7, 1, "fire", 0.85),
 				ability("summon", 24, 0, 4, 2, "", 0.7),
 				enrage(0.3, 1)));
+		def.dreadAbilities = mageDread();
 		def.rewards = rewards(GOLD_MIN[1], GOLD_MAX[1], 120, "guildy:chests/ruin/rare", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 6, 12, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:totem_of_undying", 1, 1, 0.25));
@@ -104,6 +108,7 @@ final class RuinDefaults {
 				ability("summon", 18, 0, 4, 3, "", 1.0),
 				ability("fire_ring", 16, 6, 7, 1, "fire", 0.75),
 				enrage(0.3, 1)));
+		def.dreadAbilities = zigguratDread();
 		def.rewards = rewards(GOLD_MIN[1], GOLD_MAX[1], 120, "guildy:chests/ruin/rare", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 6, 12, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:golden_apple", 1, 2, 0.6));
@@ -126,6 +131,7 @@ final class RuinDefaults {
 				ability("blink", 14, 8, 4, 1, "", 0.7),
 				ability("summon", 22, 0, 4, 3, "", 0.6),
 				enrage(0.3, 1)));
+		def.dreadAbilities = frostDread();
 		def.rewards = rewards(GOLD_MIN[2], GOLD_MAX[2], 160, "guildy:chests/ruin/treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
@@ -148,6 +154,7 @@ final class RuinDefaults {
 				ability("volley", 12, 5, 4, 4, "fireball", 0.8),
 				ability("summon", 22, 0, 4, 2, "", 0.7),
 				enrage(0.3, 1)));
+		def.dreadAbilities = infernalDread();
 		def.rewards = rewards(GOLD_MIN[3], GOLD_MAX[3], 220, "guildy:chests/ruin/nether_treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:netherite_scrap", 1, 2, 0.5));
@@ -173,6 +180,7 @@ final class RuinDefaults {
 				ability("volley", 12, 5, 4, 5, "fireball", 0.6),
 				ability("summon", 24, 0, 4, 3, "", 0.6),
 				enrage(0.3, 2)));
+		def.dreadAbilities = soulDread();
 		def.rewards = rewards(GOLD_MIN[4], GOLD_MAX[4], 300, "guildy:chests/ruin/nether_treasure", 2);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 12, 24, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:netherite_scrap", 1, 3, 0.75));
@@ -198,6 +206,7 @@ final class RuinDefaults {
 				ability("blink", 12, 8, 4, 1, "wind", 0.8),
 				ability("summon", 22, 0, 4, 3, "", 0.65),
 				enrage(0.3, 1)));
+		def.dreadAbilities = serpentDread();
 		def.rewards = rewards(GOLD_MIN[2], GOLD_MAX[2], 160, "guildy:chests/ruin/treasure", 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 8, 16, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 1, 3, 0.5));
@@ -226,6 +235,7 @@ final class RuinDefaults {
 		def.minions.types.putAll(jaguarEscort());
 		def.minions.equipment.put("head", GOLD_HELMET);
 		def.abilities = jaguarAbilities();
+		def.dreadAbilities = jaguarDread();
 		def.rewards = rewards(JAGUAR_GOLD_MIN, JAGUAR_GOLD_MAX, 380, "guildy:chests/ruin/treasure", 3);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 16, 28, 1.0));
 		def.rewards.items.add(new ItemDrop("minecraft:diamond", 2, 4, 0.75));
@@ -330,12 +340,144 @@ final class RuinDefaults {
 				ability(nether ? "fire_ring" : "volley", 14, 4 + t, 6, 4, nether ? "fire" : "arrow", 1.0),
 				ability("summon", 22, 0, 4, 2, "", 0.7),
 				enrage(0.3, t >= 4 ? 1 : 0)));
+		def.dreadAbilities = genericDread(t, nether);
 		int[] xp = {80, 120, 160, 220, 300};
 		String table = nether ? (t >= 4 ? "guildy:chests/ruin/nether_treasure" : "guildy:chests/ruin/nether_rare")
 				: (t >= 3 ? "guildy:chests/ruin/treasure" : "guildy:chests/ruin/rare");
 		def.rewards = rewards(GOLD_MIN[t - 1], GOLD_MAX[t - 1], xp[t - 1], table, t >= 4 ? 2 : 1);
 		def.rewards.items.add(new ItemDrop("minecraft:experience_bottle", 2 + 2 * t, 4 + 4 * t, 1.0));
 		return def;
+	}
+
+	// ------------------------------------------------------------------ dread abilities (Guildy 1.14)
+
+	/** Dread abilities of a default ruin id (empty for an unknown id). */
+	static List<DreadAbilityDef> dreadOf(String ruinId) {
+		return switch (ruinId) {
+			case "crypte_oubliee" -> cryptDread();
+			case "tour_du_mage" -> mageDread();
+			case "ziggourat_des_sables" -> zigguratDread();
+			case "bastion_de_givre" -> frostDread();
+			case "autel_infernal" -> infernalDread();
+			case "citadelle_des_ames" -> soulDread();
+			case "temple_maya" -> serpentDread();
+			case "grand_temple_maya" -> jaguarDread();
+			default -> new ArrayList<>();
+		};
+	}
+
+	/** The default settings of a dread ability or Avatar attack type (from the guardian that uses it), or null. */
+	static @Nullable DreadAbilityDef defaultDread(String type) {
+		List<DreadAbilityDef> all = new ArrayList<>();
+		for (String id : ruins().keySet()) {
+			all.addAll(dreadOf(id));
+		}
+		all.addAll(AvatarSettings.defaultAttacks());
+		for (DreadAbilityDef def : all) {
+			if (def.type.equals(type)) {
+				return def;
+			}
+		}
+		return null;
+	}
+
+	/** The crypt: graves bursting with grasping hands, lines of bone spikes, a bone prison closing on a player. */
+	static List<DreadAbilityDef> cryptDread() {
+		return new ArrayList<>(List.of(
+				dread("grasping_graves", 16, 6, 2.5, 2, 2.5, 1),
+				dread("bone_spikes", 13, 8, 14, 3, 0, 1),
+				dread("bone_prison", 22, 3, 5, 1, 3, 1)));
+	}
+
+	/** The fallen archmage: a barrage of arcane missiles, a gravity well, mirror images. */
+	static List<DreadAbilityDef> mageDread() {
+		return new ArrayList<>(List.of(
+				dread("arcane_barrage", 12, 5, 1.2, 6, 0, 1),
+				dread("gravity_well", 18, 4, 7, 1, 4, 1),
+				dread("mirror_clones", 26, 0, 20, 3, 15, 1)));
+	}
+
+	/** The sand pharaoh: a quicksand pit, the mummy's curse, a blinding sandstorm (only its eye is safe). */
+	static List<DreadAbilityDef> zigguratDread() {
+		return new ArrayList<>(List.of(
+				dread("quicksand", 16, 3, 4.5, 1, 4, 1),
+				dread("mummy_curse", 20, 10, 4, 1, 4, 1),
+				dread("sandstorm", 28, 2, 4, 1, 6, 1)));
+	}
+
+	/** The frost king: ice spike eruptions, frozen ground, a blizzard dome. */
+	static List<DreadAbilityDef> frostDread() {
+		return new ArrayList<>(List.of(
+				dread("ice_spikes", 12, 9, 16, 4, 0, 1),
+				dread("frozen_ground", 16, 2, 3, 3, 6, 2),
+				dread("blizzard_dome", 30, 3, 4, 1, 6, 2)));
+	}
+
+	/** The feathered serpent: a storm of feathers, a dive bomb, a poison rain. */
+	static List<DreadAbilityDef> serpentDread() {
+		return new ArrayList<>(List.of(
+				dread("feather_storm", 18, 4, 16, 5, 4, 1),
+				dread("dive_bomb", 14, 12, 4, 1, 0, 1),
+				dread("poison_rain", 20, 5, 2, 14, 4, 1)));
+	}
+
+	/** The celestial jaguar: a chain of pounces, a stunning roar, a solar beam. */
+	static List<DreadAbilityDef> jaguarDread() {
+		return new ArrayList<>(List.of(
+				dread("pounce_chain", 18, 14, 4, 3, 0, 1),
+				dread("stunning_roar", 20, 6, 12, 1, 2, 1),
+				dread("solar_beam", 22, 4, 20, 1, 3, 1)));
+	}
+
+	/** The warlord of the infernal altar: lava geysers, a rain of magma meteors, a molten ring. */
+	static List<DreadAbilityDef> infernalDread() {
+		return new ArrayList<>(List.of(
+				dread("lava_geysers", 13, 12, 2.5, 3, 0, 1),
+				dread("magma_meteors", 20, 10, 3, 10, 4, 1),
+				dread("molten_ring", 22, 14, 18, 3, 0, 1)));
+	}
+
+	/** The soul champion: soul chains (stay close), a wither aura (keep away), a soul eruption. */
+	static List<DreadAbilityDef> soulDread() {
+		return new ArrayList<>(List.of(
+				dread("soul_chains", 18, 6, 7, 2, 6, 1),
+				dread("wither_aura", 22, 4, 6, 1, 5, 1),
+				dread("soul_eruption", 16, 14, 18, 3, 0, 1)));
+	}
+
+	/** The generic guardian of an unknown ruin: three dread abilities of its dimension, damage by tier. */
+	static List<DreadAbilityDef> genericDread(int tier, boolean nether) {
+		double k = 1 + 0.25 * (Math.max(1, Math.min(5, tier)) - 1);
+		if (nether) {
+			return new ArrayList<>(List.of(
+					dread("lava_geysers", 14, 8 * k, 2.5, 2, 0, 1),
+					dread("soul_eruption", 18, 9 * k, 16, 3, 0, 1),
+					dread("magma_meteors", 22, 7 * k, 3, 8, 4, 1)));
+		}
+		return new ArrayList<>(List.of(
+				dread("bone_spikes", 13, 6 * k, 14, 3, 0, 1),
+				dread("grasping_graves", 16, 4 * k, 2.5, 2, 2.5, 1),
+				dread("arcane_barrage", 14, 4 * k, 1.2, 5, 0, 1)));
+	}
+
+	/** A dread ability, its effect level {@code amplifier}. */
+	static DreadAbilityDef dread(String type, double cooldown, double damage, double radius, int count, double seconds, int amplifier) {
+		DreadAbilityDef ability = new DreadAbilityDef();
+		ability.type = type;
+		ability.cooldownSeconds = cooldown;
+		ability.damage = damage;
+		ability.radius = radius;
+		ability.count = count;
+		ability.durationSeconds = seconds;
+		ability.amplifier = amplifier;
+		return ability;
+	}
+
+	/** An attack of the Avatar, used from {@code phase} of its cursed fight. */
+	static DreadAbilityDef avatar(String type, int phase, double cooldown, double damage, double radius, int count, double seconds) {
+		DreadAbilityDef ability = dread(type, cooldown, damage, radius, count, seconds, 1);
+		ability.phase = phase;
+		return ability;
 	}
 
 	// ------------------------------------------------------------------ builders

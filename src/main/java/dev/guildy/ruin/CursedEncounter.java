@@ -209,12 +209,12 @@ final class CursedEncounter {
 		if (encounter.rising != null) {
 			return Lang.get("ruin.cursed.bar.rising", name);
 		}
-		String title = encounter.risen ? Lang.raw("ruin.cursed.bar.final", name, Encounters.threatLabel(encounter.threat))
-				: Lang.raw("ruin.cursed.bar", name, Encounters.threatLabel(encounter.threat), CursedRules.roman(phase));
+		String title = encounter.risen ? Lang.raw("ruin.cursed.bar.final", name, Encounters.threatLine(encounter))
+				: Lang.raw("ruin.cursed.bar", name, Encounters.threatLine(encounter), CursedRules.roman(phase));
 		if (encounter.party.group()) {
 			title = Lang.raw("ruin.bar.group", title, encounter.party.players());
 		}
-		return Lang.get("ruin.bar", title, (int) Math.ceil(health), (int) Math.ceil(max));
+		return Lang.get("ruin.bar", title, DreadRules.shown(health, encounter.vitality), DreadRules.shown(max, encounter.vitality));
 	}
 
 	// ================================================================== phases
@@ -298,6 +298,9 @@ final class CursedEncounter {
 			encounter.readyAt[i] = Math.min(encounter.readyAt[i], now + 50 + i * 20L);
 		}
 		encounter.nextAbilityTick = now + 40;
+		if (encounter.dreadFight != null) {
+			encounter.dreadFight.resume(now);
+		}
 		String bossName = Lang.colorize(encounter.def.boss.name);
 		ServerPlayer nearest = null;
 		for (ServerPlayer player : present) {
@@ -595,15 +598,20 @@ final class CursedEncounter {
 			return dropped;
 		}
 		ScrollConfig scrolls = ScrollModule.config();
-		double chance = settings.rewards.grimoireChance;
+		double chance = encounter.avatar != null ? Math.max(settings.rewards.grimoireChance, settings.avatar.rewards.grimoireChance)
+				: settings.rewards.grimoireChance;
 		if (scrolls.dropsEnabled && scrolls.grimoire.enabled && chance > 0 && (chance >= 1 || random.nextDouble() < chance)) {
 			dropped += RuinLoot.protectedDrop(level, boss, GrimoireItems.create(GrimoireRules.Pages.EMPTY));
 		}
 		// The cursed grimoire: only from the cursed guardians of scrolls.json5 cursedGrimoire.ruinDrops (the fallen archmage).
 		dropped += RuinLoot.protectedDrop(level, boss, ScrollModule.cursedGrimoireDrop(encounter.ruin.ruinId, true, random));
-		if (settings.rewards.guaranteedScroll && !scrollDropped) {
+		if ((settings.rewards.guaranteedScroll || encounter.avatar != null) && !scrollDropped) {
 			ItemStack scroll = ScrollDrops.pick(scrollSource, random);
 			dropped += RuinLoot.protectedDrop(level, boss, scroll);
+		}
+		if (encounter.avatar != null && settings.avatar.rewards.trophy) {
+			// The trophy of the Avatar: never a Nether star again.
+			dropped += RuinLoot.protectedDrop(level, boss, AvatarEncounter.trophy(encounter));
 		}
 		return dropped;
 	}

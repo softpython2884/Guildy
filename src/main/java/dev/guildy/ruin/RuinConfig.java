@@ -33,12 +33,21 @@ import java.util.function.Predicate;
 public final class RuinConfig implements Validatable {
 	/**
 	 * 2 = Guildy 1.8.2: themed escorts and room guards (no raiders in the Mayan temples), the celestial jaguar becomes a giant
-	 * ocelot (a black cat when cursed). 3 = Guildy 1.10: about three times more gold from every guardian. Entries still on
-	 * the older defaults are migrated by {@link RuinMigration}.
+	 * ocelot (a black cat when cursed). 3 = Guildy 1.10: about three times more gold from every guardian. 4 = Guildy 1.14: the
+	 * dread form of the guardians from Menace VII and its abilities ({@code dreadAbilities}), the Avatar. Entries still on the
+	 * older defaults are migrated by {@link RuinMigration}.
 	 */
-	public static final int CURRENT_VERSION = 3;
+	public static final int CURRENT_VERSION = 4;
 	public static final Set<String> ABILITIES = Set.of("summon", "ground_slam", "fire_ring", "blink", "volley", "life_drain", "enrage", "pounce",
 			"claw_sweep", "stalk", "roar", "spirit_jaguars");
+	/**
+	 * Dread abilities ({@code dreadAbilities} of a ruin, from {@code escalation.dreadThreshold}) and the Nether attacks of the
+	 * Avatar ({@code cursed.avatar.attacks}): any guardian may use any of them.
+	 */
+	public static final Set<String> DREAD_TYPES = Set.of("grasping_graves", "bone_prison", "bone_spikes", "arcane_barrage", "mirror_clones",
+			"gravity_well", "quicksand", "mummy_curse", "sandstorm", "ice_spikes", "frozen_ground", "blizzard_dome", "feather_storm", "dive_bomb",
+			"poison_rain", "pounce_chain", "stunning_roar", "solar_beam", "lava_geysers", "magma_meteors", "molten_ring", "soul_chains",
+			"wither_aura", "soul_eruption", "soul_pillars", "wither_skulls", "nether_rifts", "ghast_rain", "collapsing_ring");
 	public static final Set<String> STYLES = Set.of("", "fire", "soul", "frost", "sand", "arrow", "spectral", "fireball", "jade", "wind",
 			"solar", "gold");
 	public static final Set<String> BAR_COLORS = Set.of("PINK", "BLUE", "RED", "GREEN", "YELLOW", "PURPLE", "WHITE");
@@ -133,6 +142,16 @@ public final class RuinConfig implements Validatable {
 			"embuscade : degats damage a moins de radius blocs), roar (rugissement en cone de longueur radius : Lenteur de niveau",
 			"amplifier et Faiblesse), spirit_jaguars (count esprits jaguars temporaires, morsure damage, a moins de radius blocs) ;",
 			"styles gold (Lenteur), jade (Poison), solar (brule) ; violet et noir sous la forme maudite.",
+			"dreadAbilities [{type, cooldownSeconds, damage, radius, count, durationSeconds, amplifier}] : capacites de la forme",
+			"redoutable (a partir de escalation.dreadThreshold), toutes annoncees (cercles, lignes, cones rouges) avant de frapper :",
+			"grasping_graves (tombes qui s'ouvrent sous les joueurs : enracines), bone_prison (cage d'os qui se referme : en sortir",
+			"a temps), bone_spikes / ice_spikes (lignes de pointes qui jaillissent du sol), arcane_barrage / wither_skulls",
+			"(projectiles a tete chercheuse), mirror_clones (copies illusoires), gravity_well / quicksand (attirent vers le centre),",
+			"mummy_curse (marque qui explose sur les joueurs proches : s'ecarter), sandstorm / blizzard_dome (tempete : seul l'oeil",
+			"est sur), frozen_ground / lava_geysers / soul_pillars (zones au sol), feather_storm (spirale de plumes), dive_bomb /",
+			"pounce_chain (plongeon / bonds sur un joueur marque), poison_rain / magma_meteors / ghast_rain (pluie de projectiles),",
+			"stunning_roar (cone qui etourdit), solar_beam (rayon qui balaie), molten_ring / soul_eruption / collapsing_ring (anneau",
+			"avec des breches), soul_chains (rester pres du gardien), wither_aura (s'en eloigner), nether_rifts (failles du Nether).",
 			"rewards : goldMin/goldMax (lingots), goldPerEscort (lingots en plus par sbire de l'escorte tue pendant le combat, au plus",
 			"escortGoldMax ; avant les bonus de menace, de groupe, de resurrection et de malediction), xp (XP de guilde partagee",
 			"entre les guildes des participants), lootTable +",
@@ -254,6 +273,13 @@ public final class RuinConfig implements Validatable {
 		public double uniqueChancePerLevel = 0.05;
 		@Comment("Chance d'un tirage de parchemin de sort supplementaire par niveau au-dela de I")
 		public double scrollChancePerLevel = 0.08;
+		@Comment({
+				"Forme redoutable : a partir de ce niveau de menace (7 = Menace VII), le gardien, normal ou maudit, devient tout autre",
+				"chose (voir 'dread' et la liste 'dreadAbilities' de chaque ruine). 0 = jamais"
+		})
+		public int dreadThreshold = 7;
+		@Comment("Le gardien redoutable : vie, degats, rythme, capacites, recompenses")
+		public DreadSettings dread = new DreadSettings();
 	}
 
 	@Json5.Section
@@ -406,6 +432,8 @@ public final class RuinConfig implements Validatable {
 		public BossDef boss = new BossDef();
 		public MinionDef minions = new MinionDef();
 		public List<AbilityDef> abilities = new ArrayList<>();
+		/** Abilities of its dread form (from {@code escalation.dreadThreshold}), on top of {@link #abilities}. */
+		public List<DreadAbilityDef> dreadAbilities = new ArrayList<>();
 		public RewardDef rewards = new RewardDef();
 		public GuardDef guards = new GuardDef();
 
@@ -560,6 +588,40 @@ public final class RuinConfig implements Validatable {
 		}
 	}
 
+	/**
+	 * A dread ability (or an attack of the Avatar): {@code type} (one of {@link #DREAD_TYPES}), {@code phase} (the Avatar uses it
+	 * from this phase of its cursed fight; ignored by the dread guardians), cooldown (seconds), damage (health points, before
+	 * the threat, the group, the curse and the dread bonus), radius (blocks: zone, line length, reach), count (zones, lines,
+	 * missiles, targets...), duration (seconds: lingering zones, roots, storms), amplifier (effect level).
+	 */
+	public static final class DreadAbilityDef {
+		public String type = "";
+		public int phase = 1;
+		public double cooldownSeconds = 15;
+		public double damage = 6;
+		public double radius = 3;
+		public int count = 1;
+		public double durationSeconds = 3;
+		public int amplifier = 1;
+
+		public DreadAbilityDef() {
+		}
+
+		/** A copy with its damage multiplied and {@code extraCount} more repetitions (the Avatar's amplified abilities). */
+		public DreadAbilityDef amplified(double damageFactor, int extraCount) {
+			DreadAbilityDef copy = new DreadAbilityDef();
+			copy.type = type;
+			copy.phase = phase;
+			copy.cooldownSeconds = cooldownSeconds;
+			copy.damage = damage * Math.max(0, damageFactor);
+			copy.radius = radius;
+			copy.count = Math.min(16, count + Math.max(0, extraCount));
+			copy.durationSeconds = durationSeconds;
+			copy.amplifier = amplifier;
+			return copy;
+		}
+	}
+
 	public static final class RewardDef {
 		public int goldMin = 15;
 		public int goldMax = 25;
@@ -700,6 +762,11 @@ public final class RuinConfig implements Validatable {
 		t.xpPerLevel = clamp(t.xpPerLevel, 0, 5);
 		t.uniqueChancePerLevel = clamp(t.uniqueChancePerLevel, 0, 1);
 		t.scrollChancePerLevel = clamp(t.scrollChancePerLevel, 0, 1);
+		t.dreadThreshold = clamp(t.dreadThreshold, 0, ThreatRules.MAX_LEVEL);
+		if (t.dread == null) {
+			t.dread = new DreadSettings();
+		}
+		t.dread.fix();
 		if (resurrection == null) {
 			resurrection = new ResurrectionSettings();
 		}
@@ -728,6 +795,10 @@ public final class RuinConfig implements Validatable {
 			cursed = new CursedSettings();
 		}
 		cursed.fix(itemExists, warnings);
+		if (cursed.avatar == null) {
+			cursed.avatar = new AvatarSettings();
+		}
+		cursed.avatar.fix(itemExists, entityExists, warnings);
 		if (stats == null) {
 			stats = new FightStatsSettings();
 		}
@@ -945,6 +1016,7 @@ public final class RuinConfig implements Validatable {
 			}
 		}
 		def.abilities = abilities;
+		def.dreadAbilities = fixDread(def.dreadAbilities, where + ".dreadAbilities", warnings);
 
 		if (def.rewards == null) {
 			def.rewards = new RewardDef();
@@ -977,6 +1049,33 @@ public final class RuinConfig implements Validatable {
 			}
 		}
 		r.items = items;
+	}
+
+	/** Dread abilities / Avatar attacks: unknown types dropped (reported), every value clamped. */
+	static List<DreadAbilityDef> fixDread(@Nullable List<DreadAbilityDef> list, String where, List<String> warnings) {
+		List<DreadAbilityDef> fixed = new ArrayList<>();
+		if (list == null) {
+			return fixed;
+		}
+		for (DreadAbilityDef a : list) {
+			if (a == null) {
+				continue;
+			}
+			a.type = a.type == null ? "" : a.type.trim().toLowerCase(Locale.ROOT);
+			if (!DREAD_TYPES.contains(a.type)) {
+				warnings.add(where + ": unknown type '" + a.type + "': ignored");
+				continue;
+			}
+			a.phase = clamp(a.phase, 1, CursedRules.LAST_PHASE);
+			a.cooldownSeconds = clamp(a.cooldownSeconds, 2, 600);
+			a.damage = clamp(a.damage, 0, 200);
+			a.radius = clamp(a.radius, 0.5, 32);
+			a.count = clamp(a.count, 1, 16);
+			a.durationSeconds = clamp(a.durationSeconds, 0, 30);
+			a.amplifier = clamp(a.amplifier, 0, 9);
+			fixed.add(a);
+		}
+		return fixed;
 	}
 
 	/** Entity weights: ids normalized, unknown entities dropped (reported), weights 1 to 1000. */

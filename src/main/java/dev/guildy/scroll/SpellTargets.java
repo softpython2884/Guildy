@@ -3,6 +3,7 @@ package dev.guildy.scroll;
 import dev.guildy.Guildy;
 import dev.guildy.data.Guild;
 import dev.guildy.quest.HordeMobs;
+import dev.guildy.ruin.Encounters;
 import dev.guildy.ruin.RoomGuards;
 import dev.guildy.scroll.mixin.LivingEntityAccessor;
 import dev.guildy.villager.VillagerManager;
@@ -228,7 +229,8 @@ final class SpellTargets {
 			return false;
 		}
 		boolean boss = isBoss(target);
-		amount = ctx.damage.amount(target.getUUID(), boss, target.getMaxHealth(), amount);
+		// A ruin guardian's intended health (beyond the vanilla cap of 1024): the cap is a share of the health it really has.
+		amount = ctx.damage.amount(target.getUUID(), boss, Encounters.effectiveMaxHealth(target), amount);
 		if (amount < MIN_DAMAGE) {
 			// The boss already took all this cast may take from it.
 			return false;
@@ -260,12 +262,12 @@ final class SpellTargets {
 
 	/** Health this cast may still take from {@code target} (a boss within the cast's cap; infinite for other monsters). */
 	static double room(SpellContext ctx, LivingEntity target) {
-		return ctx.damage.room(target.getUUID(), isBoss(target), target.getMaxHealth());
+		return ctx.damage.room(target.getUUID(), isBoss(target), Encounters.effectiveMaxHealth(target));
 	}
 
 	/** Damage of {@code more} further hits of {@code amount} of this cast on {@code target} (diminishing returns and cap). */
 	static double expected(SpellContext ctx, LivingEntity target, double amount, int more) {
-		return ctx.damage.expected(target.getUUID(), isBoss(target), target.getMaxHealth(), amount, more);
+		return ctx.damage.expected(target.getUUID(), isBoss(target), Encounters.effectiveMaxHealth(target), amount, more);
 	}
 
 	/** True for the damage of a spell (a guildy spell damage type). */

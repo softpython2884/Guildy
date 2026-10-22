@@ -16,7 +16,9 @@ import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.HashSet;
@@ -42,6 +44,8 @@ final class CursedRitual extends Ritual {
 	private static final double CIRCLE_RADIUS = 5.5;
 	private final SplittableRandom random = new SplittableRandom();
 	private final Set<UUID> warned = new HashSet<>();
+	/** Nether stars seen in the circle (the Avatar): held there (nobody picks them up) and wrapped in embers. */
+	private final Set<UUID> stars = new HashSet<>();
 	private final double facing;
 	private int nextBeat;
 	private int beats;
@@ -137,6 +141,30 @@ final class CursedRitual extends Ritual {
 		}
 		if (p >= 0.85) {
 			CursedFx.implode(fx, ground.add(0, 1.8, 0), 3.5, SummonRules.phase(p, 0.85, 1.0), age % 2 == 0 ? CursedFx.PURPLE : CursedFx.BLOOD, 40, age * 0.2);
+		}
+		if (cfg.cursed.avatar.enabled && age % 2 == 0) {
+			stars(level, fx, cfg);
+		}
+	}
+
+	/**
+	 * A Nether star lying in the circle: the ritual takes hold of it (nobody can pick it up while it lasts), embers spiral
+	 * around it and the participants learn that it will be consumed.
+	 */
+	private void stars(ServerLevel level, RitualFx fx, RuinConfig cfg) {
+		double radius = cfg.summon.arenaRadius;
+		AABB box = new AABB(ground.x - radius, ground.y - 3, ground.z - radius, ground.x + radius, ground.y + 6, ground.z + radius);
+		for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, box, e -> e.isAlive() && AvatarEncounter.isStar(e.getItem()))) {
+			item.setPickUpDelay(20);
+			Vec3 at = item.position();
+			CursedFx.helix(fx, RitualFx.dust(AvatarEncounter.EMBER, 1.0F), at, 0.5, age, 1.4, 20);
+			fx.dot(RitualFx.trail(ground.add(0, 1.8, 0), AvatarEncounter.CRIMSON, 18), at.x, at.y + 0.3, at.z);
+			if (stars.add(item.getUUID())) {
+				level.playSound(null, at.x, at.y, at.z, SoundEvents.BEACON_AMBIENT, SoundSource.HOSTILE, 2.0F, 0.5F);
+				for (ServerPlayer player : participants) {
+					Msg.send(player, "ruin.avatar.star.stirs");
+				}
+			}
 		}
 	}
 

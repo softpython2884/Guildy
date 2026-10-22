@@ -53,6 +53,12 @@ public final class CursedSettings {
 	@Comment("Ou trouver le parchemin maudit (en plus de la commande admin)")
 	public SourceSettings sources = new SourceSettings();
 
+	@Comment({
+			"L'Avatar : une etoile du Nether posee au sol dans le cercle quand le rituel maudit s'acheve est consommee et le gardien",
+			"se leve sous sa forme supreme (jamais avec le parchemin normal). Admin : /guild admin ruin awaken cursed avatar"
+	})
+	public AvatarSettings avatar = new AvatarSettings();
+
 	// ================================================================== sections
 
 	@Json5.Section

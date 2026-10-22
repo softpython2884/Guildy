@@ -55,6 +55,7 @@
 			"dev.guildy.test.RuinThreatGameTests",
 			"dev.guildy.test.RuinGuardGameTests",
 			"dev.guildy.test.RuinCursedGameTests",
+			"dev.guildy.test.RuinDreadGameTests",
 			"dev.guildy.test.RuinSealGameTests",
 			"dev.guildy.test.RuinStatsGameTests",
 			"dev.guildy.test.RuinJaguarGameTests",

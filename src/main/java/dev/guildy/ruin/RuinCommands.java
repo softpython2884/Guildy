@@ -46,7 +46,7 @@ import java.util.Set;
 
 /**
  * {@code /guild admin ruin list | info | awaken | reset | locate <id> | map <player> <id> | incantation <player> [count] |
- * ability <type> [style] | threat <level> | guards [clear] | research <guild> finish | statues <player> | statues list} (the
+ * ability <type> [style] | dread <type> | threat <level> | guards [clear] | research <guild> finish | statues <player> | statues list} (the
  * admin node is already permission-gated).
  * "Nearest" = nearest known ruin in the dimension of the command source. {@code awaken} is instant (no scroll, no ritual).
  */
@@ -85,6 +85,10 @@ final class RuinCommands {
 				.then(Commands.literal("threat")
 						.then(Commands.argument("level", IntegerArgumentType.integer(1, ThreatRules.MAX_LEVEL))
 								.executes(ctx -> Safe.get("ruin.admin.threat", () -> threat(ctx, IntegerArgumentType.getInteger(ctx, "level")), 0))))
+				.then(Commands.literal("dread")
+						.then(Commands.argument("type", StringArgumentType.word())
+								.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(RuinConfig.DREAD_TYPES, builder))
+								.executes(ctx -> Safe.get("ruin.admin.dread", () -> dread(ctx), 0))))
 				.then(Commands.literal("guards")
 						.executes(ctx -> Safe.get("ruin.admin.guards", () -> guards(ctx), 0))
 						.then(Commands.literal("clear").executes(ctx -> Safe.get("ruin.admin.guards", () -> clearGuards(ctx), 0))))
@@ -242,6 +246,14 @@ final class RuinCommands {
 					: Encounters.risen(ruin) ? Lang.raw("ruin.admin.resurrection.risen")
 					: left > 0 ? Lang.raw("ruin.admin.resurrection.window", ThreatRules.clock(left)) : Lang.raw("ruin.admin.resurrection.closed");
 			lines.add(Lang.get("ruin.admin.info.resurrection", state));
+			double[] effective = Encounters.effectiveHealth(ruin);
+			if (Encounters.dreadActive(ruin) || Encounters.isAvatar(ruin)) {
+				lines.add(Lang.get("ruin.admin.info.dread", Lang.raw(Encounters.isAvatar(ruin) ? "ruin.admin.dread.avatar" : "ruin.admin.dread.on"),
+						effective == null ? 0 : (long) Math.ceil(effective[0]), effective == null ? 0 : (long) Math.ceil(effective[1]),
+						String.format(Locale.ROOT, "%.2f", Encounters.vitality(ruin)), String.format(Locale.ROOT, "%.2f", Encounters.playerDamage(ruin))));
+			} else {
+				lines.add(Lang.get("ruin.admin.info.dread.none", ThreatRules.roman(RuinModule.config().escalation.dreadThreshold)));
+			}
 			int party = Encounters.partySize(ruin);
 			if (party > 1) {
 				GroupScaling.Party group = GroupScaling.party(RuinModule.config().scaling, party);
@@ -430,6 +442,21 @@ final class RuinCommands {
 			return 0;
 		}
 		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.ability.used", ability.type)), false);
+		return 1;
+	}
+
+	/** A dread ability of the guardian of the nearest running fight, now (cooldowns ignored; any guardian can preview it). */
+	private static int dread(CommandContext<CommandSourceStack> ctx) {
+		RuinRecord ruin = nearest(ctx);
+		if (ruin == null) {
+			return 0;
+		}
+		String type = StringArgumentType.getString(ctx, "type").toLowerCase(Locale.ROOT);
+		if (!Encounters.forceDread(ruin, type)) {
+			ctx.getSource().sendFailure(Msg.prefixed(Lang.get("ruin.admin.dread.failed", type, String.join(", ", RuinConfig.DREAD_TYPES))));
+			return 0;
+		}
+		ctx.getSource().sendSuccess(() -> Msg.prefixed(Lang.get("ruin.admin.dread.used", type)), false);
 		return 1;
 	}
 

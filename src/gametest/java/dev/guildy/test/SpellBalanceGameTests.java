@@ -188,6 +188,8 @@ public class SpellBalanceGameTests {
 		RuinConfig.RuinDef def = RuinModule.config().def("tour_du_mage", false).copy();
 		def.resetSeconds = 120;
 		def.abilities.clear();
+		// At threat X it fights in its dread form: none of its dread abilities either.
+		def.dreadAbilities.clear();
 		def.minions.types.clear();
 		def.rewards.lootTable = "";
 		def.rewards.items.clear();
