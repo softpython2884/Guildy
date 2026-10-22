@@ -1,0 +1,22 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "guildy:heaume_hiver_eternel"
+      }
+    ],
+    "humanoid_baby": [
+      {
+        "texture": "minecraft:diamond"
+      }
+    ]
+  },
+  "trim_overrides": [
+    {
+      "palette": "minecraft:trim/diamond_darker",
+      "when": {
+        "material": "minecraft:diamond"
+      }
+    }
+  ]
+}

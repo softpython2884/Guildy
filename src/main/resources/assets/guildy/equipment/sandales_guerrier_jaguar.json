@@ -1,0 +1,22 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "guildy:sandales_guerrier_jaguar"
+      }
+    ],
+    "humanoid_baby": [
+      {
+        "texture": "minecraft:gold"
+      }
+    ]
+  },
+  "trim_overrides": [
+    {
+      "palette": "minecraft:trim/gold_darker",
+      "when": {
+        "material": "minecraft:gold"
+      }
+    }
+  ]
+}
