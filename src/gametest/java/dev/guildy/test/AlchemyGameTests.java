@@ -1,9 +1,11 @@
 package dev.guildy.test;
 
+import dev.guildy.alchemy.AlchemyConfig;
 import dev.guildy.alchemy.AlchemyModule;
 import dev.guildy.alchemy.Brews;
 import dev.guildy.alchemy.Elixirs;
 import dev.guildy.alchemy.MagicBoosts;
+import dev.guildy.alchemy.SimpleBrewing;
 import dev.guildy.core.GuildyItems;
 import dev.guildy.core.Hooks;
 import dev.guildy.core.Lang;
@@ -14,6 +16,7 @@ import dev.guildy.data.GuildManager;
 import dev.guildy.scroll.ScrollConfig;
 import dev.guildy.scroll.ScrollItems;
 import dev.guildy.scroll.ScrollModule;
+import dev.guildy.upgrade.Upgrades;
 import dev.guildy.villager.AlchemistConfig;
 import dev.guildy.villager.Alchemists;
 import dev.guildy.villager.AlchemyJob;
@@ -59,15 +62,41 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Alchemists brewing potions and elixirs: an alchemist brews healing potions at a brewing stand from the water bottles,
- * nether wart, glistering melon and blaze powder of the storage and stores them in the potion chest (or from glass bottles
- * filled at a water cauldron); its menu sets its role and the guild's potion stocks; an alchemist whose
- * role is books but who has no book falls back to potions (reason in its menu), then goes back to books when some arrive;
- * three alchemists of a guild that can do every job get one role each; drinking an Élixir arcanique makes a spell hit
- * harder, a clairvoyance boost shortens the incantation and the cooldown, satiety halves the grimoire's food cost.
+ * Alchemists brewing potions and elixirs. Simple brewing (default): an alchemist brews healing potions at a brewing stand
+ * with only the blaze powder of the storage, in about the time of the class; without blaze powder it falls back to books
+ * (reason in its menu), then back to potions when some arrives; a magic elixir costs more blaze powder and stops at the
+ * elixirs of the day. Recipes mode (their own batch, {@link #RECIPES}): from the water bottles, nether wart, glistering
+ * melon and blaze powder of the storage into the potion chest (or from glass bottles filled at a water cauldron); an
+ * alchemist whose role is books but who has no book falls back to potions, then goes back to books when some arrive. Its
+ * menu sets its role and the guild's potion stocks; three alchemists of a guild that can do every job get one role each;
+ * drinking an Élixir arcanique makes a spell hit harder, a clairvoyance boost shortens the incantation and the cooldown,
+ * satiety halves the grimoire's food cost.
  */
 public class AlchemyGameTests {
 	private static final String DAY = "guildy-test:day";
+	/**
+	 * Same as {@link #DAY}, for the tests of the recipes mode: a test environment is a batch of its own, so the mode they
+	 * switch to never overlaps the tests of the simple mode.
+	 */
+	private static final String RECIPES = "guildy-test:brewing_recipes";
+	private static int recipeTests;
+	private static String modeBefore = "simple";
+
+	/** Recipes mode for a test of the {@link #RECIPES} batch (until its last test ends). */
+	private static void recipesMode() {
+		AlchemyConfig.Brewing brewing = AlchemyModule.config().brewing;
+		if (recipeTests++ == 0) {
+			modeBefore = brewing.mode;
+		}
+		brewing.mode = SimpleBrewing.Mode.RECIPES.id();
+	}
+
+	private static void endRecipesMode() {
+		recipeTests = Math.max(0, recipeTests - 1);
+		if (recipeTests == 0) {
+			AlchemyModule.config().brewing.mode = modeBefore;
+		}
+	}
 
 	/** A guild with alchemists, a deposit chest (supplies) and a potion chest, a brewing stand and maybe a table. */
 	private record Lab(ServerLevel level, Guild guild, ServerPlayer leader, List<VillagerRecord> alchemists, Container deposit, Container potions,
@@ -128,8 +157,9 @@ public class AlchemyGameTests {
 		setTask.invoke(null, guild, record, task, player);
 	}
 
-	@GameTest(environment = DAY, maxTicks = 3600)
+	@GameTest(environment = RECIPES, maxTicks = 3600)
 	public void alchemistBrewsHealingPotionsIntoTheStorage(GameTestHelper helper) throws Exception {
+		recipesMode();
 		AlchemistConfig cfg = VillagerModule.config().alchemist;
 		int seconds = cfg.secondsPerBrew;
 		cfg.secondsPerBrew = 1;
@@ -161,12 +191,14 @@ public class AlchemyGameTests {
 			}
 			cfg.secondsPerBrew = seconds;
 			GuildManager.disband(lab.guild());
+			endRecipesMode();
 		});
 	}
 
 	/** Glass bottles of the storage are filled at a water cauldron next to the stand (one level per bottle, like vanilla). */
-	@GameTest(environment = DAY, maxTicks = 3600)
+	@GameTest(environment = RECIPES, maxTicks = 3600)
 	public void alchemistFillsGlassBottlesAtACauldron(GameTestHelper helper) throws Exception {
+		recipesMode();
 		AlchemistConfig cfg = VillagerModule.config().alchemist;
 		int seconds = cfg.secondsPerBrew;
 		cfg.secondsPerBrew = 1;
@@ -190,11 +222,13 @@ public class AlchemyGameTests {
 			helper.assertTrue(lab.level().getBlockState(cauldron).is(Blocks.CAULDRON), "three bottles filled: the cauldron is empty");
 			cfg.secondsPerBrew = seconds;
 			GuildManager.disband(lab.guild());
+			endRecipesMode();
 		});
 	}
 
-	@GameTest(environment = DAY, maxTicks = 4800)
+	@GameTest(environment = RECIPES, maxTicks = 4800)
 	public void alchemistWithoutBooksFallsBackToPotions(GameTestHelper helper) throws Exception {
+		recipesMode();
 		AlchemistConfig cfg = VillagerModule.config().alchemist;
 		int brew = cfg.secondsPerBrew;
 		int level = cfg.secondsPerLevel;
@@ -232,6 +266,133 @@ public class AlchemyGameTests {
 			helper.assertTrue(Alchemists.role(guild, record.uuid) == AlchemyJob.BOOKS, "role kept");
 			cfg.secondsPerBrew = brew;
 			cfg.secondsPerLevel = level;
+			GuildManager.disband(guild);
+			endRecipesMode();
+		});
+	}
+
+	// ------------------------------------------------------------------ simple brewing (default)
+
+	/**
+	 * Simple brewing: with only blaze powder in the storage (no bottle, no nether wart, no melon), three healing potions for
+	 * one blaze powder, after the time of a plain potion at the stand.
+	 */
+	@GameTest(environment = DAY, maxTicks = 3600)
+	public void simpleAlchemistBrewsWithBlazePowderOnly(GameTestHelper helper) throws Exception {
+		AlchemyConfig config = AlchemyModule.config();
+		helper.assertTrue(config.brewing.simple(), "simple brewing by default");
+		Lab lab = lab(helper, "Blaze", 1, false);
+		add(lab.deposit(), new ItemStack(Items.BLAZE_POWDER, 2));
+		VillagerRecord record = lab.alchemists().getFirst();
+		setTask(lab.guild(), record, Task.ALCHEMIST, lab.leader());
+		SimpleBrewing.Cost cost = SimpleBrewing.cost("healing", config);
+		long expected = (Upgrades.workSeconds(lab.guild(), cost.seconds()) - 1) * 20L;
+		// Ticks of the first second at the stand and of the end of the batch.
+		long[] brewing = {-1, -1};
+		helper.succeedWhen(() -> {
+			if (brewing[0] < 0 && Lang.strip(status(lab.level(), record)).startsWith("Brasse")) {
+				brewing[0] = helper.getTick();
+			}
+			if (brewing[1] < 0 && record.craft != null && record.craft.potions >= 3) {
+				brewing[1] = helper.getTick();
+			}
+			int healing = countKey(lab.potions(), "healing");
+			helper.assertTrue(healing == 3, "waiting for 3 healing potions in the potion chest (" + healing + ", status "
+					+ Lang.strip(status(lab.level(), record)) + ")");
+			CraftData data = record.craft;
+			helper.assertTrue(data != null && data.potions == 3 && "healing".equals(data.lastPotion), "potion statistics counted");
+			helper.assertTrue(count(lab.deposit(), Items.BLAZE_POWDER) == 2 - cost.blaze() && carried(record, Items.BLAZE_POWDER) == 0,
+					"one blaze powder for the batch of three: " + count(lab.deposit(), Items.BLAZE_POWDER) + " left");
+			helper.assertTrue(countBrews(lab.deposit()) == 0 && carriedBrews(record) == 0 && count(lab.deposit(), Items.GLASS_BOTTLE) == 0,
+					"no bottle anywhere but the three potions");
+			long took = brewing[1] - brewing[0];
+			helper.assertTrue(brewing[0] >= 0 && Math.abs(took - expected) <= 40,
+					"about " + cost.seconds() + " s at the stand: " + took + " ticks (expected " + expected + ")");
+			for (int i = 0; i < lab.potions().getContainerSize(); i++) {
+				ItemStack stack = lab.potions().getItem(i);
+				if (!stack.isEmpty()) {
+					PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+					helper.assertTrue(stack.is(Items.POTION) && contents != null && contents.isPotionWithoutCustomEffects(),
+							"a vanilla healing potion, exactly like a brewing stand makes it");
+				}
+			}
+			lab.leader().sendSystemMessage(Component.literal("simple brewing: 3 healing potions, " + took + " ticks at the stand"));
+			GuildManager.disband(lab.guild());
+		});
+	}
+
+	/**
+	 * Simple brewing without blaze powder: an alchemist whose role is potions works at books (reason "pas de poudre de
+	 * blaze" in its menu), then brews again once blaze powder reaches the storage.
+	 */
+	@GameTest(environment = DAY, maxTicks = 4800)
+	public void simpleAlchemistWithoutBlazeFallsBackToBooks(GameTestHelper helper) throws Exception {
+		Lab lab = lab(helper, "SansBlaze", 1, true);
+		add(lab.deposit(), new ItemStack(Items.BOOK, 2));
+		VillagerRecord record = lab.alchemists().getFirst();
+		setTask(lab.guild(), record, Task.ALCHEMIST, lab.leader());
+		Alchemists.setRole(lab.guild(), record, AlchemyJob.POTIONS);
+		String[] menu = {null};
+		boolean[] blazeAdded = {false};
+		helper.succeedWhen(() -> {
+			Guild guild = lab.guild();
+			if (menu[0] == null && Alchemists.working(guild, record.uuid) == AlchemyJob.BOOKS) {
+				helper.assertTrue(Alchemists.fallbackReason(guild, record.uuid).contains("pas de poudre de blaze"),
+						"the reason of the fallback: " + Alchemists.fallbackReason(guild, record.uuid));
+				Hooks.openVillagers.accept(lab.leader(), guild);
+				menu[0] = Lang.strip(lore(lab.leader(), 0));
+				lab.leader().closeContainer();
+			}
+			helper.assertTrue(menu[0] != null, "waiting for the fallback to books (status " + Lang.strip(status(lab.level(), record)) + ")");
+			helper.assertTrue(menu[0].contains("Rôle : Potions (choisi)") && menu[0].contains("Potions : pas de poudre de blaze")
+					&& menu[0].contains("→ Livres"), "role and fallback shown in the villager menu: " + menu[0]);
+			CraftData data = record.craft;
+			if (!blazeAdded[0]) {
+				helper.assertTrue(data != null && data.books >= 1, "waiting for an enchanted book made instead");
+				helper.assertTrue(data.potions == 0, "no potion without blaze powder");
+				add(lab.deposit(), new ItemStack(Items.BLAZE_POWDER, 1));
+				blazeAdded[0] = true;
+				helper.fail("blaze powder added");
+			}
+			helper.assertTrue(data.potions == 3 && countKey(lab.potions(), "healing") == 3,
+					"waiting for the healing potions: back to its own job (status " + Lang.strip(status(lab.level(), record)) + ")");
+			helper.assertTrue(count(lab.deposit(), Items.BLAZE_POWDER) == 0, "the blaze powder used up");
+			helper.assertTrue(Alchemists.role(guild, record.uuid) == AlchemyJob.POTIONS, "role kept");
+			GuildManager.disband(guild);
+		});
+	}
+
+	/**
+	 * Simple brewing of a magic elixir: a batch of three arcane elixirs uses up the blaze powder of its class (more than a
+	 * potion), then the elixirs of the day stop the alchemist (reason in its menu) although the stock still wants some.
+	 */
+	@GameTest(environment = DAY, maxTicks = 4800)
+	public void simpleElixirsCostMoreAndHaveTheirDailyCap(GameTestHelper helper) throws Exception {
+		AlchemyConfig config = AlchemyModule.config();
+		int cap = config.brewing.maxElixirsPerDay;
+		config.brewing.maxElixirsPerDay = 3;
+		Lab lab = lab(helper, "Elixirs", 1, false);
+		Guild guild = lab.guild();
+		guild.villagers.potionTargets.put("healing", 0);
+		guild.villagers.potionTargets.put("elixir:arcanique", 6);
+		add(lab.deposit(), new ItemStack(Items.BLAZE_POWDER, 10));
+		VillagerRecord record = lab.alchemists().getFirst();
+		setTask(guild, record, Task.ALCHEMIST, lab.leader());
+		Alchemists.setRole(guild, record, AlchemyJob.POTIONS);
+		SimpleBrewing.Cost cost = SimpleBrewing.cost("elixir:arcanique", config);
+		helper.assertTrue(cost.blaze() > SimpleBrewing.cost("healing", config).blaze(), "a magic elixir costs more blaze powder: " + cost);
+		helper.succeedWhen(() -> {
+			int elixirs = countKey(lab.potions(), "elixir:arcanique");
+			helper.assertTrue(elixirs == 3, "waiting for 3 arcane elixirs (" + elixirs + ", status " + Lang.strip(status(lab.level(), record)) + ")");
+			helper.assertTrue(count(lab.deposit(), Items.BLAZE_POWDER) == 10 - cost.blaze() && carried(record, Items.BLAZE_POWDER) == 0,
+					cost.blaze() + " blaze powder for the batch: " + count(lab.deposit(), Items.BLAZE_POWDER) + " left");
+			CraftData data = record.craft;
+			helper.assertTrue(data.elixirsToday == 3 && data.potionsToday == 3, "3 elixirs counted today");
+			String reason = Alchemists.fallbackReason(guild, record.uuid);
+			helper.assertTrue(Alchemists.working(guild, record.uuid) == null && reason.contains("plafond d'élixirs du jour atteint (3/3)"),
+					"waiting for the elixirs of the day to stop it: " + reason);
+			helper.assertTrue(Lang.strip(status(lab.level(), record)).contains("plafond d'élixirs"), "its status says why");
+			config.brewing.maxElixirsPerDay = cap;
 			GuildManager.disband(guild);
 		});
 	}

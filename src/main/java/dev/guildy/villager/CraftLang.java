@@ -19,7 +19,7 @@ final class CraftLang {
 		m.put("villager.task.blacksmith", "Forgeron");
 		m.put("villager.task.blacksmith.desc", "&7Répare peu à peu les &farmures et objets&7 posés\n&7sur les &fporte-armures&7 du territoire, à l'enclume\n&7la plus proche du porte-armure. L'objet reste\n&7sur le porte-armure ; chaque réparation use\n&7l'enclume comme en vanilla.\n&7Grave parfois une &drune&7 sur les armures\n&7(retirée par une meule).");
 		m.put("villager.task.alchemist", "Alchimiste");
-		m.put("villager.task.alchemist.desc", "&7Trois travaux, rangés au stockage :\n&d• Livres&7 : livres enchantés à la &dtable\n&7d'enchantement&7 (plus de bibliothèques = mieux).\n&d• Parchemins&7 : parchemins de sort (livre + papier).\n&d• Potions&7 : potions et &délixirs&7 à un &dalambic&7\n&7(fioles d'eau, ingrédients, poudre de blaze).\n&7Si son travail est impossible, il passe au suivant ;\n&7plusieurs alchimistes se répartissent les rôles.");
+		m.put("villager.task.alchemist.desc", "&7Trois travaux, rangés au stockage :\n&d• Livres&7 : livres enchantés à la &dtable\n&7d'enchantement&7 (plus de bibliothèques = mieux).\n&d• Parchemins&7 : parchemins de sort (livre + papier).\n&d• Potions&7 : potions et &délixirs&7 à un &dalambic&7\n&7(seulement de la poudre de blaze et du temps).\n&7Si son travail est impossible, il passe au suivant ;\n&7plusieurs alchimistes se répartissent les rôles.");
 		// guild level requirement
 		m.put("villager.craft.level.required", "&cNiveau de guilde {0} requis &8(actuel : {1})");
 		m.put("villager.craft.level.ok", "&8Débloqué au niveau de guilde {0}");

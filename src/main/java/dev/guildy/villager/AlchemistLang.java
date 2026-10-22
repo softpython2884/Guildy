@@ -36,6 +36,9 @@ final class AlchemistLang {
 		m.put("villager.alchemy.block.no_bottles", "pas de fioles (d'eau, ou vides avec de l'eau près d'un alambic)");
 		m.put("villager.alchemy.block.no_fuel", "pas de {0}");
 		m.put("villager.alchemy.block.no_reagents", "ingrédients manquants pour {0}");
+		m.put("villager.alchemy.block.no_blaze", "pas de {0}");
+		m.put("villager.alchemy.block.few_blaze", "pas assez de {0} ({1} pour {2})");
+		m.put("villager.alchemy.block.elixir_cap", "plafond d'élixirs du jour atteint ({0}/{1}), reprend demain");
 		m.put("villager.alchemy.reason", "&f{0}&7 : {1}");
 		m.put("villager.alchemy.reason.separator", " &8· &7");
 		// statuses
@@ -54,6 +57,7 @@ final class AlchemistLang {
 		m.put("villager.status.alchemy.no_water", "&cPas d'eau près de l'alambic pour remplir les fioles vides");
 		m.put("villager.status.alchemy.brewing", "&dBrasse {0} &8· &7{1} ({2}/{3}) {4} %");
 		m.put("villager.status.alchemy.brewed", "&aA préparé {0} × &d{1}");
+		m.put("villager.status.alchemy.brewing_simple", "&dBrasse {0} &8({1} fiole(s) · {2} × {3}) &d{4} %");
 		m.put("villager.status.alchemy.delivering_potions", "&eRange {0} potion(s) au stockage");
 		m.put("villager.status.alchemy.no_room_potions", "&cAucun coffre libre pour ranger les potions");
 		m.put("villager.status.alchemy.stowing", "&eRapporte {0} objet(s) au stockage pour faire de la place");
@@ -62,6 +66,7 @@ final class AlchemistLang {
 		m.put("villager.gui.lore.alchemy.fallback", "&e↪ {0} → {1}");
 		m.put("villager.gui.lore.stat.potions", "&7Potions préparées : &f{0} &8(aujourd'hui : {1}/{2})");
 		m.put("villager.gui.lore.stat.last_potion", "&7Dernière potion : &d{0}");
+		m.put("villager.gui.lore.stat.elixirs", "&7Élixirs aujourd'hui : &f{0}/{1}");
 		m.put("villager.gui.alchemy.role", "&dRôle : {0}");
 		m.put("villager.gui.alchemy.role.lore", "&7Travail préféré de l'alchimiste. Quand il est\n&7impossible, il passe au suivant possible :\n&f{0}\n&7Auto : la guilde répartit les alchimistes\n&7(un peu de tout en même temps).");
 		m.put("villager.gui.alchemy.role.now", "&7En ce moment : &f{0}");
@@ -70,12 +75,14 @@ final class AlchemistLang {
 		m.put("villager.gui.alchemy.stock", "&dStocks de potions");
 		m.put("villager.gui.alchemy.stock.lore", "&7Combien de fioles de chaque potion et élixir\n&7les alchimistes gardent au stockage.\n&7Ils préparent d'abord ce qui manque le plus.");
 		m.put("villager.gui.alchemy.stock.click", "&eClic : ouvrir");
+		m.put("villager.gui.alchemy.stock.simple", "&7Chaque fournée (jusqu'à {0} fioles) ne coûte que\n&7de la &f{1}&7 (prise au stockage) et du temps :\n&7ni fiole, ni eau, ni verrue, ni ingrédient.\n&7Élixirs : {2} fiole(s) par jour et par alchimiste.");
 		// stock menu
 		m.put("villager.gui.stock.title", "Stocks de potions");
 		m.put("villager.gui.stock.target", "&7Stock voulu : &f{0} &8(défaut {1})");
 		m.put("villager.gui.stock.held", "&7Au stockage : &f{0}");
 		m.put("villager.gui.stock.recipe", "&8Recette : {0}");
 		m.put("villager.gui.stock.no_recipe", "&cAucune recette connue (alchemy.json5)");
+		m.put("villager.gui.stock.cost", "&8Coût : {0} × {1} · {2} s par fournée");
 		m.put("villager.gui.stock.click", "&eClic gauche +1 · droit -1 · Maj : ±8");
 		m.put("villager.gui.stock.reset", "&cRemettre les stocks par défaut");
 		m.put("villager.gui.stock.reset.lore", "&7Les stocks de alchemy.json5 pour tous les produits.");

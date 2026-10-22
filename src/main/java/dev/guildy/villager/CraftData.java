@@ -55,6 +55,8 @@ public class CraftData {
 	public int scrollsToday;
 	/** Potion and elixir bottles of that day (their own cap). */
 	public int potionsToday;
+	/** Elixir bottles of that day, also counted in {@link #potionsToday} (simple brewing: brewing.maxElixirsPerDay). */
+	public int elixirsToday;
 
 	/** Works done at the enchanting table today (books and scrolls). */
 	public int worksToday(long today) {
@@ -71,6 +73,10 @@ public class CraftData {
 
 	public int potionsToday(long today) {
 		return AlchemyRules.madeToday(day, potionsToday, today);
+	}
+
+	public int elixirsToday(long today) {
+		return AlchemyRules.madeToday(day, elixirsToday, today);
 	}
 
 	/** Counts one finished book or scroll of {@code today} (every daily count starts over on a new day). */
@@ -101,9 +107,17 @@ public class CraftData {
 
 	/** Counts the bottles of a finished batch of {@code today}. */
 	public void countPotions(long today, int bottles) {
+		countPotions(today, bottles, false);
+	}
+
+	/** Counts the bottles of a finished batch of {@code today} (an elixir batch also counts towards the elixir cap). */
+	public void countPotions(long today, int bottles, boolean elixir) {
 		rollDay(today);
 		potionsToday += Math.max(0, bottles);
 		potions += Math.max(0, bottles);
+		if (elixir) {
+			elixirsToday += Math.max(0, bottles);
+		}
 	}
 
 	private void rollDay(long today) {
@@ -111,6 +125,7 @@ public class CraftData {
 			booksToday = 0;
 			scrollsToday = 0;
 			potionsToday = 0;
+			elixirsToday = 0;
 			day = today;
 		}
 	}
@@ -138,6 +153,7 @@ public class CraftData {
 		}
 		potions = Math.max(0, potions);
 		potionsToday = Math.max(0, potionsToday);
+		elixirsToday = Math.max(0, elixirsToday);
 		brewFuel = Math.max(0, brewFuel);
 		scrolls = Math.max(0, scrolls);
 		scrollsToday = Math.max(0, scrollsToday);
