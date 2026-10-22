@@ -139,10 +139,15 @@ final class PlantStock {
 				continue;
 			}
 			Map<String, Integer> items = new LinkedHashMap<>();
+			// A filtered-room chest keeps one item of each kind (its contents are its filter).
+			Storage.Spare spare = Storage.Spare.of(chest, container);
 			for (int i = 0; i < container.getContainerSize(); i++) {
 				ItemStack stack = container.getItem(i);
 				if (Planting.plain(stack) && plantable.test(stack.getItem()) && gives(chest, stack)) {
-					items.merge(ItemUtil.id(stack.getItem()), stack.getCount(), Integer::sum);
+					int count = spare.take(stack, stack.getCount());
+					if (count > 0) {
+						items.merge(ItemUtil.id(stack.getItem()), count, Integer::sum);
+					}
 				}
 			}
 			if (!items.isEmpty()) {
@@ -177,10 +182,11 @@ final class PlantStock {
 			return 0;
 		}
 		int available = 0;
+		Storage.Spare counted = Storage.Spare.of(chest, container);
 		for (int i = 0; i < container.getContainerSize(); i++) {
 			ItemStack stack = container.getItem(i);
 			if (Planting.plain(stack) && stack.is(item) && gives(chest, stack)) {
-				available += stack.getCount();
+				available += counted.take(stack, stack.getCount());
 			}
 		}
 		int amount = PlantingRules.fetchAmount(Math.min(wanted, room(ctx, item)), available, square);
@@ -188,12 +194,16 @@ final class PlantStock {
 			return 0;
 		}
 		int left = amount;
+		Storage.Spare spare = Storage.Spare.of(chest, container);
 		for (int i = 0; i < container.getContainerSize() && left > 0; i++) {
 			ItemStack stack = container.getItem(i);
 			if (!Planting.plain(stack) || !stack.is(item) || !gives(chest, stack)) {
 				continue;
 			}
-			left -= container.removeItem(i, Math.min(left, stack.getCount())).getCount();
+			int take = spare.take(stack, Math.min(left, stack.getCount()));
+			if (take > 0) {
+				left -= container.removeItem(i, take).getCount();
+			}
 		}
 		int moved = amount - left;
 		container.setChanged();

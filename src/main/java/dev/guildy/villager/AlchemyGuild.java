@@ -248,6 +248,8 @@ final class AlchemyGuild {
 			if (container == null) {
 				continue;
 			}
+			// A filtered-room chest keeps one item of each kind (its contents are its filter).
+			Storage.Spare spare = Storage.Spare.of(chest, container);
 			for (int i = 0; i < container.getContainerSize(); i++) {
 				ItemStack stack = container.getItem(i);
 				if (stack.isEmpty()) {
@@ -260,11 +262,15 @@ final class AlchemyGuild {
 				if (!Storage.gives(chest, stack)) {
 					continue;
 				}
+				int givable = spare.take(stack, stack.getCount());
+				if (givable <= 0) {
+					continue;
+				}
 				if (stack.getComponentsPatch().isEmpty()) {
-					stock.plain.merge(stack.getItem(), stack.getCount(), Integer::sum);
+					stock.plain.merge(stack.getItem(), givable, Integer::sum);
 				}
 				if (key != null) {
-					stock.bottles.merge(key, stack.getCount(), Integer::sum);
+					stock.bottles.merge(key, givable, Integer::sum);
 				}
 			}
 		}

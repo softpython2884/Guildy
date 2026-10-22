@@ -27,7 +27,12 @@ public class StorageChest {
 		/** Receives the items of {@link #category} (the fallback category name = "misc" chest). */
 		CATEGORY,
 		/** Receives only the items its {@link #filter} accepts (family or exact items), before their category chests. */
-		FILTER
+		FILTER,
+		/**
+		 * Automatic chest of a filtered room ({@link ChestRoom#filtered()}): receives only the kinds of items it already
+		 * holds ({@link ContentKeys}), nothing while it is empty; its items never leave it to be sorted elsewhere.
+		 */
+		CONTENT
 	}
 
 	public BlockPos pos;
@@ -76,6 +81,11 @@ public class StorageChest {
 	/** Automatic chest without category yet (reserve of a chest room): no group, receives nothing. */
 	public boolean isFree() {
 		return auto && role == Role.CATEGORY && (category == null || category.isBlank());
+	}
+
+	/** Chest of a filtered room: filtered by its own contents. */
+	public boolean isContent() {
+		return role == Role.CONTENT;
 	}
 
 	/**
@@ -158,7 +168,12 @@ public class StorageChest {
 		} else {
 			auto = false;
 		}
-		if (auto) {
+		if (role == Role.CONTENT) {
+			// Only the automatic chests of a filtered room (GuildVillagerData.sanitize checks the room).
+			auto = true;
+			category = "";
+		}
+		if (auto && role != Role.CONTENT) {
 			role = Role.CATEGORY;
 		}
 	}

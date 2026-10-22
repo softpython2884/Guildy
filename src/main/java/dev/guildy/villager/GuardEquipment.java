@@ -187,14 +187,15 @@ final class GuardEquipment {
 	 * Index of the best upgrade of {@code slot} in the container (better than what protects the guard: its worn piece or
 	 * the base piece of the guild level), or -1.
 	 */
-	private static int bestArmor(WorkContext ctx, Container container, EquipmentSlot slot) {
+	private static int bestArmor(WorkContext ctx, @Nullable StorageChest chest, Container container, EquipmentSlot slot) {
 		Villager villager = ctx.villager;
 		GuardRules.Piece current = GuardGear.effectivePiece(ctx.level, ctx.guild, villager, slot);
 		GuardRules.Piece best = null;
 		int bestIndex = -1;
+		Storage.Spare spare = Storage.Spare.of(chest, container);
 		for (int i = 0; i < container.getContainerSize(); i++) {
 			ItemStack stack = container.getItem(i);
-			if (!armorCandidate(stack, slot, villager)) {
+			if (!armorCandidate(stack, slot, villager) || !spare.mayTake(stack)) {
 				continue;
 			}
 			GuardRules.Piece candidate = piece(stack, slot);
@@ -207,13 +208,14 @@ final class GuardEquipment {
 	}
 
 	/** Index of the best weapon upgrade in the container (better than the storage or base weapon), or -1. */
-	private static int bestWeapon(WorkContext ctx, Container container, GuardRole role) {
+	private static int bestWeapon(WorkContext ctx, @Nullable StorageChest chest, Container container, GuardRole role) {
 		ServerLevel level = ctx.level;
 		double best = currentWeaponScore(level, ctx.guild, ctx.villager, role);
 		int bestIndex = -1;
+		Storage.Spare spare = Storage.Spare.of(chest, container);
 		for (int i = 0; i < container.getContainerSize(); i++) {
 			ItemStack stack = container.getItem(i);
-			if (!weaponCandidate(stack, role)) {
+			if (!weaponCandidate(stack, role) || !spare.mayTake(stack)) {
 				continue;
 			}
 			double score = weaponScore(level, stack, role);
@@ -225,16 +227,16 @@ final class GuardEquipment {
 		return bestIndex;
 	}
 
-	private static boolean hasUpgrade(WorkContext ctx, Container container, GuardRole role) {
+	private static boolean hasUpgrade(WorkContext ctx, @Nullable StorageChest chest, Container container, GuardRole role) {
 		VillagerConfig.Guard cfg = ctx.config.guard;
 		if (cfg.equipmentFromChests) {
 			for (EquipmentSlot slot : ARMOR) {
-				if (bestArmor(ctx, container, slot) >= 0) {
+				if (bestArmor(ctx, chest, container, slot) >= 0) {
 					return true;
 				}
 			}
 		}
-		return cfg.weaponsFromChests && bestWeapon(ctx, container, role) >= 0;
+		return cfg.weaponsFromChests && bestWeapon(ctx, chest, container, role) >= 0;
 	}
 
 	/**
@@ -250,7 +252,7 @@ final class GuardEquipment {
 				continue;
 			}
 			Container container = Storage.container(ctx.level, chest.pos);
-			if (container == null || container.isEmpty() || !hasUpgrade(ctx, container, role)) {
+			if (container == null || container.isEmpty() || !hasUpgrade(ctx, chest, container, role)) {
 				continue;
 			}
 			double dist = ctx.distSq(chest.pos);
@@ -264,25 +266,26 @@ final class GuardEquipment {
 
 	/**
 	 * At the chest: takes every upgrade it holds (best piece per slot, then the weapon). The replaced piece goes back
-	 * into the chest (another storage chest, else the ground).
+	 * into the chest (another storage chest, else the ground). A chest of a filtered room keeps one item of each kind it
+	 * holds and only takes back a piece of a kind it holds.
 	 *
 	 * @return number of items equipped
 	 */
-	static int equipFrom(WorkContext ctx, Container container, GuardRole role) {
+	static int equipFrom(WorkContext ctx, @Nullable StorageChest chest, Container container, GuardRole role) {
 		VillagerConfig.Guard cfg = ctx.config.guard;
 		Villager villager = ctx.villager;
 		int equipped = 0;
 		if (cfg.equipmentFromChests) {
 			for (EquipmentSlot slot : ARMOR) {
-				int index = bestArmor(ctx, container, slot);
-				if (index >= 0 && swap(ctx, container, index, slot)) {
+				int index = bestArmor(ctx, chest, container, slot);
+				if (index >= 0 && swap(ctx, chest, container, index, slot)) {
 					equipped++;
 				}
 			}
 		}
 		if (cfg.weaponsFromChests) {
-			int index = bestWeapon(ctx, container, role);
-			if (index >= 0 && swap(ctx, container, index, WEAPON)) {
+			int index = bestWeapon(ctx, chest, container, role);
+			if (index >= 0 && swap(ctx, chest, container, index, WEAPON)) {
 				equipped++;
 			}
 		}
@@ -293,7 +296,7 @@ final class GuardEquipment {
 	}
 
 	/** Moves one item from the container into the slot; the previous item of the slot goes back to the storage. */
-	private static boolean swap(WorkContext ctx, Container container, int index, EquipmentSlot slot) {
+	private static boolean swap(WorkContext ctx, @Nullable StorageChest chest, Container container, int index, EquipmentSlot slot) {
 		Villager villager = ctx.villager;
 		ItemStack taken = container.removeItem(index, 1);
 		if (taken.isEmpty()) {
@@ -304,7 +307,9 @@ final class GuardEquipment {
 		villager.setItemSlot(slot, taken);
 		villager.setDropChance(slot, dropChance(ctx.config.guard));
 		if (!old.isEmpty()) {
-			ItemStack leftover = Storage.insert(container, old);
+			// A filtered-room chest only takes back a kind it holds (its contents are its filter).
+			boolean back = chest == null || !chest.isContent() || RoomContents.kinds(container).contains(RoomContents.key(old));
+			ItemStack leftover = back ? Storage.insert(container, old) : old;
 			leftover = storeInStorage(ctx.level, ctx.guild, leftover, villager.position());
 			if (!leftover.isEmpty()) {
 				drop(ctx.level, villager.position(), leftover);

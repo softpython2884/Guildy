@@ -294,7 +294,7 @@ final class GuardTask extends TaskHandler {
 			default -> {
 				equipmentChest = null;
 				Container container = Storage.container(ctx.level, chestPos);
-				int equipped = container == null ? 0 : GuardEquipment.equipFrom(ctx, container, role);
+				int equipped = container == null ? 0 : GuardEquipment.equipFrom(ctx, chest, container, role);
 				if (equipped <= 0) {
 					return false;
 				}
