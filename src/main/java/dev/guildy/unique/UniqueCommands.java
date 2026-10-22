@@ -263,7 +263,9 @@ final class UniqueCommands {
 		}
 		for (UniqueConfig.UniqueDef def : cfg.usable()) {
 			UniquePower power = def.power();
-			String powerName = power == null ? Lang.raw("unique.admin.list.no_power") : Lang.raw(power.langKey() + ".name");
+			UniqueConfig.SetDef set = cfg.set(def.set);
+			String powerName = power != null ? Lang.raw(power.langKey() + ".name")
+					: set != null ? Lang.colorize(set.name) : Lang.raw("unique.admin.list.no_power");
 			Component hover = Lang.get("unique.admin.list.hover", powerName, drops(cfg, def.id));
 			MutableComponent name = UniqueItems.name(def).copy().withStyle(style -> style
 					.withClickEvent(new ClickEvent.SuggestCommand("/guild admin unique give " + playerName(source) + " " + def.id))

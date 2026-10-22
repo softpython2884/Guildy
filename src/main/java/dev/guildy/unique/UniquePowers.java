@@ -45,6 +45,7 @@ final class UniquePowers {
 			Safe.run("unique.hit", () -> onHit(entity, source, false));
 			if (entity instanceof ServerPlayer player) {
 				Safe.run("unique.defense", () -> DefensePowers.onDamaged(player, source, base, taken, blocked));
+				Safe.run("unique.set_defense", () -> SetPowers.onDamaged(player, source, taken));
 			}
 		});
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) ->
@@ -56,6 +57,8 @@ final class UniquePowers {
 			Safe.run("unique.leaps", Leaps::tick);
 			Safe.run("unique.seals", CursePowers::tick);
 			Safe.run("unique.crown", DefensePowers::tick);
+			Safe.run("unique.sets", SetBonuses::tick);
+			Safe.run("unique.set_powers", SetPowers::tick);
 			Safe.run("unique.fx", UniqueFx::tick);
 		});
 	}
@@ -122,6 +125,10 @@ final class UniquePowers {
 		if (type.is(PowerUtil.FOUDRE) || type.is(PowerUtil.BRASIER) || type.is(PowerUtil.GIVRE)) {
 			entity.damageCooldownTime = 0;
 		}
+		// No freezing damage for the wearers of the Hiver éternel (Sang-froid).
+		if (!SetPowers.allowDamage(entity, source)) {
+			return false;
+		}
 		// No fall damage during a pounce or a solar leap.
 		return !Leaps.cancelsFall(entity, source);
 	}
@@ -133,6 +140,8 @@ final class UniquePowers {
 		}
 		Entity direct = source.getDirectEntity();
 		if (direct == player) {
+			// The jaguar warrior's ambush (set power): any melee blow, whatever the weapon.
+			SetPowers.onMelee(player, victim, source);
 			ItemStack weapon = player.getMainHandItem();
 			UniquePower power = UniqueItems.powerOf(weapon);
 			if (power == UniquePower.SHOCKWAVE && source.is(DamageTypes.MACE_SMASH)) {

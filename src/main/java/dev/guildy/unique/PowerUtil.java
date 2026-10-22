@@ -42,7 +42,8 @@ final class PowerUtil {
 	static final ResourceKey<DamageType> BRASIER = key("brasier");
 	static final ResourceKey<DamageType> GIVRE = key("givre");
 
-	private static final Map<UUID, Map<UniquePower, Long>> COOLDOWNS = new HashMap<>();
+	/** Per player: power (a {@link UniquePower} or a {@link SetPower}) -> tick at which it is ready again. */
+	private static final Map<UUID, Map<Object, Long>> COOLDOWNS = new HashMap<>();
 	/** > 0 while a power deals damage: the damage events ignore it (no chain reactions). */
 	private static int dealing;
 
@@ -172,16 +173,20 @@ final class PowerUtil {
 
 	// ================================================================== cooldowns (passive powers)
 
-	/** True (and the cooldown starts) when the power is ready for this player. */
-	static boolean ready(ServerPlayer player, UniquePower power, double seconds) {
-		long now = Scheduler.ticks();
-		Map<UniquePower, Long> map = COOLDOWNS.computeIfAbsent(player.getUUID(), k -> new HashMap<>());
-		Long until = map.get(power);
-		if (until != null && now < until) {
+	/** True (and the cooldown starts) when the power ({@link UniquePower} or {@link SetPower}) is ready for this player. */
+	static boolean ready(ServerPlayer player, Object power, double seconds) {
+		if (!isReady(player, power)) {
 			return false;
 		}
-		map.put(power, now + Math.round(seconds * 20));
+		COOLDOWNS.computeIfAbsent(player.getUUID(), k -> new HashMap<>()).put(power, Scheduler.ticks() + Math.round(seconds * 20));
 		return true;
+	}
+
+	/** True when the power is ready for this player (the cooldown does not start). */
+	static boolean isReady(ServerPlayer player, Object power) {
+		Map<Object, Long> map = COOLDOWNS.get(player.getUUID());
+		Long until = map == null ? null : map.get(power);
+		return until == null || Scheduler.ticks() >= until;
 	}
 
 	static void forget(UUID player) {

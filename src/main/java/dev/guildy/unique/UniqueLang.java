@@ -69,6 +69,57 @@ final class UniqueLang {
 		m.put("unique.power.jade_gale.name", "Souffle de jade");
 		m.put("unique.power.jade_gale.lore", "Sous {0} % de vie, le souffle du Serpent à plumes\nrepousse et empoisonne les monstres à {1} blocs ;\n"
 				+ "vous régénérez et planez comme une plume.");
+		// armor sets (uniques.json5 "sets"): lore of the pieces, bonuses, powers
+		m.put("unique.set.header", "{0} &8({1} pièces)");
+		m.put("unique.set.header_worn", "{0} &8({1}/{2} portées)");
+		m.put("unique.set.piece", "&8 • &7{0}");
+		m.put("unique.set.piece.worn", "&a ✔ &f{0}");
+		m.put("unique.set.piece.missing", "&8 ✘ {0}");
+		m.put("unique.set.bonus.neutral", "&6{0} pièces : &e{1}");
+		m.put("unique.set.bonus.on", "&a✔ {0} pièces : {1}");
+		m.put("unique.set.bonus.off", "&8{0} pièces : {1}");
+		m.put("unique.set.line.neutral", "&7  {0}");
+		m.put("unique.set.line.on", "&f  {0}");
+		m.put("unique.set.line.off", "&8  {0}");
+		m.put("unique.set.cooldown", "Recharge : {0} s");
+		m.put("unique.set.tier_up", "{0} &8({1}/{2}) &a✔ {3}");
+		m.put("unique.set.tier_down", "{0} &8({1}/{2}) &7✘ {3}");
+		m.put("unique.attribute.value", "{0} {1}");
+		m.put("unique.attribute.percent", "{0} % {1}");
+		m.put("unique.attribute.armor", "Armure");
+		m.put("unique.attribute.armor_toughness", "Robustesse");
+		m.put("unique.attribute.max_health", "Vie maximale");
+		m.put("unique.attribute.movement_speed", "Vitesse");
+		m.put("unique.attribute.safe_fall_distance", "Hauteur de chute sans dégâts");
+		m.put("unique.attribute.attack_damage", "Dégâts d'attaque");
+		m.put("unique.attribute.attack_speed", "Vitesse d'attaque");
+		m.put("unique.attribute.knockback_resistance", "Résistance au recul");
+		m.put("unique.attribute.burning_time", "Durée de combustion");
+		m.put("unique.attribute.jump_strength", "Force de saut");
+		m.put("unique.attribute.step_height", "Hauteur de pas");
+		m.put("unique.attribute.luck", "Chance");
+		m.put("unique.attribute.oxygen_bonus", "Souffle");
+		m.put("unique.attribute.sneaking_speed", "Vitesse accroupi");
+		m.put("unique.attribute.max_absorption", "Absorption maximale");
+		m.put("unique.attribute.entity_interaction_range", "Portée d'attaque");
+		m.put("unique.attribute.block_interaction_range", "Portée");
+		m.put("unique.setpower.frost_blood.lore", "Vous ne gelez jamais (neige poudreuse).");
+		m.put("unique.setpower.winter_heart.lore", "Insensible à la lenteur. Sous {0} % de vie après\nun coup, une nova de givre gèle les monstres\n"
+				+ "à {1} blocs ({2} ❤, Lenteur {3} pendant {4} s) ;\nRésistance {5} et absorption pendant {6} s.");
+		m.put("unique.setpower.jaguar_ambush.lore", "Accroupi sans attaquer {0} s (moins dans le\nfeuillage) : camouflé, les monstres perdent\n"
+				+ "votre trace. L'attaque suivante est une embuscade\n(+{1} ❤) et les griffes lacèrent les monstres\nà {2} blocs ({3} ❤).");
+		m.put("unique.setpower.soul_pyre.lore", "Toutes les {0} s, draine l'âme des monstres\nà {1} blocs ({2} ❤ chacun) et vous rend {3} %\n"
+				+ "du butin. En courant, une traînée de feu d'âme\nembrase les monstres qui la traversent.");
+		m.put("unique.setpower.winter_heart.fired", "&b❄ Cœur de l'hiver &8· &7la nova de givre vous protège");
+		m.put("unique.setpower.jaguar_ambush.camouflaged", "&6Camouflé &8· &7votre prochaine attaque est une embuscade");
+		m.put("unique.setpower.jaguar_ambush.strike", "&6Embuscade du jaguar !");
+		m.put("unique.setpower.jaguar_ambush.ready", "&6Embuscade du jaguar &8· &7prête");
+		// collection menu: the sets
+		m.put("unique.collection.set", "&8✧ {0}");
+		m.put("unique.collection.set.count", "&7Pièces obtenues : &e{0}&7 / {1}");
+		m.put("unique.collection.set.obtained", "&a ✔ &f{0}");
+		m.put("unique.collection.set.missing", "&8 • ???");
+		m.put("unique.collection.set.hint", "&8Portez plusieurs pièces de la panoplie\n&8pour éveiller ses bonus.");
 		// favourite weapons of some guardians (uniques.json5 "favorites", context after the '@')
 		m.put("unique.favorite.grand_temple_maya", "&6le gardien du Grand Temple du Jaguar céleste");
 		m.put("unique.favorite.temple_maya", "&2le gardien du Temple du Serpent à plumes");

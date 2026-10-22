@@ -20,13 +20,21 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * "Collection d'armes uniques" (6 rows): every unique weapon of uniques.json5, 28 per page. Weapons the guild obtained
- * (held now or ever) show their item and their current holders; the others are "???" with their rarity and where they
- * can drop. Counter X / N in the title and on the main menu button.
+ * "Collection d'armes uniques" (6 rows): every unique of uniques.json5, four rows of seven per page. Weapons the guild
+ * obtained (held now or ever) show their item and their current holders; the others are "???" with their rarity and where
+ * they can drop. The armor sets come after the weapons, one row each (starting on a new page unless they all fit): the set
+ * (its pieces obtained and its bonuses), then its pieces. Counter X / N in the title and on the main menu button.
  */
 final class UniqueCollectionMenu extends GuildGui {
-	private static final int[] SLOTS = slots();
+	private static final int ROWS = 4;
+	private static final int COLUMNS = 7;
+	/** Column of the first piece in a set row (the set itself is in the first column). */
+	private static final int SET_PIECES_FROM = 2;
 	private static final int MAX_HOLDERS = 3;
+
+	/** One cell of the grid: a unique, the header of a set, or nothing. */
+	private record Cell(UniqueConfig.@Nullable UniqueDef def, UniqueConfig.@Nullable SetDef set) {
+	}
 
 	private int page;
 
@@ -39,15 +47,46 @@ final class UniqueCollectionMenu extends GuildGui {
 		new UniqueCollectionMenu(player, guild, 0).show();
 	}
 
-	private static int[] slots() {
-		int[] slots = new int[28];
-		int i = 0;
-		for (int row = 1; row <= 4; row++) {
-			for (int col = 1; col <= 7; col++) {
-				slots[i++] = row * 9 + col;
+	/** Rows of the grid: the uniques outside any set seven by seven, then one row per set (more when it has many pieces). */
+	static List<Cell[]> grid(UniqueConfig cfg) {
+		List<Cell[]> rows = new ArrayList<>();
+		Cell[] row = null;
+		int filled = 0;
+		for (UniqueConfig.UniqueDef def : cfg.usable()) {
+			if (cfg.set(def.set) != null) {
+				continue;
+			}
+			if (row == null || filled == COLUMNS) {
+				row = new Cell[COLUMNS];
+				rows.add(row);
+				filled = 0;
+			}
+			row[filled++] = new Cell(def, null);
+		}
+		List<Cell[]> setRows = new ArrayList<>();
+		int perRow = COLUMNS - SET_PIECES_FROM;
+		for (UniqueConfig.SetDef set : cfg.usableSets()) {
+			List<String> pieces = cfg.piecesOf(set.id);
+			for (int i = 0; i < pieces.size(); i += perRow) {
+				Cell[] line = new Cell[COLUMNS];
+				if (i == 0) {
+					line[0] = new Cell(null, set);
+				}
+				for (int j = 0; j < perRow && i + j < pieces.size(); j++) {
+					line[SET_PIECES_FROM + j] = new Cell(cfg.item(pieces.get(i + j)), null);
+				}
+				setRows.add(line);
 			}
 		}
-		return slots;
+		int free = rows.size() % ROWS == 0 ? 0 : ROWS - rows.size() % ROWS;
+		if (!setRows.isEmpty() && free > 0 && free < setRows.size()) {
+			// The sets start on a page of their own.
+			for (int i = 0; i < free; i++) {
+				rows.add(new Cell[COLUMNS]);
+			}
+		}
+		rows.addAll(setRows);
+		return rows;
 	}
 
 	/** Ids of the usable weapons the guild ever obtained. */
@@ -71,7 +110,7 @@ final class UniqueCollectionMenu extends GuildGui {
 	}
 
 	private static int pages() {
-		return GuiUtil.pages(UniqueModule.config().usable().size(), SLOTS.length);
+		return Math.max(1, (grid(UniqueModule.config()).size() + ROWS - 1) / ROWS);
 	}
 
 	@Override
@@ -90,24 +129,36 @@ final class UniqueCollectionMenu extends GuildGui {
 		}
 		UniqueConfig cfg = UniqueModule.config();
 		UniqueLedger ledger = UniqueRegistry.ledger();
-		List<UniqueConfig.UniqueDef> defs = new ArrayList<>(cfg.usable());
-		int pages = pages();
+		List<Cell[]> grid = grid(cfg);
+		int pages = Math.max(1, (grid.size() + ROWS - 1) / ROWS);
 		page = Math.max(0, Math.min(page, pages - 1));
 		Set<String> obtained = ledger.obtainedBy(guild.id);
 		Map<String, List<UniqueLedger.Copy>> held = new LinkedHashMap<>();
 		for (UniqueLedger.Copy copy : ledger.heldCopies(guild.id)) {
 			held.computeIfAbsent(copy.id, id -> new ArrayList<>()).add(copy);
 		}
-		setSlot(4, header(cfg, obtainedCount(guild), defs.size(), held.size()));
-		for (int i = 0; i < SLOTS.length; i++) {
-			int index = page * SLOTS.length + i;
-			if (index >= defs.size()) {
+		setSlot(4, header(cfg, obtainedCount(guild), cfg.usable().size(), held.size()));
+		for (int r = 0; r < ROWS; r++) {
+			int index = page * ROWS + r;
+			if (index >= grid.size()) {
 				break;
 			}
-			UniqueConfig.UniqueDef def = defs.get(index);
-			setSlot(SLOTS[i], obtained.contains(def.id) ? known(def, held.getOrDefault(def.id, List.of())) : unknown(cfg, def));
+			Cell[] row = grid.get(index);
+			for (int c = 0; c < COLUMNS; c++) {
+				Cell cell = row[c];
+				int slot = (r + 1) * 9 + c + 1;
+				if (cell == null) {
+					continue;
+				}
+				if (cell.set() != null) {
+					setSlot(slot, setIcon(cfg, cell.set(), obtained));
+				} else if (cell.def() != null) {
+					UniqueConfig.UniqueDef def = cell.def();
+					setSlot(slot, obtained.contains(def.id) ? known(cfg, def, held.getOrDefault(def.id, List.of())) : unknown(cfg, def));
+				}
+			}
 		}
-		if (defs.isEmpty()) {
+		if (cfg.usable().isEmpty()) {
 			setSlot(22, GuiUtil.item(Items.BARRIER, Lang.get("unique.collection.empty"), List.of()));
 		}
 		bottomBar(() -> Hooks.openMainMenu.accept(player));
@@ -130,8 +181,48 @@ final class UniqueCollectionMenu extends GuildGui {
 		return icon;
 	}
 
+	/** A set: its pieces obtained by the guild (the others "???"), its bonuses; glowing when complete. */
+	private static GuiElementBuilder setIcon(UniqueConfig cfg, UniqueConfig.SetDef set, Set<String> obtained) {
+		List<String> pieces = cfg.piecesOf(set.id);
+		int count = 0;
+		List<Component> lore = new ArrayList<>();
+		for (String piece : pieces) {
+			if (obtained.contains(piece)) {
+				count++;
+			}
+		}
+		lore.add(Lang.get("unique.collection.set.count", count, pieces.size()));
+		for (String piece : pieces) {
+			UniqueConfig.UniqueDef def = cfg.item(piece);
+			lore.add(obtained.contains(piece) && def != null ? Lang.get("unique.collection.set.obtained", Lang.strip(Lang.colorize(def.name)))
+					: Lang.get("unique.collection.set.missing"));
+		}
+		for (UniqueConfig.SetBonus bonus : set.bonuses()) {
+			lore.add(Component.empty());
+			lore.add(Lang.get("unique.set.bonus.neutral", bonus.pieces, bonus.name));
+			for (String line : UniqueItems.bonusLines(bonus)) {
+				lore.add(Lang.get("unique.set.line.neutral", line));
+			}
+		}
+		lore.add(Component.empty());
+		lore.addAll(GuiUtil.lines("unique.collection.set.hint"));
+		GuiElementBuilder icon = GuiUtil.item(Items.ARMOR_STAND, Component.literal(Lang.colorize(set.name)), lore);
+		if (!pieces.isEmpty() && count >= pieces.size()) {
+			icon.glow();
+		}
+		return icon;
+	}
+
+	/** "✧ Panoplie de l'Hiver éternel" under a piece of a set (nothing for the other uniques). */
+	private static void setLine(UniqueConfig cfg, UniqueConfig.UniqueDef def, List<Component> lore) {
+		UniqueConfig.SetDef set = cfg.set(def.set);
+		if (set != null) {
+			lore.add(Lang.get("unique.collection.set", Lang.colorize(set.name)));
+		}
+	}
+
 	/** An obtained weapon: its look, rarity, power and who holds it now. */
-	private static GuiElementBuilder known(UniqueConfig.UniqueDef def, List<UniqueLedger.Copy> copies) {
+	private static GuiElementBuilder known(UniqueConfig cfg, UniqueConfig.UniqueDef def, List<UniqueLedger.Copy> copies) {
 		ItemStack display = UniqueItems.display(def, GuildyServer.registryAccess());
 		List<Component> lore = new ArrayList<>();
 		lore.add(Lang.get("unique.item.header", UniqueItems.rarityName(def.rarity())));
@@ -139,6 +230,7 @@ final class UniqueCollectionMenu extends GuildGui {
 		if (power != null) {
 			lore.add(Lang.get("unique.item.power", Lang.raw(power.langKey() + ".name")));
 		}
+		setLine(cfg, def, lore);
 		lore.add(Component.empty());
 		if (copies.isEmpty()) {
 			lore.add(Lang.get("unique.collection.gone"));
@@ -163,6 +255,7 @@ final class UniqueCollectionMenu extends GuildGui {
 	private static GuiElementBuilder unknown(UniqueConfig cfg, UniqueConfig.UniqueDef def) {
 		List<Component> lore = new ArrayList<>();
 		lore.add(Lang.get("unique.item.header", UniqueItems.rarityName(def.rarity())));
+		setLine(cfg, def, lore);
 		lore.add(Component.empty());
 		lore.add(Lang.get("unique.collection.where"));
 		boolean any = false;

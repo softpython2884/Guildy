@@ -57,6 +57,8 @@ public final class UniqueItems {
 	private static final String SERIAL = "serial";
 	/** custom_data key of the source of an offered (not yet registered) stack. */
 	private static final String PENDING = "pending";
+	/** custom_data key of a set piece: number of lore lines before its set section (rewritten for what the holder wears). */
+	private static final String LORE_BASE = "lore_base";
 	private static final Set<String> WARNED = new HashSet<>();
 
 	private UniqueItems() {
@@ -77,7 +79,19 @@ public final class UniqueItems {
 		GuildyItems.tag(stack, KIND, extra);
 		stack.set(DataComponents.ITEM_NAME, name(def));
 		stack.set(DataComponents.RARITY, def.rarity() == UniqueRarity.RARE ? Rarity.RARE : Rarity.EPIC);
-		stack.set(DataComponents.LORE, new ItemLore(lore(def)));
+		List<Component> lines = lore(def);
+		UniqueConfig.SetDef set = setOf(def);
+		if (set != null) {
+			// The set section follows the item's own lore: it is rewritten for what the holder wears (see syncSetLore).
+			int base = lines.size();
+			CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+				CompoundTag inner = tag.getCompoundOrEmpty(GuildyItems.ROOT);
+				inner.putInt(LORE_BASE, base);
+				tag.put(GuildyItems.ROOT, inner);
+			});
+			lines.addAll(setLore(def, set, null));
+		}
+		stack.set(DataComponents.LORE, new ItemLore(lines));
 		applyEnchantments(stack, def, registries);
 		applyAttributes(stack, def);
 		if (def.glint) {
@@ -97,9 +111,126 @@ public final class UniqueItems {
 			// Own cooldown group: the vanilla cooldown overlay shows the power recharge on this item only.
 			float seconds = (float) Math.max(0.05, UniqueModule.config().cooldownSeconds(power));
 			stack.set(DataComponents.USE_COOLDOWN, new UseCooldown(seconds, Optional.of(cooldownGroup(def.id))));
+		} else if (set != null) {
+			// The set's cooldown group: the recharge of its power shows on every piece (equipping by right click: one tick).
+			stack.set(DataComponents.USE_COOLDOWN, new UseCooldown(0.05F, Optional.of(setCooldownGroup(set.id))));
 		}
 		syncVisuals(stack, def);
 		return stack;
+	}
+
+	/** Set of a definition (null when none or unknown). */
+	static UniqueConfig.@Nullable SetDef setOf(UniqueConfig.UniqueDef def) {
+		return def.set == null || def.set.isEmpty() ? null : UniqueModule.config().set(def.set);
+	}
+
+	/** Cooldown group of a set's power: guildy:set/{id} (shown on the pieces that carry it). */
+	public static Identifier setCooldownGroup(String setId) {
+		return Identifier.fromNamespaceAndPath(Guildy.MOD_ID, "set/" + setId);
+	}
+
+	/**
+	 * Set section of a piece's lore: the set and its pieces (worn ones ticked), then each bonus with its attributes, power
+	 * and recharge (reached ones lit). {@code worn} = unique ids worn by the holder, null when the piece is not carried
+	 * (neutral look).
+	 */
+	public static List<Component> setLore(UniqueConfig.UniqueDef def, UniqueConfig.SetDef set, @Nullable Set<String> worn) {
+		UniqueConfig cfg = UniqueModule.config();
+		List<String> pieces = cfg.piecesOf(set.id);
+		int count = 0;
+		if (worn != null) {
+			for (String piece : pieces) {
+				if (worn.contains(piece)) {
+					count++;
+				}
+			}
+		}
+		List<Component> lines = new ArrayList<>();
+		lines.add(Component.empty());
+		String setName = Lang.colorize(set.name);
+		lines.add(worn == null ? Lang.get("unique.set.header", setName, pieces.size()) : Lang.get("unique.set.header_worn", setName, count, pieces.size()));
+		for (String piece : pieces) {
+			UniqueConfig.UniqueDef other = cfg.item(piece);
+			String name = other == null ? piece : Lang.strip(Lang.colorize(other.name));
+			String key = worn == null ? "unique.set.piece" : worn.contains(piece) ? "unique.set.piece.worn" : "unique.set.piece.missing";
+			lines.add(Lang.get(key, name));
+		}
+		for (UniqueConfig.SetBonus bonus : set.bonuses()) {
+			String state = worn == null ? "neutral" : count >= bonus.pieces ? "on" : "off";
+			lines.add(Lang.get("unique.set.bonus." + state, bonus.pieces, bonus.name));
+			for (String line : bonusLines(bonus)) {
+				lines.add(Lang.get("unique.set.line." + state, line));
+			}
+		}
+		List<Component> out = new ArrayList<>(lines.size());
+		for (Component line : lines) {
+			out.add(Component.empty().append(line).withStyle(style -> style.withItalic(false)));
+		}
+		return out;
+	}
+
+	/** Description of a set bonus: one line per attribute ("+2 Robustesse"), its power, its recharge. */
+	static List<String> bonusLines(UniqueConfig.SetBonus bonus) {
+		List<String> lines = new ArrayList<>();
+		for (UniqueConfig.AttributeEntry attribute : bonus.attributes) {
+			lines.add(attributeText(attribute));
+		}
+		SetPower power = bonus.power();
+		if (power != null) {
+			lines.addAll(List.of(Lang.raw(power.langKey() + ".lore", setPowerArgs(power)).split("\n")));
+			double cooldown = UniqueModule.config().cooldownSeconds(power);
+			if (cooldown >= 1 && power != SetPower.SOUL_PYRE) {
+				lines.add(Lang.raw("unique.set.cooldown", number(cooldown)));
+			}
+		}
+		return lines;
+	}
+
+	/** "+2 Robustesse", "+10 % Vitesse", "-50 % Durée de combustion" (French attribute names of lang.json). */
+	static String attributeText(UniqueConfig.AttributeEntry attribute) {
+		String path = attribute.attribute.contains(":") ? attribute.attribute.substring(attribute.attribute.indexOf(':') + 1) : attribute.attribute;
+		String key = "unique.attribute." + path;
+		String name = Lang.has(key) ? Lang.raw(key) : path;
+		boolean percent = !"add_value".equals(attribute.operation);
+		double shown = percent ? attribute.amount * 100 : "knockback_resistance".equals(path) ? attribute.amount * 10 : attribute.amount;
+		String sign = shown < 0 ? "-" : "+";
+		return Lang.raw(percent ? "unique.attribute.percent" : "unique.attribute.value", sign + number(Math.abs(shown)), name);
+	}
+
+	private static Object[] setPowerArgs(SetPower power) {
+		UniqueConfig.Powers p = UniqueModule.config().powers;
+		return switch (power) {
+			case WINTER_HEART -> new Object[] {number(p.winterHeart.healthThreshold * 100), number(p.winterHeart.radius),
+					hearts(p.winterHeart.damage), roman(p.winterHeart.slowLevel), p.winterHeart.freezeSeconds, roman(p.winterHeart.resistanceLevel),
+					p.winterHeart.resistanceSeconds};
+			case JAGUAR_AMBUSH -> new Object[] {number(p.jaguarAmbush.camouflageSeconds), hearts(p.jaguarAmbush.damage),
+					number(p.jaguarAmbush.radius), hearts(p.jaguarAmbush.clawDamage)};
+			case SOUL_PYRE -> new Object[] {number(p.soulPyre.pulseSeconds), number(p.soulPyre.radius), hearts(p.soulPyre.damage),
+					number(p.soulPyre.healRatio * 100)};
+			default -> new Object[0];
+		};
+	}
+
+	/**
+	 * Rewrites the set section of a piece's lore for what its holder wears ({@code worn} = unique ids in his armor slots, null
+	 * when the piece is not carried: neutral look). The lines before it (the item's own lore) are kept.
+	 *
+	 * @return true when the stack changed
+	 */
+	public static boolean syncSetLore(ItemStack stack, UniqueConfig.@Nullable UniqueDef def, @Nullable Set<String> worn) {
+		UniqueConfig.SetDef set = def == null ? null : setOf(def);
+		int base = GuildyItems.data(stack).getIntOr(LORE_BASE, -1);
+		ItemLore current = stack.get(DataComponents.LORE);
+		if (set == null || base < 0 || current == null || base > current.lines().size()) {
+			return false;
+		}
+		List<Component> lines = new ArrayList<>(current.lines().subList(0, base));
+		lines.addAll(setLore(def, set, worn));
+		if (lines.equals(current.lines())) {
+			return false;
+		}
+		stack.set(DataComponents.LORE, new ItemLore(lines));
+		return true;
 	}
 
 	/** Colored, non-italic item name ("&6&lFoudrelame"); names starting with '&' keep their own colors. */
@@ -230,7 +361,7 @@ public final class UniqueItems {
 		stack.set(DataComponents.ATTRIBUTE_MODIFIERS, modifiers);
 	}
 
-	private static AttributeModifier.Operation operation(String name) {
+	static AttributeModifier.Operation operation(String name) {
 		return switch (name) {
 			case "add_multiplied_base" -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
 			case "add_multiplied_total" -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;

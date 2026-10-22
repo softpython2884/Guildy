@@ -92,7 +92,7 @@ final class JaguarPowers {
 	}
 
 	/** Three parallel golden slashes across the front of a monster, drawn one per tick. */
-	private static void claws(ServerLevel level, LivingEntity target, Vec3 facing) {
+	static void claws(ServerLevel level, LivingEntity target, Vec3 facing) {
 		Vec3 right = new Vec3(-facing.z, 0, facing.x);
 		Vec3 base = target.position().subtract(facing.scale(target.getBbWidth() * 0.55));
 		double height = target.getBbHeight();
