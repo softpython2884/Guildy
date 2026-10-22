@@ -31,7 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,9 @@ final class TestSupport {
 	private static final Logger LOGGER = LoggerFactory.getLogger("GuildyTest");
 	private static final AtomicInteger REGIONS = new AtomicInteger();
 	/** Chat received by the mock players (see {@link #chat}). */
-	private static final Map<UUID, List<String>> CHAT = new HashMap<>();
+	/** Chat of each mock player, least recently used first (a busy run creates hundreds of players). */
+	private static final Map<UUID, List<String>> CHAT = new LinkedHashMap<>(64, 0.75F, true);
+	private static final int MAX_CHAT_PLAYERS = 2048;
 	/** Random per run: the test world is reused, so avoid the blocks left by previous runs. */
 	private static final int BASE_X = 40000 + (int) (Math.random() * 400) * 65536;
 	/**
@@ -142,8 +145,13 @@ final class TestSupport {
 				lines.removeFirst();
 			}
 			lines.add(line);
-			if (CHAT.size() > 256) {
-				CHAT.keySet().removeIf(uuid -> !uuid.equals(player));
+			// Forget only the players unheard of for the longest time: clearing every other player's chat made the tests
+			// that read their own chat fail when many tests ran together.
+			Iterator<UUID> eldest = CHAT.keySet().iterator();
+			while (CHAT.size() > MAX_CHAT_PLAYERS && eldest.hasNext()) {
+				if (!eldest.next().equals(player)) {
+					eldest.remove();
+				}
 			}
 		}
 	}
