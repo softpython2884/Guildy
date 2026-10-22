@@ -612,6 +612,16 @@ schématiques) : `tools/ruins/`.
     `explode`), `noPhysics`, tag `guildy_firework` (ALLOW_DAMAGE annule tout dégât, ALLOW_LOAD refuse au rechargement) ;
     rien n'est tiré sans joueur à `viewDistance`, `limits.maxFireworks` (120) pour tout le serveur.
 
+74. **Brassage simple** (`alchemy/SimpleBrewing` pur et testé, section `brewing` d'alchemy.json5) : `mode` simple (défaut,
+    ajouté aux anciens fichiers comme toute clé manquante) ou recipes (décision 65, inchangé). Classe d'un produit
+    (`classify` : PLAIN / LONG / STRONG d'après `long_` / `strong_`, forme potion / jetable / persistante, ELIXIR /
+    MAGIC_ELIXIR selon `ElixirDef.magical()`) → coût d'une fournée {poudre, secondes} (+ suppléments), sauf entrée
+    `brewing.products` ; une fournée plus petite paie sa part arrondie au-dessus. `SimpleBrewing.choose` : le produit le
+    plus en manque que la poudre paie ; verdicts STOCK_FULL / NO_BLAZE / ELIXIR_CAP = raisons du repli. `AlchemistTask` :
+    même cycle, poudre au sac, une place par fiole, fioles créées à la fin (`Brews.create`), progression gardée si
+    l'alchimiste revient au même alambic (`brewingAt`). `CraftData.elixirsToday`, plafond `brewing.maxElixirsPerDay` (mode
+    simple). GameTests du mode recipes dans leur propre environnement `guildy-test:brewing_recipes`.
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).

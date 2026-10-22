@@ -490,13 +490,23 @@ d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas s
     foudre, Ralliement, Bannière de guerre, Fléau, Grand spectacle) ; jamais de légendaire ni de mythique. **2 parchemins par jour** au plus,
     en plus des livres (`scrollChance`, `scrollPaper`, `maxScrollsPerDay`, `epicScrollLevel`, `scrolls`).
   - **Potions** : avec un **alambic** dans le territoire, il prépare les **potions** et **élixirs** qui manquent au
-    stockage. Il part de **fioles d'eau** prises au stockage (ou de **fioles vides** qu'il remplit à une source d'eau ou un
-    chaudron d'eau à moins de 6 blocs de l'alambic), puis enchaîne les brassages vanilla : **verrue du Nether** (potion
-    étrange), l'ingrédient de l'effet (pastèque scintillante = soin, poudre de blaze = force, crème de magma = résistance
-    au feu…), **redstone** pour la version longue, **poudre lumineuse** pour la version forte, **poudre à canon** pour une
-    potion jetable, **souffle de dragon** pour une persistante. Chaque brassage dure **20 s**, transforme **3 fioles** avec
-    **1 ingrédient** et brûle 1/20 de **poudre de blaze** ; **18 fioles par jour** et par alchimiste au plus. Les potions
-    vont au coffre « Potions » (sinon « Potions et alchimie »).
+    stockage. Par défaut (**brassage simple**), chaque fournée de **3 fioles** ne coûte que de la **poudre de blaze**
+    (prise au stockage) et du **temps** à l'alambic : ni fiole, ni eau, ni verrue du Nether, ni ingrédient.
+
+    | Produit (fournée de 3 fioles) | Poudre de blaze | Durée |
+    |---|---|---|
+    | Potion simple (soin, force, rapidité, résistance au feu…) | 1 | 20 s |
+    | Potion longue | 1 | 30 s |
+    | Potion forte (II) | 1 | 30 s |
+    | Potion jetable | + 0 | + 10 s |
+    | Potion persistante | + 1 | + 20 s |
+    | Élixir (colosse, bête, ombre, titan, phénix, abysses) | 2 | 60 s |
+    | Élixir magique (arcanique, clairvoyance, satiété mystique) | 4 | 90 s |
+
+    **18 fioles par jour** et par alchimiste au plus, dont **6 élixirs** au plus (`brewing.maxElixirsPerDay`), pour que
+    les bonus magiques restent précieux. Sans poudre de blaze, il passe à un autre travail (« ↪ Potions : pas de poudre de
+    blaze → Livres »). Les potions vont au coffre « Potions » (sinon « Potions et alchimie »). Le mode **`recipes`**
+    (`alchemy.json5` → `brewing.mode`) remet le brassage vanilla d'avant (fioles, verrue du Nether, ingrédients).
 - **Stocks de potions** (menu d'un alchimiste → « Stocks de potions ») : pour chaque potion et élixir, le nombre de fioles
   que la guilde veut garder (clic gauche +1, droit -1, Maj ±8 ; « Remettre par défaut »). Les alchimistes préparent
   d'abord le produit le plus en dessous de son stock. Par défaut : 6 potions de soin, 3 de soin II, 3 jetables de soin,
@@ -504,7 +514,8 @@ d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas s
   chute lente, de force II… et quelques élixirs courants ; les élixirs aux ingrédients très rares restent à 0 (à
   demander). Les stocks se comptent dans tous les coffres du stockage, fioles en route comprises.
 - **Élixirs de Guildy** : des potions à boire comme les autres, avec leurs propres effets, leur couleur et leur nom,
-  préparées par l'alchimiste à partir d'une potion vanilla et d'un **ingrédient rare** :
+  préparées par l'alchimiste (mode simple : poudre de blaze et temps, voir le tableau ; mode `recipes` : une potion
+  vanilla et un **ingrédient rare**, colonne « Recette ») :
 
   | Élixir | Recette (base + ingrédient) | Effets | Durée |
   |---|---|---|---|
@@ -525,7 +536,7 @@ d'eau creusés. Melons, citrouilles et canne à sucre sont récoltés mais pas s
   grimoire -100 %).
 - **Repli** : un alchimiste tente toujours son **travail préféré**, puis les autres dans l'ordre **Livres > Parchemins >
   Potions** (`alchemist.jobOrder`), et travaille au premier possible. Un travail est impossible sans table ou alambic,
-  sans livres / lapis / papier / fioles / ingrédients / poudre de blaze au stockage, quand son plafond du jour est atteint,
+  sans livres / lapis / papier / poudre de blaze au stockage (mode `recipes` : fioles, ingrédients), quand son plafond du jour est atteint,
   quand aucun parchemin n'est possible à la table ou quand tous les stocks de potions sont pleins. Son menu affiche la
   raison (« ↪ Livres : pas de livres → Potions ») ; quand rien n'est possible, son statut liste les raisons de chaque
   travail. Après chaque livre, parchemin ou fournée, il revient à son travail préféré s'il est redevenu possible.
@@ -1329,7 +1340,7 @@ analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 | `upgrades.json5` | Arbre d'évolution : branches, améliorations (palier, niveau, prérequis, coût en or et en objets, effets), durée des effets de territoire |
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
-| `alchemy.json5` | Potions et élixirs des alchimistes : étapes de brassage (recettes vanilla), stocks par défaut, élixirs (base, ingrédient, effets, bonus magiques), plafonds et affichage des bonus magiques |
+| `alchemy.json5` | Potions et élixirs des alchimistes : mode de brassage (`brewing` : simple = poudre de blaze et temps par classe de produit, plafond d'élixirs ; recipes = étapes vanilla), stocks par défaut, élixirs (base, ingrédient, effets, bonus magiques), plafonds et affichage des bonus magiques |
 | `runes.json5` | Runes du forgeron : gravure (niveau de guilde, chance, plafond par jour, examens, matériau, annonce), poids des rangs, objets des runes mythiques, définitions des runes (nom, rang, pièces, poids, bonus d'attributs, pouvoir), réglages des pouvoirs |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit
 (`cursedGrimoire` : multiplicateurs de puissance / portée / nombre, niveaux en plus, surcharges par sort, faim, sang,
@@ -1456,7 +1467,7 @@ Formules par défaut (modifiables) :
   groupe ne s'échangent pas d'objets (une même pierre peut se retrouver dans deux parties) ; les gardes ne cherchent leur
   équipement que dans les coffres qui peuvent en contenir ; les salles ordinaires ne donnent des colonnes qu'aux catégories
   principales (les sous-catégories y entrent si la salle leur est réservée).
-- Alchimiste : le brassage est simulé (les emplacements et les bulles de l'alambic ne bougent pas) ; une recette de
+- Alchimiste : le brassage est simulé (les emplacements et les bulles de l'alambic ne bougent pas) ; en mode `recipes`, une recette de
   datapack doit être ajoutée à `alchemy.json5` ; deux alchimistes peuvent viser le même ingrédient rare (le second
   change de fournée sous 30 s) ; la description de la tâche ne change sur un serveur existant qu'en supprimant la clé
   `villager.task.alchemist.desc` de `lang.json`.
