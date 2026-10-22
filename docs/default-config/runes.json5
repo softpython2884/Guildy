@@ -1,0 +1,664 @@
+// Guildy - runes gravees par les forgerons : quand un forgeron travaille sur une armure posee sur un porte-armure
+// (reparation terminee, ou examen periodique d'une piece intacte), il a une chance d'y graver une rune (une seule par
+// piece, jamais sur un objet unique). Commune : petit bonus de caracteristique ; rare : petit pouvoir amusant ;
+// mythique (plastron en netherite seulement) : pouvoir legendaire. Une meule retire la rune (les enchantements restent).
+// Commandes admin : /guild admin rune list | inscribe <joueur> <id> | remove <joueur> (objet en main).
+{
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"formatVersion": 1,
+
+	// Runes activees. false : plus aucune rune gravee et les pouvoirs des runes deja gravees sont coupes (leurs bonus
+	// de caracteristiques restent sur les objets ; une meule les retire toujours)
+	"enabled": true,
+
+	// Gravure par les forgerons : niveau de guilde, chance, plafond par jour, examens, cout en materiau
+	"inscription": {
+
+		// Niveau de guilde minimum pour que les forgerons gravent des runes (1 a 100)
+		"minGuildLevel": 5,
+
+		// Chance (0 a 1) de graver une rune a chaque occasion : une piece d'armure reparee jusqu'au bout, ou un examen
+		// termine (le forgeron examine les pieces intactes des porte-armures quand il n'a rien a reparer)
+		"chance": 0.15,
+
+		// Runes gravees au plus par forgeron et par jour de jeu (0 = jamais de rune)
+		"maxPerDay": 2,
+
+		// Intervalle minimum (minutes) entre deux examens d'un meme porte-armure (une reparation terminee compte comme un
+		// examen) (1 a 1440)
+		"inspectionMinutes": 15,
+
+		// Temps de travail (secondes) d'un examen a l'enclume ; le bonus de vitesse de travail s'applique (1 a 600)
+		"secondsPerInspection": 20,
+
+		// Materiau use pour chaque rune gravee, pris dans le stockage de la guilde (coffres de depot, de sa categorie ou
+		// Divers) : le forgeron va le chercher avant un examen. "" ou materialCount 0 = gratuit
+		"material": "minecraft:amethyst_shard",
+
+		// Nombre de materiaux par rune (0 a 64)
+		"materialCount": 1,
+
+		// Annonce a tout le serveur quand une rune mythique est gravee
+		"announceMythic": true
+	},
+
+	// Poids des rangs quand une rune est tiree (le rang est tire d'abord, puis une rune de ce rang parmi celles qui vont
+	// sur la piece). Un rang sans rune possible pour la piece est ignore : les runes mythiques ne vont que sur les objets
+	// de mythicItems, donc les autres pieces ne tirent qu'entre commune et rare.
+	"tiers": {
+
+		// Poids du rang commun (petits bonus de caracteristiques)
+		"common": 80,
+
+		// Poids du rang rare (petits pouvoirs amusants)
+		"rare": 18,
+
+		// Poids du rang mythique (plastron en netherite seulement)
+		"mythic": 2
+	},
+
+	// Objets qui peuvent recevoir une rune mythique (plastrons seulement : les runes mythiques vont sur le torse).
+	"mythicItems": [
+		"minecraft:netherite_chestplate"
+	],
+
+	// Les runes. id : identifiant (a-z, 0-9, _) ; name : nom affiche ; glyph : caractere runique du nom ; tier : common,
+	// rare ou mythic ; slots : pieces possibles (head, chest, legs, feet ; les runes mythiques vont toujours sur chest) ;
+	// weight : poids parmi les runes du meme rang ; attributes : bonus de caracteristiques (attribut vanilla, amount,
+	// operation add_value | add_multiplied_base | add_multiplied_total), ajoutes a ceux de la piece avec les identifiants
+	// guildy:rune_<id>_<emplacement> ; power : pouvoir (sparks, ember, glow, echo, fox, bounce ; phoenix et dragon
+	// seulement sur une rune mythique ; "" = aucun) ; lore : lignes d'ambiance ; enabled : false = plus jamais tiree
+	// (les objets deja graves la gardent, sans pouvoir). Changer les valeurs ne touche que les nouvelles gravures ; les
+	// reglages des pouvoirs (section powers) s'appliquent tout de suite.
+	"runes": [
+		{
+			"id": "rempart",
+			"name": "Rune du rempart",
+			"glyph": "ᛉ",
+			"tier": "common",
+			"slots": [
+				"head",
+				"chest",
+				"legs",
+				"feet"
+			],
+			"weight": 12,
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 1.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "bastion",
+			"name": "Rune du bastion",
+			"glyph": "ᚦ",
+			"tier": "common",
+			"slots": [
+				"chest",
+				"legs"
+			],
+			"weight": 6,
+			"attributes": [
+				{
+					"attribute": "minecraft:armor",
+					"amount": 2.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "acier",
+			"name": "Rune d'acier",
+			"glyph": "ᛁ",
+			"tier": "common",
+			"slots": [
+				"head",
+				"chest",
+				"legs",
+				"feet"
+			],
+			"weight": 8,
+			"attributes": [
+				{
+					"attribute": "minecraft:armor_toughness",
+					"amount": 1.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "roc",
+			"name": "Rune du roc",
+			"glyph": "ᚢ",
+			"tier": "common",
+			"slots": [
+				"chest",
+				"legs"
+			],
+			"weight": 7,
+			"attributes": [
+				{
+					"attribute": "minecraft:knockback_resistance",
+					"amount": 0.1,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "vitalite",
+			"name": "Rune de vitalité",
+			"glyph": "ᛒ",
+			"tier": "common",
+			"slots": [
+				"chest",
+				"legs"
+			],
+			"weight": 6,
+			"attributes": [
+				{
+					"attribute": "minecraft:max_health",
+					"amount": 2.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "celerite",
+			"name": "Rune de célérité",
+			"glyph": "ᚱ",
+			"tier": "common",
+			"slots": [
+				"feet"
+			],
+			"weight": 6,
+			"attributes": [
+				{
+					"attribute": "minecraft:movement_speed",
+					"amount": 0.05,
+					"operation": "add_multiplied_base"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "trefle",
+			"name": "Rune du trèfle",
+			"glyph": "ᚠ",
+			"tier": "common",
+			"slots": [
+				"head"
+			],
+			"weight": 5,
+			"attributes": [
+				{
+					"attribute": "minecraft:luck",
+					"amount": 1.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "fureur",
+			"name": "Rune de fureur",
+			"glyph": "ᛏ",
+			"tier": "common",
+			"slots": [
+				"chest"
+			],
+			"weight": 4,
+			"attributes": [
+				{
+					"attribute": "minecraft:attack_damage",
+					"amount": 0.5,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "abysses",
+			"name": "Rune des abysses",
+			"glyph": "ᚾ",
+			"tier": "common",
+			"slots": [
+				"head"
+			],
+			"weight": 5,
+			"attributes": [
+				{
+					"attribute": "minecraft:oxygen_bonus",
+					"amount": 1.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "ondine",
+			"name": "Rune de l'ondine",
+			"glyph": "ᛚ",
+			"tier": "common",
+			"slots": [
+				"feet"
+			],
+			"weight": 4,
+			"attributes": [
+				{
+					"attribute": "minecraft:water_movement_efficiency",
+					"amount": 0.25,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "plume",
+			"name": "Rune de la plume",
+			"glyph": "ᚹ",
+			"tier": "common",
+			"slots": [
+				"feet"
+			],
+			"weight": 5,
+			"attributes": [
+				{
+					"attribute": "minecraft:safe_fall_distance",
+					"amount": 2.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "chamois",
+			"name": "Rune du chamois",
+			"glyph": "ᛖ",
+			"tier": "common",
+			"slots": [
+				"legs"
+			],
+			"weight": 4,
+			"attributes": [
+				{
+					"attribute": "minecraft:jump_strength",
+					"amount": 0.1,
+					"operation": "add_multiplied_base"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "mineur",
+			"name": "Rune du mineur",
+			"glyph": "ᛈ",
+			"tier": "common",
+			"slots": [
+				"head"
+			],
+			"weight": 4,
+			"attributes": [
+				{
+					"attribute": "minecraft:block_break_speed",
+					"amount": 0.1,
+					"operation": "add_multiplied_base"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "salamandre",
+			"name": "Rune de la salamandre",
+			"glyph": "ᚲ",
+			"tier": "common",
+			"slots": [
+				"legs"
+			],
+			"weight": 4,
+			"attributes": [
+				{
+					"attribute": "minecraft:burning_time",
+					"amount": -0.3,
+					"operation": "add_multiplied_base"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "chat",
+			"name": "Rune du chat",
+			"glyph": "ᛇ",
+			"tier": "common",
+			"slots": [
+				"legs"
+			],
+			"weight": 3,
+			"attributes": [
+				{
+					"attribute": "minecraft:sneaking_speed",
+					"amount": 0.15,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "allonge",
+			"name": "Rune de l'allonge",
+			"glyph": "ᚷ",
+			"tier": "common",
+			"slots": [
+				"chest"
+			],
+			"weight": 3,
+			"attributes": [
+				{
+					"attribute": "minecraft:block_interaction_range",
+					"amount": 1.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "etincelles",
+			"name": "Rune d'étincelles",
+			"glyph": "ᛊ",
+			"tier": "rare",
+			"slots": [
+				"chest",
+				"legs"
+			],
+			"weight": 10,
+			"attributes": [],
+			"power": "sparks",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "braise",
+			"name": "Rune de braise",
+			"glyph": "ᚳ",
+			"tier": "rare",
+			"slots": [
+				"chest"
+			],
+			"weight": 10,
+			"attributes": [],
+			"power": "ember",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "lueur",
+			"name": "Rune de lueur",
+			"glyph": "ᛞ",
+			"tier": "rare",
+			"slots": [
+				"head"
+			],
+			"weight": 10,
+			"attributes": [],
+			"power": "glow",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "echo",
+			"name": "Rune d'écho",
+			"glyph": "ᛗ",
+			"tier": "rare",
+			"slots": [
+				"head",
+				"feet"
+			],
+			"weight": 8,
+			"attributes": [],
+			"power": "echo",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "renard",
+			"name": "Rune du renard",
+			"glyph": "ᚻ",
+			"tier": "rare",
+			"slots": [
+				"legs"
+			],
+			"weight": 8,
+			"attributes": [],
+			"power": "fox",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "rebond",
+			"name": "Rune du rebond",
+			"glyph": "ᛃ",
+			"tier": "rare",
+			"slots": [
+				"feet"
+			],
+			"weight": 8,
+			"attributes": [
+				{
+					"attribute": "minecraft:fall_damage_multiplier",
+					"amount": -0.5,
+					"operation": "add_multiplied_base"
+				},
+				{
+					"attribute": "minecraft:safe_fall_distance",
+					"amount": 1.0,
+					"operation": "add_value"
+				}
+			],
+			"power": "bounce",
+			"lore": [],
+			"enabled": true
+		},
+		{
+			"id": "phenix",
+			"name": "Rune du Phénix",
+			"glyph": "ᛟ",
+			"tier": "mythic",
+			"slots": [
+				"chest"
+			],
+			"weight": 1,
+			"attributes": [],
+			"power": "phoenix",
+			"lore": [
+				"Ce qui brûle ne meurt jamais tout à fait."
+			],
+			"enabled": true
+		},
+		{
+			"id": "dragon",
+			"name": "Rune du Dragon",
+			"glyph": "ᛥ",
+			"tier": "mythic",
+			"slots": [
+				"chest"
+			],
+			"weight": 1,
+			"attributes": [],
+			"power": "dragon",
+			"lore": [
+				"Les ailes d'un dragon oublié dorment dans ce métal."
+			],
+			"enabled": true
+		}
+	],
+
+	// Reglages des pouvoirs des runes (jamais contre les joueurs, villageois ou animaux : monstres seulement)
+	"powers": {
+
+		// Etincelles : un monstre qui frappe au corps a corps prend une gerbe d'etincelles
+		"sparks": {
+
+			// Degats des etincelles (points de vie, 2 = 1 coeur)
+			"damage": 2.0,
+
+			// Recharge (secondes)
+			"cooldownSeconds": 3.0
+		},
+
+		// Braise : un monstre qui vous frappe peut prendre feu
+		"ember": {
+
+			// Chance (0 a 1) d'enflammer le monstre
+			"chance": 0.35,
+
+			// Duree du feu (secondes)
+			"fireSeconds": 4,
+
+			// Recharge (secondes)
+			"cooldownSeconds": 4.0
+		},
+
+		// Lueur : quand vous etes frappe, les monstres autour brillent quelques secondes
+		"glow": {
+
+			// Rayon (blocs) autour du porteur
+			"radius": 12.0,
+
+			// Duree de la lueur (secondes)
+			"seconds": 6,
+
+			// Recharge (secondes)
+			"cooldownSeconds": 15.0
+		},
+
+		// Echo : rester accroupi immobile envoie une onde qui revele les monstres autour
+		"echo": {
+
+			// Temps accroupi immobile avant l'onde (secondes)
+			"sneakSeconds": 2.0,
+
+			// Rayon de l'onde (blocs)
+			"radius": 24.0,
+
+			// Duree de la lueur des monstres reveles (secondes)
+			"seconds": 4,
+
+			// Recharge (secondes)
+			"cooldownSeconds": 20.0
+		},
+
+		// Renard : les objets au sol tout proches volent vers vous (pas accroupi)
+		"fox": {
+
+			// Rayon d'attraction des objets (blocs)
+			"radius": 5.0,
+
+			// Objets attires au plus a chaque impulsion (deux par seconde)
+			"maxItems": 12
+		},
+
+		// Rebond : apres une grande chute, vous rebondissez (la rune reduit aussi les degats de chute)
+		"bounce": {
+
+			// Hauteur de chute minimum (blocs) pour rebondir
+			"minFall": 4.0,
+
+			// Force du rebond (vitesse verticale ; 0.42 = un saut)
+			"hop": 0.5,
+
+			// Recharge (secondes)
+			"cooldownSeconds": 1.0
+		},
+
+		// Phenix (mythique) : un coup mortel vous releve de vos cendres dans une explosion de flammes
+		"phoenix": {
+
+			// Recharge (minutes de jeu ; elle suit le plastron et survit aux redemarrages)
+			"cooldownMinutes": 20,
+
+			// Vie rendue (part de la vie maximum, 0.5 = la moitie)
+			"healthRatio": 0.5,
+
+			// Rayon de l'explosion de flammes (blocs)
+			"radius": 6.0,
+
+			// Degats de feu aux monstres du rayon
+			"damage": 6.0,
+
+			// Les monstres du rayon brulent (secondes)
+			"fireSeconds": 6,
+
+			// Force de projection des monstres
+			"push": 1.2,
+
+			// Resistance au feu donnee au porteur (secondes)
+			"fireResistanceSeconds": 15,
+
+			// Regeneration donnee au porteur (secondes, niveau)
+			"regenSeconds": 8,
+			"regenLevel": 2
+		},
+
+		// Dragon (mythique) : le plastron plane comme des elytres ; accroupi + saut = souffle du dragon
+		"dragon": {
+
+			// Le plastron plane comme des elytres (sauter en l'air ; il s'use en planant, le forgeron le repare)
+			"glide": true,
+
+			// Recharge du souffle (secondes)
+			"breathCooldownSeconds": 20.0,
+
+			// Portee du souffle (blocs)
+			"breathRange": 9.0,
+
+			// Demi-angle du cone du souffle (degres)
+			"breathAngle": 40.0,
+
+			// Degats du souffle aux monstres du cone
+			"breathDamage": 6.0,
+
+			// Les monstres touches brulent (secondes)
+			"breathFireSeconds": 4
+		}
+	}
+}
