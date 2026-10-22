@@ -3007,7 +3007,7 @@ SCROLL_RUNES["grand_spectacle"] = ([
 	"....###.",
 	"..##.#.#",
 	"##......",
-], ["#e8283c", "#e0920c", "#24a044", "#2a62d8"], "#ffb000")
+], ["#e8283c", "#e0920c", "#24a044", "#2a62d8"], "#c86bff")
 GRIMOIRE_SIGILS["grand_spectacle"] = [".#.#.#.", "..###..", ".##.##.", "..###..", ".#.#.#.", "...#...", "...#..."]
 GRIMOIRE_GLOW["grand_spectacle"] = ["#ff5a6a", "#ffd24a", "#6aff8a", "#5ab8ff"]
 

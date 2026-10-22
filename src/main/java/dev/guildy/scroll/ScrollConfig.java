@@ -1086,8 +1086,7 @@ public final class ScrollConfig implements Validatable {
 		list.add(def("hate_du_vent", "Hâte du vent", UniqueRarity.RARE, Spell.TAILWIND, "guster_banner_pattern", 1.0, "soutien", 30)
 				.story("Une plume de brise cousue", "dans la reliure du parchemin."));
 		// Guildy 1.14: the fireworks show.
-		list.add(def("grand_spectacle", "Grand spectacle", UniqueRarity.LEGENDARY, Spell.FIREWORKS, "flower_banner_pattern", 3.0, "spectacle",
-				120)
+		list.add(def("grand_spectacle", "Grand spectacle", UniqueRarity.EPIC, Spell.FIREWORKS, "flower_banner_pattern", 3.0, "spectacle", 120)
 				.story("Le carnet d'un artificier royal :", "chaque rune est une gerbe qui attend la nuit."));
 		return list;
 	}

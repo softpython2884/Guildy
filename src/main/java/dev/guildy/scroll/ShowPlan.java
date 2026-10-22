@@ -438,7 +438,8 @@ public final class ShowPlan {
 			int t = span.start();
 			int z = span.end();
 			if (z - t >= 64) {
-				add(middle(t, h * 1.15, NORMAL, Act.OPENING, Figure.NONE, new Explosion(Shape.STAR, List.of(0xFFFFFF, 0xFFD24A), List.of(), false, true)));
+				List<Integer> signal = s.cursed() ? List.of(0xBFFCFF, 0xD08BFF) : List.of(0xFFFFFF, 0xFFD24A);
+				add(middle(t, h * 1.15, NORMAL, Act.OPENING, Figure.NONE, new Explosion(Shape.STAR, signal, List.of(), false, true)));
 				t += 16;
 			}
 			int step = clamp((z - t - 12) / (2 * n + 2), 2, 6);
@@ -471,20 +472,27 @@ public final class ShowPlan {
 
 		// -------------------------------------------------------------- synchronised symmetric salvos
 
-		/** Mirrored pairs outside in, inside out (rising), then volleys of every point; faster each phrase. */
+		/**
+		 * Mirrored pairs outside in (each answered by a higher echo), inside out (rising), then volleys of every point; faster
+		 * each phrase.
+		 */
 		private void salvos(Span span) {
 			Palette p = span.palette();
 			int t = span.start() + 2;
 			int z = span.end();
 			int half = (n + 1) / 2;
-			int interval = 14;
+			int interval = 11;
 			for (int phrase = 0; t < z - 2; phrase++) {
 				switch (phrase % 3) {
 					case 0 -> {
 						for (int i = 0; i < half && t < z - 2; i++) {
 							boolean outer = i == 0;
-							group(pair(t, i, h * (1.1 - 0.25 * i / half), 0.4 + 0.25 * (half - i), NORMAL, Act.SALVOS,
+							group(pair(t, i, h * (0.95 - 0.2 * i / half), 0.4 + 0.25 * (half - i), NORMAL, Act.SALVOS,
 									explosion(outer ? Shape.LARGE_BALL : Shape.SMALL_BALL, p, 2, false, outer)));
+							if (t + 3 < z) {
+								group(pair(t + 3, i, h * (1.2 - 0.2 * i / half), 0.8 + 0.3 * (half - i), SNAPPY, Act.SALVOS,
+										explosion(Shape.STAR, p, 1, false, true)));
+							}
 							t += interval;
 						}
 					}
@@ -506,7 +514,7 @@ public final class ShowPlan {
 						t += interval * 2;
 					}
 				}
-				interval = Math.max(6, interval - 2);
+				interval = Math.max(5, interval - 2);
 			}
 		}
 
@@ -531,16 +539,19 @@ public final class ShowPlan {
 				if (t + 14 < span.end() && n >= 3) {
 					group(pair(t + 14, 0, h * 0.5, 0, SNAPPY, Act.FIGURES, explosion(Shape.BURST, span.palette(), 2, false, false)));
 				}
+				if (t + 22 < span.end() && n >= 5) {
+					group(pair(t + 22, n / 4, h * 0.7, 0.6, NORMAL, Act.FIGURES, explosion(Shape.STAR, span.palette(), 2, false, true)));
+				}
 				t += 30 + random.nextInt(6);
 				k++;
 			}
 		}
 
-		private static Palette figurePalette(Figure figure, Palette act) {
+		private Palette figurePalette(Figure figure, Palette act) {
 			return switch (figure) {
 				case HEART -> ROSE;
 				case STAR, CROWN, WILLOW -> GOLD;
-				case RUNE -> RUNE;
+				case RUNE -> s.cursed() ? NIGHTMARE : RUNE;
 				case PENTAGRAM -> BLOOD;
 				default -> act;
 			};
@@ -658,7 +669,10 @@ public final class ShowPlan {
 
 		// -------------------------------------------------------------- the grand finale
 
-		/** The dense bouquet up to the silence before the final burst: low crackling layer, high large balls, tutti. */
+		/**
+		 * The dense bouquet up to the silence before the final burst: a low crackling layer (more pairs on a wider stage), high
+		 * large balls, golden willows, every circle at once now and then; faster and faster (the flight cap thins it out).
+		 */
 		private void bouquet(Span span) {
 			Palette p = span.palette();
 			Palette mix = s.cursed() ? pick(random.nextInt(3), BLOOD, SOUL, NIGHTMARE) : RAINBOW;
@@ -667,8 +681,10 @@ public final class ShowPlan {
 			for (int beat = 0; t < quiet; beat++) {
 				double progress = (t - span.start()) / (double) Math.max(1, quiet - span.start());
 				int half = (n + 1) / 2;
-				group(pair(t, random.nextInt(half), h * (0.55 + 0.15 * random.nextDouble()), 0.5, SNAPPY, Act.FINALE,
-						explosion(random.nextBoolean() ? Shape.SMALL_BALL : Shape.BURST, beat % 2 == 0 ? p : mix, 2, false, true)));
+				for (int low = 0; low < 1 + n / 8; low++) {
+					group(pair(t, random.nextInt(half), h * (0.55 + 0.15 * random.nextDouble()), 0.5, SNAPPY, Act.FINALE,
+							explosion(random.nextBoolean() ? Shape.SMALL_BALL : Shape.BURST, (beat + low) % 2 == 0 ? p : mix, 2, false, true)));
+				}
 				if (beat % 3 == 0) {
 					group(pair(t, random.nextInt(half), h * (1.1 + 0.2 * random.nextDouble()), 1.0, NORMAL, Act.FINALE,
 							explosion(Shape.LARGE_BALL, beat % 6 == 0 ? p : mix, 3, false, beat % 2 == 0)));

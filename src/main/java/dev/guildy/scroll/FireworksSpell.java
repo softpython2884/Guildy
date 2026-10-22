@@ -140,9 +140,12 @@ final class FireworksSpell extends SpellEffect {
 		return !isShowRocket(source.getDirectEntity()) && !isShowRocket(source.getEntity());
 	}
 
-	/** ServerEntityEvents.ALLOW_LOAD: a show's rocket saved to disk (show stopped mid-flight) never comes back. */
+	/**
+	 * ServerEntityEvents.ALLOW_LOAD: a show's rocket saved to disk (its chunk unloaded mid-flight, a server stop) never comes
+	 * back; the show it belonged to has forgotten it.
+	 */
 	static boolean allowLoad(Entity entity, boolean fromDisk) {
-		return !fromDisk || !isShowRocket(entity) || LIVE.contains(entity.getUUID());
+		return !fromDisk || !isShowRocket(entity);
 	}
 
 	static boolean isShowRocket(@Nullable Entity entity) {
@@ -194,29 +197,56 @@ final class FireworksSpell extends SpellEffect {
 	}
 
 	/**
-	 * The launch point of (x, z): on top of the highest solid block of the column, under the open sky, near the caster's
-	 * height; null on water or lava, in an unloaded chunk or in the territory of another guild.
+	 * The launch point of (x, z): the ground of the column at the caster's level (the first solid block under the caster's
+	 * feet height when it is free, at most {@link #MAX_DROP} blocks down; else the first free block above solid ground, at
+	 * most {@link #MAX_RISE} blocks up), under the open sky (nothing that blocks motion above: no roof, ceiling, leaves).
+	 * Null on water or lava, in an unloaded chunk or in the territory of another guild.
 	 */
 	private static @Nullable Vec3 ground(ServerLevel level, double x, double z, double feet, @Nullable Guild guild) {
 		int bx = Mth.floor(x);
 		int bz = Mth.floor(z);
-		if (!level.isLoaded(new BlockPos(bx, (int) Math.floor(feet), bz))) {
+		int base = Mth.floor(feet + 0.01);
+		if (!level.isLoaded(new BlockPos(bx, base, bz))) {
 			return null;
 		}
-		// MOTION_BLOCKING: the first free block above every solid block and fluid of the column (leaves included).
-		int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
-		if (top > feet + MAX_RISE || top < feet - MAX_DROP || top <= level.getMinY()) {
+		Integer found = null;
+		if (free(level, bx, base, bz)) {
+			for (int y = base; y > base - MAX_DROP && y > level.getMinY(); y--) {
+				BlockPos below = new BlockPos(bx, y - 1, bz);
+				if (!level.getFluidState(below).isEmpty()) {
+					return null;
+				}
+				if (!free(level, bx, y - 1, bz)) {
+					found = y;
+					break;
+				}
+			}
+		} else {
+			for (int y = base + 1; y <= base + MAX_RISE; y++) {
+				if (free(level, bx, y, bz)) {
+					if (!level.getFluidState(new BlockPos(bx, y - 1, bz)).isEmpty()) {
+						return null;
+					}
+					found = y;
+					break;
+				}
+			}
+		}
+		// Open sky: the first free block above every block that blocks motion (or holds a fluid) of the column.
+		if (found == null || level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz) > found) {
 			return null;
 		}
-		BlockPos below = new BlockPos(bx, top - 1, bz);
-		if (!level.getFluidState(below).isEmpty() || level.getBlockState(below).isAir()) {
-			return null;
-		}
-		Guild owner = GuildManager.at(level, below);
+		Guild owner = GuildManager.at(level, new BlockPos(bx, found - 1, bz));
 		if (owner != null && owner != guild) {
 			return null;
 		}
-		return new Vec3(x, top, z);
+		return new Vec3(x, found, z);
+	}
+
+	/** No collision and no fluid at this block. */
+	private static boolean free(ServerLevel level, int x, int y, int z) {
+		BlockPos pos = new BlockPos(x, y, z);
+		return level.getFluidState(pos).isEmpty() && level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
 	}
 
 	/** Radius of the rune circles for this gap between the points. */
