@@ -758,6 +758,12 @@ la construisent bloc par bloc, en allant chercher eux-mêmes ce qui manque.
   ses schématiques sans rien installer. Les vieux fichiers sont mis à jour (DataFixer de Minecraft), les blocs inconnus
   ignorés et signalés ; un fichier trop gros ou abîmé est refusé avec sa raison. Les anciens `.schematic` de MCEdit
   (avant 1.13) sont refusés : réenregistrez-les en `.schem`.
+- **Taille** : par défaut 256 blocs par côté, 2 097 152 blocs de volume (air compris) et 500 000 blocs posés au plus,
+  pour un fichier de 64 Mo. Pour un très grand bâtiment, montez les valeurs de la section `schematics` de
+  `builds.json5` (jusqu'à 1024 par côté, 64 millions de volume, 16 millions de blocs) puis `/guild admin reload` : les
+  fichiers refusés sont relus. Une schématique chargée occupe environ 7 octets de mémoire par bloc de sa boîte
+  (20 millions = 140 Mo) : avec de très grandes schématiques, baissez `cacheSize`. Comptez aussi le temps : 2 blocs
+  par seconde et par bâtisseur, de jour.
 - **Placer un chantier** : menu Villageois (ou menu de la guilde) → *Chantiers* → *Nouveau chantier*, ou
   `/guild chantier`. Choisissez la schématique (taille, nombre de blocs, principaux matériaux) : vous recevez un **Plan
   de chantier**. Clic droit sur un bloc : l'aperçu se pose sur ce bloc, tourné dans le sens de votre regard, et vous
@@ -1421,7 +1427,7 @@ analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `alchemy.json5` | Potions et élixirs des alchimistes : mode de brassage (`brewing` : simple = poudre de blaze et temps par classe de produit, plafond d'élixirs ; recipes = étapes vanilla), stocks par défaut, élixirs (base, ingrédient, effets, bonus magiques), plafonds et affichage des bonus magiques |
-| `builds.json5` | Chantiers : limites des schématiques (côté, volume, blocs, taille du fichier), chantiers actifs par niveau, options par défaut (intérieur, sources, fondations), aperçu, vitesse et sac des bâtisseurs, répartition des rôles, blocs naturels du terrassement, colmatage, barre de progression |
+| `builds.json5` | Chantiers : limites des schématiques (côté 256, volume 2 097 152, 500 000 blocs, fichier 64 Mo ; jusqu'à 1024 / 64 millions / 16 millions / 1 Go), chantiers actifs par niveau, options par défaut (intérieur, sources, fondations), aperçu, vitesse et sac des bâtisseurs, répartition des rôles, blocs naturels du terrassement, colmatage, barre de progression |
 | `supply.json5` | Matériaux des bâtisseurs : fabrication (profondeur des recettes, établi, tailleur de pierre, tous les coffres), cuisson (durée, combustibles), transformations, récolte (mines, zones de coupe, hors territoire, rayon, fosses), sources forcées, objets jamais cherchés |
 | `runes.json5` | Runes du forgeron : gravure (niveau de guilde, chance, plafond par jour, examens, matériau, annonce), poids des rangs, objets des runes mythiques, définitions des runes (nom, rang, pièces, poids, bonus d'attributs, pouvoir), réglages des pouvoirs |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit

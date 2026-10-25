@@ -1092,7 +1092,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.15.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
+				<p>Installation : <code>guildy-1.15.1.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1145,7 +1145,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><code>events.json5</code></td><td>Événements : chances, délais, effets (dont <code>randomEvents</code> pour tout couper)</td></tr>
 							<tr><td><code>trade.json5</code></td><td>Carrefour commercial : paliers, visites, tables d'offres</td></tr>
 							<tr><td><code>alchemy.json5</code></td><td>Potions et élixirs : recettes, stocks par défaut, élixirs, bonus magiques</td></tr>
-							<tr><td><code>builds.json5</code></td><td>Chantiers : limites des schématiques, chantiers actifs, options par défaut, aperçu, vitesse et rôles des bâtisseurs, terrassement</td></tr>
+							<tr><td><code>builds.json5</code></td><td>Chantiers : limites des schématiques (section <code>schematics</code> : 256 blocs par côté, 2 097 152 de volume et 500 000 blocs par défaut, jusqu'à 1024 / 64 millions / 16 millions), chantiers actifs, options par défaut, aperçu, vitesse et rôles des bâtisseurs, terrassement</td></tr>
 							<tr><td><code>supply.json5</code></td><td>Matériaux des bâtisseurs : fabrication, tailleur de pierre, cuisson, transformations, récolte (fosses, rayon), sources forcées</td></tr>
 							<tr><td><code>runes.json5</code></td><td>Runes du forgeron : gravure, rangs, runes et leurs pouvoirs</td></tr>
 							<tr><td><code>scrolls.json5</code></td><td>Parchemins de sort : sorts, recharges, chances de butin, limites d'effets ; grimoire et grimoire maudit</td></tr>
@@ -1159,7 +1159,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.15.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.15.1.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

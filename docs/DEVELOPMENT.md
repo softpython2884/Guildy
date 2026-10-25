@@ -628,7 +628,8 @@ schématiques) : `tools/ruins/`.
     fusionné — tailles négatives, tableaux de longs serrés, une entrée sur deux longs —, structure vanilla où les cases
     non listées sont « vides ») vérifie toutes les tailles avant d'allouer ; lecture et `BuildPlan` sur un fil à part
     (DataFixer `block_state` / `block_entity` depuis la DataVersion, blocs inconnus ignorés et signalés), cache par
-    chemin + taille + date ; copie dans `<monde>/guildy/builds/<guilde8>-<id>-<fichier>`. `PlacementTransform` (pur) =
+    chemin + taille + date (les refus sont oubliés à `/guild admin reload`, car les limites ont pu changer — 1.15.1 ;
+    environ 7 octets par case de la boîte) ; copie dans `<monde>/guildy/builds/<guilde8>-<id>-<fichier>`. `PlacementTransform` (pur) =
     formules de `StructureTemplate.transform` (pivot 0), état `mirror` puis `rotate`. Le **monde fait foi** : `BuildSite`
     (non sauvegardé) tient un état par cellule (fait, à poser, gratuit, attend des matériaux / un support, retenu,
     bloquant, laissé…) mis à jour par un balayage incrémental (`scanCellsPerTick` partagés, 10 ticks au moins entre deux

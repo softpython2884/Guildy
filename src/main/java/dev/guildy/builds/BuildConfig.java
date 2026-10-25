@@ -54,19 +54,22 @@ public final class BuildConfig implements Validatable {
 	public static final class Schematics {
 		@Comment("Taille maximum d'un cote (blocs, 1 a 1024)")
 		public int maxAxis = 256;
-		@Comment("Volume maximum de la boite (blocs, air compris)")
+		@Comment({
+				"Volume maximum de la boite (blocs, air compris ; 1 a 64 000 000) : une schematique chargee occupe environ",
+				"7 octets de memoire par bloc de sa boite (2 097 152 = 15 Mo, 20 000 000 = 140 Mo)"
+		})
 		public int maxVolume = 2_097_152;
-		@Comment("Nombre maximum de blocs (hors air)")
+		@Comment("Nombre maximum de blocs (hors air ; 1 a 16 000 000)")
 		public int maxBlocks = 500_000;
-		@Comment("Taille maximum du fichier (Mo)")
+		@Comment("Taille maximum du fichier (Mo, 1 a 1024)")
 		public int maxFileMegabytes = 64;
-		@Comment("Taille maximum des donnees decompressees (Mo) : protege contre les fichiers pieges")
+		@Comment("Taille maximum des donnees decompressees (Mo, 1 a 4096) : protege contre les fichiers pieges")
 		public int maxDataMegabytes = 256;
 		@Comment("Mettre a jour les anciens fichiers (DataVersion plus ancienne) avec le DataFixer de Minecraft")
 		public boolean upgradeOldFiles = true;
 		@Comment("Lister aussi les structures sauvegardees en jeu avec un bloc de structure (<monde>/generated/.../structure/*.nbt)")
 		public boolean listWorldStructures = true;
-		@Comment("Schematiques analysees gardees en memoire (1 a 64)")
+		@Comment("Schematiques analysees gardees en memoire (1 a 64 ; a baisser avec de tres grandes schematiques)")
 		public int cacheSize = 8;
 	}
 

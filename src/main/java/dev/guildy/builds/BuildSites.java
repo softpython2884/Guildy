@@ -109,6 +109,7 @@ public final class BuildSites {
 
 	/** builds.json5 reloaded: the plans are applied again (foundation depth, lists, ignored properties). */
 	private static void onReload() {
+		SchematicLibrary.forgetFailures();
 		for (BuildSite site : SITES.values()) {
 			BuildPlan plan = site.plan();
 			if (plan != null) {

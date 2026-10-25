@@ -12,16 +12,17 @@
 		// Taille maximum d'un cote (blocs, 1 a 1024)
 		"maxAxis": 256,
 
-		// Volume maximum de la boite (blocs, air compris)
+		// Volume maximum de la boite (blocs, air compris ; 1 a 64 000 000) : une schematique chargee occupe environ
+		// 7 octets de memoire par bloc de sa boite (2 097 152 = 15 Mo, 20 000 000 = 140 Mo)
 		"maxVolume": 2097152,
 
-		// Nombre maximum de blocs (hors air)
+		// Nombre maximum de blocs (hors air ; 1 a 16 000 000)
 		"maxBlocks": 500000,
 
-		// Taille maximum du fichier (Mo)
+		// Taille maximum du fichier (Mo, 1 a 1024)
 		"maxFileMegabytes": 64,
 
-		// Taille maximum des donnees decompressees (Mo) : protege contre les fichiers pieges
+		// Taille maximum des donnees decompressees (Mo, 1 a 4096) : protege contre les fichiers pieges
 		"maxDataMegabytes": 256,
 
 		// Mettre a jour les anciens fichiers (DataVersion plus ancienne) avec le DataFixer de Minecraft
@@ -30,7 +31,7 @@
 		// Lister aussi les structures sauvegardees en jeu avec un bloc de structure (<monde>/generated/.../structure/*.nbt)
 		"listWorldStructures": true,
 
-		// Schematiques analysees gardees en memoire (1 a 64)
+		// Schematiques analysees gardees en memoire (1 a 64 ; a baisser avec de tres grandes schematiques)
 		"cacheSize": 8
 	},
 

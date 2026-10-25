@@ -9,13 +9,14 @@ Les anciens .schematic MCEdit (avant 1.13, identifiants numeriques) ne sont pas 
 .schem avec WorldEdit.
 
 Les structures sauvegardees en jeu avec un bloc de structure (dossier <monde>/generated/<namespace>/structure/)
-sont aussi proposees, dans un groupe a part : un moyen de creer des schematiques en survie.
+sont aussi proposees, dans un groupe a part : un moyen de creer des schematiques sans autre mod.
 
 Dans le jeu : menu des villageois -> Chantiers -> Nouveau chantier (ou /guild chantier). Choisissez une
 schematique, recevez le "Plan de chantier", faites clic droit sur un bloc pour poser l'apercu, ajustez
 (rotation, miroir, deplacement) puis validez.
 
 Les fichiers trop anciens sont mis a jour avec le DataFixer de Minecraft (d'apres leur DataVersion) ; les blocs
-inconnus sont ignores et signales. Limites (taille, volume, nombre de blocs) : config/guildy/builds.json5.
+inconnus sont ignores et signales. Limites (taille, volume, nombre de blocs) : config/guildy/builds.json5,
+section "schematics", puis /guild admin reload.
 Un fichier valide pour un chantier est copie dans <monde>/guildy/builds/ : le modifier ou le supprimer ici ne
 change plus le chantier.
