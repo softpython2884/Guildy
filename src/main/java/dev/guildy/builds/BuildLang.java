@@ -127,6 +127,7 @@ final class BuildLang {
 		// messages
 		m.put("build.created", "&a{0} a ouvert le chantier &f« {1} » &a({2}×{3}×{4}) : les bâtisseurs s'y mettent.");
 		m.put("build.finished.message", "&a&lChantier « {0} » terminé ! &7{1} bloc(s) posé(s), {2} creusé(s).");
+		m.put("build.finished.leftovers", "&7{0} cellule(s) laissée(s) en place : blocs sans support, terre retenue (sable au-dessus, eau autour), obstacles de l'intérieur.");
 		m.put("build.finished.title", "&6&lChantier terminé !");
 		m.put("build.finished.subtitle", "&f« {0} »");
 		m.put("build.cancelled", "&e{0} a annulé le chantier « {1} » (ce qui est construit reste).");

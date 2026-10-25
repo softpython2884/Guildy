@@ -46,6 +46,7 @@ import java.util.UUID;
  */
 final class BuilderTask extends TaskHandler {
 	private static final long SKIP_TICKS = 30 * 20L;
+	private static final long CELL_SKIP_TICKS = 8 * 20L;
 	private static final int MAX_ACTIONS_PER_STEP = 10;
 
 	private @Nullable BuildSite site;
@@ -55,6 +56,7 @@ final class BuilderTask extends TaskHandler {
 	private @Nullable BlockPos fetchTarget;
 	private final Map<BlockPos, Long> emptySources = new HashMap<>();
 	private final Map<BuildSite.Job, Long> skipped = new HashMap<>();
+	private final Map<Integer, Long> skippedCells = new HashMap<>();
 	private final DepositFlow deposit = new DepositFlow();
 	private boolean depositing;
 	private double credit;
@@ -133,6 +135,7 @@ final class BuilderTask extends TaskHandler {
 	private void expire(long now) {
 		emptySources.values().removeIf(until -> until < now);
 		skipped.values().removeIf(until -> until < now);
+		skippedCells.values().removeIf(until -> until < now);
 	}
 
 	// ================================================================ choices
@@ -272,10 +275,10 @@ final class BuilderTask extends TaskHandler {
 		if (!needs.isEmpty() && fetch(ctx, data, current, needs)) {
 			return;
 		}
-		int cell = current.next(parcel, villager.blockPosition(), bag);
+		int cell = current.next(parcel, villager.blockPosition(), bag, skippedCells::containsKey);
 		if (cell < 0) {
-			// Parcel done (or what is left waits for materials nobody has): the next one.
-			if (!needs.isEmpty()) {
+			// Parcel done (or what is left waits for materials nobody has, or was tried a moment ago): the next one.
+			if (!needs.isEmpty() || current.next(parcel, villager.blockPosition(), bag, c -> false) >= 0) {
 				skipped.put(parcel, ctx.now + SKIP_TICKS);
 			}
 			current.release(me);
@@ -315,7 +318,7 @@ final class BuilderTask extends TaskHandler {
 			if (stop) {
 				break;
 			}
-			cell = current.next(parcel, villager.blockPosition(), Bags.contents(carried));
+			cell = current.next(parcel, villager.blockPosition(), Bags.contents(carried), skippedCells::containsKey);
 			if (cell < 0 || !Movement.near(ctx, current.pos(cell), reach, reach)) {
 				break;
 			}
@@ -350,7 +353,12 @@ final class BuilderTask extends TaskHandler {
 				GuildManager.markDirty();
 				return false;
 			}
-			case ALREADY, WAIT, BLOCKED, UNLOADED -> {
+			case ALREADY -> {
+				return false;
+			}
+			case WAIT, BLOCKED, UNLOADED -> {
+				// Not now (an entity in the cell, a support missing...): other cells first.
+				skippedCells.put(cell, ctx.now + CELL_SKIP_TICKS);
 				return false;
 			}
 			case NEED_ITEMS -> {

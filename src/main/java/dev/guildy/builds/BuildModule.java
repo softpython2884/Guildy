@@ -5,6 +5,7 @@ import dev.guildy.config.ConfigManager;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Hooks;
 import dev.guildy.data.Guild;
+import dev.guildy.villager.Builders;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import org.jspecify.annotations.Nullable;
@@ -30,6 +31,7 @@ public final class BuildModule {
 		BuildPreview.init();
 		BuildPlacement.init();
 		BuildCommands.init();
+		Builders.init();
 		Hooks.openBuilds = BuildMenus::openList;
 	}
 
@@ -67,15 +69,25 @@ public final class BuildModule {
 			if (!skipChecks) {
 				String[] error = {null};
 				Object[][] args = {new Object[0]};
-				BuildPlacement.check(GuildyServer.claimLevel(), guild, result.plan(), transform, -1, error, args);
+				net.minecraft.server.level.ServerLevel level = GuildyServer.claimLevel();
+				if (level == null) {
+					failed.accept("build.error.dimension");
+					return;
+				}
+				BuildPlacement.check(level, guild, result.plan(), transform, -1, error, args);
 				if (error[0] != null) {
 					failed.accept(error[0]);
 					return;
 				}
 			}
 			BuildProject project = BuildPlacement.create(guild, entry, result.plan(), transform, "admin");
-			BuildSites.start(guild, project, result.plan());
-			SchematicLibrary.copyForSite(server, entry, project.id, copied -> done.accept(project));
+			BuildSite site = BuildSites.start(guild, project, result.plan());
+			SchematicLibrary.copyForSite(server, entry, project.id, copied -> {
+				if (copied == null) {
+					site.fail("build.error.copy_failed");
+				}
+				done.accept(project);
+			});
 		};
 		SchematicLibrary.Result cached = SchematicLibrary.get(entry, start);
 		if (cached != null) {

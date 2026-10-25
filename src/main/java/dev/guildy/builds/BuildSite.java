@@ -151,6 +151,7 @@ public final class BuildSite {
 	private int foundationRemaining;
 	private Counts counts = Counts.EMPTY;
 	private boolean scanned;
+	private boolean completeAtPublish;
 	private int cycles;
 
 	// scan in progress
@@ -249,6 +250,7 @@ public final class BuildSite {
 		affordable = new boolean[plan.paletteSize()];
 		counts = Counts.EMPTY;
 		scanned = false;
+		completeAtPublish = false;
 		cycles = 0;
 		cursor = 0;
 		tally = null;
@@ -687,6 +689,8 @@ public final class BuildSite {
 		foundationRemaining = t.foundationRemaining;
 		counts = t.counts();
 		scanned = true;
+		// Decided on a complete scan only (never on the live counts of the builders' actions).
+		completeAtPublish = counts.unknown() == 0 && counts.place() == 0 && counts.free() == 0 && counts.need() == 0 && counts.blocked() == 0;
 		project.done = counts.done();
 		project.total = counts.total();
 		GuildManager.markDirty();
@@ -703,8 +707,12 @@ public final class BuildSite {
 
 	/** Every cell is done (obstacles left in cells to dig out, cells kept for safety and blocks without support aside). */
 	boolean complete() {
-		Counts c = counts;
-		return scanned && c.unknown() == 0 && c.place() == 0 && c.free() == 0 && c.need() == 0 && c.blocked() == 0;
+		return scanned && completeAtPublish;
+	}
+
+	/** What stays undone at the end (cells kept for safety, blocks without support, obstacles left in the interior). */
+	public int leftovers() {
+		return counts.hold() + counts.waiting() + counts.left();
 	}
 
 	// ================================================================ fronts and jobs
@@ -818,8 +826,11 @@ public final class BuildSite {
 		return state == NEED && !bag.isEmpty() && Bags.covers(bag, cost(cell));
 	}
 
-	/** Nearest actionable cell of the parcel still allowed by the fronts, -1 when the parcel is done. */
-	public int next(Job job, BlockPos from, Map<Item, Integer> bag) {
+	/**
+	 * Nearest actionable cell of the parcel still allowed by the fronts (cells {@code skip} refuses aside: tried a moment
+	 * ago without success), -1 when the parcel is done.
+	 */
+	public int next(Job job, BlockPos from, Map<Item, Integer> bag, java.util.function.IntPredicate skip) {
 		if (!ready()) {
 			return -1;
 		}
@@ -832,7 +843,7 @@ public final class BuildSite {
 		for (int z = z0; z < Math.min(sz, z0 + tile); z++) {
 			for (int x = x0; x < Math.min(sx, x0 + tile); x++) {
 				int cell = cellOf(job.layer(), x, z);
-				if (cell < 0 || !workable(cell, bag)) {
+				if (cell < 0 || !workable(cell, bag) || skip.test(cell)) {
 					continue;
 				}
 				BuildPasses.Pass pass = pass(cell);
@@ -1217,6 +1228,8 @@ public final class BuildSite {
 		}
 		Map<Item, Integer> cost = cost(cell);
 		if (!Bags.take(bag, cost)) {
+			// Not obtainable right now (the builder fetches before working): waits for materials until the next scan.
+			markState(cell, NEED);
 			return WorkResult.of(Outcome.NEED_ITEMS);
 		}
 		List<ItemStack> drops = SiteWorld.place(level, pos, target, cosmetic(cell), worker);

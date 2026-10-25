@@ -330,8 +330,12 @@ public final class BuildSites {
 		project.done = counts.done();
 		project.total = counts.total();
 		GuildManager.markDirty();
+		int leftovers = site.leftovers();
 		forget(guild, project);
 		Msg.guild(guild, "build.finished.message", project.name, project.placed, project.cleared);
+		if (leftovers > 0) {
+			Msg.guild(guild, "build.finished.leftovers", leftovers);
+		}
 		int[] box = site.box();
 		int radius = Math.max(32, BuildModule.config().display.bossbarRadius);
 		for (ServerPlayer player : guild.onlineMembers()) {
