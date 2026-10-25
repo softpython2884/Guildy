@@ -875,6 +875,10 @@ jamais vendues. Une guilde ne reçoit jamais une pièce qu'elle a déjà. La des
 coche les pièces portées et montre les bonus atteints ; gagner ou perdre un palier s'affiche au-dessus de la barre
 d'action.
 
+**Apparence** (avec le pack de ressources) : chaque pièce a son icône et son look porté, redessinés en 1.14.2 avec bien
+plus de détails : plaques de givre ciselées et cœur de glace de l'**Hiver éternel**, fourrure tachetée, crocs et coiffe de
+plumes vertes du **Guerrier jaguar**, os et flammes d'âme du **Brasier des âmes**.
+
 **Protection minimale.** Toute armure unique (les 12 pièces de panoplie comme la Couronne du Roi de givre, le Plastron du
 Serpent à plumes, les Bottes de Zéphyr et les Bottes du Coursier) protège **au moins comme la pièce en netherite** du même
 emplacement (armure 3/8/6/3, robustesse 3, résistance au recul 10 %) ; ce qui manque est ajouté, une valeur plus haute
