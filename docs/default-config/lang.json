@@ -2495,7 +2495,7 @@
 	"villager.alchemy.block.no_scroll": "aucun parchemin possible à cette table",
 	"villager.alchemy.block.no_stand": "pas d'alambic",
 	"villager.alchemy.block.no_table": "pas de table d'enchantement",
-	"villager.alchemy.block.stock_full": "stocks de potions complets",
+	"villager.alchemy.block.stock_reached": "stocks voulus atteints (menu « Stocks de potions » pour en demander plus)",
 	"villager.alchemy.block.unloaded": "territoire hors de portée",
 	"villager.alchemy.item.amethyst_shard": "éclat d'améthyste",
 	"villager.alchemy.item.armadillo_scute": "écaille de tatou",

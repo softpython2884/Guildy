@@ -642,6 +642,7 @@ objets vont dans la parente) :
 | | **Verre** | verre, verre teinté, vitres |
 | | **Béton et terre cuite** | béton, béton en poudre, terre cuite, terre cuite émaillée |
 | Mobilier et décoration | **Éclairage** | torches, lanternes, bougies, feux de camp, lanternes aquatiques, citrouilles-lanternes, champilampes |
+| Outils | **Cartes et boussoles** | cartes vierges et remplies (cartographe, cartes au trésor), boussoles, boussoles de récupération, horloges, longues-vues |
 | Livres et enchantements | **Livres enchantés** | les livres enchantés seulement |
 | | **Parchemins et grimoires** | parchemins de sort, grimoires, parchemins d'incantation |
 | | **Livres et papier** | livres, livres et plumes, livres écrits, papier |

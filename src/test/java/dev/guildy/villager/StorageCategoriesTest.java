@@ -142,8 +142,8 @@ class StorageCategoriesTest {
 		VillagerConfig config = new VillagerConfig();
 		config.validate();
 		assertEquals(List.of("Bois", "Pierre", "Terre, sable et gravier", "Blocs de construction", "Laine et tapis", "Verre",
-				"Béton et terre cuite", "Mobilier et décoration", "Éclairage", "Minerais et lingots", "Redstone", "Outils", "Armes",
-				"Armures", "Livres et enchantements", "Livres enchantés", "Parchemins et grimoires", "Livres et papier",
+				"Béton et terre cuite", "Mobilier et décoration", "Éclairage", "Minerais et lingots", "Redstone", "Outils",
+				"Cartes et boussoles", "Armes", "Armures", "Livres et enchantements", "Livres enchantés", "Parchemins et grimoires", "Livres et papier",
 				"Potions et alchimie", "Potions", "Nourriture", "Cultures", "Graines et pousses", "Plantes et fleurs",
 				"Butin de monstres", "Nether", "End", "Colorants", "Équipement enchanté", "Objets rares", "Ingrédients d'alchimie"),
 				new ArrayList<>(config.storage.categories.keySet()));
@@ -297,6 +297,11 @@ class StorageCategoriesTest {
 		assertEquals("Nourriture", c.categoryOf(facts("minecraft:milk_bucket", "#c:buckets=12", "@tab:food_and_drinks")));
 		// Modded items: tags, conventions and creative tabs.
 		assertEquals("Outils", c.categoryOf(facts("othermod:ruby_pickaxe", "#minecraft:pickaxes=8", "@tool")));
+		// Maps and compasses: their own sub-category of the tools (the cartographer's maps, the treasure maps).
+		assertEquals(List.of("Cartes et boussoles", "Outils"), c.chain(facts("minecraft:filled_map")));
+		assertEquals(List.of("Cartes et boussoles", "Outils"), c.chain(facts("minecraft:recovery_compass", "#minecraft:compasses=2")));
+		assertEquals(List.of("Cartes et boussoles", "Outils"), c.chain(facts("minecraft:clock", "@tab:tools_and_utilities")));
+		assertEquals(List.of("Outils"), c.chain(facts("minecraft:shears", "@tool")));
 		assertEquals("Minerais et lingots", c.categoryOf(facts("othermod:ruby", "#c:gems=9", "@tab:ingredients")));
 		assertEquals("Redstone", c.categoryOf(facts("othermod:widget", "@block", "@tab:redstone_blocks")));
 		assertEquals("Divers", c.categoryOf(facts("othermod:thing")));

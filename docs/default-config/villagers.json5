@@ -1754,6 +1754,21 @@
 					"@tab:tools_and_utilities"
 				]
 			},
+			"Cartes et boussoles": {
+				"icon": "minecraft:filled_map",
+				"description": "Cartes vierges et remplies, cartes au trésor, boussoles, boussoles de récupération, horloges, longues-vues",
+				"parent": "Outils",
+				"rules": [
+					"minecraft:map",
+					"minecraft:filled_map",
+					"*_map",
+					"#minecraft:compasses",
+					"minecraft:compass",
+					"minecraft:recovery_compass",
+					"minecraft:clock",
+					"minecraft:spyglass"
+				]
+			},
 			"Armes": {
 				"icon": "minecraft:iron_sword",
 				"description": "Épées, lances, arcs, arbalètes, tridents, masses, flèches, charges de vent",
@@ -2186,6 +2201,7 @@
 			"Minerais et lingots",
 			"Redstone",
 			"Outils",
+			"Cartes et boussoles",
 			"Armes",
 			"Armures",
 			"Livres et enchantements",

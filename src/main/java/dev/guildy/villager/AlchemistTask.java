@@ -404,7 +404,7 @@ final class AlchemistTask extends TaskHandler {
 				PotionPlanner.View view = view(ctx, shared, stock);
 				BrewBook.Choice choice = PotionPlanner.choose(ctx.level, ctx.guild, shared, view, ctx.record.uuid);
 				if (choice.verdict() == BrewBook.Verdict.STOCK_FULL) {
-					return AlchemistLang.block("stock_full");
+					return AlchemistLang.block("stock_reached");
 				}
 				if (choice.verdict() == BrewBook.Verdict.MISSING) {
 					String[] missing = PotionPlanner.missing(view, choice.wanted());

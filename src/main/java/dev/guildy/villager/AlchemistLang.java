@@ -32,7 +32,7 @@ final class AlchemistLang {
 		m.put("villager.alchemy.block.no_scroll", "aucun parchemin possible à cette table");
 		m.put("villager.alchemy.block.cap", "plafond du jour atteint ({0}/{1}), reprend demain");
 		m.put("villager.alchemy.block.disabled", "désactivé");
-		m.put("villager.alchemy.block.stock_full", "stocks de potions complets");
+		m.put("villager.alchemy.block.stock_reached", "stocks voulus atteints (menu « Stocks de potions » pour en demander plus)");
 		m.put("villager.alchemy.block.no_bottles", "pas de fioles (d'eau, ou vides avec de l'eau près d'un alambic)");
 		m.put("villager.alchemy.block.no_fuel", "pas de {0}");
 		m.put("villager.alchemy.block.no_reagents", "ingrédients manquants pour {0}");

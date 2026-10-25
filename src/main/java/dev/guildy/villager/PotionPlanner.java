@@ -162,7 +162,7 @@ final class PotionPlanner {
 		String item = AlchemistLang.itemName(AlchemyModule.config().brewing.item);
 		return switch (choice.verdict()) {
 			case BREW -> null;
-			case STOCK_FULL -> AlchemistLang.block("stock_full");
+			case STOCK_FULL -> AlchemistLang.block("stock_reached");
 			case NO_BLAZE -> blaze <= 0 ? AlchemistLang.block("no_blaze", item)
 					: AlchemistLang.block("few_blaze", item, choice.blaze(), choice.product() == null ? "?" : Brews.name(choice.product()));
 			case ELIXIR_CAP -> AlchemistLang.block("elixir_cap", elixirsMade, AlchemyModule.config().brewing.maxElixirsPerDay);

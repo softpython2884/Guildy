@@ -746,7 +746,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<p class="hint">Dans le menu Stockage : clic gauche sur un coffre pour changer son rôle, clic droit pour le retirer. « Afficher les coffres » les signale en particules colorées pendant 20 s ; « Où ranger l'objet en main ? » montre l'ordre suivi par le trieur.</p>
 				<div class="note good"><p><strong>Autant de coffres que vous voulez :</strong> plus de limite de 48 coffres ; par défaut, autant de coffres, de salles et de coffres filtrés que vous voulez (l'admin peut fixer une limite).</p></div>
 				<div class="cards">
-					<div class="card"><h3>Sous-catégories</h3><p>« Livres enchantés », « Parchemins et grimoires », « Livres et papier », « Potions », « Cultures », « Laine et tapis », « Verre », « Béton et terre cuite », « Éclairage » affinent leur catégorie. Sans coffre de la sous-catégorie, ses objets vont dans la catégorie parente.</p></div>
+					<div class="card"><h3>Sous-catégories</h3><p>« Livres enchantés », « Parchemins et grimoires », « Livres et papier », « Potions », « Cartes et boussoles », « Cultures », « Laine et tapis », « Verre », « Béton et terre cuite », « Éclairage » affinent leur catégorie. Sans coffre de la sous-catégorie, ses objets vont dans la catégorie parente.</p></div>
 					<div class="card"><h3>Catégories transversales</h3><p>« Objets rares », « Équipement enchanté », « Ingrédients d'alchimie » attrapent leurs objets quelle que soit leur catégorie, avant elle.</p></div>
 					<div class="card"><h3>Bâtiment spécialisé</h3><p>Coffres « Livres enchantés », salle des coffres réservée (menu de la salle → Catégories de la salle) ou coffre filtré d'un clic (coffre vide + objet en main). <strong>Jamais « Divers »</strong> pour une collection : « Divers » reçoit tout ce qui n'a pas de coffre.</p></div>
 				</div>
@@ -1100,7 +1100,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.16.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
+				<p>Installation : <code>guildy-1.16.1.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1167,7 +1167,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.16.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.16.1.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

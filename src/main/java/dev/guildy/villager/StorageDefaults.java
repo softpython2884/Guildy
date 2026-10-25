@@ -137,6 +137,10 @@ public final class StorageDefaults {
 				"minecraft:clock", "minecraft:map", "minecraft:lead", "minecraft:name_tag", "minecraft:saddle", "minecraft:bucket",
 				"minecraft:goat_horn", "minecraft:firework_rocket", "minecraft:firework_star",
 				"*_bucket", "*_map", "@tool", "@tab:tools_and_utilities");
+		sub(map, "Cartes et boussoles", "minecraft:filled_map", "Outils",
+				"Cartes vierges et remplies, cartes au trésor, boussoles, boussoles de récupération, horloges, longues-vues",
+				"minecraft:map", "minecraft:filled_map", "*_map", "#minecraft:compasses", "minecraft:compass",
+				"minecraft:recovery_compass", "minecraft:clock", "minecraft:spyglass");
 		add(map, "Armes", "minecraft:iron_sword",
 				"Épées, lances, arcs, arbalètes, tridents, masses, flèches, charges de vent",
 				"#minecraft:swords", "#minecraft:spears", "#minecraft:arrows", "#c:tools/melee_weapon", "#c:tools/ranged_weapon",
