@@ -268,6 +268,7 @@ public final class BuildSites {
 					if (site.lastPostAt < 0 || now - site.lastPostAt >= post) {
 						site.lastPostAt = now;
 						Procurement.want(guild, requester(project), site.missing(now));
+						Procurement.keep(guild, requester(project), site.countedOn(now));
 					}
 				} else {
 					Procurement.clear(guild, requester(project));

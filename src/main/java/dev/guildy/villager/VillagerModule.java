@@ -36,6 +36,7 @@ public final class VillagerModule {
 		VillagerInteractions.init();
 		ZoneVisualizer.register();
 		VillagerCommands.init();
+		Supply.init();
 		StructureBehavior.register(VillagerManager.RECEPTION, new ReceptionBehavior());
 		Hooks.openVillagers = VillagerGui::openList;
 	}

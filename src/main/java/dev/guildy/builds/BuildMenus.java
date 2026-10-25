@@ -12,6 +12,7 @@ import dev.guildy.data.GuildManager;
 import dev.guildy.data.GuildPermission;
 import dev.guildy.gui.GuiUtil;
 import dev.guildy.villager.Builders;
+import dev.guildy.villager.Procurement;
 import eu.pb4.sgui.api.ClickType;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.SimpleGui;
@@ -731,6 +732,7 @@ public final class BuildMenus {
 			Map<Item, Integer> stock = site.stock();
 			Map<Item, Integer> carried = site.carried(now);
 			Map<Item, Integer> missing = site.missing(now);
+			Map<Item, Integer> fetching = Procurement.fetching(site.guild);
 			Map<Item, Integer> all = new LinkedHashMap<>(bill);
 			remaining.forEach((item, count) -> all.putIfAbsent(item, count));
 			List<Item> items = new ArrayList<>(all.keySet());
@@ -754,6 +756,10 @@ public final class BuildMenus {
 				lore.add(Lang.get("build.gui.material.remaining", left));
 				lore.add(Lang.get("build.gui.material.available", stock.getOrDefault(item, 0), carried.getOrDefault(item, 0)));
 				lore.add(lack > 0 ? Lang.get("build.gui.material.missing", lack) : Lang.get("build.gui.material.ok"));
+				int fetched = lack > 0 ? fetching.getOrDefault(item, 0) : 0;
+				if (fetched > 0) {
+					lore.add(Lang.get("build.gui.material.fetching", fetched));
+				}
 				ItemStack icon = new ItemStack(item, Math.max(1, Math.min(item.getDefaultMaxStackSize(), Math.max(1, lack > 0 ? lack : left))));
 				GuiElementBuilder button = GuiUtil.item(icon, withName(Component.empty(), ItemUtil.name(item),
 						lack > 0 ? ChatFormatting.RED : ChatFormatting.WHITE), lore);

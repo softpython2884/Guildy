@@ -268,6 +268,7 @@ final class BuildLang {
 		m.put("build.gui.material.available", "&7Disponibles : &f{0} &8(+{1} dans les sacs)");
 		m.put("build.gui.material.missing", "&cManquants : &f{0}");
 		m.put("build.gui.material.ok", "&aAssez");
+		m.put("build.gui.material.fetching", "&eEn cours : &f{0} &7(fabriqués ou récoltés par les bâtisseurs)");
 		m.put("build.gui.not_buildable", "&c&lNon constructible");
 		m.put("build.gui.not_buildable.lore", "&7{0} bloc(s) du plan ne peuvent pas être\n&7construits en survie (ignorés) :");
 		m.put("build.gui.not_buildable.line", "&8- &f{0} &7{1} &8({2})");

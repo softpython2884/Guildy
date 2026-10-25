@@ -802,12 +802,12 @@ final class LumberjackTask extends TaskHandler {
 		return BuiltInRegistries.BLOCK.getKey(block).toString();
 	}
 
-	private static boolean isNaturalLeaves(BlockState state) {
+	static boolean isNaturalLeaves(BlockState state) {
 		return state.is(BlockTags.LEAVES) && state.hasProperty(LeavesBlock.PERSISTENT) && !state.getValue(LeavesBlock.PERSISTENT);
 	}
 
 	/** Ground a natural tree grows on. Since 26.x #dirt no longer holds grass, podzol, moss or mud: #substrate_overworld does. */
-	private static boolean isSoil(BlockState state) {
+	static boolean isSoil(BlockState state) {
 		return state.is(BlockTags.SUBSTRATE_OVERWORLD) || state.is(BlockTags.NYLIUM) || state.is(Blocks.MANGROVE_ROOTS);
 	}
 

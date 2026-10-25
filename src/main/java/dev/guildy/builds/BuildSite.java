@@ -1080,6 +1080,19 @@ public final class BuildSite {
 		return missing;
 	}
 
+	/** Remaining materials already in the sources (item → count): the gatherers never use them up as ingredients. */
+	public Map<Item, Integer> countedOn(long now) {
+		Map<Item, Integer> counted = new LinkedHashMap<>();
+		Map<Item, Integer> carried = carried(now);
+		remainingMaterials().forEach((item, count) -> {
+			int fromStock = Math.min(stock.getOrDefault(item, 0), count - carried.getOrDefault(item, 0));
+			if (fromStock > 0) {
+				counted.put(item, fromStock);
+			}
+		});
+		return counted;
+	}
+
 	/** A builder of this site shows its bag (counted as available for the site). */
 	public void reportBag(UUID builder, List<ItemStack> bag, long now) {
 		bags.put(builder, new Bag(bag, now));

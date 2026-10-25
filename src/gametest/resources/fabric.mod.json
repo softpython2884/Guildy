@@ -63,7 +63,8 @@
 			"dev.guildy.test.RuinStatueGameTests",
 			"dev.guildy.test.ShortcutGameTests",
 			"dev.guildy.test.RuneGameTests",
-			"dev.guildy.test.BuildGameTests"
+			"dev.guildy.test.BuildGameTests",
+			"dev.guildy.test.SupplyGameTests"
 		]
 	},
 	"depends": {

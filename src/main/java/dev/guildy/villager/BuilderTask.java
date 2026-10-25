@@ -7,7 +7,6 @@ import dev.guildy.builds.BuildPasses;
 import dev.guildy.builds.BuildProject;
 import dev.guildy.builds.BuildSite;
 import dev.guildy.builds.BuildSites;
-import dev.guildy.core.ItemUtil;
 import dev.guildy.data.Guild;
 import dev.guildy.data.GuildManager;
 import dev.guildy.upgrade.Upgrades;
@@ -242,7 +241,7 @@ final class BuilderTask extends TaskHandler {
 				// Not asked yet (the request goes out within a second) or asked: "→ récolte"; else why nobody gathers.
 				boolean asked = gatherReason == null || gatherReason.equals("villager.builder.gather.nothing");
 				ctx.status(asked ? "villager.status.builder.waiting_materials" : "villager.status.builder.waiting_materials_no_gather",
-						count, ItemUtil.name(most).getString(), gather);
+						count, SupplyLang.name(most), gather);
 			}
 		} else if (top.counts().blocked() > 0) {
 			ctx.status("villager.status.builder.blocked", name, top.counts().blocked());
@@ -539,7 +538,7 @@ final class BuilderTask extends TaskHandler {
 		Map.Entry<Item, Integer> first = available.entrySet().iterator().next();
 		switch (Movement.moveTo(ctx, target, 2.5, ctx.config.work.walkTimeoutSeconds)) {
 			case MOVING -> {
-				ctx.status("villager.status.builder.fetch", first.getValue(), ItemUtil.name(first.getKey()).getString(), current.project.name);
+				ctx.status("villager.status.builder.fetch", first.getValue(), SupplyLang.name(first.getKey()), current.project.name);
 				return true;
 			}
 			case UNREACHABLE -> {

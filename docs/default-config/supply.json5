@@ -1,0 +1,192 @@
+// Guildy - approvisionnement des chantiers : les batisseurs en role 'Chercher les materiaux' fabriquent, cuisent ou
+// recoltent ce qui manque aux chantiers de la guilde, puis le deposent au stockage. Pour chaque materiau manquant, la
+// voie la moins chere qui marche tout de suite : fabrication avec ce que contient deja le stockage (recettes vanilla
+// enchainees : buches -> planches -> escaliers..., a la main en 2x2, a l'etabli, au tailleur de pierre s'il y en a un),
+// cuisson simulee a un four du territoire (sable -> verre...), transformations (ecorcer, beton en poudre -> beton...),
+// sinon recolte de blocs naturels : dans les zones de mine reelles, dans les zones de coupe de bois (arbres entiers,
+// replantes) ou hors du territoire (fosses propres creusees niveau par niveau avec une rampe de sortie, arbres naturels).
+// Les objets qu'un chantier attend ne servent jamais d'ingredients.
+// Ce qu'aucune de ces voies ne peut obtenir reste a deposer par les joueurs (raison affichee dans le menu).
+// Rechargement a chaud : /guild admin reload
+{
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 1,
+
+	// Les batisseurs vont chercher les materiaux (false = jamais : seuls les joueurs approvisionnent les chantiers)
+	"enabled": true,
+
+	// Duree (secondes) pendant laquelle l'analyse des besoins de la guilde est reutilisee avant d'etre refaite (1 a 60)
+	"decisionSeconds": 5,
+
+	// Materiaux differents examines au plus a chaque analyse (les plus gros manques d'abord, 1 a 512)
+	"maxWantedItems": 96,
+
+	// Fabrication : recettes vanilla du serveur (etabli avec ou sans forme, tailleur de pierre) ; les recettes speciales,
+	// celles dont le resultat porte des donnees et celles qui laissent un reste (seaux, fioles) sont ignorees
+	"crafting": {
+
+		// Fabrication activee
+		"enabled": true,
+
+		// Niveaux de recettes enchaines au plus (1 a 8) : 3 = buches -> planches -> batons -> torches ; 5 = boules d'argile ->
+		// bloc d'argile -> terre cuite -> terre cuite teinte (colorant de fleur) -> terre cuite emaillee
+		"maxDepth": 5,
+
+		// Temps (ticks, 20 = 1 seconde) par fabrication (une fabrication = un passage de la recette) ; bonus de vitesse de travail applique
+		"ticksPerCraft": 20,
+
+		// Recettes qui tiennent en 2x2 (planches, batons, etabli...) faites a la main, sans etabli
+		"handCrafting": true,
+
+		// Recettes du tailleur de pierre (escaliers, dalles, murets, variantes taillees : 1 bloc -> 1 escalier) quand le
+		// territoire a un tailleur de pierre ; sinon l'etabli
+		"stonecutter": true,
+
+		// Temps (ticks) par bloc taille au tailleur de pierre (1 a 400)
+		"ticksPerCut": 10,
+
+		// Ingredients pris aussi dans tous les coffres et tonneaux du territoire (pas seulement le stockage enregistre) ;
+		// jamais dans un conteneur ouvert par un joueur. Les materiaux fabriques vont toujours au stockage
+		"allContainers": false,
+
+		// Fabrications au plus par voyage (1 a 512)
+		"maxCraftsPerTrip": 128,
+
+		// Intervalle (secondes) entre deux recherches des etablis et des fours du territoire (10 a 3600)
+		"stationScanSeconds": 60,
+
+		// Recettes jamais utilisees (ids de recette, ex. "minecraft:oak_planks")
+		"ignoredRecipes": []
+	},
+
+	// Cuisson au four (recettes de four vanilla), simulee : le contenu reel des fours n'est jamais touche
+	"smelting": {
+
+		// Cuisson activee
+		"enabled": true,
+
+		// Temps (ticks) par objet cuit (vanilla : 200) ; bonus de vitesse de travail applique (1 a 400)
+		"ticksPerItem": 20,
+
+		// Combustibles utilises, par ordre de preference (ids ou #tags ; duree de combustion vanilla). Jamais un objet
+		// demande par un chantier
+		"fuels": [
+			"minecraft:coal",
+			"minecraft:charcoal",
+			"minecraft:coal_block",
+			"minecraft:dried_kelp_block",
+			"minecraft:blaze_rod",
+			"#minecraft:logs_that_burn",
+			"#minecraft:planks"
+		],
+
+		// Le four s'allume (visuel seulement) pendant la cuisson, puis s'eteint ; un four deja utilise n'est jamais touche
+		"lightFurnace": true,
+
+		// Recettes de four jamais utilisees (ids de recette)
+		"ignoredRecipes": []
+	},
+
+	// Transformations faites dans le monde (pas des recettes) : simulees avec du temps, a cote de l'atelier ou du stockage
+	// (le bloc n'est jamais pose) : buches et bois ecorces (hache), chemin de terre (pelle), terre sterile -> terre (houe),
+	// beton en poudre -> beton et terre -> boue (eau : une source d'eau du territoire, sinon simule si simulateWater)
+	"transforms": {
+
+		// Transformations activees
+		"enabled": true,
+
+		// Temps (ticks) par objet transforme ; bonus de vitesse de travail applique (1 a 400)
+		"ticksPerItem": 10,
+
+		// Buches, tiges et bois ecorces (hache)
+		"stripping": true,
+
+		// Chemin de terre depuis la terre, l'herbe, le podzol... (pelle)
+		"dirtPaths": true,
+
+		// Terre sterile -> terre (houe)
+		"coarseDirt": true,
+
+		// Beton en poudre -> beton (eau)
+		"concrete": true,
+
+		// Terre -> boue (eau, comme une fiole d'eau versee)
+		"mud": true,
+
+		// Sans source d'eau dans le territoire : beton et boue simules quand meme (false = une source d'eau est necessaire)
+		"simulateWater": true
+	},
+
+	// Recolte de blocs naturels (vraie, comme un joueur avec un outil en fer non enchante)
+	"gathering": {
+
+		// Recolte activee
+		"enabled": true,
+
+		// Temps (ticks) pour casser un bloc ; bonus de vitesse de travail applique (2 a 200)
+		"ticksPerBlock": 10,
+
+		// Buches coupees par seconde (1 a 8)
+		"logsPerSecond": 2,
+
+		// Zones de mine REELLES de la guilde : fosses dans le carre de la zone, loin de l'escalier et des galeries
+		"mineZones": true,
+
+		// Distance minimum (blocs) entre une fosse et l'escalier ou les galeries d'une mine reelle (1 a 16)
+		"mineMargin": 3,
+
+		// Zones de coupe de bois de la guilde (autorisation 'Couper les arbres' du fanion respectee)
+		"forestZones": true,
+
+		// Hors du territoire : fosses et arbres naturels, jamais dans un territoire (le sien compris)
+		"outside": true,
+
+		// Hors du territoire : distance maximum (blocs) au coeur de la guilde (16 a 512)
+		"radius": 96,
+
+		// Hors du territoire : arbres naturels coupes (entiers) et replantes
+		"outsideTrees": true,
+
+		// Cote (blocs) d'une fosse (4 a 12)
+		"pitSide": 6,
+
+		// Profondeur maximum (blocs) d'une fosse (2 a 4 x (cote - 1) - 1 : la rampe longe les murs)
+		"pitMaxDepth": 10,
+
+		// Blocs laisses entre deux fosses (1 a 8)
+		"pitGap": 2,
+
+		// Denivele maximum (blocs) du sol d'une fosse (0 a 2)
+		"pitMaxUneven": 1,
+
+		// Blocs voulus au minimum dans une nouvelle fosse (sinon le site suivant est cherche, 1 a 256)
+		"minSiteBlocks": 6,
+
+		// Fosses gardees en memoire par guilde (les plus anciennes terminees sont oubliees, 8 a 512)
+		"maxPits": 64,
+
+		// Sites de fosse examines au plus par seconde (1 a 64)
+		"sitesPerStep": 6,
+
+		// Aucun site trouve pour un objet : nouvel essai apres ce delai (secondes, 30 a 3600)
+		"noSiteRetrySeconds": 300,
+
+		// Autres blocs casses dans la fosse (terre au-dessus de la pierre...) : rapportes au stockage (true) ou laisses (false)
+		"keepByproducts": false,
+
+		// Blocs de remplissage gardes dans le sac pour colmater l'eau et la lave (0 a 64)
+		"fillerReserve": 16,
+
+		// Arbres coupes : pousse replantee a la base (comme le bucheron)
+		"replant": true
+	},
+
+	// Sources forcees : objet -> blocs naturels qui le donnent (sinon deduites du butin vanilla des blocs naturels de
+	// villagers.json5 -> realMining). 'tree:<buche>' = arbre naturel de cette buche ; liste vide = jamais recolte.
+	// Exemple : "minecraft:flint": ["minecraft:gravel"]
+	"sources": {},
+
+	// Objets jamais recoltes ni fabriques par les batisseurs (a deposer par les joueurs), ids ou #tags
+	"neverFetch": []
+}

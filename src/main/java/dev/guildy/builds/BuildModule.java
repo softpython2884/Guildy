@@ -6,11 +6,13 @@ import dev.guildy.core.GuildyServer;
 import dev.guildy.core.Hooks;
 import dev.guildy.data.Guild;
 import dev.guildy.villager.Builders;
+import dev.guildy.villager.Supply;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import org.jspecify.annotations.Nullable;
 
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Construction sites ("chantiers"): schematics (.schem, .litematic, .nbt) picked from a list, placed with a preview and
@@ -33,6 +35,10 @@ public final class BuildModule {
 		BuildCommands.init();
 		Builders.init();
 		Hooks.openBuilds = BuildMenus::openList;
+		// The builders' ingredients follow the sites' choice of sources: "all chests and barrels" on an active site.
+		Predicate<Guild> server = Supply.allContainers;
+		Supply.allContainers = guild -> server.test(guild) || guild.builds.projects.stream()
+				.anyMatch(project -> project.active() && project.sourcesMode() == BuildProject.Sources.ALL);
 	}
 
 	public static BuildConfig config() {
