@@ -308,6 +308,7 @@ final class BuildLang {
 		m.put("build.error.corrupt", "fichier illisible ou abîmé ({0})");
 		m.put("build.error.read", "lecture impossible ({0})");
 		m.put("build.error.no_blocks", "aucun bloc dans le fichier");
+		m.put("build.error.legacy", "ancien format MCEdit (avant 1.13) : réenregistrez-le en .schem avec WorldEdit");
 		m.put("build.error.empty", "schématique vide");
 		m.put("build.error.too_big", "trop grande ({0}, {1} blocs par côté au plus)");
 		m.put("build.error.too_large", "volume trop grand ({0}, {1} au plus)");

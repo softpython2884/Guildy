@@ -374,6 +374,18 @@ class SchematicReaderTest {
 	}
 
 	@Test
+	void legacyMcEditFilesAreRefusedWithAReason() throws Exception {
+		CompoundTag root = new CompoundTag();
+		root.putShort("Width", (short) 1);
+		root.putShort("Height", (short) 1);
+		root.putShort("Length", (short) 1);
+		root.putString("Materials", "Alpha");
+		root.putByteArray("Blocks", new byte[] {1});
+		root.putByteArray("Data", new byte[] {0});
+		assertEquals("build.error.legacy", assertThrows(SchematicException.class, () -> SchematicReader.read("old.schematic", gzip(root), LIMITS)).key());
+	}
+
+	@Test
 	void emptySchematicIsRefused() throws Exception {
 		CompoundTag root = new CompoundTag();
 		CompoundTag palette = new CompoundTag();

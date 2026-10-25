@@ -98,6 +98,10 @@ public final class SchematicReader {
 
 	static SchematicData sponge(CompoundTag file, Limits limits) throws SchematicException {
 		CompoundTag root = file.getCompound("Schematic").orElse(file);
+		if (root.contains("Materials") || root.getByteArray("Blocks").isPresent()) {
+			// MCEdit / WorldEdit 6 (before 1.13): numeric block ids, nothing to map them reliably.
+			throw new SchematicException("build.error.legacy");
+		}
 		int version = root.getIntOr("Version", root.contains("Blocks") ? 3 : root.contains("BlockData") ? 2 : 0);
 		int width = root.getShortOr("Width", (short) 0) & 0xFFFF;
 		int height = root.getShortOr("Height", (short) 0) & 0xFFFF;
