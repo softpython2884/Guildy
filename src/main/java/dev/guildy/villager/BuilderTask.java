@@ -212,7 +212,11 @@ final class BuilderTask extends TaskHandler {
 		}
 		String gather = gatherReason == null ? "" : dev.guildy.core.Lang.raw(gatherReason);
 		if (top == null) {
-			ctx.status("villager.status.builder.no_site", gather);
+			if (gatherReason == null || Procurement.wanted(ctx.guild).isEmpty()) {
+				ctx.status("villager.status.builder.no_site");
+			} else {
+				ctx.status("villager.status.builder.no_site_gather", gather);
+			}
 			return;
 		}
 		String name = top.project.name;

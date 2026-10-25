@@ -48,8 +48,9 @@ import java.util.Map;
  * Construction sites built by builder villagers from a schematic written in the schematics folder (Sponge v3): a small
  * house from the storage, a room dug into a hill (inside hollowed, terrain around and above intact), blocks placed by a
  * player counted and skipped, obstacles reported and never broken, missing materials posted to {@link Procurement},
- * materials taken from an unregistered barrel with the "all containers" option, a site saved and reloaded from its copy,
- * and the placement through the plan item (preview, confirmed inside the territory, refused outside).
+ * materials taken from an unregistered barrel with the "all containers" option, foundations down to the ground, a site
+ * saved and reloaded from its copy, and the placement through the plan item (preview, confirmed inside the territory,
+ * refused outside).
  */
 public class BuildGameTests {
 	/** Schematic text of a cell (null = air). */
@@ -436,6 +437,45 @@ public class BuildGameTests {
 			for (int x = 0; x < 3; x++) {
 				helper.assertTrue(level.getBlockState(origin.offset(x, 0, 0)).is(Blocks.BRICKS), "bricks");
 			}
+			GuildManager.disband(guild);
+		});
+	}
+
+	@GameTest(environment = "guildy-test:day", maxTicks = 3600)
+	public void foundationsFillDownToTheGround(GameTestHelper helper) throws Exception {
+		ServerLevel level = helper.getLevel();
+		fast();
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Pilotis");
+		Guild guild = recruit.guild();
+		// A deck 3 blocks above the stone platform.
+		BlockPos origin = recruit.ground().offset(8, 4, 6);
+		Container chest = (Container) level.getBlockEntity(recruit.deposit());
+		fill(chest, new ItemStack(Items.OAK_PLANKS, 12));
+		String key = schematic("pilotis", 3, 1, 1, (x, y, z) -> "minecraft:oak_planks");
+		BuildProject[] holder = start(helper, guild, key, origin);
+		boolean[] started = {false};
+		helper.succeedWhen(() -> {
+			BuildProject project = holder[0];
+			helper.assertTrue(project != null, "waiting for the site");
+			if (!started[0]) {
+				project.foundations = true;
+				BuildSites.reload(guild, project);
+				started[0] = true;
+				try {
+					ZoneGameTests.setTask(recruit, Task.BUILDER);
+				} catch (ReflectiveOperationException e) {
+					helper.fail("setTask: " + e);
+				}
+			}
+			helper.assertTrue(project.finished, "waiting for the deck and its pillars (" + project.done + "/" + project.total + ") · "
+					+ status(level, recruit.record()));
+			for (int x = 0; x < 3; x++) {
+				for (int dy = 0; dy >= -3; dy--) {
+					helper.assertTrue(level.getBlockState(origin.offset(x, dy, 0)).is(Blocks.OAK_PLANKS), "deck and pillar at " + x + " " + dy);
+				}
+				helper.assertTrue(level.getBlockState(origin.offset(x, -4, 0)).is(Blocks.STONE), "the ground stays");
+			}
+			helper.assertTrue(project.placed == 12, "3 deck blocks and 9 foundation blocks: " + project.placed);
 			GuildManager.disband(guild);
 		});
 	}

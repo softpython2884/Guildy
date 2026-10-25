@@ -103,6 +103,8 @@ public final class BuildSites {
 		}
 		SITES.clear();
 		SchematicLibrary.clear();
+		BuildPreview.clear();
+		Procurement.reset();
 	}
 
 	/** builds.json5 reloaded: the plans are applied again (foundation depth, lists, ignored properties). */

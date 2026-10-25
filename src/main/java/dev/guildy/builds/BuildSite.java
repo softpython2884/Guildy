@@ -66,6 +66,10 @@ public final class BuildSite {
 	private static final long LEASE_TICKS = 15 * 20L;
 	private static final long BAG_FRESH_TICKS = 15 * 20L;
 	private static final int SAMPLE = 54;
+	/** Shortest time between two scans of the whole site. */
+	private static final long MIN_CYCLE_TICKS = 10;
+	/** Territory owners and protected positions read again at most this often. */
+	private static final long CACHE_TICKS = 100;
 
 	/** A parcel leased by a builder: a square of {@code tileSize} columns of one layer. */
 	public record Job(int layer, int tileX, int tileZ) {
@@ -156,6 +160,8 @@ public final class BuildSite {
 
 	// scan in progress
 	private int cursor;
+	private long nextCycleAt;
+	private long cachesAt = -1;
 	private @Nullable Tally tally;
 	private int foundationColumn = -1;
 	private boolean foundationGround;
@@ -253,6 +259,7 @@ public final class BuildSite {
 		completeAtPublish = false;
 		cycles = 0;
 		cursor = 0;
+		nextCycleAt = 0;
 		tally = null;
 		leases.clear();
 		stockAt = -1;
@@ -456,6 +463,7 @@ public final class BuildSite {
 
 	/** Territory and protected positions read again (each scan cycle). */
 	void refreshCaches() {
+		cachesAt = dev.guildy.core.Scheduler.ticks();
 		owners.clear();
 		protectedPositions.clear();
 		int[] b = box;
@@ -497,9 +505,17 @@ public final class BuildSite {
 		if (!ready() || project.finished) {
 			return 0;
 		}
+		long now = dev.guildy.core.Scheduler.ticks();
 		if (tally == null) {
+			if (now < nextCycleAt) {
+				// A small site is read in a tick: not more than once every few ticks.
+				return 0;
+			}
 			tally = new Tally();
 			foundationColumn = -1;
+			if (cachesAt < 0 || now - cachesAt >= CACHE_TICKS) {
+				refreshCaches();
+			}
 		}
 		Tally t = tally;
 		int read = 0;
@@ -513,7 +529,7 @@ public final class BuildSite {
 			cursor = 0;
 			tally = null;
 			cycles++;
-			refreshCaches();
+			nextCycleAt = now + MIN_CYCLE_TICKS;
 		}
 		return read;
 	}

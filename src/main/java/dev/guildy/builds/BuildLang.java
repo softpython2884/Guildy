@@ -68,7 +68,8 @@ final class BuildLang {
 		m.put("villager.status.builder.waiting_materials", "&6Attend {0} {1} (manquants) &8→ &erécolte");
 		m.put("villager.status.builder.waiting_materials_no_gather", "&6Attend {0} {1} (manquants) &8· &7récolte : {2}");
 		m.put("villager.status.builder.waiting_stock", "&6« {0} » : matériaux en route vers le stockage");
-		m.put("villager.status.builder.no_site", "&7Aucun chantier actif &8{0}");
+		m.put("villager.status.builder.no_site", "&7Aucun chantier actif");
+		m.put("villager.status.builder.no_site_gather", "&7Aucun chantier actif &8· &7matériaux demandés, récolte : {0}");
 		m.put("villager.status.builder.paused", "&7Chantier « {0} » en pause");
 		m.put("villager.status.builder.loading", "&7Lecture du plan de « {0} »…");
 		m.put("villager.status.builder.error", "&cChantier « {0} » : {1}");
