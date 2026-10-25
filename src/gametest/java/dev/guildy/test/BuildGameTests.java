@@ -62,6 +62,11 @@ public class BuildGameTests {
 
 	/** Writes a Sponge v3 schematic into config/guildy/schematics/tests/ and returns its key in the list. */
 	static String schematic(String prefix, int w, int h, int l, StateAt states) throws IOException {
+		return schematic(prefix, w, h, l, states, new net.minecraft.nbt.ListTag());
+	}
+
+	/** Same, with Sponge v3 block entities ({Pos, Id, Data}). */
+	static String schematic(String prefix, int w, int h, int l, StateAt states, net.minecraft.nbt.ListTag blockEntities) throws IOException {
 		Map<String, Integer> palette = new LinkedHashMap<>();
 		palette.put("minecraft:air", 0);
 		ByteArrayOutputStream data = new ByteArrayOutputStream();
@@ -84,6 +89,7 @@ public class BuildGameTests {
 		CompoundTag blocks = new CompoundTag();
 		blocks.put("Palette", paletteTag);
 		blocks.putByteArray("Data", data.toByteArray());
+		blocks.put("BlockEntities", blockEntities);
 		CompoundTag inner = new CompoundTag();
 		inner.putInt("Version", 3);
 		inner.putShort("Width", (short) w);
@@ -554,6 +560,62 @@ public class BuildGameTests {
 			boolean refused = TestSupport.chat(recruit.leader()).stream().anyMatch(line -> line.contains("Placement impossible"));
 			helper.assertTrue(refused, "refusal message");
 			ZoneGameTests.command(level, recruit.leader(), "guild chantier cancel");
+			GuildManager.disband(guild);
+		});
+	}
+
+	@GameTest(environment = "guildy-test:day", maxTicks = 3600)
+	public void signTextsAreCopiedNeverContainerContents(GameTestHelper helper) throws Exception {
+		ServerLevel level = helper.getLevel();
+		fast();
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Panneau");
+		Guild guild = recruit.guild();
+		BlockPos origin = recruit.ground().offset(8, 1, 6);
+		Container chest = (Container) level.getBlockEntity(recruit.deposit());
+		fill(chest, new ItemStack(Items.STONE_BRICKS, 2), new ItemStack(Items.OAK_SIGN, 1), new ItemStack(Items.CHEST, 1));
+		net.minecraft.nbt.ListTag entities = new net.minecraft.nbt.ListTag();
+		// The sign on top of a brick, with its text.
+		CompoundTag sign = new CompoundTag();
+		sign.put("Pos", new net.minecraft.nbt.IntArrayTag(new int[] {0, 1, 0}));
+		sign.putString("Id", "minecraft:sign");
+		CompoundTag front = new CompoundTag();
+		net.minecraft.nbt.ListTag messages = new net.minecraft.nbt.ListTag();
+		messages.add(net.minecraft.nbt.StringTag.valueOf("Bienvenue"));
+		for (int i = 0; i < 3; i++) {
+			messages.add(net.minecraft.nbt.StringTag.valueOf(""));
+		}
+		front.put("messages", messages);
+		CompoundTag signData = new CompoundTag();
+		signData.put("front_text", front);
+		sign.put("Data", signData);
+		entities.add(sign);
+		// A chest full of diamonds in the schematic: the chest is built empty.
+		CompoundTag loot = new CompoundTag();
+		loot.put("Pos", new net.minecraft.nbt.IntArrayTag(new int[] {1, 1, 0}));
+		loot.putString("Id", "minecraft:chest");
+		CompoundTag lootData = new CompoundTag();
+		net.minecraft.nbt.ListTag items = new net.minecraft.nbt.ListTag();
+		CompoundTag diamond = new CompoundTag();
+		diamond.putByte("Slot", (byte) 0);
+		diamond.putString("id", "minecraft:diamond");
+		diamond.putInt("count", 64);
+		items.add(diamond);
+		lootData.put("Items", items);
+		loot.put("Data", lootData);
+		entities.add(loot);
+		String key = schematic("panneau", 2, 2, 1, (x, y, z) -> y == 0 ? "minecraft:stone_bricks"
+				: x == 0 ? "minecraft:oak_sign[rotation=0,waterlogged=false]" : "minecraft:chest[facing=north,type=single,waterlogged=false]", entities);
+		BuildProject[] holder = start(helper, guild, key, origin);
+		ZoneGameTests.setTask(recruit, Task.BUILDER);
+		helper.succeedWhen(() -> {
+			BuildProject project = holder[0];
+			helper.assertTrue(project != null, "waiting for the site");
+			helper.assertTrue(project.finished, "waiting for the sign (" + project.done + "/" + project.total + ") · " + status(level, recruit.record()));
+			helper.assertTrue(level.getBlockEntity(origin.above()) instanceof net.minecraft.world.level.block.entity.SignBlockEntity placed
+					&& placed.getText(net.minecraft.world.level.block.entity.SignTextSlot.FRONT).getMessages(false).getFirst().getString()
+					.equals("Bienvenue"), "sign text copied");
+			Container built = (Container) level.getBlockEntity(origin.offset(1, 1, 0));
+			helper.assertTrue(built != null && built.isEmpty(), "the chest is built empty");
 			GuildManager.disband(guild);
 		});
 	}
