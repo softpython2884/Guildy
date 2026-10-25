@@ -53,6 +53,8 @@ final class SupplyCrafter {
 	private final Set<BlockPos> excluded = new HashSet<>();
 	private @Nullable BlockPos fetchFrom;
 	private @Nullable Item fetching;
+	/** {@link #fetchFrom} is a chest or barrel outside the storage. */
+	private boolean fromLoose;
 	private int stepIndex;
 	private int doneInStep;
 	private long progress;
@@ -105,6 +107,12 @@ final class SupplyCrafter {
 			if (fetching != item || fetchFrom == null) {
 				fetching = item;
 				fetchFrom = CraftStock.nearestWith(ctx, item, excluded);
+				fromLoose = false;
+				if (fetchFrom == null) {
+					// The other chests and barrels of the territory, when the guild allows it.
+					fetchFrom = SupplyGuild.of(ctx.guild).nearestLoose(ctx, item, excluded);
+					fromLoose = fetchFrom != null;
+				}
 				if (fetchFrom == null) {
 					// Gone from the storage since the plan: what the bag holds is planned again.
 					toFetch.remove(item);
@@ -120,7 +128,7 @@ final class SupplyCrafter {
 				}
 				case MOVING -> ctx.status("villager.gather.job", jobText, Lang.raw("supply.action.fetch", SupplyLang.amount(missing, item)));
 				case ARRIVED -> {
-					int moved = CraftStock.fetch(ctx, from, item, missing);
+					int moved = fromLoose ? SupplyGuild.takeLoose(ctx, from, item, missing) : CraftStock.fetch(ctx, from, item, missing);
 					if (moved > 0) {
 						Movement.hold(ctx, from);
 						WorldUtil.swing(ctx.villager);

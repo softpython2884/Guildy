@@ -3,6 +3,9 @@ package dev.guildy.villager;
 import dev.guildy.config.ConfigHandle;
 import dev.guildy.config.ConfigManager;
 import dev.guildy.core.Lifecycle;
+import dev.guildy.data.Guild;
+
+import java.util.function.Predicate;
 
 /**
  * Supply of the construction sites by the builders (role "Chercher les matériaux", see {@link GatherWork}):
@@ -11,6 +14,13 @@ import dev.guildy.core.Lifecycle;
 public final class Supply {
 	private static final SupplyConfig DEFAULTS = new SupplyConfig();
 	private static ConfigHandle<SupplyConfig> config;
+
+	/**
+	 * Whether the builders of a guild also take ingredients from every chest and barrel of its territory, not only from
+	 * the registered storage (default: supply.json5, crafting.allContainers). The construction sites may plug their own
+	 * per-guild choice in here.
+	 */
+	public static Predicate<Guild> allContainers = guild -> config().crafting.allContainers;
 
 	private Supply() {
 	}

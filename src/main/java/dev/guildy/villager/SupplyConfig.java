@@ -15,11 +15,13 @@ import java.util.Map;
  */
 @Comment({
 		"Guildy - approvisionnement des chantiers : les batisseurs en role 'Chercher les materiaux' fabriquent, cuisent ou",
-		"recoltent ce qui manque aux chantiers de la guilde, puis le deposent au stockage. Pour chaque materiau manquant, par",
-		"ordre de preference : fabrication a l'etabli avec ce que contient deja le stockage (recettes vanilla, sur plusieurs",
-		"niveaux : buches -> planches -> escaliers...), cuisson simulee a un four du territoire (sable -> verre...), puis",
-		"recolte de blocs naturels : dans les zones de mine reelles, dans les zones de coupe de bois (arbres entiers, replantes)",
-		"ou hors du territoire (fosses propres creusees niveau par niveau avec une rampe de sortie, arbres naturels).",
+		"recoltent ce qui manque aux chantiers de la guilde, puis le deposent au stockage. Pour chaque materiau manquant, la",
+		"voie la moins chere qui marche tout de suite : fabrication avec ce que contient deja le stockage (recettes vanilla",
+		"enchainees : buches -> planches -> escaliers..., a la main en 2x2, a l'etabli, au tailleur de pierre s'il y en a un),",
+		"cuisson simulee a un four du territoire (sable -> verre...), transformations (ecorcer, beton en poudre -> beton...),",
+		"sinon recolte de blocs naturels : dans les zones de mine reelles, dans les zones de coupe de bois (arbres entiers,",
+		"replantes) ou hors du territoire (fosses propres creusees niveau par niveau avec une rampe de sortie, arbres naturels).",
+		"Les objets qu'un chantier attend ne servent jamais d'ingredients.",
 		"Ce qu'aucune de ces voies ne peut obtenir reste a deposer par les joueurs (raison affichee dans le menu).",
 		"Rechargement a chaud : /guild admin reload"
 })
@@ -36,7 +38,10 @@ public final class SupplyConfig implements Validatable {
 	@Comment("Materiaux differents examines au plus a chaque analyse (les plus gros manques d'abord, 1 a 512)")
 	public int maxWantedItems = 96;
 
-	@Comment("Fabrication a l'etabli (recettes vanilla du serveur, avec ou sans forme ; les recettes speciales sont ignorees)")
+	@Comment({
+			"Fabrication : recettes vanilla du serveur (etabli avec ou sans forme, tailleur de pierre) ; les recettes speciales,",
+			"celles dont le resultat porte des donnees et celles qui laissent un reste (seaux, fioles) sont ignorees"
+	})
 	public Crafting crafting = new Crafting();
 
 	@Comment("Cuisson au four (recettes de four vanilla), simulee : le contenu reel des fours n'est jamais touche")
@@ -82,6 +87,11 @@ public final class SupplyConfig implements Validatable {
 		public boolean stonecutter = true;
 		@Comment("Temps (ticks) par bloc taille au tailleur de pierre (1 a 400)")
 		public int ticksPerCut = 10;
+		@Comment({
+				"Ingredients pris aussi dans tous les coffres et tonneaux du territoire (pas seulement le stockage enregistre) ;",
+				"jamais dans un conteneur ouvert par un joueur. Les materiaux fabriques vont toujours au stockage"
+		})
+		public boolean allContainers = false;
 		@Comment("Fabrications au plus par voyage (1 a 512)")
 		public int maxCraftsPerTrip = 128;
 		@Comment("Intervalle (secondes) entre deux recherches des etablis et des fours du territoire (10 a 3600)")

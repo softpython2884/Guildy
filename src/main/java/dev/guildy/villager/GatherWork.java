@@ -78,6 +78,10 @@ final class GatherWork {
 		if (ctx.guild.claims().isEmpty()) {
 			return "villager.gather.no_territory";
 		}
+		if (ctx.guild.villagers.chests.isEmpty()) {
+			// Nowhere to take the ingredients from nor to bring the materials to.
+			return "villager.gather.no_storage";
+		}
 		String[] reason = {null};
 		SupplyGuild.Job job = SupplyGuild.of(ctx.guild).choose(ctx, false, reason);
 		return job != null ? null : reason[0] == null ? "villager.gather.unavailable" : reason[0];
@@ -166,6 +170,14 @@ final class GatherWork {
 		if (ctx.now < retryAt) {
 			ctx.status(waitStatus.isEmpty() ? "villager.gather.unavailable" : waitStatus);
 			finished = true;
+			return;
+		}
+		SupplyGuild shared = SupplyGuild.of(ctx.guild);
+		shared.scanStations(ctx);
+		if (!shared.stationsKnown()) {
+			// The workstations of the territory first: never a trip for a furnace that does not exist.
+			int[] scan = shared.scanProgress();
+			ctx.status("villager.gather.scanning", scan == null ? 0 : scan[0], scan == null ? 1 : scan[1]);
 			return;
 		}
 		String[] reason = {null};

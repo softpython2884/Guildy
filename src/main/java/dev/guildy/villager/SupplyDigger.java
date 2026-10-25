@@ -40,8 +40,11 @@ final class SupplyDigger {
 	private final PitPlan plan;
 	private final Item item;
 	private final int amount;
+	/** A pit out of reach this long ends the trip. */
+	private static final long UNLOADED_TICKS = 30 * 20L;
 	private double budget;
 	private int sinceCheck;
+	private long unloadedSince = -1;
 
 	SupplyDigger(SupplyPit pit, SupplyPits.World world, Item item, int amount) {
 		this.pit = pit;
@@ -75,9 +78,14 @@ final class SupplyDigger {
 		}
 		BlockPos center = new BlockPos(plan.x0() + plan.side() / 2, plan.top(), plan.z0() + plan.side() / 2);
 		if (!world.ticking(center.getX(), center.getZ())) {
+			// Nobody around the pit: it waits a little, then the trip ends with what it has.
+			if (unloadedSince < 0) {
+				unloadedSince = ctx.now;
+			}
 			ctx.status("villager.gather.job", job, dev.guildy.core.Lang.raw("supply.fail.unloaded"));
-			return Result.WORKING;
+			return ctx.now - unloadedSince > UNLOADED_TICKS ? Result.EXHAUSTED : Result.WORKING;
 		}
+		unloadedSince = -1;
 		SupplyConfig.Gathering cfg = Supply.config().gathering;
 		budget += 20.0 * Upgrades.workRate(ctx.guild) / cfg.ticksPerBlock;
 		int dug = 0;

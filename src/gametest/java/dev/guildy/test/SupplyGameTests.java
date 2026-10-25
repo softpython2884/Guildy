@@ -46,8 +46,9 @@ import java.util.Map;
  * (lit for the show, its inventory untouched); stone brick stairs cut at the stonecutter (1 stone each, cheaper than the
  * crafting table); concrete hardened in a water source; sand dug outside the claims in a tidy pit with a ramp (another
  * guild's land untouched); cobblestone dug in a real mine zone, away from its staircase and galleries; logs from a forest
- * zone (whole trees, replanted, a tree outside the zone left alone); an item nobody can obtain gives a reason in the
- * builder's status. Delivered items lower the wants.
+ * zone (whole trees, replanted, a tree outside the zone left alone); bricks smelted from clay balls then crafted into
+ * blocks; logs gathered first, then crafted into planks (two trips); two builders sharing two wants; an item nobody can
+ * obtain and a missing workstation give a reason in the builder's status. Delivered items lower the wants.
  */
 public class SupplyGameTests {
 	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("GuildyTest");
@@ -385,6 +386,127 @@ public class SupplyGameTests {
 			helper.assertTrue(status.contains("Aucun four dans le territoire pour cuire Verre"), "waiting for the reason (" + status + ")");
 			helper.assertTrue(count(chest, Items.SAND) == 8 && record.carried.isEmpty(), "nothing taken without a furnace");
 			done(guild, "test:nofurnace");
+		});
+	}
+
+	/** Clay balls of the storage smelted into bricks, then 4 bricks crafted by hand into each bricks block. */
+	@GameTest(environment = "guildy-test:day", maxTicks = 2400)
+	public void buildersChainSmeltingAndCrafting(GameTestHelper helper) throws Exception {
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Briqueterie");
+		ServerLevel level = helper.getLevel();
+		Guild guild = recruit.guild();
+		level.setBlockAndUpdate(recruit.ground().offset(-5, 1, -4), Blocks.FURNACE.defaultBlockState());
+		Container chest = (Container) level.getBlockEntity(recruit.deposit());
+		chest.setItem(0, new ItemStack(Items.CLAY_BALL, 16));
+		chest.setItem(1, new ItemStack(Items.COAL, 2));
+		want(helper, recruit, "test:bricks", Items.BRICKS, 4);
+		VillagerRecord record = recruit.record();
+		ZoneGameTests.setTask(recruit, Task.BUILDER);
+
+		helper.succeedWhen(() -> {
+			int bricks = count(chest, Items.BRICKS);
+			helper.assertTrue(bricks >= 4, "waiting for 4 bricks blocks (" + bricks + ", status " + status(level, record) + ")");
+			helper.assertTrue(count(chest, Items.CLAY_BALL) == 0 && count(chest, Items.BRICK) == 0 && count(chest, Items.COAL) == 0,
+					"16 clay balls -> 16 bricks -> 4 blocks, 2 coal burnt");
+			done(guild, "test:bricks");
+		});
+	}
+
+	/** No log in the storage: a tree of the forest zone is cut first (logs to the storage), then the planks are crafted. */
+	@GameTest(environment = "guildy-test:day", maxTicks = 3600)
+	public void buildersGatherLogsThenCraftPlanks(GameTestHelper helper) throws Exception {
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Scierie");
+		ServerLevel level = helper.getLevel();
+		Guild guild = recruit.guild();
+		BlockPos ground = recruit.ground();
+		BlockPos center = new BlockPos(((ground.getX() >> 4) << 4) + 8, ground.getY() + 1, (((ground.getZ() >> 4) + 1) << 4) + 8);
+		guild.villagers.zones.add(new WorkZone(guild.villagers.nextZoneId++, ZoneType.FOREST, "Scierie des tests", center, 0,
+				System.currentTimeMillis()));
+		tree(level, center.offset(-3, 0, 2), 5);
+		Container chest = (Container) level.getBlockEntity(recruit.deposit());
+		want(helper, recruit, "test:planks", Items.OAK_PLANKS, 12);
+		VillagerRecord record = recruit.record();
+		ZoneGameTests.setTask(recruit, Task.BUILDER);
+
+		helper.succeedWhen(() -> {
+			int planks = count(chest, Items.OAK_PLANKS);
+			helper.assertTrue(planks >= 12, "waiting for 12 planks (" + planks + ", status " + status(level, record) + ")");
+			int logs = count(chest, Items.OAK_LOG) + carried(record, Items.OAK_LOG);
+			// 5 logs cut: 3 made 12 planks, 2 left in the storage.
+			helper.assertTrue(planks + 4 * logs == 20, "no wood lost (" + planks + " planks, " + logs + " logs)");
+			done(guild, "test:planks");
+		});
+	}
+
+	/**
+	 * The guild allows any chest and barrel of the territory: logs of a barrel outside the storage are crafted into planks,
+	 * which go to the storage.
+	 */
+	@GameTest(environment = "guildy-test:day", maxTicks = 2400)
+	public void buildersTakeIngredientsFromAnyContainerWhenAllowed(GameTestHelper helper) throws Exception {
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Tonneaux");
+		ServerLevel level = helper.getLevel();
+		Guild guild = recruit.guild();
+		java.util.function.Predicate<Guild> before = Supply.allContainers;
+		Supply.allContainers = before.or(g -> g == guild);
+		BlockPos barrelPos = recruit.ground().offset(-3, 1, -6);
+		level.setBlockAndUpdate(barrelPos, Blocks.BARREL.defaultBlockState());
+		Container barrel = (Container) level.getBlockEntity(barrelPos);
+		barrel.setItem(4, new ItemStack(Items.OAK_LOG, 4));
+		Container chest = (Container) level.getBlockEntity(recruit.deposit());
+		want(helper, recruit, "test:barrel", Items.OAK_PLANKS, 16);
+		VillagerRecord record = recruit.record();
+		ZoneGameTests.setTask(recruit, Task.BUILDER);
+
+		helper.succeedWhen(() -> {
+			int planks = count(chest, Items.OAK_PLANKS);
+			helper.assertTrue(planks >= 16, "waiting for 16 planks from the barrel's logs (" + planks + ", status " + status(level, record) + ")");
+			helper.assertTrue(count(barrel, Items.OAK_LOG) == 0, "the barrel's logs were used");
+			Supply.allContainers = before;
+			done(guild, "test:barrel");
+		});
+	}
+
+	/** Two builders and two wants: each reserves its own and both are delivered. */
+	@GameTest(environment = "guildy-test:day", maxTicks = 3600)
+	public void twoBuildersShareTheWork(GameTestHelper helper) throws Exception {
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Equipe");
+		ServerLevel level = helper.getLevel();
+		Guild guild = recruit.guild();
+		while (dev.guildy.villager.VillagerManager.maxVillagers(guild) < 2 && guild.level < 500) {
+			guild.level++;
+		}
+		TestSupport.console(level, "guild admin villager spawn " + guild.name);
+		level.getServer().getCommands().performPrefixedCommand(recruit.leader().createCommandSourceStack(), "guild villagers accept");
+		List<VillagerRecord> builders = new ArrayList<>(guild.villagers.members.values());
+		helper.assertTrue(builders.size() == 2, "two villagers");
+		level.setBlockAndUpdate(recruit.ground().offset(-5, 1, 4), Blocks.CRAFTING_TABLE.defaultBlockState());
+		level.setBlockAndUpdate(recruit.ground().offset(-5, 1, -4), Blocks.FURNACE.defaultBlockState());
+		Container chest = (Container) level.getBlockEntity(recruit.deposit());
+		chest.setItem(0, new ItemStack(Items.OAK_LOG, 6));
+		chest.setItem(1, new ItemStack(Items.SAND, 16));
+		chest.setItem(2, new ItemStack(Items.COAL, 2));
+		want(helper, recruit, "test:team.stairs", Items.OAK_STAIRS, 16);
+		want(helper, recruit, "test:team.glass", Items.GLASS, 16);
+		for (VillagerRecord builder : builders) {
+			ZoneGameTests.setTask(new ZoneGameTests.Recruit(guild, builder, recruit.leader(), recruit.ground(), recruit.deposit()), Task.BUILDER);
+		}
+		boolean[] together = {false};
+
+		helper.succeedWhen(() -> {
+			Map<Item, Integer> fetching = Procurement.fetching(guild);
+			if (fetching.containsKey(Items.OAK_STAIRS) && fetching.containsKey(Items.GLASS)) {
+				together[0] = true;
+			}
+			if (fetching.getOrDefault(Items.GLASS, 0) > 16 || fetching.getOrDefault(Items.OAK_STAIRS, 0) > 16) {
+				helper.fail("the same want chased twice: " + fetching);
+			}
+			int stairs = count(chest, Items.OAK_STAIRS);
+			int glass = count(chest, Items.GLASS);
+			helper.assertTrue(stairs >= 16 && glass >= 16, "waiting for 16 stairs and 16 glass (" + stairs + ", " + glass + ")");
+			helper.assertTrue(together[0], "both builders worked at the same time, each on its own want");
+			Procurement.clear(guild, "test:team.stairs");
+			done(guild, "test:team.glass");
 		});
 	}
 

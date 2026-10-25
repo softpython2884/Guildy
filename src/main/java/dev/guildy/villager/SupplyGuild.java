@@ -10,6 +10,9 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BarrelBlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -30,9 +33,12 @@ import java.util.function.Predicate;
  * territory (one incremental scan for all of them), a snapshot of the storage (plain items the workers may take), the
  * analysis of the wants ({@link Procurement#wanted}: for each wanted item, the best route right now and, when there is
  * none, why), the items without any site in reach (looked for again later), the storage inputs planned by each gatherer
- * (never counted twice) and the leases of the pits and furnaces.
+ * (never counted twice) and the leases of the pits and furnaces. With {@link Supply#allContainers}, the other chests and
+ * barrels of the territory (not registered in the storage) give ingredients too.
  */
 final class SupplyGuild {
+	/** Loose containers remembered at most per guild. */
+	private static final int MAX_CONTAINERS = 512;
 	private static final Map<UUID, SupplyGuild> GUILDS = new HashMap<>();
 	private static final int SCAN_CHUNKS_PER_STEP = 8;
 	private static final long LEASE_TICKS = 30 * 20L;
@@ -94,12 +100,15 @@ final class SupplyGuild {
 	List<BlockPos> furnaces = List.of();
 	List<BlockPos> cutters = List.of();
 	List<BlockPos> waters = List.of();
+	/** Chests and barrels of the territory not registered in the storage (see {@link Supply#allContainers}). */
+	List<BlockPos> containers = List.of();
 	private long stationsAt = -1;
 	private @Nullable TerritoryScan scan;
 	private final List<BlockPos> foundTables = new ArrayList<>();
 	private final List<BlockPos> foundFurnaces = new ArrayList<>();
 	private final List<BlockPos> foundCutters = new ArrayList<>();
 	private final List<BlockPos> foundWaters = new ArrayList<>();
+	private final List<BlockPos> foundContainers = new ArrayList<>();
 	// storage
 	private @Nullable Map<Item, Integer> stock;
 	private long stockAt = -1;
@@ -161,6 +170,7 @@ final class SupplyGuild {
 			foundFurnaces.clear();
 			foundCutters.clear();
 			foundWaters.clear();
+			foundContainers.clear();
 		}
 		for (int i = 0; i < SCAN_CHUNKS_PER_STEP; i++) {
 			LevelChunk chunk = running.next(ctx);
@@ -173,15 +183,24 @@ final class SupplyGuild {
 			if (foundWaters.size() < MAX_WATER) {
 				collect(chunk, WATER, foundWaters, ctx, foundWaters.size() + 1);
 			}
+			for (BlockEntity entity : chunk.getBlockEntities().values()) {
+				if (foundContainers.size() < MAX_CONTAINERS && (entity instanceof ChestBlockEntity || entity instanceof BarrelBlockEntity)
+						&& ctx.inTerritory(entity.getBlockPos())) {
+					foundContainers.add(entity.getBlockPos().immutable());
+				}
+			}
 		}
 		if (running.done()) {
 			tables = List.copyOf(foundTables);
 			furnaces = List.copyOf(foundFurnaces);
 			cutters = List.copyOf(foundCutters);
 			waters = List.copyOf(foundWaters);
+			containers = List.copyOf(foundContainers);
 			stationsAt = ctx.now;
 			scan = null;
+			// What the territory holds is known now: the storage snapshot and the analysis are made again.
 			analysis = null;
+			stockAt = -1;
 		}
 	}
 
@@ -352,9 +371,26 @@ final class SupplyGuild {
 		analysis = null;
 	}
 
-	private static Map<Item, Integer> inventory(ServerLevel level, Guild guild) {
+	private Map<Item, Integer> inventory(ServerLevel level, Guild guild) {
 		Map<Item, Integer> found = new HashMap<>();
 		Set<BlockPos> seen = new HashSet<>();
+		if (Supply.allContainers.test(guild)) {
+			List<net.minecraft.world.Container> shown = Storage.shownContainers(level);
+			for (BlockPos pos : containers) {
+				if (seen.contains(pos) || !loose(level, guild, pos, shown)) {
+					continue;
+				}
+				seen.addAll(Storage.halves(level, pos));
+				Container container = Storage.container(level, pos);
+				for (int i = 0; container != null && i < container.getContainerSize(); i++) {
+					ItemStack stack = container.getItem(i);
+					if (!stack.isEmpty() && stack.getComponentsPatch().isEmpty()) {
+						found.merge(stack.getItem(), stack.getCount(), Integer::sum);
+					}
+				}
+			}
+			seen.clear();
+		}
 		for (StorageChest chest : guild.villagers.chests) {
 			if (chest.pos == null || seen.contains(chest.pos) || !Storage.usable(level, guild, chest)) {
 				continue;
@@ -377,6 +413,76 @@ final class SupplyGuild {
 			}
 		}
 		return found;
+	}
+
+	/**
+	 * A chest or barrel of the territory outside the storage that may give ingredients now: loaded, still a container,
+	 * in the territory, not registered (either half), nobody using it.
+	 */
+	static boolean loose(ServerLevel level, Guild guild, BlockPos pos, List<net.minecraft.world.Container> shown) {
+		if (!level.isLoaded(pos) || dev.guildy.data.GuildManager.at(level, pos) != guild) {
+			return false;
+		}
+		BlockEntity entity = level.getBlockEntity(pos);
+		if (!(entity instanceof ChestBlockEntity) && !(entity instanceof BarrelBlockEntity)) {
+			return false;
+		}
+		return Storage.registered(level, guild, pos) == null && !Storage.inUse(level, pos, shown);
+	}
+
+	/** Nearest loose container (see {@link #loose}) holding a plain item of that kind, or null. */
+	@Nullable BlockPos nearestLoose(WorkContext ctx, Item item, Set<BlockPos> excluded) {
+		if (!Supply.allContainers.test(ctx.guild)) {
+			return null;
+		}
+		List<net.minecraft.world.Container> shown = Storage.shownContainers(ctx.level);
+		BlockPos best = null;
+		double bestDist = Double.MAX_VALUE;
+		for (BlockPos pos : containers) {
+			if (excluded.contains(pos) || !loose(ctx.level, ctx.guild, pos, shown)) {
+				continue;
+			}
+			double dist = ctx.distSq(pos);
+			if (dist >= bestDist) {
+				continue;
+			}
+			Container container = Storage.container(ctx.level, pos);
+			for (int i = 0; container != null && i < container.getContainerSize(); i++) {
+				if (CraftStock.plain(container.getItem(i), item)) {
+					best = pos;
+					bestDist = dist;
+					break;
+				}
+			}
+		}
+		return best;
+	}
+
+	/** Takes up to {@code wanted} plain items of that kind from a loose container into the bag; returns the items moved. */
+	static int takeLoose(WorkContext ctx, BlockPos pos, Item item, int wanted) {
+		if (!loose(ctx.level, ctx.guild, pos, Storage.shownContainers(ctx.level))) {
+			return 0;
+		}
+		Container container = Storage.container(ctx.level, pos);
+		if (container == null) {
+			return 0;
+		}
+		int left = Math.min(wanted, CraftStock.room(ctx, item));
+		int moved = 0;
+		for (int i = 0; i < container.getContainerSize() && left > 0; i++) {
+			ItemStack stack = container.getItem(i);
+			if (!CraftStock.plain(stack, item)) {
+				continue;
+			}
+			ItemStack taken = container.removeItem(i, Math.min(left, stack.getCount()));
+			left -= taken.getCount();
+			moved += taken.getCount();
+			CraftStock.addStack(ctx, taken);
+		}
+		if (moved > 0) {
+			container.setChanged();
+		}
+		return moved;
 	}
 
 	/** Storage inputs a gatherer plans to fetch (null / empty: none). */
