@@ -622,6 +622,78 @@ schématiques) : `tools/ruins/`.
     l'alchimiste revient au même alambic (`brewingAt`). `CraftData.elixirsToday`, plafond `brewing.maxElixirsPerDay` (mode
     simple). GameTests du mode recipes dans leur propre environnement `guildy-test:brewing_recipes`.
 
+75. **Chantiers et bâtisseurs** (`builds/`, `builds.json5`, tâche BUILDER : `villager/BuilderTask`, `Builders`,
+    `BuilderRoles` pur, `BuildStock`) : schématiques listées (jamais un chemin libre) dans `config/guildy/schematics/`
+    et `<monde>/generated/<ns>/structure/` ; `SchematicReader` (pur, testé : Sponge 1/2/3 en var-ints, Litematica
+    fusionné — tailles négatives, tableaux de longs serrés, une entrée sur deux longs —, structure vanilla où les cases
+    non listées sont « vides ») vérifie toutes les tailles avant d'allouer ; lecture et `BuildPlan` sur un fil à part
+    (DataFixer `block_state` / `block_entity` depuis la DataVersion, blocs inconnus ignorés et signalés), cache par
+    chemin + taille + date ; copie dans `<monde>/guildy/builds/<guilde8>-<id>-<fichier>`. `PlacementTransform` (pur) =
+    formules de `StructureTemplate.transform` (pivot 0), état `mirror` puis `rotate`. Le **monde fait foi** : `BuildSite`
+    (non sauvegardé) tient un état par cellule (fait, à poser, gratuit, attend des matériaux / un support, retenu,
+    bloquant, laissé…) mis à jour par un balayage incrémental (`scanCellsPerTick` partagés, 10 ticks au moins entre deux
+    passages, chunks chargés seulement) et par les actions des bâtisseurs ; fin décidée sur un balayage complet.
+    `CellRules` (pur) : naturel → remplacé dans le même `setBlock` (jamais d'air intermédiaire), même bloc → état
+    corrigé gratuitement, bâti → obstacle sauf option, conteneurs / cœur / fanions / constructions / autre guilde →
+    jamais. `InteriorRules` (pur) : `hollow` = colonne entre bloc bas et haut + air coupé des bords de sa couche + devant
+    / derrière des portes. `BuildPasses` (pur) : terrassement du haut vers le bas, gros œuvre du bas vers le haut,
+    finitions sous le front (`SupportProbe` : `canSurvive` dans un monde d'air simulé), fluides en dernier ; les fronts ne
+    comptent que les cellules faisables (un manquant ne bloque pas le reste). Pose : `UPDATE_CLIENTS |
+    UPDATE_KNOWN_SHAPE` (état exact, voisins intacts), portes / lits posés entiers, textes de panneaux et motifs de
+    bannières seulement ; creusage en mises à jour normales après les contrôles (bloc qui tombe au-dessus : retenu ;
+    fluide voisin : colmaté hors du chantier ou cellule mouillée remplie de terre puis creusée). `MaterialRules` (pur) :
+    coût d'un état (dalles doubles, bougies, cornichons, couches de neige, moitiés gratuites, cultures → graines, murs →
+    objet debout, pots garnis, eau gratuite, lave = seau rendu, non constructibles). Bâtisseurs : parcelle louée
+    (`tileSize`), cible de marche gardée jusqu'à l'arrivée, point d'appui (case creusée, dessus d'une colline) pour une
+    case enterrée, matériaux de la parcelle + une pile d'avance par objet, déblais au dépôt (jetés si le stockage est
+    plein), s'écarte d'une case à remplir. Rôles BUILD / GATHER (`BuilderRoles`, comme `AlchemyRoles` : besoins pondérés,
+    au moins un de chaque à partir de deux, `maxGatherShare`, rôles stables) ; repli sur l'autre rôle ; sans chantier
+    mais avec des manquants : GATHER. `Procurement.want(guild, "build:<id>", manquants)` toutes les
+    `procurementSeconds` (restant − sources − sacs) avec `Procurement.keep` (le restant déjà au stockage : jamais pris
+    comme ingrédient), effacé en pause / fin / annulation. Commande `/guild chantier` (alias `chantiers` ; `/guild build`
+    reste le menu des constructions).
+76. **Approvisionnement des chantiers** (`villager/GatherWork`, `Supply*`, `Pit*`, supply.json5) : rôle « Chercher les
+    matériaux » des bâtisseurs, un voyage à la fois (sac vidé au stockage, choix, travail, livraison, `finished()`).
+    `Procurement` (transitoire) : `want/wanted/delivered`, plus `fetching` (réservation par villageois, renouvelée à
+    chaque pas, oubliée après 30 s) et `keep/kept` (ce que les chantiers comptent prendre au stockage). `SupplyPlanner`
+    (pur, testé) : objet → stock du stockage (jamais la part réservée : objets demandés, `kept`, entrées prévues par les
+    autres), sinon la recette la moins chère (CRAFT main/établi, SMELT four + combustible en « objets cuits » =
+    durée vanilla / 200, CUT tailleur de pierre, TRANSFORM main ou eau), sinon récolte, sinon manquant ; coût = unités
+    manquantes, à récolter, prises, puis étapes ; profondeur `crafting.maxDepth` (5), budget de 6 000 essais par plan ;
+    la cible n'est jamais prise au stockage ; restes = surplus déposés. `bestFromStock` : plus grande quantité faisable
+    tout de suite qui tient dans le sac (recherche dichotomique). `SupplyBook` : recettes `ShapedRecipe`/`ShapelessRecipe`
+    (2×2 = main), `SmeltingRecipe`, `StonecutterRecipe` du `RecipeManager` (spéciales, résultats à composants,
+    ingrédients à reste — seaux — ignorés) ; transformations dérivées des ids (`stripped_*`, `#turns_into_dirt_path`,
+    `*_concrete_powder` → `*_concrete`, terre stérile, boue) ; combustible par `ResolvableInt` du composant
+    `COOKING_FUEL` avec le contexte de butin d'un four détaché ; sources (`SupplySources`, pur) = butin des blocs naturels
+    de realMining tiré 12 fois avec un outil en fer de leur sorte (`mineable/*`), bûches de `#overworld_natural_logs`
+    avec pousse, surchargées par `sources` / `neverFetch`. `SupplyGuild` (par guilde, transitoire) : scan incrémental
+    des établis, fours, tailleurs et sources d'eau (`TerritoryScan`, palettes), instantané du stockage, analyse des
+    manques (route CRAFT > GATHER > GATHER_FOR, puis STATION / MISSING avec la raison), baux des fosses et ateliers,
+    gisements introuvables (`noSiteRetrySeconds`). `GatherWork.blocked` rend une clé ou un texte déjà formaté.
+    **Fosses** : `PitPlan` (pur) = carré `pitSide`, niveau k = y `top + 1 − k`, rampe = anneau des colonnes du bord à
+    partir de l'entrée (la marche i n'est creusée que jusqu'au niveau i, ciel ouvert au-dessus : la navigation vanilla
+    la monte et la descend), profondeur ≤ 4 (côté − 1) − 1 ; `PitRules` (pur) = colonnes autorisées + bord, sol plat
+    (`pitMaxUneven`), rien que du naturel sur le bord et rien au-dessus (arbre, torche, eau), profondeur arrêtée avant une
+    grotte / un fluide / une marche non creusable, entrée la plus proche du cœur hors des coins, score = blocs voulus
+    réellement creusés ; `SupplyPits` : grille alignée `pitSide + pitGap`, fosses commencées d'abord, puis zones de mine
+    réelles (hors carrière, escalier planifié ; exclusion = copie privée du `MineLayout` : colonnes de l'escalier, du
+    fanion et des galeries des niveaux de `Mines.levels` + grille plus profonde, dilatées de `mineMargin`), puis hors
+    territoire (aucun claim, `minDistanceFromSpawn`, protection du spawn d'un serveur dédié, chunks entity-ticking) ;
+    sondage de 5 colonnes avant l'examen complet ; `SupplyPit` persisté (`GuildVillagerData.pits`, niveaux faits,
+    colonnes abandonnées). `SupplyDigger` : terrain au-dessus du sol puis niveau par niveau, `MineRules.dig` (fluides
+    colmatés, jamais sous un fluide ni un bloc non naturel), une colonne bloquée reste en pilier, une marche bloquée
+    arrête la fosse à ce niveau, jamais sous les pieds d'une entité, plantes retirées sans butin, objets gardés = voulus
+    + `fillerReserve` (+ `keepByproducts`). `SupplyTrees` : zones de coupe (CUT / TREE_REPLANT) puis arbres naturels hors
+    claims, arbre toujours coupé entier, pousse replantée. `SupplyCrafter` : entrées prises au stockage (`CraftStock`),
+    nouveau plan depuis le sac, étapes dans l'ordre (atelier loué, effets : son du crafteur, du tailleur, crépitement et
+    four allumé seulement s'il est vide et éteint), combustible du plan d'abord. Livraison : chaque pile au coffre de sa
+    catégorie (`Storage.route`), `Procurement.delivered` pour les objets demandés. Aucun voyage avant la fin du scan des
+    ateliers (instantané du stockage refait à sa fin). `Supply.allContainers` (prédicat par guilde, défaut
+    `crafting.allContainers`) : coffres et tonneaux non enregistrés du territoire repérés par le même scan (entités de
+    bloc des chunks), comptés dans l'instantané et vidés au besoin (`Storage.inUse` respecté) ; `BuildModule` y ajoute
+    l'option « tous les coffres et tonneaux » des chantiers actifs.
+
 ## Notes API Minecraft 26.3
 
 Vérifier les API dans les sources décompilées (`./gradlew genSources`).

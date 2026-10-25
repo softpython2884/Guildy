@@ -253,6 +253,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<li><a href="#boutique">Or et boutique</a></li>
 				<li><a href="#carrefour">Carrefour commercial</a></li>
 				<li><a href="#villageois">Villageois</a></li>
+				<li><a href="#chantiers">Chantiers</a></li>
 				<li><a href="#uniques">Armes uniques</a></li>
 				<li><a href="#parchemins">Parchemins de sort</a></li>
 				<li><a href="#ruines">Ruines et boss</a></li>
@@ -573,6 +574,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td>Forgeron <span class="pill gold">Niveau 3</span></td><td>Répare peu à peu l'équipement abîmé posé sur vos porte-armures, en usant l'enclume la plus proche ; dès le niveau 5, grave parfois une rune sur les armures. <a href="#artisans">Détails</a></td><td>Des porte-armures et une enclume à moins de 12 blocs, dans le territoire</td></tr>
 						<tr><td>Alchimiste <span class="pill gold">Niveau 5</span></td><td>Livres enchantés et parchemins à votre table d'enchantement, potions et élixirs à votre alambic, selon les stocks que vous choisissez ; s'il ne peut pas faire son travail, il passe au suivant. <a href="#artisans">Détails</a></td><td>Une table d'enchantement et/ou un alambic, des livres, du papier et de la poudre de blaze dans un coffre enregistré</td></tr>
 						<tr><td>Cartographe</td><td>Travaille aux recherches de ruines de la guilde. <a href="#ruines">Ruines</a></td><td>L'Atelier du cartographe</td></tr>
+						<tr><td>Bâtisseur</td><td>Construit les <a href="#chantiers">chantiers</a> de la guilde (schématiques) avec terrassement, prend les matériaux dans vos coffres et fabrique, cuit ou récolte ceux qui manquent.</td><td>Un chantier posé avec un Plan de chantier ; un établi, un four et un tailleur de pierre l'aident</td></tr>
 					</tbody>
 				</table></div>
 				<p class="hint">Chaque expédition, exploration ou Nether, a aussi 2 % de chance de rapporter une <a href="#uniques">arme unique</a>.</p>
@@ -762,6 +764,44 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<p class="hint">Clic gauche sur une salle dans le menu l'ouvre : afficher ses coffres, ajouter ceux posés depuis, <strong>catégories de la salle</strong> (une salle réservée à « Livres enchantés » devient le bâtiment des enchantements), supprimer. Clic droit la supprime (les objets restent dans les coffres).</p>
 				<p><strong>Salle filtrée</strong> (menu de la salle → Mode de la salle) : chaque coffre ne reçoit plus que les objets qu'il contient déjà, plusieurs sortes possibles, et un <strong>coffre vide ne reçoit rien</strong>. Mettez un objet à la main dans un coffre pour qu'il l'accepte. Les trieurs n'en sortent jamais rien et les villageois y laissent toujours un objet de chaque sorte. « Coffres de la salle » montre au survol ce que reçoit chaque coffre.</p>
 				<div class="note"><p>La nuit et pendant les hordes, les travailleurs vont se coucher (statut « Repos »), et les gardes restent dehors. Un villageois peut <strong>mourir</strong> dans une horde : équipez vos gardes et posez des lits près du cœur.</p></div>
+			</section>
+
+			<!-- ================================================================ CONSTRUCTION SITES -->
+			<section id="chantiers">
+				<div class="eyebrow">Main-d'œuvre</div>
+				<h2>Chantiers</h2>
+				<p>Donnez une schématique à la guilde, posez-la dans le territoire, et les villageois <strong>bâtisseurs</strong> la construisent bloc par bloc, en allant chercher eux-mêmes ce qui manque.</p>
+				<h3>Les schématiques</h3>
+				<p><code>.schem</code> (WorldEdit, FAWE), <code>.litematic</code> (Litematica) et <code>.nbt</code> (structures vanilla), déposés par l'admin dans <code>config/guildy/schematics/</code>. Les structures enregistrées en jeu avec un <strong>bloc de structure</strong> apparaissent aussi.</p>
+				<h3>Poser un chantier</h3>
+				<ol>
+					<li>Menu Villageois → <strong>Chantiers</strong> → « Nouveau chantier » (ou <button class="cmd" type="button">/guild chantier</button>), choisissez une schématique : vous recevez un <strong>Plan de chantier</strong>.</li>
+					<li>Clic droit sur un bloc : l'aperçu se pose dessus, tourné dans le sens de votre regard. Vous seul le voyez : contour vert (possible) ou rouge, et blocs fantômes.</li>
+					<li>Dans le menu d'ajustement : tourner, miroir, déplacer (±1, Maj : ±5), puis « Valider ».</li>
+					<li>Donnez la tâche <strong>Bâtisseur</strong> à quelques villageois.</li>
+				</ol>
+				<p class="hint">Le chantier doit être entièrement dans le territoire, sans le cœur, un fanion ou une construction de la guilde. 2 chantiers actifs au départ, +1 tous les 5 niveaux de guilde (8 au plus).</p>
+				<div class="cards">
+					<div class="card"><h3>Terrassement intelligent</h3><p>Là où un bloc doit aller, la terre, la pierre, les plantes et les arbres naturels sont retirés. Par défaut, seul l'air <strong>entouré par la construction</strong> est creusé : une maison posée dans une montagne ne la coupe pas en deux. Autres choix : « Garder le terrain » ou « Vider toute la boîte ».</p></div>
+					<div class="card"><h3>Jamais touchés</h3><p>Les blocs posés par des joueurs (sauf option « Remplacer les blocs construits »), les coffres et blocs à données, le cœur, les fanions, les constructions, le territoire des autres guildes. L'eau qui coulerait dans le trou est colmatée.</p></div>
+					<div class="card"><h3>Vous pouvez aider</h3><p>Un bloc déjà bien posé, par vous ou présent avant, est compté fait. Après un redémarrage, l'avancement est relu dans le monde.</p></div>
+				</div>
+				<h3>Les matériaux</h3>
+				<p>Les bâtisseurs prennent ce qu'il faut dans les <strong>coffres triés</strong> des villageois ou, en option du chantier, dans <strong>tous les coffres et tonneaux</strong> du territoire. Ce qui manque, ceux qui ont le rôle <strong>Récolter</strong> l'obtiennent par la voie la moins chère :</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Voie</th><th>Exemples</th><th>Il faut</th></tr></thead>
+					<tbody>
+						<tr><td>Fabrication</td><td>Bûches → planches → escaliers, portes ; roche → briques de pierre ; laine, béton en poudre, verre teintés (jusqu'à 5 étapes)</td><td>Les ingrédients au stockage ; un établi pour les recettes en 3 × 3</td></tr>
+						<tr><td>Tailleur de pierre</td><td>Escaliers, dalles, murets et variantes taillées : 1 bloc pour 1</td><td>Un tailleur de pierre (sinon l'établi)</td></tr>
+						<tr><td>Cuisson</td><td>Verre, roche, roche lisse, briques, terre cuite émaillée</td><td>Un four et du combustible au stockage (le contenu de vos fours n'est jamais touché)</td></tr>
+						<tr><td>Transformations</td><td>Bûches écorcées, chemins de terre, béton en poudre → béton</td><td>Une source d'eau pour le béton (sinon simulé)</td></tr>
+						<tr><td>Récolte</td><td>Sable, terre, roche, argile, gravier, bûches</td><td>Vos mines réelles (loin de l'escalier et des galeries), vos zones de coupe, ou hors des territoires jusqu'à 96 blocs du cœur : fosses propres de 6 × 6 avec rampe, arbres entiers replantés</td></tr>
+					</tbody>
+				</table></div>
+				<p class="hint">Deux bâtisseurs ne cherchent jamais la même chose. Ce qu'aucune voie ne permet d'obtenir est indiqué : « Il manque 12 Bloc de diamant : à déposer au stockage », ou « Aucun four dans le territoire pour cuire Verre : posez-en un ».</p>
+				<h3>Suivi</h3>
+				<p>Une barre de progression s'affiche près du chantier. Le menu du chantier montre l'avancement par étape (terrassement, gros œuvre, finitions, eau et lave), la fin estimée, les bâtisseurs, les matériaux (nécessaires, posés, disponibles, manquants, en cours) et les obstacles avec leurs coordonnées. Options : sources, intérieur, fondations, priorité, pause, renommer, annuler (rien de construit n'est retiré). À la fin : titre, feu d'artifice et message à la guilde.</p>
+				<p class="hint">Dans la fiche d'un bâtisseur : son chantier (Auto = le plus prioritaire) et son rôle (Auto, Construire, Récolter). Si son rôle n'a rien de possible, il fait l'autre.</p>
 			</section>
 
 			<!-- ================================================================ UNIQUE WEAPONS -->
@@ -1005,6 +1045,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td><button class="cmd" type="button">/guild fly</button></td><td>Vol de guilde dans votre territoire (jamais pendant une horde)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild waves</button></td><td>Hordes : état, prochaine nuit, statistiques, règles</td></tr>
 						<tr><td><button class="cmd" type="button">/guild build</button></td><td>Constructions et plans</td></tr>
+						<tr><td><button class="cmd" type="button">/guild chantier</button> · <button class="cmd" type="button">/guild chantier list</button></td><td>Chantiers des bâtisseurs (menu, liste dans le chat)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild quests</button></td><td>Quêtes</td></tr>
 						<tr><td><button class="cmd" type="button">/guild villagers</button> · <button class="cmd" type="button">/guild villagers zones</button> · <button class="cmd" type="button">/guild villagers route new</button></td><td>Villageois (et <code>accept</code> / <code>refuse</code> pour un candidat), zones de travail, nouveau parcours de garde</td></tr>
 						<tr><td><button class="cmd" type="button">/guild upgrades</button></td><td>Arbre d'évolution</td></tr>
@@ -1051,7 +1092,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.14.2.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
+				<p>Installation : <code>guildy-1.15.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1104,6 +1145,8 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><code>events.json5</code></td><td>Événements : chances, délais, effets (dont <code>randomEvents</code> pour tout couper)</td></tr>
 							<tr><td><code>trade.json5</code></td><td>Carrefour commercial : paliers, visites, tables d'offres</td></tr>
 							<tr><td><code>alchemy.json5</code></td><td>Potions et élixirs : recettes, stocks par défaut, élixirs, bonus magiques</td></tr>
+							<tr><td><code>builds.json5</code></td><td>Chantiers : limites des schématiques, chantiers actifs, options par défaut, aperçu, vitesse et rôles des bâtisseurs, terrassement</td></tr>
+							<tr><td><code>supply.json5</code></td><td>Matériaux des bâtisseurs : fabrication, tailleur de pierre, cuisson, transformations, récolte (fosses, rayon), sources forcées</td></tr>
 							<tr><td><code>runes.json5</code></td><td>Runes du forgeron : gravure, rangs, runes et leurs pouvoirs</td></tr>
 							<tr><td><code>scrolls.json5</code></td><td>Parchemins de sort : sorts, recharges, chances de butin, limites d'effets ; grimoire et grimoire maudit</td></tr>
 							<tr><td><code>ruins.json5</code></td><td>Ruines : gardiens, escortes, capacités, forme redoutable, Avatar, retour, récompenses ; recherches du cartographe et statues du Jaguar céleste</td></tr>
@@ -1116,7 +1159,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.14.2.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.15.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

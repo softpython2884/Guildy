@@ -32,6 +32,9 @@ ou à héberger pour les joueurs.
   triées, **salles des coffres** automatiques ou réservées), **mine réelle** (escalier en colimaçon, galeries, filons), bûcheron, fermier
   (qui peut transformer toute une zone en champs), garde avec parcours de ronde, **forgeron**, **alchimiste**,
   **cartographe**, expéditions (exploration, Nether), zones de travail par fanions et leurs autorisations, missions.
+- **Chantiers** : donnez une schématique (`.schem`, `.litematic`, `.nbt` ou une structure enregistrée en jeu) et les
+  **bâtisseurs** la construisent avec un terrassement intelligent, en prenant les matériaux dans vos coffres et en
+  fabriquant, cuisant ou récoltant eux-mêmes ce qui manque.
 - **Arbre d'évolution** : 3 branches, 12 améliorations permanentes.
 - **Armes uniques** : 21 armes et outils à pouvoirs (foudre, givre, téléportation, double saut, minage 3×3, bond du
   jaguar, faille infernale…) et **3 panoplies** de 4 pièces (casque, plastron, jambières, bottes) dont les bonus
@@ -744,6 +747,78 @@ pile, il ne le reçoit plus. Rien n'est déplacé au moment de la conversion.
 La nuit, les travailleurs dorment ; les gardes restent dehors. Les villageois peuvent encore **mourir** (gardes au
 combat, flèches perdues) : posez des lits près du cœur et équipez vos gardes. Seuls les membres peuvent commercer avec eux.
 
+#### Chantiers : les bâtisseurs construisent vos schématiques
+
+Donnez une schématique à la guilde, posez-la dans le territoire, et les villageois **bâtisseurs** (tâche *Bâtisseur*)
+la construisent bloc par bloc, en allant chercher eux-mêmes ce qui manque.
+
+- **Les fichiers** : `.schem` (WorldEdit, FAWE : Sponge 1, 2 et 3), `.litematic` (Litematica, régions fusionnées) et
+  `.nbt` (structures vanilla), déposés par l'admin dans `config/guildy/schematics/` (sous-dossiers permis, un README.txt
+  y explique tout). Les **structures enregistrées en jeu avec un bloc de structure** apparaissent aussi : on peut créer
+  ses schématiques sans rien installer. Les vieux fichiers sont mis à jour (DataFixer de Minecraft), les blocs inconnus
+  ignorés et signalés ; un fichier trop gros ou abîmé est refusé avec sa raison. Les anciens `.schematic` de MCEdit
+  (avant 1.13) sont refusés : réenregistrez-les en `.schem`.
+- **Placer un chantier** : menu Villageois (ou menu de la guilde) → *Chantiers* → *Nouveau chantier*, ou
+  `/guild chantier`. Choisissez la schématique (taille, nombre de blocs, principaux matériaux) : vous recevez un **Plan
+  de chantier**. Clic droit sur un bloc : l'aperçu se pose sur ce bloc, tourné dans le sens de votre regard, et vous
+  seul le voyez (contour en particules, vert si le placement est possible, rouge sinon, et **blocs fantômes**, la coque
+  seulement pour les grandes constructions). Le menu d'ajustement tourne (±90°), met en miroir et déplace (±1, Maj : ±5,
+  en X, Z et en hauteur) ; validez. Le fichier est alors copié dans le monde : le modifier ou le supprimer ensuite ne
+  change plus le chantier. Le chantier doit être entièrement dans le territoire, sans chevaucher un autre chantier ni
+  contenir le cœur, un fanion ou une construction de la guilde. Chantiers actifs : 2 au départ, +1 tous les 5 niveaux de
+  guilde (8 au plus).
+- **Terrassement intelligent** : là où un bloc doit être posé, la terre, la pierre, le sable, les plantes, la neige, les
+  feuilles et les arbres naturels sont retirés (leur butin part au stockage) et le bloc est posé à leur place. L'air de la
+  schématique suit l'option *Intérieur* du chantier :
+
+  | Intérieur | Ce qui est creusé |
+  |---|---|
+  | **Creuser l'intérieur** (défaut) | Seulement l'air **entouré par la construction** : pièces, cour fermée, devant et derrière des portes. Une maison posée dans une montagne ne la coupe pas en deux : la roche autour et au-dessus du toit reste. |
+  | Garder le terrain | Rien : les blocs à poser remplacent seulement le terrain. |
+  | Vider toute la boîte | Tout l'air de la boîte. |
+
+  L'eau et la lave qui couleraient dans le trou sont colmatées, le sable et le gravier au-dessus d'un trou sont
+  respectés. Jamais touchés : les blocs posés par des joueurs (sauf option *Remplacer les blocs construits*), les coffres
+  et tous les blocs à données, le cœur, les fanions, les constructions de la guilde, le territoire des autres guildes.
+- **Le monde fait foi** : un bloc déjà bien posé, par vous ou présent avant, est compté fait : aidez vos bâtisseurs !
+  Après un redémarrage, l'avancement est relu dans le monde.
+- **Sur le chantier** : les bâtisseurs se partagent le chantier par parcelles : terrassement depuis le haut, gros œuvre
+  couche par couche depuis le bas, finitions (torches, portes, tapis, plantes…) quand leur support est posé, eau et lave
+  en dernier. Ils montrent le bloc qu'ils posent (2 blocs par seconde chacun), se téléportent s'ils sont bloqués,
+  rapportent les déblais au stockage et rentrent la nuit.
+- **Les matériaux** : ils prennent ce qu'il faut dans les **coffres triés des villageois** (par défaut) ou, en option du
+  chantier, dans **tous les coffres et tonneaux du territoire**. Les comptes sont ceux d'un joueur (dalle double = 2
+  dalles, porte ou lit = 1 objet, cultures = graines ; l'eau est gratuite, la lave coûte un seau qui revient vide). Les
+  blocs impossibles en survie (blocs de commande, barrières, portails, spawners…) sont comptés « non constructibles » et
+  ignorés ; seuls les textes des panneaux et les motifs des bannières sont recopiés, jamais le contenu d'un coffre.
+- **Deux rôles** : *Construire* et *Récolter*, ou *Auto* (la guilde répartit selon les besoins), dans la fiche du
+  bâtisseur avec son chantier (*Auto* = le plus prioritaire). Si son rôle n'a rien de possible, il fait l'autre ; sans
+  chantier, il va chercher ce qui manque.
+- **Ce qui manque, ils le trouvent** (rôle *Récolter*), par la voie **la moins chère qui marche tout de suite** :
+  1. **fabrication** avec ce que le stockage contient : recettes d'établi enchaînées jusqu'à 5 étapes (bûches →
+     planches → escaliers, portes, trappes ; roche → briques de pierre ; sable → grès taillé ; laine, terre cuite, béton
+     en poudre et verre teintés avec des colorants…), à la main en 2 × 2, sinon à un **établi** du territoire ;
+  2. **tailleur de pierre**, s'il y en a un : escaliers, dalles, murets et variantes taillées à 1 bloc pour 1 ;
+  3. **cuisson** à un **four** du territoire (simulée, plus rapide que vanilla) : verre, roche, roche lisse, briques,
+     terre cuite, terre cuite émaillée… avec le combustible du stockage. Le contenu de vos fours n'est jamais touché ;
+  4. **transformations** : bûches écorcées, chemins de terre, béton en poudre → béton et terre → boue à une source d'eau ;
+  5. **récolte** de blocs naturels, pour de vrai (la roche donne de la pierre taillée, l'argile des boules d'argile…) :
+     dans vos **mines réelles** (une fosse à au moins 3 blocs de l'escalier et des galeries prévues), dans les **zones
+     de coupe** (arbres entiers, replantés), puis **hors des territoires** jusqu'à 96 blocs du cœur, jamais près du
+     spawn : des **fosses propres** de 6 × 6, creusées niveau par niveau avec une rampe de sortie, bien alignées, et
+     finies avant d'en ouvrir une autre.
+
+  Deux bâtisseurs ne cherchent jamais la même chose, et ce qu'un chantier compte prendre au stockage n'est jamais
+  utilisé comme ingrédient. Ce qu'aucune voie ne permet d'obtenir reste à déposer : « Il manque 12 Bloc de diamant : à
+  déposer au stockage », comme un atelier qui manque (« Aucun four dans le territoire pour cuire Verre : posez-en un »).
+- **Suivi** : barre de progression pour les membres près du chantier ; menu du chantier : avancement par étape
+  (terrassement, gros œuvre, finitions, eau et lave), fin estimée, bâtisseurs, matériaux (nécessaires, posés,
+  disponibles, manquants, en cours), obstacles avec leurs coordonnées, « Afficher le contour ». À la fin : titre, son,
+  feu d'artifice et message à la guilde.
+- **Options** : source des matériaux, intérieur, remplacer les blocs construits, fondations (remplit le vide sous le
+  chantier jusqu'au sol, 16 blocs au plus), priorité, pause, renommer, annuler (rien de construit n'est retiré). Placer,
+  modifier et annuler demandent la permission de gérer les villageois ; tout membre voit la liste.
+
 ### 8. Arbre d'évolution
 Menu « Arbre d'évolution » (`/guild upgrades`, ou le bouton du menu principal) : la guilde dépense l'**or du
 trésor** et des **matériaux** pour des **bonus permanents**. Les matériaux sont pris dans l'inventaire du joueur qui
@@ -1280,6 +1355,7 @@ affiche les raccourcis disponibles (cliquables).
 | `/guild grimoire` | Menu des pages du grimoire tenu en main |
 | `/guild ralliement <id>` | Rejoindre un appel au Ralliement (la commande du bouton [Rejoindre], inutile de la taper) |
 | `/guild bilan` · `bilan detail` | Dernier bilan de combat de ruine (chat ou menu détaillé) |
+| `/guild chantier` · `chantier list\|confirm\|cancel` | Chantiers des bâtisseurs : menu, liste dans le chat, valider ou annuler le placement en cours (alias `/guild chantiers`) |
 | `/guild stockage scan <chunks> [remplacer]` · `stockage filtre ici\|retirer` · `stockage rangement colonnes\|lignes` | Coffres filtrés : analyser les coffres autour de soi et les enregistrer, filtrer le coffre regardé ; rangement dans les coffres (aussi `/guild villagers storage …`) |
 
 ### Administration
@@ -1345,6 +1421,8 @@ analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `alchemy.json5` | Potions et élixirs des alchimistes : mode de brassage (`brewing` : simple = poudre de blaze et temps par classe de produit, plafond d'élixirs ; recipes = étapes vanilla), stocks par défaut, élixirs (base, ingrédient, effets, bonus magiques), plafonds et affichage des bonus magiques |
+| `builds.json5` | Chantiers : limites des schématiques (côté, volume, blocs, taille du fichier), chantiers actifs par niveau, options par défaut (intérieur, sources, fondations), aperçu, vitesse et sac des bâtisseurs, répartition des rôles, blocs naturels du terrassement, colmatage, barre de progression |
+| `supply.json5` | Matériaux des bâtisseurs : fabrication (profondeur des recettes, établi, tailleur de pierre, tous les coffres), cuisson (durée, combustibles), transformations, récolte (mines, zones de coupe, hors territoire, rayon, fosses), sources forcées, objets jamais cherchés |
 | `runes.json5` | Runes du forgeron : gravure (niveau de guilde, chance, plafond par jour, examens, matériau, annonce), poids des rangs, objets des runes mythiques, définitions des runes (nom, rang, pièces, poids, bonus d'attributs, pouvoir), réglages des pouvoirs |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit
 (`cursedGrimoire` : multiplicateurs de puissance / portée / nombre, niveaux en plus, surcharges par sort, faim, sang,
@@ -1376,6 +1454,9 @@ Formules par défaut (modifiables) :
 - `<monde>/guildy/ruins.json` : ruines connues (position, état, retour du gardien, niveau de menace), écrit de façon atomique avec `.bak`.
   Un combat de boss n'est pas sauvegardé : après un redémarrage, le gardien et son escorte sont supprimés et la ruine
   redevient dormante.
+- `<monde>/guildy/builds/` : copie des schématiques des chantiers validés (l'original peut ensuite changer). Les
+  chantiers et les fosses des bâtisseurs sont dans `guilds.json` ; l'avancement d'un chantier n'est pas sauvegardé, il
+  est relu dans le monde.
 - `<monde>/guildy/events.json` : état global des événements (nuit de sang prévue, dernier tirage). Les marchands de
   passage restent dans le monde avec leurs échanges et repartent à l'heure prévue ; un marchand tagué `guildy_merchant`
   sans fiche dans la guilde est supprimé à son chargement.
@@ -1493,6 +1574,13 @@ Formules par défaut (modifiables) :
 - Forme redoutable et Avatar : le ciel rouge de l'Avatar dépend de l'option de vignette du client (activée par défaut) ;
   le feu et le Wither posés par une attaque gardent leurs dégâts vanilla ; dans une arène étroite, une zone peut tomber
   contre un mur ; les durées de combat sont estimées, à vérifier en jeu.
+- Chantiers : les entités des schématiques (cadres, porte-armures, peintures) ne sont pas recréées ; une case enterrée est
+  travaillée depuis le point d'appui le plus proche (jusqu'à 8 blocs) ; une case retenue (sable au-dessus, eau impossible à
+  colmater) ou sans support n'empêche pas la fin et reste signalée ; les cultures sont posées telles quelles.
+- Matériaux des bâtisseurs : seulement les blocs naturels des mines et les arbres (ni fleurs, ni Nether) ; un minerai rare
+  n'est presque jamais trouvé dans une fosse et reste à déposer ; pas de fosse dans les mines simulées ni les carrières ;
+  seul le four classique sert (ni haut fourneau, ni fumoir) ; « tous les coffres » exclut les boîtes de Shulker (512
+  conteneurs suivis au plus).
 - Grand spectacle : les fusées ne sont visibles qu'à 64 blocs et les figures à 96 blocs ; avec les particules en
   « Minimal », le bouquet final perd des étincelles ; les figures sont tournées vers le public du lancement.
 
