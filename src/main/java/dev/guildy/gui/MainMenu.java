@@ -77,6 +77,8 @@ final class MainMenu extends GuildGui {
 		if (Upgrades.hasAffordable(guild)) {
 			upgrades.glow();
 		}
+		button(38, icon(Items.SCAFFOLDING, "menu.main.builds.name", GuiUtil.lines("menu.main.builds.lore", guild.builds.activeCount())),
+				null, () -> Hooks.openBuilds.accept(player, guild));
 		button(40, upgrades, null, () -> Hooks.openUpgrades.accept(player, guild));
 		button(42, icon(Items.NETHERITE_SWORD, "unique.menu.name", Hooks.uniqueCollectionLore.apply(guild)),
 				null, () -> Hooks.openUniques.accept(player, guild));

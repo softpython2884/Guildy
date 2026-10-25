@@ -250,7 +250,14 @@ public final class WorkChunkLoader {
 				}
 			}
 			zoneAnchor(anchors, guild, record, pos, config);
-			if (task == Task.SORTER || task == Task.ALCHEMIST) {
+			if (task == Task.BUILDER) {
+				// The site it works on (its parcels move around the box).
+				int[] site = BuilderTask.siteAnchor(guild, record, config.zoneRadius);
+				if (site != null) {
+					add(anchors, heart, id, ChunkLoadPlanner.Kind.ZONE, new BlockPos(site[0], site[1], site[2]), site[3]);
+				}
+			}
+			if (task == Task.SORTER || task == Task.ALCHEMIST || task == Task.BUILDER) {
 				// One anchor per chunk of storage (a chest room holds many chests in a few chunks).
 				for (BlockPos anchor : Storage.index(guild).chunkAnchors()) {
 					add(anchors, heart, id, ChunkLoadPlanner.Kind.STORAGE, anchor, 0);

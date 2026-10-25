@@ -1,5 +1,6 @@
 package dev.guildy.data;
 
+import dev.guildy.builds.GuildBuildData;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.event.GuildEventData;
 import dev.guildy.quest.GuildQuestData;
@@ -61,6 +62,7 @@ public final class Guild {
 	public GuildUpgradeData upgrades = new GuildUpgradeData();
 	public GuildEventData events = new GuildEventData();
 	public GuildTradeData trade = new GuildTradeData();
+	public GuildBuildData builds = new GuildBuildData();
 
 	public Guild() {
 	}
@@ -220,6 +222,9 @@ public final class Guild {
 			trade = new GuildTradeData();
 		}
 		trade.fixNulls();
+		if (builds == null) {
+			builds = new GuildBuildData();
+		}
 		if (level < 1) {
 			level = 1;
 		}

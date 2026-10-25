@@ -31,6 +31,8 @@ public final class Hooks {
 	public static BiConsumer<ServerPlayer, Guild> openVillagers = UNAVAILABLE;
 	/** Upgrade tree ("Arbre d'evolution"). */
 	public static BiConsumer<ServerPlayer, Guild> openUpgrades = UNAVAILABLE;
+	/** Construction sites ("Chantiers"). Set by the build module. */
+	public static BiConsumer<ServerPlayer, Guild> openBuilds = UNAVAILABLE;
 	/** Collection of the unique weapons of the guild. Set by the unique items module. */
 	public static BiConsumer<ServerPlayer, Guild> openUniques = UNAVAILABLE;
 	/** Lore lines of the main menu "unique weapons" button (collection counter). */

@@ -1,6 +1,7 @@
 package dev.guildy;
 
 import dev.guildy.alchemy.AlchemyModule;
+import dev.guildy.builds.BuildModule;
 import dev.guildy.claim.ClaimModule;
 import dev.guildy.command.GuildCommand;
 import dev.guildy.command.GuildCommands;
@@ -65,6 +66,7 @@ public final class Guildy implements ModInitializer {
 		QuestModule.init();
 		ShopModule.init();
 		VillagerModule.init();
+		BuildModule.init(); // construction sites built by the builder villagers from schematics
 		UpgradeModule.init();
 		TradeModule.init();
 		EventModule.init(); // after the wave and trade modules (hooks into both)

@@ -75,6 +75,7 @@ public final class VillagerGui {
 			gui.setSlot(13, GuiUtil.item(Items.VILLAGER_SPAWN_EGG, Lang.get("villager.gui.list.empty"), GuiUtil.lines("villager.gui.list.empty.lore")));
 		}
 		candidateSection(gui, player, guild, level);
+		gui.setSlot(gui.getGuiElement(44) == null ? 44 : 43, BuilderGui.sitesButton(player, guild));
 
 		gui.setSlot(45, GuiUtil.back(() -> Hooks.openMainMenu.accept(player)));
 		if (current > 0) {
@@ -195,6 +196,7 @@ public final class VillagerGui {
 		}
 		lore.add(Lang.get("villager.gui.lore.status", statusText(record, villager)));
 		AlchemistGui.addLore(lore, guild, record);
+		BuilderGui.addLore(lore, guild, record);
 		WorkChunkLoader.addLore(lore, record);
 		GuardGui.addLore(lore, record, villager);
 		if (villager != null) {
@@ -329,6 +331,11 @@ public final class VillagerGui {
 			// No work zone either: its role and the guild's potion stocks.
 			gui.setSlot(19, AlchemistGui.roleButton(player, guild, record, () -> openDetail(player, guild, uuid)));
 			gui.setSlot(20, AlchemistGui.stockButton(player, guild, () -> openDetail(player, guild, uuid)));
+		}
+		if (record.task == Task.BUILDER) {
+			// No work zone: the site it works on and its role.
+			gui.setSlot(19, BuilderGui.projectButton(player, guild, record, () -> openDetail(player, guild, uuid)));
+			gui.setSlot(20, BuilderGui.roleButton(player, guild, record, () -> openDetail(player, guild, uuid)));
 		}
 		if (WishlistMenu.supports(record.task)) {
 			gui.setSlot(20, WishlistMenu.villagerButton(player, guild, record));
