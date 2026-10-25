@@ -767,10 +767,11 @@ la construisent bloc par bloc, en allant chercher eux-mêmes ce qui manque.
 - **Placer un chantier** : menu Villageois (ou menu de la guilde) → *Chantiers* → *Nouveau chantier*, ou
   `/guild chantier`. Choisissez la schématique (taille, nombre de blocs, principaux matériaux) : vous recevez un **Plan
   de chantier**. Clic droit sur un bloc : l'aperçu se pose sur ce bloc, tourné dans le sens de votre regard, et vous
-  seul le voyez (contour en particules, vert si le placement est possible, rouge sinon, et **blocs fantômes**). Une
-  grande construction est montrée en **blocs regroupés**, toujours à l'échelle 1:1 : chaque groupe de 2, 3, 4… blocs
-  de côté s'ajuste aux blocs qu'il contient (un mur reste à sa place, épais d'un bloc) et prend sa matière principale.
-  Toute la forme est visible de loin, et les faces extérieures sont exactement là où elles seront construites. Le menu d'ajustement tourne (±90°), met en miroir et déplace (±1, Maj : ±5,
+  seul le voyez (contour en particules, vert si le placement est possible, rouge sinon, et **blocs fantômes** à
+  l'échelle 1:1). Une très grande construction, dont même la surface dépasse `maxGhostBlocks` (4096), est montrée en
+  **nuage de particules** : un point par bloc visible de l'extérieur, à sa place exacte et de la couleur du bloc. Chaque
+  bloc à moins de 24 blocs de vous a son point, et plus loin un échantillon change toutes les demi-secondes : toute la
+  forme se dessine. Le menu d'ajustement tourne (±90°), met en miroir et déplace (±1, Maj : ±5,
   en X, Z et en hauteur) ; validez. Le fichier est alors copié dans le monde : le modifier ou le supprimer ensuite ne
   change plus le chantier. Le chantier doit être entièrement dans le territoire, sans chevaucher un autre chantier ni
   contenir le cœur, un fanion ou une construction de la guilde. Chantiers actifs : 2 au départ, +1 tous les 5 niveaux de

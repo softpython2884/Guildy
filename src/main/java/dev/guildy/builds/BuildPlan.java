@@ -66,7 +66,8 @@ public final class BuildPlan {
 	private final byte[] interiorKinds;
 	private final List<InteriorRules.Door> doors;
 	private final Map<InteriorRules.Mode, BitSet> clear = new EnumMap<>(InteriorRules.Mode.class);
-	private final Map<Integer, List<GhostLod.Ghost>> ghosts = new HashMap<>();
+	private final Map<Integer, Optional<int[]>> ghosts = new HashMap<>();
+	private int @Nullable [] shell;
 
 	@SuppressWarnings("unchecked")
 	private BuildPlan(SchematicData data, boolean upgrade, boolean waterFree) {
@@ -226,20 +227,26 @@ public final class BuildPlan {
 		return uses[palette];
 	}
 
-	/** Ghost blocks of the preview, at most {@code max} (shared, never modify; computed once per maximum). */
-	public synchronized List<GhostLod.Ghost> ghosts(int max) {
-		return ghosts.computeIfAbsent(max, m -> List.copyOf(GhostLod.select(data.sizeX, data.sizeY, data.sizeZ, data.cells,
-				cell -> ghostable(data.cells[cell]), this::solid, m)));
+	/**
+	 * Cells of the preview's ghost blocks, at most {@code max}: every block, else the shell; null when even the shell does
+	 * not fit (particles instead). Shared, never modify; computed once per maximum.
+	 */
+	public synchronized int @Nullable [] previewGhosts(int max) {
+		return ghosts.computeIfAbsent(max, m -> Optional.ofNullable(PreviewCells.ghosts(data.sizeX, data.sizeY, data.sizeZ,
+				cell -> ghostable(data.cells[cell]), m, this::previewShell))).orElse(null);
+	}
+
+	/** Cells of the blocks seen from outside, in index order (shared, never modify). */
+	public synchronized int[] previewShell() {
+		if (shell == null) {
+			shell = PreviewCells.shell(data.sizeX, data.sizeY, data.sizeZ, cell -> ghostable(data.cells[cell]));
+		}
+		return shell;
 	}
 
 	/** Shown as a ghost: a block to build or a fluid. */
 	public boolean ghostable(int palette) {
 		return (kinds[palette] == MaterialRules.Kind.BUILD || kinds[palette] == MaterialRules.Kind.FLUID) && states[palette] != null;
-	}
-
-	private boolean solid(int palette) {
-		BlockState state = states[palette];
-		return state != null && state.isSolidRender();
 	}
 
 	/** Cells dug out in that mode (shared, never modify). */

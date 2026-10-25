@@ -100,11 +100,18 @@ public final class BuildConfig implements Validatable {
 		@Comment("Duree (secondes) de l'apercu sans action avant qu'il disparaisse")
 		public int seconds = 300;
 		@Comment({
-				"Blocs fantomes affiches au plus (entites d'affichage envoyees au seul joueur, 0 a 16384) ; au-dela, seulement la",
-				"coque (blocs visibles de l'exterieur), puis la schematique vue en gros cubes (2, 3, 4... blocs de cote, chacun de",
-				"la matiere qu'il contient le plus) : un tres grand batiment garde sa forme (0 = aucun bloc fantome, seulement le contour)"
+				"Blocs fantomes affiches au plus, a l'echelle 1:1 (entites d'affichage envoyees au seul joueur, 0 a 16384) ; au-dela,",
+				"seulement la coque (blocs visibles de l'exterieur) ; si meme la coque ne tient pas : nuage de particules",
+				"(0 = aucun bloc fantome ni particule, seulement le contour)"
 		})
 		public int maxGhostBlocks = 4096;
+		@Comment({
+				"Grand chantier : un point de particule par bloc visible de l'exterieur, a sa place exacte et de la couleur du bloc ;",
+				"particules envoyees toutes les demi-secondes (0 = aucune, 10000 au plus)"
+		})
+		public int particles = 2500;
+		@Comment("Rayon (blocs) autour du joueur ou chaque bloc a son point ; au-dela, un echantillon qui change a chaque envoi")
+		public int particleRadius = 24;
 		@Comment("Distance (blocs) jusqu'a laquelle le contour et les blocs fantomes sont envoyes (au moins la diagonale du chantier)")
 		public int range = 96;
 		@Comment("Duree (secondes) de 'Afficher le contour' depuis le menu d'un chantier")
@@ -262,6 +269,8 @@ public final class BuildConfig implements Validatable {
 			preview.maxGhostBlocks = 4096;
 		}
 		preview.maxGhostBlocks = clamp(preview.maxGhostBlocks, 0, 16384);
+		preview.particles = clamp(preview.particles, 0, 10_000);
+		preview.particleRadius = clamp(preview.particleRadius, 4, 96);
 		preview.range = clamp(preview.range, 16, 256);
 		preview.outlineSeconds = clamp(preview.outlineSeconds, 5, 600);
 		builder.blocksPerSecond = clamp(builder.blocksPerSecond, 0.2, 10.0);

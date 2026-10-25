@@ -72,10 +72,17 @@
 		// Duree (secondes) de l'apercu sans action avant qu'il disparaisse
 		"seconds": 300,
 
-		// Blocs fantomes affiches au plus (entites d'affichage envoyees au seul joueur, 0 a 16384) ; au-dela, seulement la
-		// coque (blocs visibles de l'exterieur), puis la schematique vue en gros cubes (2, 3, 4... blocs de cote, chacun de
-		// la matiere qu'il contient le plus) : un tres grand batiment garde sa forme (0 = aucun bloc fantome, seulement le contour)
+		// Blocs fantomes affiches au plus, a l'echelle 1:1 (entites d'affichage envoyees au seul joueur, 0 a 16384) ; au-dela,
+		// seulement la coque (blocs visibles de l'exterieur) ; si meme la coque ne tient pas : nuage de particules
+		// (0 = aucun bloc fantome ni particule, seulement le contour)
 		"maxGhostBlocks": 4096,
+
+		// Grand chantier : un point de particule par bloc visible de l'exterieur, a sa place exacte et de la couleur du bloc ;
+		// particules envoyees toutes les demi-secondes (0 = aucune, 10000 au plus)
+		"particles": 2500,
+
+		// Rayon (blocs) autour du joueur ou chaque bloc a son point ; au-dela, un echantillon qui change a chaque envoi
+		"particleRadius": 24,
 
 		// Distance (blocs) jusqu'a laquelle le contour et les blocs fantomes sont envoyes (au moins la diagonale du chantier)
 		"range": 96,

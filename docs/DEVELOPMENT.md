@@ -652,14 +652,15 @@ schématiques) : `tools/ruins/`.
     mais avec des manquants : GATHER. `Procurement.want(guild, "build:<id>", manquants)` toutes les
     `procurementSeconds` (restant − sources − sacs) avec `Procurement.keep` (le restant déjà au stockage : jamais pris
     comme ingrédient), effacé en pause / fin / annulation. Commande `/guild chantier` (alias `chantiers` ; `/guild build`
-    reste le menu des constructions). Aperçu (`BuildPreview`, 1.15.2) : entités d'affichage envoyées au seul joueur,
-    choisies par `GhostLod` (pur, testé) : tous les blocs s'ils tiennent dans `maxGhostBlocks` (4096), sinon la coque,
-    sinon la schématique en cubes de côté croissant (2, 3, 4… ; un cube compte s'il contient une demi-tranche de blocs,
-    affiché à l'échelle 1:1 sur la boîte englobante de ses blocs (1.15.3 : un mur d'un bloc reste à sa place), dans la
-    matière la plus fréquente, blocs pleins comptés double, seuls les cubes visibles de l'extérieur) : la forme reste
-    lisible à toute taille et les faces extérieures sont exactes (avant : échantillon dispersé de la coque). Calculé une fois par
-    plan (`BuildPlan.ghosts`, préparé sur le fil de lecture) ; contour et fantômes visibles jusqu'à la diagonale du
-    chantier + 32 (512 au plus, `view_range` en conséquence).
+    reste le menu des constructions). Aperçu (`BuildPreview`, `PreviewCells` pur et testé) : blocs fantômes à l'échelle
+    1:1 (entités d'affichage envoyées au seul joueur) pour tous les blocs s'ils tiennent dans `maxGhostBlocks` (4096),
+    sinon pour la coque ; au-delà, nuage de particules (1.15.4) : un point de poussière par bloc de la coque, couleur de
+    carte du bloc, `particles` points toutes les 10 ticks (tous ceux à moins de `particleRadius` = 24, les plus proches
+    sur deux tiers du budget, puis un point tous les N de la coque, décalé à chaque envoi : toute la coque passe en un
+    cycle). Les cubes agrandis de la 1.15.2-1.15.3 sont abandonnés : une texture étirée sur 2 blocs ou plus faisait
+    paraître le bâtiment deux fois trop grand. Coque calculée une fois par plan (`BuildPlan.previewShell`, triée par
+    index : la tranche de couches proche du joueur = un intervalle, trouvé par dichotomie), préparée sur le fil de
+    lecture ; contour et fantômes visibles jusqu'à la diagonale du chantier + 32 (512 au plus).
 76. **Approvisionnement des chantiers** (`villager/GatherWork`, `Supply*`, `Pit*`, supply.json5) : rôle « Chercher les
     matériaux » des bâtisseurs, un voyage à la fois (sac vidé au stockage, choix, travail, livraison, `finished()`).
     `Procurement` (transitoire) : `want/wanted/delivered`, plus `fetching` (réservation par villageois, renouvelée à

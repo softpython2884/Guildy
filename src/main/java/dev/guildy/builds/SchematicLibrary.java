@@ -247,7 +247,9 @@ public final class SchematicLibrary {
 				byte[] bytes = Files.readAllBytes(path);
 				SchematicData data = SchematicReader.read(name, bytes, limits);
 				BuildPlan plan = BuildPlan.of(data, upgrade, waterFree);
-				plan.ghosts(ghosts);
+				if (plan.previewGhosts(ghosts) == null) {
+					plan.previewShell();
+				}
 				result = Result.ok(plan);
 			} catch (SchematicException e) {
 				result = Result.failed(e.key(), e.args());
