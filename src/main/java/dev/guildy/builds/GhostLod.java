@@ -7,9 +7,9 @@ import java.util.function.IntPredicate;
 
 /**
  * Ghost blocks of a preview (pure): every block when they fit, else the blocks touching air or the outside, else the
- * schematic seen through coarser cubes (2, 3, 4… blocks a side). A cube holding enough blocks becomes one ghost scaled
- * to it, showing the block it holds the most: a large building keeps its whole shape, at any size, instead of being
- * sampled into scattered blocks.
+ * schematic seen through coarser cubes (2, 3, 4… blocks a side). A cube holding enough blocks becomes one ghost, at
+ * scale 1:1, stretched over the blocks it holds and showing the one it holds the most: a large building keeps its whole
+ * shape, its outer faces exactly where they will be built, instead of being sampled into scattered blocks.
  */
 final class GhostLod {
 	/** Cube sides tried in turn (up to the largest schematic side allowed). */
@@ -170,7 +170,10 @@ final class GhostLod {
 			return list;
 		}
 
-		/** The cube as a ghost, showing its most frequent block (full blocks count double). */
+		/**
+		 * The cube as a ghost, shrunk to the blocks it holds (a wall stays exactly where it will be built, one block thick)
+		 * and showing its most frequent block (full blocks count double).
+		 */
 		Ghost ghost(int v, int[] cells, BitSet on, IntPredicate solid, int[] frequency) {
 			int x0 = (v % gx) * side;
 			int z0 = ((v / gx) % gz) * side;
@@ -180,6 +183,12 @@ final class GhostLod {
 			int ez = Math.min(side, sz - z0);
 			List<Integer> seen = new ArrayList<>();
 			int best = -1;
+			int minX = Integer.MAX_VALUE;
+			int minY = Integer.MAX_VALUE;
+			int minZ = Integer.MAX_VALUE;
+			int maxX = -1;
+			int maxY = -1;
+			int maxZ = -1;
 			for (int y = y0; y < y0 + ey; y++) {
 				for (int z = z0; z < z0 + ez; z++) {
 					int row = (y * sz + z) * sx;
@@ -188,6 +197,12 @@ final class GhostLod {
 						if (!on.get(i)) {
 							continue;
 						}
+						minX = Math.min(minX, x);
+						minY = Math.min(minY, y);
+						minZ = Math.min(minZ, z);
+						maxX = Math.max(maxX, x);
+						maxY = Math.max(maxY, y);
+						maxZ = Math.max(maxZ, z);
 						int p = cells[i];
 						if (frequency[p] == 0) {
 							seen.add(p);
@@ -202,7 +217,7 @@ final class GhostLod {
 			for (int p : seen) {
 				frequency[p] = 0;
 			}
-			return new Ghost(x0, y0, z0, ex, ey, ez, best);
+			return new Ghost(minX, minY, minZ, maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1, best);
 		}
 	}
 }

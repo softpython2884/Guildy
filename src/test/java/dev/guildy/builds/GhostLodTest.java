@@ -88,8 +88,7 @@ class GhostLodTest {
 				.fill(0, 32, 0, 7, 95, 7, STONE);
 		List<GhostLod.Ghost> ghosts = grid.ghosts(1000);
 		assertTrue(ghosts.size() <= 1000, "budget kept: " + ghosts.size());
-		int side = ghosts.get(0).side();
-		assertTrue(side > 1, "coarser cubes");
+		assertTrue(ghosts.stream().anyMatch(g -> g.side() > 1), "coarser cubes");
 		// The hall's walls and the top of the tower are both covered: the shape is still there.
 		Set<Integer> covered = grid.covered(ghosts);
 		assertTrue(covered.contains(grid.index(0, 10, 30)), "west wall");
@@ -101,6 +100,23 @@ class GhostLodTest {
 		// Cubes never leave the box.
 		for (GhostLod.Ghost g : ghosts) {
 			assertTrue(g.x() + g.sizeX() <= 64 && g.y() + g.sizeY() <= 96 && g.z() + g.sizeZ() <= 64, "inside the box: " + g);
+		}
+	}
+
+	@Test
+	void cubesHugTheirBlocksSoThatWallsStayInPlace() {
+		// A floor and a wall one block thick at x = 5, far too many blocks for the budget.
+		Grid grid = new Grid(64, 64, 64).fill(0, 0, 0, 63, 0, 63, STONE).fill(5, 1, 0, 5, 63, 63, STONE);
+		List<GhostLod.Ghost> ghosts = grid.ghosts(300);
+		assertTrue(ghosts.size() <= 300);
+		assertTrue(ghosts.stream().anyMatch(g -> g.side() > 1), "coarser cubes");
+		for (GhostLod.Ghost g : ghosts) {
+			if (g.y() > 0) {
+				assertTrue(g.x() == 5 && g.sizeX() == 1, "the wall stays at x = 5, one block thick: " + g);
+			} else {
+				// On the floor: one block thick, except the cubes where the wall stands on it.
+				assertTrue(g.sizeY() == 1 || (g.x() <= 5 && 5 < g.x() + g.sizeX()), "the floor stays one block thick: " + g);
+			}
 		}
 	}
 

@@ -655,8 +655,9 @@ schématiques) : `tools/ruins/`.
     reste le menu des constructions). Aperçu (`BuildPreview`, 1.15.2) : entités d'affichage envoyées au seul joueur,
     choisies par `GhostLod` (pur, testé) : tous les blocs s'ils tiennent dans `maxGhostBlocks` (4096), sinon la coque,
     sinon la schématique en cubes de côté croissant (2, 3, 4… ; un cube compte s'il contient une demi-tranche de blocs,
-    affiché agrandi dans la matière la plus fréquente, blocs pleins comptés double, seuls les cubes visibles de
-    l'extérieur) : la forme reste lisible à toute taille (avant : échantillon dispersé de la coque). Calculé une fois par
+    affiché à l'échelle 1:1 sur la boîte englobante de ses blocs (1.15.3 : un mur d'un bloc reste à sa place), dans la
+    matière la plus fréquente, blocs pleins comptés double, seuls les cubes visibles de l'extérieur) : la forme reste
+    lisible à toute taille et les faces extérieures sont exactes (avant : échantillon dispersé de la coque). Calculé une fois par
     plan (`BuildPlan.ghosts`, préparé sur le fil de lecture) ; contour et fantômes visibles jusqu'à la diagonale du
     chantier + 32 (512 au plus, `view_range` en conséquence).
 76. **Approvisionnement des chantiers** (`villager/GatherWork`, `Supply*`, `Pit*`, supply.json5) : rôle « Chercher les

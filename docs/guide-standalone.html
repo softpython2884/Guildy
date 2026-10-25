@@ -782,7 +782,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<h3>Poser un chantier</h3>
 				<ol>
 					<li>Menu Villageois → <strong>Chantiers</strong> → « Nouveau chantier » (ou <button class="cmd" type="button">/guild chantier</button>), choisissez une schématique : vous recevez un <strong>Plan de chantier</strong>.</li>
-					<li>Clic droit sur un bloc : l'aperçu se pose dessus, tourné dans le sens de votre regard. Vous seul le voyez : contour vert (possible) ou rouge, et blocs fantômes. Une très grande construction apparaît en gros cubes de sa matière principale : toute sa forme reste visible, même de loin.</li>
+					<li>Clic droit sur un bloc : l'aperçu se pose dessus, tourné dans le sens de votre regard. Vous seul le voyez : contour vert (possible) ou rouge, et blocs fantômes. Une très grande construction apparaît en blocs regroupés, à l'échelle 1:1 et ajustés à ses murs : toute sa forme reste visible, même de loin, et ses faces extérieures sont à leur place exacte.</li>
 					<li>Dans le menu d'ajustement : tourner, miroir, déplacer (±1, Maj : ±5), puis « Valider ».</li>
 					<li>Donnez la tâche <strong>Bâtisseur</strong> à quelques villageois.</li>
 				</ol>
@@ -1098,7 +1098,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.15.2.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
+				<p>Installation : <code>guildy-1.15.3.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1165,7 +1165,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.15.2.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.15.3.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>
