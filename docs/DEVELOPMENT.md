@@ -652,7 +652,13 @@ schématiques) : `tools/ruins/`.
     mais avec des manquants : GATHER. `Procurement.want(guild, "build:<id>", manquants)` toutes les
     `procurementSeconds` (restant − sources − sacs) avec `Procurement.keep` (le restant déjà au stockage : jamais pris
     comme ingrédient), effacé en pause / fin / annulation. Commande `/guild chantier` (alias `chantiers` ; `/guild build`
-    reste le menu des constructions).
+    reste le menu des constructions). Aperçu (`BuildPreview`, 1.15.2) : entités d'affichage envoyées au seul joueur,
+    choisies par `GhostLod` (pur, testé) : tous les blocs s'ils tiennent dans `maxGhostBlocks` (4096), sinon la coque,
+    sinon la schématique en cubes de côté croissant (2, 3, 4… ; un cube compte s'il contient une demi-tranche de blocs,
+    affiché agrandi dans la matière la plus fréquente, blocs pleins comptés double, seuls les cubes visibles de
+    l'extérieur) : la forme reste lisible à toute taille (avant : échantillon dispersé de la coque). Calculé une fois par
+    plan (`BuildPlan.ghosts`, préparé sur le fil de lecture) ; contour et fantômes visibles jusqu'à la diagonale du
+    chantier + 32 (512 au plus, `view_range` en conséquence).
 76. **Approvisionnement des chantiers** (`villager/GatherWork`, `Supply*`, `Pit*`, supply.json5) : rôle « Chercher les
     matériaux » des bâtisseurs, un voyage à la fois (sac vidé au stockage, choix, travail, livraison, `finished()`).
     `Procurement` (transitoire) : `want/wanted/delivered`, plus `fetching` (réservation par villageois, renouvelée à

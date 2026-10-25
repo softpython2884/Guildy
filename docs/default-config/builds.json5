@@ -4,7 +4,7 @@
 {
 
 	// Version du fichier (geree automatiquement, ne pas modifier)
-	"configVersion": 1,
+	"configVersion": 2,
 
 	// Lecture des fichiers de schematique
 	"schematics": {
@@ -72,11 +72,12 @@
 		// Duree (secondes) de l'apercu sans action avant qu'il disparaisse
 		"seconds": 300,
 
-		// Blocs fantomes affiches au plus (entites d'affichage envoyees au seul joueur) ; au-dela, seulement la coque
-		// (blocs visibles de l'exterieur), echantillonnee (0 = aucun bloc fantome, seulement le contour)
-		"maxGhostBlocks": 1024,
+		// Blocs fantomes affiches au plus (entites d'affichage envoyees au seul joueur, 0 a 16384) ; au-dela, seulement la
+		// coque (blocs visibles de l'exterieur), puis la schematique vue en gros cubes (2, 3, 4... blocs de cote, chacun de
+		// la matiere qu'il contient le plus) : un tres grand batiment garde sa forme (0 = aucun bloc fantome, seulement le contour)
+		"maxGhostBlocks": 4096,
 
-		// Distance (blocs) jusqu'a laquelle le contour et les blocs fantomes sont envoyes
+		// Distance (blocs) jusqu'a laquelle le contour et les blocs fantomes sont envoyes (au moins la diagonale du chantier)
 		"range": 96,
 
 		// Duree (secondes) de 'Afficher le contour' depuis le menu d'un chantier

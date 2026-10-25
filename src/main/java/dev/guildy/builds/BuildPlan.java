@@ -66,6 +66,7 @@ public final class BuildPlan {
 	private final byte[] interiorKinds;
 	private final List<InteriorRules.Door> doors;
 	private final Map<InteriorRules.Mode, BitSet> clear = new EnumMap<>(InteriorRules.Mode.class);
+	private final Map<Integer, List<GhostLod.Ghost>> ghosts = new HashMap<>();
 
 	@SuppressWarnings("unchecked")
 	private BuildPlan(SchematicData data, boolean upgrade, boolean waterFree) {
@@ -223,6 +224,22 @@ public final class BuildPlan {
 
 	public int uses(int palette) {
 		return uses[palette];
+	}
+
+	/** Ghost blocks of the preview, at most {@code max} (shared, never modify; computed once per maximum). */
+	public synchronized List<GhostLod.Ghost> ghosts(int max) {
+		return ghosts.computeIfAbsent(max, m -> List.copyOf(GhostLod.select(data.sizeX, data.sizeY, data.sizeZ, data.cells,
+				cell -> ghostable(data.cells[cell]), this::solid, m)));
+	}
+
+	/** Shown as a ghost: a block to build or a fluid. */
+	public boolean ghostable(int palette) {
+		return (kinds[palette] == MaterialRules.Kind.BUILD || kinds[palette] == MaterialRules.Kind.FLUID) && states[palette] != null;
+	}
+
+	private boolean solid(int palette) {
+		BlockState state = states[palette];
+		return state != null && state.isSolidRender();
 	}
 
 	/** Cells dug out in that mode (shared, never modify). */

@@ -235,6 +235,7 @@ public final class SchematicLibrary {
 		long maxFile = (long) config.schematics.maxFileMegabytes * 1024 * 1024;
 		boolean upgrade = config.schematics.upgradeOldFiles;
 		boolean waterFree = config.materials.waterFree;
+		int ghosts = config.preview.maxGhostBlocks;
 		MinecraftServer server = GuildyServer.server();
 		executor().execute(() -> {
 			Result result;
@@ -245,7 +246,9 @@ public final class SchematicLibrary {
 				}
 				byte[] bytes = Files.readAllBytes(path);
 				SchematicData data = SchematicReader.read(name, bytes, limits);
-				result = Result.ok(BuildPlan.of(data, upgrade, waterFree));
+				BuildPlan plan = BuildPlan.of(data, upgrade, waterFree);
+				plan.ghosts(ghosts);
+				result = Result.ok(plan);
 			} catch (SchematicException e) {
 				result = Result.failed(e.key(), e.args());
 			} catch (IOException e) {

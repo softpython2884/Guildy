@@ -34,8 +34,9 @@ import java.util.UUID;
  * What one player sees of a schematic being placed (or of a site, "Afficher le contour"), sent to that player only:
  * the edges of the box in particles (green: the placement is valid, red: it is not, yellow: an existing site) pulsed
  * every half second, and ghost blocks: block display entities that exist only on that client (never in the world),
- * slightly shrunk and full bright. Large schematics show only their shell (cells touching air or the outside), sampled
- * to {@code preview.maxGhostBlocks}. Everything disappears when the preview ends (confirm, cancel, timeout, logout).
+ * slightly shrunk and full bright. Beyond {@code preview.maxGhostBlocks}, only the shell is shown, then the schematic
+ * seen through coarser cubes ({@link GhostLod}), so that a large building keeps its shape. Everything disappears when
+ * the preview ends (confirm, cancel, timeout, logout).
  */
 public final class BuildPreview {
 	private static final int INTERVAL = 10;
@@ -56,8 +57,8 @@ public final class BuildPreview {
 		final int projectId;
 		long until;
 		int[] ghostIds = new int[0];
-		/** Local cells shown as ghosts (null: chosen at the first draw). */
-		int @Nullable [] ghostCells;
+		/** Ghosts shown (null: chosen at the first draw). */
+		@Nullable List<GhostLod.Ghost> ghosts;
 		boolean redraw = true;
 		@Nullable String error;
 		Object[] errorArgs = new Object[0];
@@ -77,6 +78,13 @@ public final class BuildPreview {
 
 		int[] box() {
 			return transform.box(plan.data.sizeX, plan.data.sizeY, plan.data.sizeZ);
+		}
+
+		/** Distance (blocks) up to which the outline and the ghosts show: the whole box can be seen from its far side. */
+		int range() {
+			double diagonal = Math.sqrt((double) plan.data.sizeX * plan.data.sizeX + (double) plan.data.sizeY * plan.data.sizeY
+					+ (double) plan.data.sizeZ * plan.data.sizeZ);
+			return (int) Math.min(512, Math.max(BuildModule.config().preview.range, diagonal + 32));
 		}
 	}
 
@@ -112,16 +120,15 @@ public final class BuildPreview {
 		end(player);
 		Session session = new Session(site.guild.id, "", site.project.name, plan, site.project.transform(), site.project.id);
 		session.until = Scheduler.ticks() + BuildModule.config().preview.outlineSeconds * 20L;
-		List<Integer> cells = new ArrayList<>();
-		int max = BuildModule.config().preview.maxGhostBlocks;
-		int boxCells = plan.data.cells.length;
-		for (int cell = 0; cell < boxCells && cells.size() < max; cell++) {
+		SchematicData data = plan.data;
+		session.ghosts = GhostLod.select(data.sizeX, data.sizeY, data.sizeZ, data.cells, cell -> {
 			byte state = site.state(cell);
-			if ((state == BuildSite.PLACE || state == BuildSite.NEED || state == BuildSite.WAIT || state == BuildSite.BLOCKED) && site.target(cell) != null) {
-				cells.add(cell);
-			}
-		}
-		session.ghostCells = cells.stream().mapToInt(Integer::intValue).toArray();
+			return (state == BuildSite.PLACE || state == BuildSite.NEED || state == BuildSite.WAIT || state == BuildSite.BLOCKED)
+					&& site.target(cell) != null && plan.ghostable(data.cells[cell]);
+		}, palette -> {
+			BlockState state = plan.state(palette);
+			return state != null && state.isSolidRender();
+		}, BuildModule.config().preview.maxGhostBlocks);
 		SESSIONS.put(player.getUUID(), session);
 		Safe.run("build.preview", () -> draw(player, session));
 	}
@@ -211,7 +218,7 @@ public final class BuildPreview {
 			step *= 2;
 		}
 		List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>();
-		int range = BuildModule.config().preview.range;
+		int range = session.range();
 		for (double x = minX; x <= maxX; x += step) {
 			add(packets, player, color, x, minY, minZ, range);
 			add(packets, player, color, x, maxY, minZ, range);
@@ -264,95 +271,41 @@ public final class BuildPreview {
 
 	// ================================================================ ghosts
 
-	/** Cells shown as ghosts: every block when they fit, else the shell (touching air or the outside), sampled. */
-	static int[] selectGhosts(BuildPlan plan, int max) {
-		if (max <= 0) {
-			return new int[0];
-		}
-		SchematicData data = plan.data;
-		List<Integer> blocks = new ArrayList<>();
-		for (int cell = 0; cell < data.cells.length; cell++) {
-			if (ghostable(plan, data.cells[cell])) {
-				blocks.add(cell);
-			}
-		}
-		List<Integer> chosen = blocks;
-		if (blocks.size() > max) {
-			List<Integer> shell = new ArrayList<>();
-			for (int cell : blocks) {
-				if (exposed(plan, data, cell)) {
-					shell.add(cell);
-				}
-			}
-			chosen = shell;
-		}
-		if (chosen.size() > max) {
-			List<Integer> sampled = new ArrayList<>(max);
-			double step = chosen.size() / (double) max;
-			for (int i = 0; i < max; i++) {
-				sampled.add(chosen.get((int) Math.floor(i * step)));
-			}
-			chosen = sampled;
-		}
-		return chosen.stream().mapToInt(Integer::intValue).toArray();
-	}
-
-	private static boolean ghostable(BuildPlan plan, int palette) {
-		MaterialRules.Kind kind = plan.kind(palette);
-		return (kind == MaterialRules.Kind.BUILD || kind == MaterialRules.Kind.FLUID) && plan.state(palette) != null;
-	}
-
-	private static boolean exposed(BuildPlan plan, SchematicData data, int cell) {
-		int x = data.x(cell);
-		int y = data.y(cell);
-		int z = data.z(cell);
-		int[][] around = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-		for (int[] d : around) {
-			int nx = x + d[0];
-			int ny = y + d[1];
-			int nz = z + d[2];
-			if (nx < 0 || ny < 0 || nz < 0 || nx >= data.sizeX || ny >= data.sizeY || nz >= data.sizeZ) {
-				return true;
-			}
-			if (!ghostable(plan, data.cells[data.index(nx, ny, nz)])) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private static void sendGhosts(ServerPlayer player, Session session) {
 		if (!(player.level() instanceof ServerLevel level)) {
 			return;
 		}
-		if (session.ghostCells == null) {
-			session.ghostCells = selectGhosts(session.plan, BuildModule.config().preview.maxGhostBlocks);
+		if (session.ghosts == null) {
+			session.ghosts = session.plan.ghosts(BuildModule.config().preview.maxGhostBlocks);
 		}
-		SchematicData data = session.plan.data;
 		PlacementTransform t = session.transform;
 		net.minecraft.world.level.block.Rotation rotation = BuildSite.rotation(t.turn());
 		net.minecraft.world.level.block.Mirror mirror = BuildSite.mirror(t.flip());
+		float viewRange = Math.max(1.5F, session.range() / 64.0F);
 		List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>();
-		int[] ids = new int[session.ghostCells.length];
+		int[] ids = new int[session.ghosts.size()];
 		int count = 0;
-		Transformation shrink = new Transformation(new Vector3f(0.05F, 0.05F, 0.05F), null, new Vector3f(0.9F, 0.9F, 0.9F), null);
-		for (int cell : session.ghostCells) {
-			BlockState state = session.plan.state(data.cells[cell]);
+		for (GhostLod.Ghost ghost : session.ghosts) {
+			BlockState state = session.plan.state(ghost.palette());
 			if (state == null) {
 				continue;
 			}
 			BlockState rotated = state.mirror(mirror).rotate(rotation);
-			int x = data.x(cell);
-			int z = data.z(cell);
-			double wx = t.worldX(x, z);
-			double wy = t.worldY(data.y(cell));
-			double wz = t.worldZ(x, z);
+			// World box of the ghost: its two corners turned and mirrored like the schematic.
+			int ax = t.worldX(ghost.x(), ghost.z());
+			int az = t.worldZ(ghost.x(), ghost.z());
+			int bx = t.worldX(ghost.x() + ghost.sizeX() - 1, ghost.z() + ghost.sizeZ() - 1);
+			int bz = t.worldZ(ghost.x() + ghost.sizeX() - 1, ghost.z() + ghost.sizeZ() - 1);
+			double wx = Math.min(ax, bx);
+			double wy = t.worldY(ghost.y());
+			double wz = Math.min(az, bz);
+			Vector3f scale = new Vector3f(Math.abs(bx - ax) + 0.9F, ghost.sizeY() - 0.1F, Math.abs(bz - az) + 0.9F);
 			Display.BlockDisplay display = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, level);
 			display.setPos(wx, wy, wz);
 			display.setBlockState(rotated);
-			display.setTransformation(shrink);
+			display.setTransformation(new Transformation(new Vector3f(0.05F, 0.05F, 0.05F), null, scale, null));
 			display.setBrightnessOverride(Brightness.FULL_BRIGHT);
-			display.setViewRange(1.5F);
+			display.setViewRange(viewRange);
 			packets.add(new ClientboundAddEntityPacket(display.getId(), display.getUUID(), wx, wy, wz, 0.0F, 0.0F, EntityTypes.BLOCK_DISPLAY, 0,
 					Vec3.ZERO, 0.0));
 			List<net.minecraft.network.syncher.SynchedEntityData.DataValue<?>> values = display.getEntityData().getNonDefaultValues();
@@ -372,17 +325,15 @@ public final class BuildPreview {
 		}
 	}
 
-	/** Ghost world positions of a preview (tests). */
+	/** Ghost world corners of a preview (tests). */
 	static List<BlockPos> ghostPositions(Session session) {
 		List<BlockPos> list = new ArrayList<>();
-		if (session.ghostCells == null) {
+		if (session.ghosts == null) {
 			return list;
 		}
-		SchematicData data = session.plan.data;
-		for (int cell : session.ghostCells) {
-			int x = data.x(cell);
-			int z = data.z(cell);
-			list.add(new BlockPos(session.transform.worldX(x, z), session.transform.worldY(data.y(cell)), session.transform.worldZ(x, z)));
+		for (GhostLod.Ghost ghost : session.ghosts) {
+			list.add(new BlockPos(session.transform.worldX(ghost.x(), ghost.z()), session.transform.worldY(ghost.y()),
+					session.transform.worldZ(ghost.x(), ghost.z())));
 		}
 		return list;
 	}

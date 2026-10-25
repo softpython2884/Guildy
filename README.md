@@ -767,8 +767,9 @@ la construisent bloc par bloc, en allant chercher eux-mêmes ce qui manque.
 - **Placer un chantier** : menu Villageois (ou menu de la guilde) → *Chantiers* → *Nouveau chantier*, ou
   `/guild chantier`. Choisissez la schématique (taille, nombre de blocs, principaux matériaux) : vous recevez un **Plan
   de chantier**. Clic droit sur un bloc : l'aperçu se pose sur ce bloc, tourné dans le sens de votre regard, et vous
-  seul le voyez (contour en particules, vert si le placement est possible, rouge sinon, et **blocs fantômes**, la coque
-  seulement pour les grandes constructions). Le menu d'ajustement tourne (±90°), met en miroir et déplace (±1, Maj : ±5,
+  seul le voyez (contour en particules, vert si le placement est possible, rouge sinon, et **blocs fantômes**). Une
+  grande construction est montrée en **gros cubes** (2, 3, 4… blocs de côté, chacun de la matière qu'il contient le
+  plus) : on garde toute sa forme, visible de loin, pour reconnaître chaque partie et bien la placer. Le menu d'ajustement tourne (±90°), met en miroir et déplace (±1, Maj : ±5,
   en X, Z et en hauteur) ; validez. Le fichier est alors copié dans le monde : le modifier ou le supprimer ensuite ne
   change plus le chantier. Le chantier doit être entièrement dans le territoire, sans chevaucher un autre chantier ni
   contenir le cœur, un fanion ou une construction de la guilde. Chantiers actifs : 2 au départ, +1 tous les 5 niveaux de
