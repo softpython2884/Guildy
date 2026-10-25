@@ -176,6 +176,9 @@ public final class SchematicLibrary {
 
 	/** The entry of a key (listed again: a removed file is no longer found). */
 	public static @Nullable Entry find(String key) {
+		if (key.startsWith(SyncmaticaLink.KEY_PREFIX)) {
+			return SyncmaticaLink.entry(key);
+		}
 		for (Entry entry : list()) {
 			if (entry.key().equals(key)) {
 				return entry;
@@ -247,9 +250,7 @@ public final class SchematicLibrary {
 				byte[] bytes = Files.readAllBytes(path);
 				SchematicData data = SchematicReader.read(name, bytes, limits);
 				BuildPlan plan = BuildPlan.of(data, upgrade, waterFree);
-				if (plan.previewGhosts(ghosts) == null) {
-					plan.previewShell();
-				}
+				plan.previewGhosts(ghosts);
 				result = Result.ok(plan);
 			} catch (SchematicException e) {
 				result = Result.failed(e.key(), e.args());

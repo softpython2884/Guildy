@@ -33,6 +33,7 @@ public final class BuildModule {
 		BuildPreview.init();
 		BuildPlacement.init();
 		BuildCommands.init();
+		SyncmaticaLink.init();
 		Builders.init();
 		Hooks.openBuilds = BuildMenus::openList;
 		// The builders' ingredients follow the sites' choice of sources: "all chests and barrels" on an active site.

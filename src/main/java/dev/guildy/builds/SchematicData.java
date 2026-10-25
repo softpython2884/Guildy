@@ -34,6 +34,13 @@ public final class SchematicData {
 	public final List<String> warnings;
 	/** Cells that are neither void nor air. */
 	public final int nonAir;
+	/**
+	 * Where local (0, 0, 0) lies from the origin the file was saved with: Litematica's placement origin (the regions' min
+	 * corner relative to it); 0 for the other formats.
+	 */
+	public int originX;
+	public int originY;
+	public int originZ;
 
 	public SchematicData(String format, int sizeX, int sizeY, int sizeZ, List<String> palette, int[] cells,
 			Map<Integer, CompoundTag> blockEntities, int dataVersion, List<String> warnings) {

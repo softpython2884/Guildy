@@ -155,6 +155,31 @@ final class BuildLang {
 		m.put("build.preview.expired", "&7L'aperçu du chantier a expiré.");
 		m.put("build.preview.none", "&cAucun aperçu en cours : faites clic droit sur un bloc avec un plan de chantier.");
 		m.put("build.preview.cancelled", "&7Placement du chantier annulé.");
+		m.put("build.preview.too_big", "&eTrop grand pour l'aperçu en blocs ({0} blocs visibles de l'extérieur) : seul le contour est affiché. "
+				+ "Pour voir chaque bloc, placez la schématique avec &fLitematica&e, partagez-la avec &fSyncmatica&e puis choisissez « Depuis Litematica » "
+				+ "dans le menu des chantiers.");
+		m.put("build.litematica.started", "&aPlacement repris de Litematica : &f{0}&a. Le contour vert ou rouge montre si le chantier est possible ; validez dans le menu.");
+		m.put("build.litematica.subregions", "&eDes sous-régions ont été déplacées dans Litematica : Guildy les garde à leur place d'origine.");
+		m.put("build.litematica.unavailable", "&cSyncmatica n'est pas installé sur ce serveur : les placements de Litematica ne peuvent pas être repris.");
+		m.put("build.litematica.missing", "&cLe fichier de « {0} » n'est pas sur le serveur : partagez à nouveau le placement avec Syncmatica.");
+		m.put("build.litematica.gone", "&cCe placement n'est plus partagé avec Syncmatica.");
+		m.put("build.litematica.announce", "&b{0} &7a partagé « &f{1}&7 » avec Litematica dans le territoire : &e/guild chantier litematica &7pour en faire un chantier.");
+		m.put("build.gui.litematica", "&b&lDepuis Litematica");
+		m.put("build.gui.litematica.lore", "&7Placez la schématique avec &fLitematica&7,\n&7partagez-la avec &fSyncmatica&7, puis\n&7choisissez-la ici : le chantier se pose\n&7exactement au même endroit.");
+		m.put("build.gui.shared.title", "Placements de Litematica ({0})");
+		m.put("build.gui.shared.empty", "&7Aucun placement partagé");
+		m.put("build.gui.shared.empty.lore", "&71. Chargez la schématique dans &fLitematica\n&7et placez-la dans le territoire.\n&72. Dans le menu du placement, partagez-le\n&7(bouton &fShare&7 de &fSyncmatica&7).\n&73. Revenez ici : il apparaît dans la liste.");
+		m.put("build.gui.shared.help", "&e&lLitematica + Syncmatica");
+		m.put("build.gui.shared.help.lore", "&7Les placements partagés avec Syncmatica\n&7dans votre territoire, ou par un membre.\n&7Les joueurs ont besoin de Litematica et de\n&7Syncmatica ; le serveur, de Syncmatica.\n&7Le fichier est copié pour le chantier :\n&7le modifier ensuite ne change rien.");
+		m.put("build.gui.shared.owner", "&7Partagé par &f{0}");
+		m.put("build.gui.shared.origin", "&7Origine : &f{0} {1} {2}");
+		m.put("build.gui.shared.here", "&aDans votre territoire");
+		m.put("build.gui.shared.elsewhere", "&eOrigine hors de votre territoire");
+		m.put("build.gui.shared.subregions", "&eSous-régions déplacées dans Litematica :\n&egardées à leur place d'origine");
+		m.put("build.gui.shared.missing", "&cFichier absent du serveur");
+		m.put("build.gui.shared.click", "&eClic : en faire un chantier");
+		m.put("build.gui.adjust.litematica", "&bReprendre de Litematica");
+		m.put("build.gui.adjust.litematica.lore", "&7Vous avez déplacé ou tourné le placement\n&7dans Litematica ? Cliquez pour reprendre\n&7sa position partagée.");
 	}
 
 	private static void menus(Map<String, String> m) {

@@ -32,6 +32,8 @@ final class BuildCommands {
 		return Commands.literal(name)
 				.executes(ctx -> run(ctx, "build.command.menu", (player, guild) -> BuildMenus.openList(player, guild)))
 				.then(Commands.literal("list").executes(ctx -> run(ctx, "build.command.list", BuildCommands::list)))
+				.then(Commands.literal("litematica").executes(ctx -> run(ctx, "build.command.litematica",
+						(player, guild) -> BuildMenus.openShared(player, guild, 0))))
 				.then(Commands.literal("confirm").executes(ctx -> run(ctx, "build.command.confirm", (player, guild) -> {
 					if (BuildMenus.allowed(player, guild)) {
 						BuildProject project = BuildPlacement.confirm(player, guild);

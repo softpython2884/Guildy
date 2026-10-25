@@ -654,13 +654,10 @@ schématiques) : `tools/ruins/`.
     comme ingrédient), effacé en pause / fin / annulation. Commande `/guild chantier` (alias `chantiers` ; `/guild build`
     reste le menu des constructions). Aperçu (`BuildPreview`, `PreviewCells` pur et testé) : blocs fantômes à l'échelle
     1:1 (entités d'affichage envoyées au seul joueur) pour tous les blocs s'ils tiennent dans `maxGhostBlocks` (4096),
-    sinon pour la coque ; au-delà, nuage de particules (1.15.4) : un point de poussière par bloc de la coque, couleur de
-    carte du bloc, `particles` points toutes les 10 ticks (tous ceux à moins de `particleRadius` = 24, les plus proches
-    sur deux tiers du budget, puis un point tous les N de la coque, décalé à chaque envoi : toute la coque passe en un
-    cycle). Les cubes agrandis de la 1.15.2-1.15.3 sont abandonnés : une texture étirée sur 2 blocs ou plus faisait
-    paraître le bâtiment deux fois trop grand. Coque calculée une fois par plan (`BuildPlan.previewShell`, triée par
-    index : la tranche de couches proche du joueur = un intervalle, trouvé par dichotomie), préparée sur le fil de
-    lecture ; contour et fantômes visibles jusqu'à la diagonale du chantier + 32 (512 au plus).
+    sinon pour la coque, sinon seulement le contour (+ conseil : Litematica). Essais abandonnés : cubes agrandis
+    (1.15.2-1.15.3 : une texture étirée sur 2 blocs ou plus faisait paraître le bâtiment deux fois trop grand) et nuage
+    de particules (1.15.4 : illisible, on ne distingue pas les blocs). Calculé une fois par plan (`BuildPlan.previewGhosts`
+    / `previewShell`) sur le fil de lecture ; contour et fantômes visibles jusqu'à la diagonale du chantier + 32.
 76. **Approvisionnement des chantiers** (`villager/GatherWork`, `Supply*`, `Pit*`, supply.json5) : rôle « Chercher les
     matériaux » des bâtisseurs, un voyage à la fois (sac vidé au stockage, choix, travail, livraison, `finished()`).
     `Procurement` (transitoire) : `want/wanted/delivered`, plus `fetching` (réservation par villageois, renouvelée à
@@ -702,6 +699,19 @@ schématiques) : `tools/ruins/`.
     `crafting.allContainers`) : coffres et tonneaux non enregistrés du territoire repérés par le même scan (entités de
     bloc des chunks), comptés dans l'instantané et vidés au besoin (`Storage.inUse` respecté) ; `BuildModule` y ajoute
     l'option « tous les coffres et tonneaux » des chantiers actifs.
+77. **Placement avec Litematica** (1.16.0, `builds/SyncmaticaLink`) : les grands chantiers se placent avec Litematica,
+    partagés au serveur par Syncmatica (mod client + serveur, 0.3.20 pour la 26.3). Guildy ne dépend pas de Syncmatica :
+    il lit ses fichiers (`<monde>/syncmatica/placements.json` = `{"placements": [{id, file_name, display_name, hash,
+    origin: {position, dimension}, rotation, mirror, owner, subregionData?}]}`, réécrit à chaque changement ; fichiers
+    `<serveur>/syncmatics/<hash>.litematic`), relu quand sa date change. Litematica pose un bloc à `origine +
+    transformation(position dans le fichier)` (miroir puis rotation autour de 0, comme `StructureTemplate` et
+    `PlacementTransform`) ; Guildy compte depuis le coin minimum des régions, gardé à la lecture
+    (`SchematicData.originX/Y/Z`), d'où `ox = origine + T(origin)` (`SyncmaticaLink.transform`, testé sur les 4 rotations
+    × 3 miroirs contre la formule de Litematica, et en jeu de bout en bout). Clé de schématique `syncmatica:<id>`
+    (`SchematicLibrary.find`), copiée dans le monde à la validation comme les autres ; session d'aperçu `shared` = contour
+    seulement, bouton « Reprendre de Litematica ». Placements d'une guilde = origine dans son territoire ou partagés par
+    un membre ; annonce à la guilde des nouveaux placements (ceux présents au démarrage ne sont pas annoncés).
+    Sous-régions déplacées (`subregionData`) : ignorées (signalé).
 
 ## Notes API Minecraft 26.3
 

@@ -665,6 +665,73 @@ public class BuildGameTests {
 		});
 	}
 
+	@GameTest(environment = "guildy-test:day", maxTicks = 1200)
+	public void litematicaPlacementSharedWithSyncmaticaBecomesASiteInPlace(GameTestHelper helper) throws Exception {
+		ServerLevel level = helper.getLevel();
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Litematica");
+		Guild guild = recruit.guild();
+		BlockPos origin = recruit.ground().offset(8, 1, 6);
+		// A Litematica file: one region of 3 x 1 x 2 cobblestone saved 2 blocks east and 1 south of its origin.
+		CompoundTag position = new CompoundTag();
+		position.putInt("x", 2);
+		position.putInt("y", 0);
+		position.putInt("z", 1);
+		CompoundTag size = new CompoundTag();
+		size.putInt("x", 3);
+		size.putInt("y", 1);
+		size.putInt("z", 2);
+		CompoundTag region = new CompoundTag();
+		region.put("Position", position);
+		region.put("Size", size);
+		net.minecraft.nbt.ListTag palette = new net.minecraft.nbt.ListTag();
+		CompoundTag air = new CompoundTag();
+		air.putString("Name", "minecraft:air");
+		CompoundTag cobble = new CompoundTag();
+		cobble.putString("Name", "minecraft:cobblestone");
+		palette.add(air);
+		palette.add(cobble);
+		region.put("BlockStatePalette", palette);
+		// Six entries of 2 bits, all "1".
+		region.putLongArray("BlockStates", new long[] {0x555L});
+		CompoundTag regions = new CompoundTag();
+		regions.put("Main", region);
+		CompoundTag file = new CompoundTag();
+		file.put("Regions", regions);
+		java.util.UUID hash = java.util.UUID.randomUUID();
+		java.util.UUID id = java.util.UUID.randomUUID();
+		Path files = net.fabricmc.loader.api.FabricLoader.getInstance().getGameDir().resolve("syncmatics");
+		Files.createDirectories(files);
+		NbtIo.writeCompressed(file, files.resolve(hash + ".litematic"));
+		// Syncmatica's list of shared placements: turned clockwise in Litematica.
+		Path placements = level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("syncmatica")
+				.resolve("placements.json");
+		Files.createDirectories(placements.getParent());
+		Files.writeString(placements, "{\"placements\": [{\"id\": \"" + id + "\", \"file_name\": \"ferme.litematic\", \"display_name\": \"Ferme\", "
+				+ "\"hash\": \"" + hash + "\", \"origin\": {\"position\": [" + origin.getX() + ", " + origin.getY() + ", " + origin.getZ() + "], "
+				+ "\"dimension\": \"minecraft:overworld\"}, \"rotation\": \"CLOCKWISE_90\", \"mirror\": \"NONE\", "
+				+ "\"owner\": {\"uuid\": \"" + recruit.leader().getUUID() + "\", \"name\": \"" + recruit.leader().getName().getString() + "\"}}]}");
+		int[] step = {0};
+		helper.succeedWhen(() -> {
+			if (step[0] == 0) {
+				dev.guildy.builds.SyncmaticaLink.Shared shared = dev.guildy.builds.SyncmaticaLink.byKey("syncmatica:" + id);
+				helper.assertTrue(shared != null, "the shared placement is read");
+				BuildPlacement.startShared(recruit.leader(), guild, shared);
+				step[0] = 1;
+			}
+			if (step[0] == 1) {
+				helper.assertTrue(BuildPlacement.previewing(recruit.leader()), "waiting for the preview");
+				ZoneGameTests.command(level, recruit.leader(), "guild chantier confirm");
+				step[0] = 2;
+			}
+			helper.assertTrue(guild.builds.projects.size() == 1, "site created from the placement");
+			int[] box = guild.builds.projects.getFirst().box();
+			// Litematica turns (x, y, z) into (-z, y, x): blocks x 2..4, z 1..2 from the origin land at x -2..-1, z 2..4.
+			helper.assertTrue(box[0] == origin.getX() - 2 && box[3] == origin.getX() - 1 && box[1] == origin.getY() && box[4] == origin.getY()
+					&& box[2] == origin.getZ() + 2 && box[5] == origin.getZ() + 4, "site exactly where Litematica shows it: " + java.util.Arrays.toString(box));
+			GuildManager.disband(guild);
+		});
+	}
+
 	private static ItemStack plan(Guild guild, String key) {
 		CompoundTag extra = new CompoundTag();
 		extra.putString("schematic", key);

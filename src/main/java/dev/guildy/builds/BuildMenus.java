@@ -209,6 +209,9 @@ public final class BuildMenus {
 			GuiUtil.clickSound(player);
 			openPicker(player, guild, 0);
 		}));
+		if (SyncmaticaLink.available()) {
+			gui.setSlot(47, litematicaButton(player, guild));
+		}
 		gui.setSlot(50, GuiUtil.item(Items.BOOK, Lang.get("build.gui.help"), GuiUtil.lines("build.gui.help.lore")));
 		if (current < pages - 1) {
 			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), List.of(Lang.get("gui.page", current + 1, pages)))
@@ -304,6 +307,9 @@ public final class BuildMenus {
 			gui.setSlot(46, GuiUtil.item(Items.ARROW, Lang.get("gui.page.prev"), List.of(Lang.get("gui.page", current + 1, pages)))
 					.setCallback((slot, type, action, g) -> openPicker(player, guild, current - 1)));
 		}
+		if (SyncmaticaLink.available()) {
+			gui.setSlot(47, litematicaButton(player, guild));
+		}
 		gui.setSlot(49, GuiUtil.item(Items.BOOK, Lang.get("build.gui.picker.help"), GuiUtil.lines("build.gui.picker.help.lore")));
 		if (current < pages - 1) {
 			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), List.of(Lang.get("gui.page", current + 1, pages)))
@@ -392,6 +398,88 @@ public final class BuildMenus {
 		return Component.literal(id);
 	}
 
+	// ================================================================ Litematica
+
+	private static GuiElementBuilder litematicaButton(ServerPlayer player, Guild guild) {
+		return GuiUtil.item(Items.FILLED_MAP, Lang.get("build.gui.litematica"), GuiUtil.lines("build.gui.litematica.lore"))
+				.setCallback((slot, type, action, g) -> {
+					GuiUtil.clickSound(player);
+					openShared(player, guild, 0);
+				});
+	}
+
+	/** The placements shared with Syncmatica in the guild's territory (or by its members). */
+	public static void openShared(ServerPlayer player, Guild guild, int page) {
+		if (!SyncmaticaLink.available()) {
+			Msg.send(player, "build.litematica.unavailable");
+			return;
+		}
+		List<SyncmaticaLink.Shared> shared = SyncmaticaLink.forGuild(guild);
+		int pages = GuiUtil.pages(shared.size(), PER_PAGE);
+		int current = Math.max(0, Math.min(page, pages - 1));
+		SimpleGui gui = chest(player, 6, Lang.get("build.gui.shared.title", shared.size()));
+		for (int i = 0; i < PER_PAGE; i++) {
+			int index = current * PER_PAGE + i;
+			if (index >= shared.size()) {
+				break;
+			}
+			SyncmaticaLink.Shared one = shared.get(index);
+			gui.setSlot(i, sharedIcon(guild, one).setCallback((slot, type, action, g) -> pickShared(player, guild, one, gui)));
+		}
+		if (shared.isEmpty()) {
+			gui.setSlot(22, GuiUtil.item(Items.MAP, Lang.get("build.gui.shared.empty"), GuiUtil.lines("build.gui.shared.empty.lore")));
+		}
+		gui.setSlot(45, GuiUtil.back(() -> openList(player, guild, 0)));
+		if (current > 0) {
+			gui.setSlot(46, GuiUtil.item(Items.ARROW, Lang.get("gui.page.prev"), List.of(Lang.get("gui.page", current + 1, pages)))
+					.setCallback((slot, type, action, g) -> openShared(player, guild, current - 1)));
+		}
+		gui.setSlot(49, GuiUtil.item(Items.BOOK, Lang.get("build.gui.shared.help"), GuiUtil.lines("build.gui.shared.help.lore")));
+		if (current < pages - 1) {
+			gui.setSlot(52, GuiUtil.item(Items.ARROW, Lang.get("gui.page.next"), List.of(Lang.get("gui.page", current + 1, pages)))
+					.setCallback((slot, type, action, g) -> openShared(player, guild, current + 1)));
+		}
+		gui.setSlot(53, GuiUtil.close());
+		GuiUtil.fill(gui);
+		gui.open();
+	}
+
+	private static GuiElementBuilder sharedIcon(Guild guild, SyncmaticaLink.Shared shared) {
+		List<Component> lore = new ArrayList<>();
+		lore.add(Lang.get("build.gui.shared.owner", shared.owner()));
+		lore.add(Lang.get("build.gui.shared.origin", shared.x(), shared.y(), shared.z()));
+		lore.add(Lang.get("build.gui.adjust.rotation", Lang.raw("build.rotation." + shared.turn().name().toLowerCase(java.util.Locale.ROOT)),
+				Lang.raw("build.mirror." + shared.flip().id())));
+		boolean here = GuildManager.atChunk(dev.guildy.data.ChunkKey.of(shared.x() >> 4, shared.z() >> 4)) == guild;
+		lore.add(Lang.get(here ? "build.gui.shared.here" : "build.gui.shared.elsewhere"));
+		if (shared.subregions()) {
+			lore.addAll(GuiUtil.lines("build.gui.shared.subregions"));
+		}
+		java.nio.file.Path file = SyncmaticaLink.file(shared);
+		boolean present = file != null && java.nio.file.Files.isRegularFile(file);
+		if (!present) {
+			lore.add(Lang.get("build.gui.shared.missing"));
+		}
+		lore.add(Component.empty());
+		lore.add(Lang.get("build.gui.shared.click"));
+		return GuiUtil.item(present ? Items.FILLED_MAP : Items.BARRIER, Lang.get("build.gui.entry.name", shared.name()), lore);
+	}
+
+	private static void pickShared(ServerPlayer player, Guild guild, SyncmaticaLink.Shared shared, SimpleGui gui) {
+		if (!allowed(player, guild)) {
+			return;
+		}
+		BuildConfig config = BuildModule.config();
+		if (guild.builds.activeCount() >= config.maxActive(guild.level)) {
+			Msg.send(player, "build.error.limit", config.maxActive(guild.level));
+			GuiUtil.errorSound(player);
+			return;
+		}
+		GuiUtil.clickSound(player);
+		gui.close();
+		BuildPlacement.startShared(player, guild, shared);
+	}
+
 	// ================================================================ adjust
 
 	static void openAdjust(ServerPlayer player, Guild guild) {
@@ -431,12 +519,25 @@ public final class BuildMenus {
 		gui.setSlot(23, moveButton(player, guild, session, Items.DYE.pick(DyeColor.RED), "x", 1, 0, 0));
 		gui.setSlot(24, moveButton(player, guild, session, Items.DYE.pick(DyeColor.BLUE), "z", 0, 0, 1));
 		gui.setSlot(25, moveButton(player, guild, session, Items.DYE.pick(DyeColor.LIME), "y", 0, 1, 0));
-		gui.setSlot(29, GuiUtil.item(Items.ENDER_EYE, Lang.get("build.gui.adjust.anchor"), GuiUtil.lines("build.gui.adjust.anchor.lore"))
-				.setCallback((slot, type, action, g) -> {
-					GuiUtil.clickSound(player);
-					g.close();
-					Msg.actionBar(player, "build.plan.hint");
-				}));
+		if (session.shared) {
+			gui.setSlot(29, GuiUtil.item(Items.FILLED_MAP, Lang.get("build.gui.adjust.litematica"), GuiUtil.lines("build.gui.adjust.litematica.lore"))
+					.setCallback((slot, type, action, g) -> {
+						SyncmaticaLink.Shared shared = SyncmaticaLink.byKey(session.entryKey);
+						if (shared == null) {
+							Msg.send(player, "build.litematica.gone");
+							GuiUtil.errorSound(player);
+							return;
+						}
+						adjust(player, guild, session, SyncmaticaLink.transform(shared, data));
+					}));
+		} else {
+			gui.setSlot(29, GuiUtil.item(Items.ENDER_EYE, Lang.get("build.gui.adjust.anchor"), GuiUtil.lines("build.gui.adjust.anchor.lore"))
+					.setCallback((slot, type, action, g) -> {
+						GuiUtil.clickSound(player);
+						g.close();
+						Msg.actionBar(player, "build.plan.hint");
+					}));
+		}
 		GuiElementBuilder confirm = GuiUtil.item(Items.CONCRETE.pick(session.error == null ? DyeColor.LIME : DyeColor.GRAY), Lang.get("build.gui.adjust.confirm"),
 				session.error == null ? GuiUtil.lines("build.gui.adjust.confirm.lore") : GuiUtil.lines("build.gui.adjust.invalid", Lang.raw(session.error, session.errorArgs)));
 		if (session.error == null) {

@@ -768,14 +768,23 @@ la construisent bloc par bloc, en allant chercher eux-mêmes ce qui manque.
   `/guild chantier`. Choisissez la schématique (taille, nombre de blocs, principaux matériaux) : vous recevez un **Plan
   de chantier**. Clic droit sur un bloc : l'aperçu se pose sur ce bloc, tourné dans le sens de votre regard, et vous
   seul le voyez (contour en particules, vert si le placement est possible, rouge sinon, et **blocs fantômes** à
-  l'échelle 1:1). Une très grande construction, dont même la surface dépasse `maxGhostBlocks` (4096), est montrée en
-  **nuage de particules** : un point par bloc visible de l'extérieur, à sa place exacte et de la couleur du bloc. Chaque
-  bloc à moins de 24 blocs de vous a son point, et plus loin un échantillon change toutes les demi-secondes : toute la
-  forme se dessine. Le menu d'ajustement tourne (±90°), met en miroir et déplace (±1, Maj : ±5,
-  en X, Z et en hauteur) ; validez. Le fichier est alors copié dans le monde : le modifier ou le supprimer ensuite ne
+  l'échelle 1:1). Au-delà de `maxGhostBlocks` (4096) blocs visibles de l'extérieur, seul le contour s'affiche : placez
+  alors la construction avec **Litematica** (ci-dessous). Le menu d'ajustement tourne (±90°), met en miroir et déplace
+  (±1, Maj : ±5, en X, Z et en hauteur) ; validez. Le fichier est alors copié dans le monde : le modifier ou le supprimer ensuite ne
   change plus le chantier. Le chantier doit être entièrement dans le territoire, sans chevaucher un autre chantier ni
   contenir le cœur, un fanion ou une construction de la guilde. Chantiers actifs : 2 au départ, +1 tous les 5 niveaux de
   guilde (8 au plus).
+- **Placer avec Litematica** (conseillé pour les grandes constructions) : le serveur installe
+  [Syncmatica](https://modrinth.com/mod/syncmatica) (0.3.20 pour la 26.3) dans `mods/`, les joueurs qui placent ont
+  Litematica et Syncmatica (avec MaLiLib). Chargez la schématique dans Litematica, placez-la dans le territoire comme
+  d'habitude (tous les blocs visibles, au bloc près), puis partagez le placement (bouton *Share* de Syncmatica dans le
+  menu du placement). Ensuite *Chantiers* → **Depuis Litematica**, ou `/guild chantier litematica` : la liste montre les
+  placements partagés dans votre territoire ou par un membre ; cliquez, Guildy vérifie le placement (contour vert ou
+  rouge, sans blocs fantômes : Litematica les montre déjà) et vous validez. Le chantier se pose **exactement** où
+  Litematica le montre, rotation et miroir compris. *Reprendre de Litematica* relit le placement si vous l'avez déplacé
+  entre-temps. La guilde est prévenue quand un placement est partagé dans son territoire. Guildy lit seulement les
+  fichiers de Syncmatica (`<monde>/syncmatica/placements.json`, `syncmatics/`) : sans Syncmatica, rien ne change. Les
+  sous-régions déplacées dans Litematica restent à leur place d'origine.
 - **Terrassement intelligent** : là où un bloc doit être posé, la terre, la pierre, le sable, les plantes, la neige, les
   feuilles et les arbres naturels sont retirés (leur butin part au stockage) et le bloc est posé à leur place. L'air de la
   schématique suit l'option *Intérieur* du chantier :
@@ -1364,7 +1373,7 @@ affiche les raccourcis disponibles (cliquables).
 | `/guild grimoire` | Menu des pages du grimoire tenu en main |
 | `/guild ralliement <id>` | Rejoindre un appel au Ralliement (la commande du bouton [Rejoindre], inutile de la taper) |
 | `/guild bilan` · `bilan detail` | Dernier bilan de combat de ruine (chat ou menu détaillé) |
-| `/guild chantier` · `chantier list\|confirm\|cancel` | Chantiers des bâtisseurs : menu, liste dans le chat, valider ou annuler le placement en cours (alias `/guild chantiers`) |
+| `/guild chantier` · `chantier list\|confirm\|cancel\|litematica` | Chantiers des bâtisseurs : menu, liste dans le chat, valider ou annuler le placement en cours, placements partagés depuis Litematica (alias `/guild chantiers`) |
 | `/guild stockage scan <chunks> [remplacer]` · `stockage filtre ici\|retirer` · `stockage rangement colonnes\|lignes` | Coffres filtrés : analyser les coffres autour de soi et les enregistrer, filtrer le coffre regardé ; rangement dans les coffres (aussi `/guild villagers storage …`) |
 
 ### Administration
@@ -1430,7 +1439,7 @@ analyse (`maxFilterChests`, `filterMaxItems`, `scan*`) et salles des coffres
 | `trade.json5` | Carrefour commercial : visites (chance, séjour, heure), paliers (niveau, coût, nombre d'échanges) et tables d'échanges (objet, lot, prix en or, stock, poids, enchantement) |
 | `events.json5` | Événements : heures des tirages, nuit de sang (chance, conditions, multiplicateurs), raid de pillards (chance, alerte, durée, composition), caravane et érudit (chance, séjour, échanges) |
 | `alchemy.json5` | Potions et élixirs des alchimistes : mode de brassage (`brewing` : simple = poudre de blaze et temps par classe de produit, plafond d'élixirs ; recipes = étapes vanilla), stocks par défaut, élixirs (base, ingrédient, effets, bonus magiques), plafonds et affichage des bonus magiques |
-| `builds.json5` | Chantiers : limites des schématiques (côté 256, volume 2 097 152, 500 000 blocs, fichier 64 Mo ; jusqu'à 1024 / 64 millions / 16 millions / 1 Go), chantiers actifs par niveau, options par défaut (intérieur, sources, fondations), aperçu, vitesse et sac des bâtisseurs, répartition des rôles, blocs naturels du terrassement, colmatage, barre de progression |
+| `builds.json5` | Chantiers : limites des schématiques (côté 256, volume 2 097 152, 500 000 blocs, fichier 64 Mo ; jusqu'à 1024 / 64 millions / 16 millions / 1 Go), chantiers actifs par niveau, options par défaut (intérieur, sources, fondations), aperçu, placements de Litematica (section `litematica`), vitesse et sac des bâtisseurs, répartition des rôles, blocs naturels du terrassement, colmatage, barre de progression |
 | `supply.json5` | Matériaux des bâtisseurs : fabrication (profondeur des recettes, établi, tailleur de pierre, tous les coffres), cuisson (durée, combustibles), transformations, récolte (mines, zones de coupe, hors territoire, rayon, fosses), sources forcées, objets jamais cherchés |
 | `runes.json5` | Runes du forgeron : gravure (niveau de guilde, chance, plafond par jour, examens, matériau, annonce), poids des rangs, objets des runes mythiques, définitions des runes (nom, rang, pièces, poids, bonus d'attributs, pouvoir), réglages des pouvoirs |
 | `scrolls.json5` | Parchemins de sort : définitions (sort, paramètres, rareté, incantation, recharge et groupe, modèle), grimoire (`grimoire` : incantation, recharge, coût en faim par rareté, puissance, chances), grimoire maudit

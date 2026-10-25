@@ -782,11 +782,19 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 				<h3>Poser un chantier</h3>
 				<ol>
 					<li>Menu Villageois → <strong>Chantiers</strong> → « Nouveau chantier » (ou <button class="cmd" type="button">/guild chantier</button>), choisissez une schématique : vous recevez un <strong>Plan de chantier</strong>.</li>
-					<li>Clic droit sur un bloc : l'aperçu se pose dessus, tourné dans le sens de votre regard. Vous seul le voyez : contour vert (possible) ou rouge, et blocs fantômes. Une très grande construction apparaît en nuage de particules : un point par bloc visible de l'extérieur, à sa place exacte et de sa couleur, chaque bloc près de vous et un échantillon changeant plus loin.</li>
+					<li>Clic droit sur un bloc : l'aperçu se pose dessus, tourné dans le sens de votre regard. Vous seul le voyez : contour vert (possible) ou rouge, et blocs fantômes. Pour une très grande construction, seul le contour s'affiche : utilisez plutôt Litematica (ci-dessous).</li>
 					<li>Dans le menu d'ajustement : tourner, miroir, déplacer (±1, Maj : ±5), puis « Valider ».</li>
 					<li>Donnez la tâche <strong>Bâtisseur</strong> à quelques villageois.</li>
 				</ol>
 				<p class="hint">Le chantier doit être entièrement dans le territoire, sans le cœur, un fanion ou une construction de la guilde. 2 chantiers actifs au départ, +1 tous les 5 niveaux de guilde (8 au plus).</p>
+				<h3>Placer avec Litematica</h3>
+				<p>Conseillé pour les grandes constructions. Il faut <strong>Litematica</strong> et <strong>Syncmatica</strong> chez vous, et Syncmatica sur le serveur.</p>
+				<ol>
+					<li>Chargez la schématique dans Litematica et placez-la dans le territoire, au bloc près.</li>
+					<li>Dans le menu du placement, partagez-le avec Syncmatica (bouton <em>Share</em>). La guilde est prévenue.</li>
+					<li>Chantiers → <strong>Depuis Litematica</strong> (ou <button class="cmd" type="button">/guild chantier litematica</button>), cliquez sur le placement : le contour vert confirme qu'il est possible, validez.</li>
+				</ol>
+				<p class="hint">Le chantier se pose exactement où Litematica le montre, rotation et miroir compris. Déplacé entre-temps ? « Reprendre de Litematica » dans le menu d'ajustement.</p>
 				<div class="cards">
 					<div class="card"><h3>Terrassement intelligent</h3><p>Là où un bloc doit aller, la terre, la pierre, les plantes et les arbres naturels sont retirés. Par défaut, seul l'air <strong>entouré par la construction</strong> est creusé : une maison posée dans une montagne ne la coupe pas en deux. Autres choix : « Garder le terrain » ou « Vider toute la boîte ».</p></div>
 					<div class="card"><h3>Jamais touchés</h3><p>Les blocs posés par des joueurs (sauf option « Remplacer les blocs construits »), les coffres et blocs à données, le cœur, les fanions, les constructions, le territoire des autres guildes. L'eau qui coulerait dans le trou est colmatée.</p></div>
@@ -1051,7 +1059,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td><button class="cmd" type="button">/guild fly</button></td><td>Vol de guilde dans votre territoire (jamais pendant une horde)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild waves</button></td><td>Hordes : état, prochaine nuit, statistiques, règles</td></tr>
 						<tr><td><button class="cmd" type="button">/guild build</button></td><td>Constructions et plans</td></tr>
-						<tr><td><button class="cmd" type="button">/guild chantier</button> · <button class="cmd" type="button">/guild chantier list</button></td><td>Chantiers des bâtisseurs (menu, liste dans le chat)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild chantier</button> · <button class="cmd" type="button">/guild chantier list</button> · <button class="cmd" type="button">/guild chantier litematica</button></td><td>Chantiers des bâtisseurs (menu, liste dans le chat, placements partagés depuis Litematica)</td></tr>
 						<tr><td><button class="cmd" type="button">/guild quests</button></td><td>Quêtes</td></tr>
 						<tr><td><button class="cmd" type="button">/guild villagers</button> · <button class="cmd" type="button">/guild villagers zones</button> · <button class="cmd" type="button">/guild villagers route new</button></td><td>Villageois (et <code>accept</code> / <code>refuse</code> pour un candidat), zones de travail, nouveau parcours de garde</td></tr>
 						<tr><td><button class="cmd" type="button">/guild upgrades</button></td><td>Arbre d'évolution</td></tr>
@@ -1098,7 +1106,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.15.4.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
+				<p>Installation : <code>guildy-1.16.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1151,7 +1159,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><code>events.json5</code></td><td>Événements : chances, délais, effets (dont <code>randomEvents</code> pour tout couper)</td></tr>
 							<tr><td><code>trade.json5</code></td><td>Carrefour commercial : paliers, visites, tables d'offres</td></tr>
 							<tr><td><code>alchemy.json5</code></td><td>Potions et élixirs : recettes, stocks par défaut, élixirs, bonus magiques</td></tr>
-							<tr><td><code>builds.json5</code></td><td>Chantiers : limites des schématiques (section <code>schematics</code> : 256 blocs par côté, 2 097 152 de volume et 500 000 blocs par défaut, jusqu'à 1024 / 64 millions / 16 millions), chantiers actifs, options par défaut, aperçu, vitesse et rôles des bâtisseurs, terrassement</td></tr>
+							<tr><td><code>builds.json5</code></td><td>Chantiers : limites des schématiques (section <code>schematics</code> : 256 blocs par côté, 2 097 152 de volume et 500 000 blocs par défaut, jusqu'à 1024 / 64 millions / 16 millions), chantiers actifs, options par défaut, aperçu, placements de Litematica (section <code>litematica</code>), vitesse et rôles des bâtisseurs, terrassement</td></tr>
 							<tr><td><code>supply.json5</code></td><td>Matériaux des bâtisseurs : fabrication, tailleur de pierre, cuisson, transformations, récolte (fosses, rayon), sources forcées</td></tr>
 							<tr><td><code>runes.json5</code></td><td>Runes du forgeron : gravure, rangs, runes et leurs pouvoirs</td></tr>
 							<tr><td><code>scrolls.json5</code></td><td>Parchemins de sort : sorts, recharges, chances de butin, limites d'effets ; grimoire et grimoire maudit</td></tr>
@@ -1165,7 +1173,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.15.4.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.16.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

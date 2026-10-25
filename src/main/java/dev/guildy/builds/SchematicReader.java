@@ -318,7 +318,11 @@ public final class SchematicReader {
 			}
 		}
 		int dataVersion = root.getIntOr("MinecraftDataVersion", 0);
-		return finish("litematic", w, h, l, palette, cells, blockEntities, dataVersion, warnings, limits);
+		SchematicData data = finish("litematic", w, h, l, palette, cells, blockEntities, dataVersion, warnings, limits);
+		data.originX = (int) minX;
+		data.originY = (int) minY;
+		data.originZ = (int) minZ;
+		return data;
 	}
 
 	/** Entry {@code index} of a Litematica bit array (entries are tightly packed: one may span two longs). */

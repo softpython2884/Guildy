@@ -247,6 +247,50 @@ public final class BuildPlacement {
 		BuildMenus.openAdjust(player, guild);
 	}
 
+	/** Loads a placement shared from Litematica and starts its preview (message sent on failure). */
+	public static void startShared(ServerPlayer player, Guild guild, SyncmaticaLink.Shared shared) {
+		SchematicLibrary.Entry entry = SchematicLibrary.find(shared.key());
+		if (entry == null) {
+			Msg.send(player, "build.litematica.missing", shared.name());
+			GuiErrors.sound(player);
+			return;
+		}
+		UUID playerId = player.getUUID();
+		SchematicLibrary.Result result = SchematicLibrary.get(entry, loaded -> {
+			ServerPlayer online = GuildyServer.player(playerId);
+			if (online == null) {
+				return;
+			}
+			if (loaded.ok()) {
+				startShared(online, guild, entry, loaded.plan(), shared);
+			} else {
+				Msg.send(online, "build.error.unusable", Lang.raw(loaded.error(), loaded.args()));
+			}
+		});
+		if (result == null) {
+			Msg.actionBar(player, "build.preview.loading");
+		} else if (!result.ok()) {
+			Msg.send(player, "build.error.unusable", Lang.raw(result.error(), result.args()));
+			GuiErrors.sound(player);
+		} else {
+			startShared(player, guild, entry, result.plan(), shared);
+		}
+	}
+
+	/** A placement shared from Litematica: the preview starts where Litematica shows it (outline only, Litematica shows the blocks). */
+	static void startShared(ServerPlayer player, Guild guild, SchematicLibrary.Entry entry, BuildPlan plan, SyncmaticaLink.Shared shared) {
+		PlacementTransform transform = SyncmaticaLink.transform(shared, plan.data);
+		BuildPreview.Session session = BuildPreview.start(player, guild.id, entry.key(), displayName(entry), plan, transform);
+		session.shared = true;
+		BuildPreview.changed(player, session);
+		Msg.send(player, "build.litematica.started", displayName(entry));
+		if (shared.subregions()) {
+			Msg.send(player, "build.litematica.subregions");
+		}
+		Msg.sound(player, SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, 0.8F, 1.0F);
+		BuildMenus.openAdjust(player, guild);
+	}
+
 	// ================================================================ validation
 
 	/** Checks the preview (sets {@link BuildPreview.Session#error}). */

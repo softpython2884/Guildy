@@ -35,9 +35,8 @@ import java.util.UUID;
  * the edges of the box in particles (green: the placement is valid, red: it is not, yellow: an existing site) pulsed
  * every half second, and ghost blocks: block display entities that exist only on that client (never in the world),
  * slightly shrunk and full bright, at scale 1:1. Beyond {@code preview.maxGhostBlocks}, only the shell is shown; when
- * even the shell does not fit, a cloud of particles at scale 1:1, one per shell block in the block's color, sent at every
- * pulse: each one near the player, a changing sample further away ({@link PreviewCells}). Everything disappears when the
- * preview ends (confirm, cancel, timeout, logout).
+ * even the shell does not fit, only the outline ({@link PreviewCells}), and a placement taken from Litematica never has
+ * ghosts (Litematica shows the blocks). Everything disappears when the preview ends (confirm, cancel, timeout, logout).
  */
 public final class BuildPreview {
 	private static final int INTERVAL = 10;
@@ -60,10 +59,10 @@ public final class BuildPreview {
 		int[] ghostIds = new int[0];
 		/** Cells shown as ghost blocks (null: chosen at the first draw). */
 		int @Nullable [] ghosts;
-		/** Shell cells shown as particles, when even the shell has too many blocks for ghosts. */
-		int @Nullable [] cloud;
-		DustParticleOptions @Nullable [] colors;
-		int pulse;
+		/** Placement taken from Litematica ({@link SyncmaticaLink}): only the outline, Litematica shows the blocks. */
+		boolean shared;
+		/** The "too large for ghosts" hint was sent. */
+		boolean hinted;
 		boolean redraw = true;
 		@Nullable String error;
 		Object[] errorArgs = new Object[0];
@@ -131,13 +130,9 @@ public final class BuildPreview {
 			return (state == BuildSite.PLACE || state == BuildSite.NEED || state == BuildSite.WAIT || state == BuildSite.BLOCKED)
 					&& site.target(cell) != null && plan.ghostable(data.cells[cell]);
 		};
-		int[][] shell = new int[1][];
-		session.ghosts = PreviewCells.ghosts(data.sizeX, data.sizeY, data.sizeZ, remaining, BuildModule.config().preview.maxGhostBlocks,
-				() -> shell[0] = PreviewCells.shell(data.sizeX, data.sizeY, data.sizeZ, remaining));
-		if (session.ghosts == null) {
-			session.ghosts = new int[0];
-			session.cloud = shell[0];
-		}
+		int[] ghosts = PreviewCells.ghosts(data.sizeX, data.sizeY, data.sizeZ, remaining, BuildModule.config().preview.maxGhostBlocks,
+				() -> PreviewCells.shell(data.sizeX, data.sizeY, data.sizeZ, remaining));
+		session.ghosts = ghosts == null ? new int[0] : ghosts;
 		SESSIONS.put(player.getUUID(), session);
 		Safe.run("build.preview", () -> draw(player, session));
 	}
@@ -190,10 +185,7 @@ public final class BuildPreview {
 				});
 				continue;
 			}
-			later.add(() -> {
-				outline(player, session);
-				cloud(player, session);
-			});
+			later.add(() -> outline(player, session));
 		}
 		for (Runnable runnable : later) {
 			Safe.run("build.preview", runnable);
@@ -212,7 +204,6 @@ public final class BuildPreview {
 			sendGhosts(player, session);
 		}
 		outline(player, session);
-		cloud(player, session);
 	}
 
 	/** The 12 edges of the box (and the origin corner of a placement). */
@@ -289,11 +280,15 @@ public final class BuildPreview {
 			return;
 		}
 		if (session.ghosts == null) {
-			session.ghosts = session.plan.previewGhosts(BuildModule.config().preview.maxGhostBlocks);
-			if (session.ghosts == null) {
-				session.ghosts = new int[0];
-				session.cloud = session.plan.previewShell();
+			int[] ghosts = session.shared ? new int[0] : session.plan.previewGhosts(BuildModule.config().preview.maxGhostBlocks);
+			if (ghosts == null) {
+				ghosts = new int[0];
+				if (!session.hinted) {
+					session.hinted = true;
+					dev.guildy.core.Msg.send(player, "build.preview.too_big", session.plan.previewShell().length);
+				}
 			}
+			session.ghosts = ghosts;
 		}
 		SchematicData data = session.plan.data;
 		PlacementTransform t = session.transform;
@@ -330,39 +325,6 @@ public final class BuildPreview {
 			ids[count++] = display.getId();
 		}
 		session.ghostIds = java.util.Arrays.copyOf(ids, count);
-		send(player, packets);
-	}
-
-	/** A large schematic: one particle per shell block, in the block's color (near the player, then a changing sample). */
-	private static void cloud(ServerPlayer player, Session session) {
-		int[] shell = session.cloud;
-		BuildConfig.Preview config = BuildModule.config().preview;
-		if (shell == null || shell.length == 0 || config.particles <= 0) {
-			return;
-		}
-		SchematicData data = session.plan.data;
-		PlacementTransform t = session.transform;
-		int[] local = t.local(player.getBlockX(), player.getBlockZ());
-		int[] picked = PreviewCells.pick(data.sizeX, data.sizeY, data.sizeZ, shell, local[0] + 0.5, player.getY() - t.oy(), local[1] + 0.5,
-				config.particleRadius, config.particles, session.pulse++);
-		if (session.colors == null) {
-			session.colors = new DustParticleOptions[session.plan.paletteSize()];
-		}
-		List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>(picked.length);
-		for (int cell : picked) {
-			int palette = data.cells[cell];
-			DustParticleOptions color = session.colors[palette];
-			if (color == null) {
-				BlockState state = session.plan.state(palette);
-				int rgb = state == null ? 0 : state.getMapColor(net.minecraft.world.level.EmptyBlockGetter.INSTANCE, BlockPos.ZERO).col;
-				color = new DustParticleOptions(rgb == 0 ? 0xC8C8C8 : rgb, 1.5F);
-				session.colors[palette] = color;
-			}
-			int x = data.x(cell);
-			int z = data.z(cell);
-			packets.add(new ClientboundLevelParticlesPacket(color, true, true, t.worldX(x, z) + 0.5, t.worldY(data.y(cell)) + 0.5,
-					t.worldZ(x, z) + 0.5, 0.0F, 0.0F, 0.0F, 0.0F, 1));
-		}
 		send(player, packets);
 	}
 
