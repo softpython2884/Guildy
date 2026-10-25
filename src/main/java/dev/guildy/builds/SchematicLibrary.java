@@ -277,12 +277,15 @@ public final class SchematicLibrary {
 		}
 	}
 
-	/** Copies a picked file for a new site; {@code done} runs on the server thread with the copy's name (null on failure). */
-	static void copyForSite(MinecraftServer server, Entry entry, int projectId, Consumer<@Nullable String> done) {
+	/** Name of the copy of a site's file: unique over the guilds ("1a2b3c4d-3-maison.schem"). */
+	static String copyName(java.util.UUID guild, int projectId, Entry entry) {
+		String slug = entry.path().getFileName().toString().replaceAll("[^A-Za-z0-9._-]", "_");
+		return guild.toString().substring(0, 8) + "-" + projectId + "-" + slug;
+	}
+
+	/** Copies a picked file for a new site as {@code file}; {@code done} runs on the server thread with it (null on failure). */
+	static void copyForSite(MinecraftServer server, Entry entry, String file, Consumer<@Nullable String> done) {
 		Path dir = buildsDir(server);
-		String base = entry.path().getFileName().toString();
-		String slug = base.replaceAll("[^A-Za-z0-9._-]", "_");
-		String file = projectId + "-" + slug;
 		executor().execute(() -> {
 			String copied = null;
 			try {
@@ -290,7 +293,11 @@ public final class SchematicLibrary {
 				Path target = dir.resolve(file);
 				Path tmp = dir.resolve(file + ".tmp");
 				Files.copy(entry.path(), tmp, StandardCopyOption.REPLACE_EXISTING);
-				Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+				try {
+					Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+				} catch (java.nio.file.AtomicMoveNotSupportedException e) {
+					Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+				}
 				copied = file;
 			} catch (IOException | RuntimeException e) {
 				Guildy.LOGGER.warn("Could not copy schematic {} to {}", entry.path(), dir, e);

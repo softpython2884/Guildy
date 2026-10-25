@@ -860,6 +860,20 @@ public final class BuildSite {
 		return best;
 	}
 
+	/** The cell is still work of the parcel for that bag (fronts included): a builder walking to it keeps it. */
+	public boolean stillWorkable(Job job, int cell, Map<Item, Integer> bag) {
+		if (!ready() || cell < 0 || cell >= cells.length || layer(cell) != job.layer() || !workable(cell, bag)) {
+			return false;
+		}
+		BuildPasses.Pass pass = pass(cell);
+		if (pass == null || !fronts().allows(pass, job.layer())) {
+			return false;
+		}
+		int tile = BuildModule.config().builder.tileSize;
+		Job of = jobOf(cell, tile);
+		return of.equals(job);
+	}
+
 	/** Cell of a layer and a column, -1 when there is none. */
 	private int cellOf(int layer, int x, int z) {
 		if (layer >= depth) {

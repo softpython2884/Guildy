@@ -198,6 +198,12 @@ public final class BuildSites {
 		return "build:" + project.id;
 	}
 
+	/** Forgets the runtime of a site and loads it again from its copy, like after a restart (admin, tests). */
+	public static @Nullable BuildSite reload(Guild guild, BuildProject project) {
+		forget(guild, project);
+		return site(guild, project);
+	}
+
 	/** The site must be planned again (interior mode, foundations changed). */
 	static void replan(Guild guild, BuildProject project) {
 		BuildSite site = peek(guild, project);

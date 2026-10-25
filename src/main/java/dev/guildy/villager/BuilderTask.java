@@ -54,6 +54,11 @@ final class BuilderTask extends TaskHandler {
 	private @Nullable GatherWork gather;
 	private BuilderRoles.@Nullable Role working;
 	private @Nullable BlockPos fetchTarget;
+	/** Standing spot chosen for {@link #spotFor} (null: walk to the cell itself). */
+	private @Nullable BlockPos spot;
+	private @Nullable BlockPos spotFor;
+	/** Cell the builder is walking to (-1: none). */
+	private int walkCell = -1;
 	private final Map<BlockPos, Long> emptySources = new HashMap<>();
 	private final Map<BuildSite.Job, Long> skipped = new HashMap<>();
 	private final Map<Integer, Long> skippedCells = new HashMap<>();
@@ -275,7 +280,11 @@ final class BuilderTask extends TaskHandler {
 		if (!needs.isEmpty() && fetch(ctx, data, current, needs)) {
 			return;
 		}
-		int cell = current.next(parcel, villager.blockPosition(), bag, skippedCells::containsKey);
+		// While walking to a cell, keep it (the nearest cell changes at every step: the walk timers and the teleport fallback
+		// would never see an end).
+		int cell = walkCell >= 0 && !skippedCells.containsKey(walkCell) && current.stillWorkable(parcel, walkCell, bag)
+				? walkCell : current.next(parcel, villager.blockPosition(), bag, skippedCells::containsKey);
+		walkCell = -1;
 		if (cell < 0) {
 			// Parcel done (or what is left waits for materials nobody has, or was tried a moment ago): the next one.
 			if (!needs.isEmpty() || current.next(parcel, villager.blockPosition(), bag, c -> false) >= 0) {
@@ -288,9 +297,16 @@ final class BuilderTask extends TaskHandler {
 		}
 		BlockPos pos = current.pos(cell);
 		double reach = cfg.reach;
-		if (!Movement.near(ctx, pos, reach, reach)) {
-			switch (Movement.moveTo(ctx, pos, Math.max(1.5, reach - 1.0), ctx.config.work.walkTimeoutSeconds)) {
+		if (!reachable(ctx, pos, reach)) {
+			if (!pos.equals(spotFor)) {
+				spotFor = pos;
+				spot = standSpot(ctx, pos, reach);
+			}
+			// A standing spot within reach (a dug cell, the top of a hill...), else the cell itself.
+			BlockPos walkTo = spot != null ? spot : pos;
+			switch (Movement.moveTo(ctx, walkTo, spot != null ? 1.2 : Math.max(1.5, reach - 1.0), ctx.config.work.walkTimeoutSeconds)) {
 				case MOVING -> {
+					walkCell = cell;
 					ctx.status("villager.status.builder.going", current.project.name, layerText(current, parcel));
 					return;
 				}
@@ -319,13 +335,47 @@ final class BuilderTask extends TaskHandler {
 				break;
 			}
 			cell = current.next(parcel, villager.blockPosition(), Bags.contents(carried), skippedCells::containsKey);
-			if (cell < 0 || !Movement.near(ctx, current.pos(cell), reach, reach)) {
+			if (cell < 0 || !reachable(ctx, current.pos(cell), reach)) {
 				break;
 			}
 		}
 		if (credit < 1 && actions == 0) {
 			ctx.status(statusKey(current.pass(cell)), layerText(current, parcel), current.project.name);
 		}
+	}
+
+	/**
+	 * Close enough to work on the cell: within reach, or standing on the spot chosen for a cell near it (a buried cell is
+	 * worked from the closest place one can stand, up to 8 blocks away).
+	 */
+	private boolean reachable(WorkContext ctx, BlockPos pos, double reach) {
+		if (Movement.near(ctx, pos, reach, reach)) {
+			return true;
+		}
+		BlockPos at = ctx.villager.blockPosition();
+		return spot != null && at.distSqr(spot) <= 2 && at.distSqr(pos) <= 64;
+	}
+
+	/**
+	 * Where to stand to work on a cell: the nearest safe spot within 3 blocks of it (never in the cell itself), else above
+	 * it (a cell buried under terrain still to dig: the surface over it, 8 blocks at most). Null when there is none.
+	 */
+	private static @Nullable BlockPos standSpot(WorkContext ctx, BlockPos cell, double reach) {
+		BlockPos near = WorldUtil.findSafeSpot(ctx.level, cell, 3, true, p -> !p.equals(cell) && !p.equals(cell.below()));
+		if (near != null) {
+			return near;
+		}
+		for (int dy = 3; dy <= 8; dy++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					BlockPos up = cell.offset(dx, dy, dz);
+					if (WorldUtil.isSafeStand(ctx.level, up)) {
+						return up;
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	/** What a work result means for the builder; true stops this step's work. */
@@ -494,7 +544,7 @@ final class BuilderTask extends TaskHandler {
 			default -> {
 			}
 		}
-		int moved = BuildStock.fetch(ctx, target, sources, available, capacity);
+		int moved = BuildStock.fetch(ctx, target, sources, withExtras(ctx, current, available, stock, capacity), capacity);
 		fetchTarget = null;
 		if (moved <= 0) {
 			emptySources.put(target, ctx.now + SKIP_TICKS);
@@ -510,6 +560,36 @@ final class BuilderTask extends TaskHandler {
 		ctx.status("villager.status.builder.fetched", moved, current.project.name);
 		GuildManager.markDirty();
 		return true;
+	}
+
+	/**
+	 * What to take on a trip: the parcel's needs first, then (one stack each, half of the bag's free places at most) what
+	 * the next parcels of the site will need, so that a builder does not walk back to the chest for every parcel while
+	 * leaving the rest of the stock to the other builders.
+	 */
+	private static Map<Item, Integer> withExtras(WorkContext ctx, BuildSite current, Map<Item, Integer> parcel, Map<Item, Integer> stock, int capacity) {
+		Map<Item, Integer> wanted = new java.util.LinkedHashMap<>(parcel);
+		int parcelStacks = 0;
+		for (Map.Entry<Item, Integer> entry : parcel.entrySet()) {
+			int max = Math.max(1, new ItemStack(entry.getKey()).getMaxStackSize());
+			parcelStacks += (entry.getValue() + max - 1) / max;
+		}
+		int extraStacks = Math.max(0, (Bags.freeStacks(ctx.record.carried, capacity) - parcelStacks) / 2);
+		Map<Item, Integer> bag = Bags.contents(ctx.record.carried);
+		for (Map.Entry<Item, Integer> entry : current.remainingMaterials().entrySet()) {
+			if (extraStacks <= 0) {
+				break;
+			}
+			Item item = entry.getKey();
+			int there = stock.getOrDefault(item, 0) - wanted.getOrDefault(item, 0);
+			int still = entry.getValue() - wanted.getOrDefault(item, 0) - bag.getOrDefault(item, 0);
+			int more = Math.min(Math.min(there, still), new ItemStack(item).getMaxStackSize());
+			if (more > 0) {
+				wanted.merge(item, more, Integer::sum);
+				extraStacks--;
+			}
+		}
+		return wanted;
 	}
 
 	/** Something in the bag the site does not need (debris, leftovers of a cancelled site). */
@@ -574,6 +654,9 @@ final class BuilderTask extends TaskHandler {
 		site = null;
 		job = null;
 		fetchTarget = null;
+		spot = null;
+		spotFor = null;
+		walkCell = -1;
 		credit = 0;
 	}
 

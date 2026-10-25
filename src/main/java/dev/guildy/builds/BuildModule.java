@@ -82,7 +82,7 @@ public final class BuildModule {
 			}
 			BuildProject project = BuildPlacement.create(guild, entry, result.plan(), transform, "admin");
 			BuildSite site = BuildSites.start(guild, project, result.plan());
-			SchematicLibrary.copyForSite(server, entry, project.id, copied -> {
+			SchematicLibrary.copyForSite(server, entry, project.file, copied -> {
 				if (copied == null) {
 					site.fail("build.error.copy_failed");
 				}

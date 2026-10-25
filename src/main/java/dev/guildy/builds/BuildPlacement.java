@@ -84,6 +84,11 @@ public final class BuildPlacement {
 		return GuildyItems.is(stack, KIND_BUILD_PLAN);
 	}
 
+	/** The player has a placement preview in progress. */
+	public static boolean previewing(ServerPlayer player) {
+		return BuildPreview.session(player) != null;
+	}
+
 	/** Gives a plan (removing the player's other build plans). */
 	static void give(ServerPlayer player, Guild guild, SchematicLibrary.Entry entry, BuildPlan plan) {
 		removePlans(player);
@@ -370,13 +375,10 @@ public final class BuildPlacement {
 		}
 		BuildProject project = create(guild, entry, session.plan, session.transform, player.getName().getString());
 		BuildSite site = BuildSites.start(guild, project, session.plan);
-		SchematicLibrary.copyForSite(server, entry, project.id, copied -> {
+		SchematicLibrary.copyForSite(server, entry, project.file, copied -> {
 			if (copied == null) {
 				site.fail("build.error.copy_failed");
 				Msg.guild(guild, "build.copy_failed", project.name);
-			} else if (!copied.equals(project.file)) {
-				project.file = copied;
-				GuildManager.markDirty();
 			}
 		});
 		BuildPreview.end(player);
@@ -394,8 +396,7 @@ public final class BuildPlacement {
 		project.name = uniqueName(guild, displayName(entry));
 		project.source = entry.key();
 		project.format = plan.data.format;
-		String base = entry.path().getFileName().toString().replaceAll("[^A-Za-z0-9._-]", "_");
-		project.file = project.id + "-" + base;
+		project.file = SchematicLibrary.copyName(guild.id, project.id, entry);
 		project.sizeX = plan.data.sizeX;
 		project.sizeY = plan.data.sizeY;
 		project.sizeZ = plan.data.sizeZ;
