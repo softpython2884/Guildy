@@ -78,7 +78,9 @@ final class BuilderTask extends TaskHandler {
 		}
 
 		BuildSite chosen = chooseSite(ctx, data);
-		String gatherReason = gatherReason(ctx);
+		// A trip under way goes on: its inputs are in the bag now, so the storage alone would say "nothing possible".
+		boolean tripUnderway = working == BuilderRoles.Role.GATHER && gather != null && !gather.finished();
+		String gatherReason = tripUnderway ? null : gatherReason(ctx);
 		BuilderRoles.Role role = preferred;
 		if (role == BuilderRoles.Role.BUILD && chosen == null && gatherReason == null) {
 			role = BuilderRoles.Role.GATHER;
