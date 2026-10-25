@@ -88,11 +88,6 @@ final class SupplyLang {
 		m.put("supply.fail.station", "atelier introuvable");
 		m.put("supply.fail.stock", "le stockage n'en a plus");
 		m.put("supply.fail.unloaded", "zone hors de portée (aucun joueur à proximité)");
-		// placeholder task of this branch (the construction sites define the real one)
-		if (!Lang.has("villager.task.builder")) {
-			m.put("villager.task.builder", "Bâtisseur");
-			m.put("villager.task.builder.desc", "&7Va chercher les matériaux qui manquent\n&7aux chantiers de la guilde : fabrique,\n&7cuit ou récolte, puis dépose au stockage.");
-		}
 		names(m);
 		Lang.addDefaults(m);
 	}

@@ -37,7 +37,6 @@ final class BuildLang {
 		m.put("villager.builder.site.set", "&a{0} travaille désormais sur : &f{1}");
 		m.put("villager.builder.role.set", "&aRôle de {0} : &f{1}");
 		m.put("villager.builder.gather.nothing", "aucun matériau demandé");
-		m.put("villager.gather.unavailable", "récolte pas encore disponible");
 		m.put("villager.gui.lore.builder.role", "&7Rôle : &f{0} &8({1})");
 		m.put("villager.gui.lore.builder.fallback", "&7Fait plutôt : &e{0} &8(son rôle n'a rien de possible)");
 		m.put("villager.gui.lore.builder.site", "&7Chantier : &f{0}");

@@ -14,8 +14,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * /guild chantier (alias /guild build): the sites menu; {@code list} in the chat; {@code confirm} / {@code cancel} for
- * the placement in progress (same as the adjust menu).
+ * /guild chantier (alias /guild chantiers; /guild build stays the constructions menu): the sites menu; {@code list} in
+ * the chat; {@code confirm} / {@code cancel} for the placement in progress (same as the adjust menu).
  */
 final class BuildCommands {
 	private BuildCommands() {
@@ -24,7 +24,7 @@ final class BuildCommands {
 	static void init() {
 		GuildCommand.addSubcommands((root, context) -> {
 			root.then(tree("chantier"));
-			root.then(tree("build"));
+			root.then(tree("chantiers"));
 		});
 	}
 
