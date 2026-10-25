@@ -91,7 +91,9 @@ final class SupplyTrees {
 	}
 
 	Result tick(WorkContext ctx, String job) {
-		if (progress(ctx) >= amount || CraftStock.roomFor(ctx, new ItemStack(item)) <= 0) {
+		boolean room = CraftStock.roomFor(ctx, new ItemStack(item)) > 0;
+		if (!room || (tree == null && progress(ctx) >= amount)) {
+			// A tree started is always cut whole (unless the bag is full): never half a tree left standing.
 			return Result.DONE;
 		}
 		if (!prepared) {
@@ -135,13 +137,16 @@ final class SupplyTrees {
 			}
 			budget -= 1;
 			cut(ctx, next);
-			if (progress(ctx) >= amount || CraftStock.roomFor(ctx, new ItemStack(item)) <= 0) {
-				if (current.logs().isEmpty() || nextLogPeek(ctx, current) == null) {
+			if (CraftStock.roomFor(ctx, new ItemStack(item)) <= 0) {
+				if (nextLogPeek(ctx, current) == null) {
 					finishTree(ctx, current);
 					tree = null;
 				}
 				return Result.DONE;
 			}
+		}
+		if (tree == null && progress(ctx) >= amount) {
+			return Result.DONE;
 		}
 		budget = Math.min(budget, 4);
 		ctx.status("villager.gather.job", job, Lang.raw("supply.action.tree_cut", place, progress(ctx), amount));

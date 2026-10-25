@@ -46,6 +46,8 @@ final class SupplyPits {
 	/** Excluded columns of a real mine, per zone and layout identity (small cache). */
 	private static final Map<String, LongOpenHashSet> MINE_EXCLUSIONS = new LinkedHashMap<>(8, 0.75f, true);
 	private static final int MAX_EXCLUSIONS = 32;
+	/** Probes of sites (five columns) worth one full site check. */
+	private static final int PROBES_PER_SITE = 8;
 
 	private SupplyPits() {
 	}
@@ -309,10 +311,11 @@ final class SupplyPits {
 				prepare(ctx, cfg);
 				prepared = true;
 			}
-			int budget = cfg.sitesPerStep;
-			while (budget-- > 0 && next < candidates.size()) {
+			// A full check costs PROBES_PER_SITE probes: sites without any wanted block are skipped quickly.
+			int budget = cfg.sitesPerStep * PROBES_PER_SITE;
+			while (budget > 0 && next < candidates.size()) {
 				Candidate candidate = candidates.get(next++);
-				check(ctx, cfg, candidate);
+				budget -= check(ctx, cfg, candidate) ? PROBES_PER_SITE : 1;
 				Found current = best;
 				if (current != null && current.score() >= wantedBlocks() && (candidate.pit() != null || candidate.zone() != null || seen > 4)) {
 					// Enough for the trip: an existing pit or a mine zone are preferred, else the nearest good site.
@@ -403,21 +406,22 @@ final class SupplyPits {
 			return dx * dx + dz * dz;
 		}
 
-		private void check(WorkContext ctx, SupplyConfig.Gathering cfg, Candidate candidate) {
+		/** Checks a site; false when it was skipped cheaply (overlap, nothing wanted in its probe columns). */
+		private boolean check(WorkContext ctx, SupplyConfig.Gathering cfg, Candidate candidate) {
 			seen++;
 			SupplyPit existing = candidate.pit();
 			if (existing != null) {
 				World world = world(ctx, existing, sources);
 				if (world == null) {
-					return;
+					return false;
 				}
 				int score = PitRules.count(world, existing.plan(), existing.levelled ? existing.top : existing.highest, existing.levels);
 				offer(new Found(existing, world, score));
-				return;
+				return true;
 			}
 			for (SupplyPit pit : ctx.guild.villagers.pits) {
 				if (pit.overlaps(candidate.x0(), candidate.z0(), cfg.pitSide, cfg.pitGap)) {
-					return;
+					return false;
 				}
 			}
 			WorkZone zone = candidate.zone();
@@ -429,11 +433,14 @@ final class SupplyPits {
 				LongOpenHashSet excluded = mineExclusion(ctx.level, zone, ctx.config, ground - cfg.pitMaxDepth - 8, ground + 8);
 				world = new World(ctx.level, ctx.guild, sources, zone, excluded);
 			}
+			if (!probe(world, candidate.x0(), candidate.z0(), cfg.pitSide, cfg.pitMaxDepth)) {
+				return false;
+			}
 			BlockPos from = zone != null ? zone.pos : ctx.guild.heart != null ? ctx.guild.heart : ctx.villager.blockPosition();
 			PitRules.Site site = PitRules.evaluate(world, candidate.x0(), candidate.z0(), cfg.pitSide, cfg.pitMaxDepth, cfg.pitMaxUneven,
 					from.getX(), from.getZ());
 			if (!site.ok() || site.score() < cfg.minSiteBlocks) {
-				return;
+				return true;
 			}
 			int highest = site.top();
 			for (int x = site.x0(); x < site.x0() + site.side(); x++) {
@@ -443,6 +450,30 @@ final class SupplyPits {
 			}
 			SupplyPit pit = new SupplyPit(0, site, highest, zone == null ? -1 : zone.id, System.currentTimeMillis());
 			offer(new Found(pit, world, site.score()));
+			return true;
+		}
+
+		/**
+		 * Any wanted block in five columns of the site (centre and quarters) from the ground down to the pit's depth: layers
+		 * (sand, stone, clay) always show there; a site without any is not worth a full check.
+		 */
+		private static boolean probe(World world, int x0, int z0, int side, int depth) {
+			int q = Math.max(1, side / 4);
+			int[][] columns = {{side / 2, side / 2}, {q, q}, {side - 1 - q, q}, {q, side - 1 - q}, {side - 1 - q, side - 1 - q}};
+			for (int[] column : columns) {
+				int x = x0 + column[0];
+				int z = z0 + column[1];
+				int top = world.surface(x, z);
+				if (top == Integer.MIN_VALUE) {
+					continue;
+				}
+				for (int y = top; y >= top - depth; y--) {
+					if (world.source(x, y, z)) {
+						return true;
+					}
+				}
+			}
+			return false;
 		}
 
 		private void offer(Found found) {
