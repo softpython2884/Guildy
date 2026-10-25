@@ -239,7 +239,9 @@ final class BuilderTask extends TaskHandler {
 			if (most == null) {
 				ctx.status("villager.status.builder.waiting_stock", name);
 			} else {
-				ctx.status(gatherReason == null ? "villager.status.builder.waiting_materials" : "villager.status.builder.waiting_materials_no_gather",
+				// Not asked yet (the request goes out within a second) or asked: "→ récolte"; else why nobody gathers.
+				boolean asked = gatherReason == null || gatherReason.equals("villager.builder.gather.nothing");
+				ctx.status(asked ? "villager.status.builder.waiting_materials" : "villager.status.builder.waiting_materials_no_gather",
 						count, ItemUtil.name(most).getString(), gather);
 			}
 		} else if (top.counts().blocked() > 0) {

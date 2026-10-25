@@ -87,6 +87,9 @@ public final class MaterialRules {
 			Map.entry("tripwire", "string"),
 			Map.entry("redstone_wire", "redstone"),
 			Map.entry("tall_seagrass", "seagrass"),
+			// A player lays dirt, then tills it / makes a path.
+			Map.entry("farmland", "dirt"),
+			Map.entry("dirt_path", "dirt"),
 			Map.entry("water_cauldron", "cauldron"),
 			Map.entry("lava_cauldron", "cauldron"),
 			Map.entry("powder_snow_cauldron", "cauldron"),

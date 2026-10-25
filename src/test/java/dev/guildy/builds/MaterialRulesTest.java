@@ -76,6 +76,8 @@ class MaterialRulesTest {
 		assertEquals(Map.of("minecraft:cake", 1, "minecraft:candle", 1), items("minecraft:candle_cake[lit=false]"));
 		assertEquals(Map.of("minecraft:cake", 1, "minecraft:red_candle", 1), items("minecraft:red_candle_cake"));
 		assertEquals(Map.of("minecraft:cobblestone_wall", 1), items("minecraft:cobblestone_wall[east=low]"));
+		assertEquals(Map.of("minecraft:dirt", 1), items("minecraft:farmland[moisture=7]"));
+		assertEquals(Map.of("minecraft:dirt", 1), items("minecraft:dirt_path"));
 	}
 
 	@Test

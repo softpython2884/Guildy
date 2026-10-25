@@ -558,6 +558,51 @@ public class BuildGameTests {
 		});
 	}
 
+	@GameTest(environment = "guildy-test:day", maxTicks = 1200)
+	public void menusOfASiteOpen(GameTestHelper helper) throws Exception {
+		ServerLevel level = helper.getLevel();
+		ZoneGameTests.Recruit recruit = ZoneGameTests.recruit(helper, "Menus");
+		Guild guild = recruit.guild();
+		BlockPos origin = recruit.ground().offset(8, 1, 6);
+		// An obstacle, a missing material, a block nobody can build.
+		level.setBlockAndUpdate(origin, Blocks.OAK_PLANKS.defaultBlockState());
+		String key = schematic("menus", 3, 2, 2, (x, y, z) -> y == 1 ? (x == 2 && z == 0 ? "minecraft:barrier" : null)
+				: x == 1 ? "minecraft:glass" : "minecraft:stone_bricks");
+		BuildProject[] holder = start(helper, guild, key, origin);
+		helper.succeedWhen(() -> {
+			BuildProject project = holder[0];
+			helper.assertTrue(project != null, "waiting for the site");
+			BuildSite site = BuildSites.peek(guild, project);
+			helper.assertTrue(site != null && site.scanned(), "waiting for the scan");
+			net.minecraft.server.level.ServerPlayer player = recruit.leader();
+			dev.guildy.builds.BuildMenus.openList(player, guild);
+			helper.assertTrue(player.containerMenu != player.inventoryMenu, "list open");
+			dev.guildy.builds.BuildMenus.openDetail(player, guild, project.id);
+			dev.guildy.builds.BuildMenus.openMaterials(player, guild, project.id, 0);
+			dev.guildy.builds.BuildMenus.openObstacles(player, guild, project.id);
+			dev.guildy.builds.BuildMenus.openPicker(player, guild, 0);
+			helper.assertTrue(player.containerMenu != player.inventoryMenu, "menus open");
+			// The villager menus with a builder: list (its lines, the "Chantiers" button), its detail (site and role buttons).
+			try {
+				ZoneGameTests.setTask(recruit, Task.BUILDER);
+				dev.guildy.villager.VillagerGui.openList(player, guild);
+				java.lang.reflect.Method detail = dev.guildy.villager.VillagerGui.class.getDeclaredMethod("openDetail",
+						net.minecraft.server.level.ServerPlayer.class, Guild.class, java.util.UUID.class);
+				detail.setAccessible(true);
+				detail.invoke(null, player, guild, recruit.record().uuid);
+			} catch (ReflectiveOperationException e) {
+				helper.fail("villager menus: " + e);
+			}
+			helper.assertTrue(site.counts().blocked() == 1 && site.counts().notBuildable() == 1, "obstacle and barrier counted: " + site.counts());
+			helper.assertTrue(site.missing(0).getOrDefault(Items.GLASS, 0) == 2, "glass missing");
+			ZoneGameTests.command(level, player, "guild chantier list");
+			boolean listed = TestSupport.chat(player).stream().anyMatch(line -> line.contains(project.name));
+			helper.assertTrue(listed, "/guild chantier list shows the site");
+			player.closeContainer();
+			GuildManager.disband(guild);
+		});
+	}
+
 	private static ItemStack plan(Guild guild, String key) {
 		CompoundTag extra = new CompoundTag();
 		extra.putString("schematic", key);

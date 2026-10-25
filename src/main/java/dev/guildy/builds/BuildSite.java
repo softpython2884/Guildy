@@ -70,6 +70,9 @@ public final class BuildSite {
 	private static final long MIN_CYCLE_TICKS = 10;
 	/** Territory owners and protected positions read again at most this often. */
 	private static final long CACHE_TICKS = 100;
+	/** A claim looks at most at this many layers with work (and cells) once it has a candidate. */
+	private static final int MAX_CLAIM_LAYERS = 4;
+	private static final long MAX_CLAIM_CELLS = 200_000;
 
 	/** A parcel leased by a builder: a square of {@code tileSize} columns of one layer. */
 	public record Job(int layer, int tileX, int tileZ) {
@@ -770,7 +773,13 @@ public final class BuildSite {
 		BuildPasses.Pass[] passes = BuildPasses.Pass.values();
 		boolean[] open = new boolean[passes.length];
 		int[] found = new int[passes.length];
+		int layersWithWork = 0;
+		long checked = 0;
 		for (int layer = 0; layer < layers; layer++) {
+			if (bestCell >= 0 && (layersWithWork >= MAX_CLAIM_LAYERS || checked >= MAX_CLAIM_CELLS)) {
+				// Enough candidates (a huge site with finishing work on many layers): the nearest of those.
+				break;
+			}
 			boolean any = false;
 			for (BuildPasses.Pass pass : passes) {
 				open[pass.ordinal()] = fronts.allows(pass, layer)
@@ -781,6 +790,8 @@ public final class BuildSite {
 			if (!any) {
 				continue;
 			}
+			checked += (long) sx * sz;
+			boolean candidate = false;
 			for (int z = 0; z < sz; z++) {
 				for (int x = 0; x < sx; x++) {
 					int cell = cellOf(layer, x, z);
@@ -791,6 +802,7 @@ public final class BuildSite {
 					if (pass == null || !open[pass.ordinal()]) {
 						continue;
 					}
+					candidate = true;
 					found[pass.ordinal()]++;
 					Job job = jobOf(cell, tile);
 					Lease lease = leases.get(job.key());
@@ -803,6 +815,9 @@ public final class BuildSite {
 						bestCell = cell;
 					}
 				}
+			}
+			if (candidate) {
+				layersWithWork++;
 			}
 			for (BuildPasses.Pass pass : passes) {
 				if (open[pass.ordinal()] && found[pass.ordinal()] == 0 && act[pass.ordinal()][layer] > 0) {
@@ -1175,7 +1190,13 @@ public final class BuildSite {
 				return WorkResult.of(Outcome.BLOCKED);
 			}
 			case FIX -> {
-				level.setBlock(pos, target, net.minecraft.world.level.block.Block.UPDATE_CLIENTS | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE);
+				int flags = net.minecraft.world.level.block.Block.UPDATE_CLIENTS | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE;
+				level.setBlock(pos, target, flags);
+				BlockPos partner = SiteWorld.partnerPos(pos, target);
+				if (partner != null && level.getBlockState(partner).is(target.getBlock())) {
+					// The other half of a door / bed follows (hinge, facing...).
+					level.setBlock(partner, SiteWorld.partnerState(target), flags);
+				}
 				markDone(cell);
 				return WorkResult.of(Outcome.FIXED);
 			}

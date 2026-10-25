@@ -15,6 +15,7 @@ import dev.guildy.villager.Builders;
 import eu.pb4.sgui.api.ClickType;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.SimpleGui;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -145,8 +146,14 @@ public final class BuildMenus {
 		return Items.BRICKS;
 	}
 
+	/** Sort key of an item (its id: the server only knows the English names). */
 	private static String itemName(Item item) {
-		return ItemUtil.name(item).getString();
+		return ItemUtil.id(item);
+	}
+
+	/** A lang line followed by a name the client translates (item, block), in that colour. */
+	private static Component withName(Component line, Component name, ChatFormatting color) {
+		return Component.empty().append(line).append(name.copy().withStyle(color));
 	}
 
 	// ================================================================ list
@@ -254,7 +261,7 @@ public final class BuildMenus {
 
 	// ================================================================ picker
 
-	static void openPicker(ServerPlayer player, Guild guild, int page) {
+	public static void openPicker(ServerPlayer player, Guild guild, int page) {
 		List<SchematicLibrary.Entry> entries = SchematicLibrary.list();
 		int pages = GuiUtil.pages(entries.size(), PER_PAGE);
 		int current = Math.max(0, Math.min(page, pages - 1));
@@ -315,8 +322,9 @@ public final class BuildMenus {
 		if (open == null || !open.isOpen() || player.hasDisconnected()) {
 			return;
 		}
+		// One refresh for the files analysed within half a second (no flicker while a page loads).
 		PICKERS.remove(player.getUUID());
-		Scheduler.later("build.picker.refresh", 2, () -> {
+		Scheduler.later("build.picker.refresh", 10, () -> {
 			if (open.isOpen()) {
 				openPicker(player, guild, page);
 			}
@@ -345,7 +353,7 @@ public final class BuildMenus {
 		if (!top.isEmpty()) {
 			lore.add(Lang.get("build.gui.entry.top"));
 			for (Map.Entry<String, Integer> block : top) {
-				lore.add(Lang.get("build.gui.entry.top.line", block.getValue(), blockName(block.getKey())));
+				lore.add(withName(Lang.get("build.gui.entry.top.line", block.getValue()), blockName(block.getKey()), ChatFormatting.GRAY));
 			}
 		}
 		int notBuildable = plan.notBuildableCells();
@@ -375,12 +383,12 @@ public final class BuildMenus {
 		return Lang.raw(parts[0], args);
 	}
 
-	private static String blockName(String id) {
+	private static Component blockName(String id) {
 		net.minecraft.resources.Identifier identifier = net.minecraft.resources.Identifier.tryParse(id);
 		if (identifier != null && BuiltInRegistries.BLOCK.containsKey(identifier)) {
-			return BuiltInRegistries.BLOCK.getValue(identifier).getName().getString();
+			return BuiltInRegistries.BLOCK.getValue(identifier).getName();
 		}
-		return id;
+		return Component.literal(id);
 	}
 
 	// ================================================================ adjust
@@ -696,7 +704,8 @@ public final class BuildMenus {
 		List<Map.Entry<Item, Integer>> top = new ArrayList<>(missing.entrySet());
 		top.sort((a, b) -> b.getValue() - a.getValue());
 		for (int i = 0; i < Math.min(5, top.size()); i++) {
-			lore.add(Lang.get("build.gui.materials.missing.line", top.get(i).getValue(), itemName(top.get(i).getKey())));
+			lore.add(withName(Lang.get("build.gui.materials.missing.line", top.get(i).getValue()), ItemUtil.name(top.get(i).getKey()),
+					ChatFormatting.GRAY));
 		}
 		lore.add(Component.empty());
 		lore.add(Lang.get("build.gui.materials.click"));
@@ -705,7 +714,7 @@ public final class BuildMenus {
 
 	// ================================================================ materials
 
-	static void openMaterials(ServerPlayer player, Guild guild, int projectId, int page) {
+	public static void openMaterials(ServerPlayer player, Guild guild, int projectId, int page) {
 		BuildProject project = guild.builds.get(projectId);
 		if (project == null) {
 			openList(player, guild, 0);
@@ -746,8 +755,8 @@ public final class BuildMenus {
 				lore.add(Lang.get("build.gui.material.available", stock.getOrDefault(item, 0), carried.getOrDefault(item, 0)));
 				lore.add(lack > 0 ? Lang.get("build.gui.material.missing", lack) : Lang.get("build.gui.material.ok"));
 				ItemStack icon = new ItemStack(item, Math.max(1, Math.min(item.getDefaultMaxStackSize(), Math.max(1, lack > 0 ? lack : left))));
-				GuiElementBuilder button = GuiUtil.item(icon, Lang.get(lack > 0 ? "build.gui.material.name.missing" : "build.gui.material.name",
-						itemName(item)), lore);
+				GuiElementBuilder button = GuiUtil.item(icon, withName(Component.empty(), ItemUtil.name(item),
+						lack > 0 ? ChatFormatting.RED : ChatFormatting.WHITE), lore);
 				gui.setSlot(i, button);
 			}
 			BuildPlan plan = site.plan();
@@ -787,7 +796,7 @@ public final class BuildMenus {
 
 	// ================================================================ obstacles
 
-	static void openObstacles(ServerPlayer player, Guild guild, int projectId) {
+	public static void openObstacles(ServerPlayer player, Guild guild, int projectId) {
 		BuildProject project = guild.builds.get(projectId);
 		if (project == null) {
 			openList(player, guild, 0);
@@ -825,13 +834,13 @@ public final class BuildMenus {
 			if (item == Items.AIR) {
 				item = Items.PAPER;
 			}
-			String name = state == null ? "?" : state.getBlock().getName().getString();
+			Component name = state == null ? Component.literal("?") : state.getBlock().getName();
 			List<Component> lore = new ArrayList<>(GuiUtil.lines(key + ".lore"));
 			lore.add(Lang.get("build.gui.obstacle.at", pos.getX(), pos.getY(), pos.getZ()));
 			if (shown == positions.size() - 1 && total > positions.size()) {
 				lore.add(Lang.get("build.gui.obstacle.more", total - positions.size()));
 			}
-			gui.setSlot(slot++, GuiUtil.item(item, Lang.get(key, name), lore));
+			gui.setSlot(slot++, GuiUtil.item(item, withName(Lang.get(key), name, ChatFormatting.WHITE), lore));
 			shown++;
 		}
 		return slot;
