@@ -1,0 +1,278 @@
+// Guildy - chantiers : les villageois batisseurs construisent des schematiques (.schem, .litematic, .nbt).
+// Fichiers : config/guildy/schematics/ (sous-dossiers permis) et structures sauvegardees avec un bloc de structure.
+// Rechargement a chaud : /guild admin reload
+{
+
+	// Version du fichier (geree automatiquement, ne pas modifier)
+	"configVersion": 1,
+
+	// Lecture des fichiers de schematique
+	"schematics": {
+
+		// Taille maximum d'un cote (blocs, 1 a 1024)
+		"maxAxis": 256,
+
+		// Volume maximum de la boite (blocs, air compris)
+		"maxVolume": 2097152,
+
+		// Nombre maximum de blocs (hors air)
+		"maxBlocks": 500000,
+
+		// Taille maximum du fichier (Mo)
+		"maxFileMegabytes": 64,
+
+		// Taille maximum des donnees decompressees (Mo) : protege contre les fichiers pieges
+		"maxDataMegabytes": 256,
+
+		// Mettre a jour les anciens fichiers (DataVersion plus ancienne) avec le DataFixer de Minecraft
+		"upgradeOldFiles": true,
+
+		// Lister aussi les structures sauvegardees en jeu avec un bloc de structure (<monde>/generated/.../structure/*.nbt)
+		"listWorldStructures": true,
+
+		// Schematiques analysees gardees en memoire (1 a 64)
+		"cacheSize": 8
+	},
+
+	// Chantiers d'une guilde
+	"projects": {
+
+		// Chantiers actifs (non termines) par guilde au niveau 1
+		"maxActive": 2,
+
+		// Un chantier actif de plus tous les N niveaux de guilde (0 = jamais)
+		"extraEveryLevels": 5,
+
+		// Plafond de chantiers actifs par guilde
+		"maxActiveCap": 8,
+
+		// Chantiers termines gardes dans la liste (les plus anciens sont retires)
+		"keepFinished": 10,
+
+		// Le chantier doit etre entierement dans le territoire de la guilde
+		"insideTerritory": true,
+
+		// Mode de l'interieur par defaut : keep (garder le terrain), hollow (creuser l'interieur, defaut), box (vider toute la boite)
+		"defaultInterior": "hollow",
+
+		// Source des materiaux par defaut : storage (coffres tries des villageois) ou all (tous les coffres et tonneaux du territoire)
+		"defaultSources": "storage",
+
+		// Option 'remplacer les blocs construits' par defaut
+		"defaultReplaceBuilt": false,
+
+		// Option 'fondations' par defaut
+		"defaultFoundations": false
+	},
+
+	// Apercu avant validation (visible seulement par le joueur qui place le plan)
+	"preview": {
+
+		// Duree (secondes) de l'apercu sans action avant qu'il disparaisse
+		"seconds": 300,
+
+		// Blocs fantomes affiches au plus (entites d'affichage envoyees au seul joueur) ; au-dela, seulement la coque
+		// (blocs visibles de l'exterieur), echantillonnee (0 = aucun bloc fantome, seulement le contour)
+		"maxGhostBlocks": 1024,
+
+		// Distance (blocs) jusqu'a laquelle le contour et les blocs fantomes sont envoyes
+		"range": 96,
+
+		// Duree (secondes) de 'Afficher le contour' depuis le menu d'un chantier
+		"outlineSeconds": 30
+	},
+
+	// Villageois batisseurs (tache 'Batisseur')
+	"builder": {
+
+		// Blocs poses (ou retires) par seconde et par batisseur (le bonus de vitesse de travail s'applique ; 1 a 10)
+		"blocksPerSecond": 2.0,
+
+		// Piles d'objets transportees (materiaux + deblais)
+		"carryStacks": 9,
+
+		// Portee (blocs) depuis laquelle un batisseur pose un bloc
+		"reach": 4.5,
+
+		// Couches ouvertes en meme temps sur le front du gros oeuvre et du terrassement (1 a 8)
+		"layerWindow": 2,
+
+		// Cote (blocs) d'une parcelle reservee par un batisseur sur une couche (2 a 16)
+		"tileSize": 6,
+
+		// Repartition des roles en mode Auto : poids du role 'Construire' (cellules faisables) et du role 'Recolter'
+		// (objets manquants) ; au plus maxGatherShare des batisseurs recoltent (0 a 1)
+		"buildWeight": 1.0,
+		"gatherWeight": 2.0,
+		"maxGatherShare": 0.5,
+
+		// Intervalle (secondes) entre deux repartitions des roles
+		"rolesSeconds": 10,
+
+		// Intervalle (secondes) entre deux inventaires des sources de materiaux
+		"stockSeconds": 10,
+
+		// Intervalle (secondes) entre deux demandes des materiaux manquants aux recolteurs
+		"procurementSeconds": 30,
+
+		// Cellules verifiees par tick pour tous les chantiers (suivi de l'avancement ; 256 a 65536)
+		"scanCellsPerTick": 4096,
+
+		// Mode 'tous les coffres et tonneaux' : chunks du territoire lus par seconde pour trouver les conteneurs
+		"containerScanChunksPerSecond": 4
+	},
+
+	// Terrassement intelligent : la ou un bloc doit etre pose, le bloc naturel present est retire (son butin va dans le sac
+	// du batisseur puis au stockage) ; les blocs poses par des joueurs, les coffres et les blocs a donnees ne sont jamais
+	// casses (sauf option du chantier 'remplacer les blocs construits' : jamais les coffres ni les blocs a donnees).
+	"terraform": {
+
+		// Blocs naturels retires la ou un bloc doit etre pose ou la ou l'interieur est creuse (id ou #tag) ; les feuilles ne
+		// comptent que si elles sont naturelles (non persistantes), les buches seulement si elles portent des feuilles naturelles
+		"naturalBlocks": [
+			"#minecraft:base_stone_overworld",
+			"#minecraft:substrate_overworld",
+			"#minecraft:sand",
+			"minecraft:gravel",
+			"minecraft:clay",
+			"minecraft:sandstone",
+			"minecraft:red_sandstone",
+			"minecraft:calcite",
+			"minecraft:dripstone_block",
+			"minecraft:pointed_dripstone",
+			"minecraft:smooth_basalt",
+			"minecraft:magma_block",
+			"minecraft:snow_block",
+			"minecraft:powder_snow",
+			"minecraft:ice",
+			"minecraft:packed_ice",
+			"minecraft:blue_ice",
+			"minecraft:obsidian",
+			"#minecraft:terracotta",
+			"minecraft:mud",
+			"minecraft:moss_block",
+			"minecraft:amethyst_block",
+			"minecraft:tuff",
+			"#minecraft:leaves",
+			"#minecraft:logs",
+			"minecraft:cactus",
+			"minecraft:bamboo",
+			"minecraft:pumpkin",
+			"minecraft:melon",
+			"minecraft:mushroom_stem",
+			"minecraft:brown_mushroom_block",
+			"minecraft:red_mushroom_block",
+			"#minecraft:ores",
+			"#minecraft:coal_ores",
+			"#minecraft:iron_ores",
+			"#minecraft:copper_ores",
+			"#minecraft:gold_ores",
+			"#minecraft:redstone_ores",
+			"#minecraft:lapis_ores",
+			"#minecraft:diamond_ores",
+			"#minecraft:emerald_ores",
+			"minecraft:infested_stone",
+			"minecraft:infested_deepslate"
+		],
+
+		// Garder le butin du terrassement (au sac puis au stockage) ; false = jete
+		"keepDrops": true,
+
+		// Sac plein et aucun coffre de depot libre : jeter les deblais pour continuer (true) ou attendre (false)
+		"discardWhenStorageFull": true,
+
+		// Colmater l'eau et la lave hors du chantier qui couleraient dans le terrassement (avec un bloc du sac, sinon un bloc
+		// gratuit si freePlugBlocks) ; sinon la cellule reste en place
+		"plugOutsideFluids": true,
+		"freePlugBlocks": true,
+
+		// Bloc gratuit utilise pour colmater
+		"plugBlock": "minecraft:cobblestone",
+
+		// Objets du sac utilisables pour colmater (blocs pleins)
+		"plugItems": [
+			"minecraft:cobblestone",
+			"minecraft:cobbled_deepslate",
+			"minecraft:dirt",
+			"minecraft:stone",
+			"minecraft:deepslate",
+			"minecraft:andesite",
+			"minecraft:diorite",
+			"minecraft:granite",
+			"minecraft:tuff",
+			"minecraft:netherrack"
+		]
+	},
+
+	// Materiaux
+	"materials": {
+
+		// L'eau (sources et blocs immerges) est gratuite ; sinon un seau d'eau par source (le seau vide revient au stockage)
+		"waterFree": true,
+
+		// Proprietes ignorees pour dire qu'un bloc est deja bien place (elles changent toutes seules : age des cultures,
+		// distance des feuilles, alimentation en redstone...)
+		"ignoredProperties": [
+			"age",
+			"distance",
+			"persistent",
+			"stage",
+			"moisture",
+			"power",
+			"powered",
+			"lit",
+			"triggered",
+			"enabled",
+			"occupied",
+			"honey_level",
+			"has_book",
+			"has_record",
+			"bites",
+			"extended",
+			"note",
+			"locked",
+			"signal_fire",
+			"hatch",
+			"berries",
+			"level",
+			"attached",
+			"disarmed",
+			"in_wall",
+			"open",
+			"short",
+			"unstable",
+			"bloom",
+			"can_summon",
+			"shrieking",
+			"tip",
+			"thickness",
+			"hanging",
+			"charges",
+			"dusted",
+			"cracked",
+			"ominous",
+			"vault_state",
+			"trial_spawner_state"
+		]
+	},
+
+	// Fondations (option du chantier) : sous la couche du bas, jusqu'au sol
+	"foundations": {
+
+		// Bloc des fondations sous un bloc qui n'est pas un cube plein (sinon le meme bloc que celui du dessus)
+		"block": "minecraft:cobblestone",
+
+		// Profondeur maximum (blocs) sous la couche du bas
+		"maxDepth": 16
+	},
+
+	// Barre de progression et fin de chantier
+	"display": {
+
+		// Barre de progression pour les membres de la guilde pres d'un chantier (rayon en blocs, 0 = jamais)
+		"bossbarRadius": 48,
+
+		// Feu d'artifice a la fin d'un chantier
+		"firework": true
+	}
+}
