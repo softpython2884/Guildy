@@ -23,7 +23,9 @@ public enum Task {
 	/** Turns books into enchanted books at an enchanting table of the territory (see {@link AlchemistTask}). */
 	ALCHEMIST,
 	/** Works at the "Atelier du cartographe" on the guild's ruin research (dev.guildy.ruin). */
-	CARTOGRAPHER;
+	CARTOGRAPHER,
+	/** Builds the guild's construction sites (dev.guildy.builds) or fetches their missing materials (see {@link BuilderTask}). */
+	BUILDER;
 
 	public String id() {
 		return name().toLowerCase(java.util.Locale.ROOT);
@@ -52,13 +54,15 @@ public enum Task {
 			case BLACKSMITH -> Items.ANVIL;
 			case ALCHEMIST -> Items.ENCHANTING_TABLE;
 			case CARTOGRAPHER -> Items.MAP;
+			case BUILDER -> Items.SCAFFOLDING;
 		};
 	}
 
 	/** Item held while working (visual only), null for IDLE. */
 	public @Nullable Item handItem() {
 		return switch (this) {
-			case IDLE -> null;
+			// The builder shows the block it is placing (see BuilderTask).
+			case IDLE, BUILDER -> null;
 			case BLACKSMITH, ALCHEMIST -> CraftJobs.handItem(this);
 			default -> icon();
 		};

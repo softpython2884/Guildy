@@ -64,6 +64,8 @@ public class VillagerRecord {
 	public @Nullable GuardData guard;
 	/** Blacksmith / alchemist statistics and daily count (created when one of these tasks first works, see {@link CraftJobs}). */
 	public @Nullable CraftData craft;
+	/** Builder role, chosen site and statistics (created the first time it builds, see {@link Builders}). */
+	public @Nullable BuilderData builder;
 
 	public boolean isAway() {
 		return awayEntity != null;
@@ -151,6 +153,9 @@ public class VillagerRecord {
 		}
 		if (craft != null) {
 			craft.sanitize();
+		}
+		if (builder != null) {
+			builder.sanitize();
 		}
 	}
 }
