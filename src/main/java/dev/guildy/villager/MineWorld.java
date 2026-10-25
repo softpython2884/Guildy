@@ -319,6 +319,11 @@ final class MineWorld implements MineRules.Grid, MineRules.Targets {
 		});
 	}
 
+	/** A natural block or an ore of the realMining lists (the builders' gathering digs the same blocks). */
+	static boolean natural(Block block) {
+		return kind(block) != OTHER;
+	}
+
 	static boolean isFiller(ItemStack stack) {
 		return !stack.isEmpty() && lists().fillers().contains(stack.getItem());
 	}

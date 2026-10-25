@@ -45,6 +45,9 @@ public class GuildVillagerData {
 	public String storageOrder = "";
 	/** Layout inside each chest: "columns" or "rows" ("" = the default of villagers.json5, storage.defaultChestLayout). */
 	public String chestLayout = "";
+	/** Gathering pits of the builders (supply.json5), see {@link SupplyPits}. */
+	public List<SupplyPit> pits = new ArrayList<>();
+	public int nextPitId = 1;
 	/** Index of the registered containers (not saved), see {@link StorageIndex}. */
 	transient @Nullable StorageIndex storageIndex;
 	/** Bumped when a registered container changes role, category, filter, room or position ({@link Storage#changed}). */
@@ -254,6 +257,7 @@ public class GuildVillagerData {
 		if (chestLayout == null) {
 			chestLayout = "";
 		}
+		SupplyPit.sanitizeAll(this);
 
 		if (zones == null) {
 			zones = new ArrayList<>();
