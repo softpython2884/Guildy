@@ -1,52 +1,405 @@
-Licence Guildy
+LICENCE GUILDY
+Version 1.0 du 2 novembre 2026
 
-Copyright (c) 2026 NightFury. Tous droits réservés, sauf les autorisations ci-dessous.
+© 2026 NightFury. Tous droits réservés, sauf les autorisations accordées par la
+présente licence. Contact pour toute demande : contact@forgenet.fr (Forge
+Network).
 
-« Guildy » désigne ce mod : son code source, ses versions compilées, ses ressources
-(dont le pack de ressources facultatif) et sa documentation.
-
-
-Ce que vous pouvez faire
-
-1. Télécharger Guildy depuis ce dépôt ou ses publications officielles, l'installer
-   sur vos serveurs Minecraft, privés ou publics, et y jouer.
-2. Héberger le pack de ressources de Guildy et l'envoyer aux joueurs de votre
-   serveur, pour qu'ils l'utilisent sur ce serveur.
-3. Lire le code, le compiler et le modifier pour votre propre usage, y compris pour
-   faire tourner votre version modifiée sur vos propres serveurs.
-4. Créer une copie (fork) sur GitHub, dans le cadre des conditions d'utilisation de
-   GitHub, pour proposer des modifications par pull request.
+La version française fait foi. Une traduction anglaise suit, pour information.
 
 
-Ce que vous ne pouvez pas faire sans l'accord écrit de l'auteur
+Article 1 – Objet
 
-1. Distribuer Guildy, modifié ou non : le republier, le mettre en ligne ailleurs,
-   l'inclure dans un modpack ou en partager une copie, en dehors de ce qu'autorise la
-   partie précédente. Un fork ne donne pas le droit de publier des versions compilées.
-2. Vendre ou louer Guildy, ou faire payer son téléchargement.
-3. Retirer cette licence ou le nom de l'auteur, ou présenter Guildy comme votre
-   travail.
+Guildy est un mod pour Minecraft créé par NightFury (« l'Auteur »). La présente
+licence fixe ce que vous pouvez faire avec Guildy. Tout ce qu'elle n'autorise
+pas expressément est interdit sans l'accord écrit de l'Auteur.
 
 
-Contributions
+Article 2 – Acceptation
 
-En proposant une modification (pull request ou autre), vous autorisez l'auteur à
-l'intégrer à Guildy et à la diffuser sous cette licence ou sous toute autre licence.
-
-
-Bibliothèques tierces
-
-Les bibliothèques incluses dans le jar (SGUI, fabric-permissions-api) restent sous
-leur propre licence.
+Télécharger, installer, utiliser, modifier ou distribuer Guildy, en tout ou en
+partie, vaut acceptation de la présente licence. Si vous ne l'acceptez pas, vous
+ne pouvez pas utiliser Guildy.
 
 
-Garantie
+Article 3 – Définitions
 
-Guildy est fourni « tel quel », sans aucune garantie. Dans les limites permises par
-la loi, l'auteur n'est responsable d'aucun dommage lié à son utilisation.
+« Guildy » : le mod, dans toutes ses versions et avec tous ses éléments,
+notamment son code source et ses fichiers compilés, ses dessins, textures,
+icônes et modèles, ses constructions (ruines, structures, bâtiments,
+schématiques), ses textes, noms et contenus, son guide et sa documentation, son
+pack de ressources et ses fichiers de configuration par défaut.
+
+« Version officielle » : un fichier de Guildy publié par l'Auteur, sans aucune
+modification.
+
+« Page officielle » : le dépôt https://github.com/softpython2884/Guildy et les
+pages de Guildy publiées par l'Auteur, notamment sur CurseForge et Modrinth.
+
+« Serveur public » : un serveur ouvert à d'autres joueurs que son opérateur et
+son cercle privé, notamment s'il est annoncé publiquement (liste de serveurs,
+site, réseau social, serveur Discord ouvert).
+
+« Serveur monétisé » : un serveur qui demande ou reçoit de l'argent, ou toute
+autre contrepartie de valeur, en lien avec le serveur : accès ou liste blanche
+payants, grades, avantages, objets, cosmétiques, monnaie de jeu, abonnements,
+dons, publicité, partenariats rémunérés. Le partage des frais d'hébergement
+entre les membres d'un serveur privé, sans aucune contrepartie en jeu, n'est pas
+une monétisation.
 
 
-Fin des droits
+Article 4 – Propriété
 
-Si vous ne respectez pas cette licence, les droits qu'elle vous accorde prennent fin
-automatiquement.
+Guildy est une œuvre de l'esprit protégée par le droit d'auteur. Ses éléments, y
+compris ses dessins, textures, modèles et constructions, sont des créations
+originales de l'Auteur, à l'exception des éléments de tiers mentionnés à
+l'article 11. L'Auteur conserve l'intégralité de ses droits : la présente
+licence accorde des autorisations d'usage, elle ne cède aucun droit.
+
+
+Article 5 – Ce que vous pouvez faire
+
+Sous réserve de respecter la présente licence, vous pouvez :
+
+1. Télécharger une version officielle, l'installer et l'utiliser, notamment sur
+   vos serveurs Minecraft, privés ou publics, et y jouer.
+2. Héberger le pack de ressources officiel de Guildy et l'envoyer aux joueurs de
+   votre serveur, pour qu'ils l'utilisent sur ce serveur.
+3. Modifier les fichiers de configuration prévus par Guildy et partager ces
+   fichiers. Ce n'est pas une modification de Guildy au sens de la présente
+   licence.
+4. Lire et étudier le code de Guildy, le compiler et le modifier pour votre
+   propre usage, y compris pour faire tourner votre version modifiée sur vos
+   serveurs, sans jamais la distribuer.
+5. Inclure une version officielle dans un modpack, aux conditions de
+   l'article 7.
+6. Montrer Guildy dans des vidéos, diffusions en direct, captures d'écran,
+   articles ou guides, y compris monétisés, tant que vous ne le présentez pas
+   comme votre création.
+7. Créer une copie (fork) du dépôt sur GitHub, dans le cadre des conditions
+   d'utilisation de GitHub, pour proposer des contributions à l'Auteur.
+8. Utiliser le nom « Guildy » pour indiquer que votre serveur ou votre modpack
+   l'utilise, ou pour en parler.
+
+Ces autorisations sont gratuites, valables dans le monde entier et pour toute la
+durée de protection du droit d'auteur, sauf résiliation (article 13). Elles ne
+sont ni exclusives ni transférables.
+
+
+Article 6 – Ce qui est interdit
+
+Sauf autorisation écrite de l'Auteur, il est interdit :
+
+1. De vendre ou de louer Guildy, d'en faire payer le téléchargement ou l'accès,
+   ou d'en accorder des sous-licences.
+2. De distribuer une version modifiée de Guildy, sous quelque forme que ce soit
+   (fichier compilé, code source, correctif), ou un projet qui reprend son code.
+3. De distribuer Guildy en dehors des cas prévus à l'article 5 : le republier,
+   le mettre en ligne sur un autre site ou une autre plateforme, en faire un
+   miroir ou en partager une copie.
+4. De reprendre des éléments de Guildy hors de Guildy, en particulier ses
+   dessins, textures, modèles, constructions et textes, dans un autre mod, un
+   pack de ressources, une carte, un serveur ou tout autre projet.
+5. De vous approprier Guildy : le présenter comme votre création, retirer ou
+   modifier les mentions d'auteur, de licence ou de crédits, revendiquer un
+   droit sur Guildy ou sur l'un de ses éléments, ou déposer à votre nom une
+   marque, un nom de domaine ou tout autre titre reprenant le nom « Guildy ».
+6. D'utiliser le nom « Guildy » pour désigner un autre projet, ou d'une manière
+   qui laisse croire que l'Auteur soutient ou approuve votre projet.
+7. De faire tourner Guildy sur un serveur monétisé sans l'autorisation prévue à
+   l'article 8.
+
+
+Article 7 – Modpacks
+
+Vous pouvez inclure Guildy dans un modpack si toutes ces conditions sont
+remplies :
+
+1. Le modpack contient une version officielle, non modifiée. Il peut fournir ses
+   propres fichiers de configuration.
+2. Le modpack est gratuit : ni son téléchargement ni son accès ne sont payants.
+   La rémunération qu'une plateforme verse à ses créateurs sur ses propres
+   revenus, comme CurseForge ou Modrinth, ne rend pas un modpack payant.
+3. La page ou la description du modpack crédite Guildy et son auteur, avec un
+   lien vers la page officielle, par exemple : « Guildy, un mod de NightFury :
+   <lien> ».
+4. Le modpack ne présente pas Guildy comme une partie de son propre contenu.
+
+
+Article 8 – Serveurs
+
+1. Un serveur public qui utilise Guildy doit l'indiquer clairement, à un endroit
+   que ses joueurs voient : dans sa présentation publique (site, page de liste
+   de serveurs, serveur Discord ou description du serveur). La mention cite
+   Guildy et son auteur et renvoie vers la page officielle, par exemple : « Ce
+   serveur utilise Guildy, un mod de NightFury : <lien> ». Si le serveur utilise
+   une version modifiée, la mention le précise.
+2. Un serveur monétisé ne peut utiliser Guildy qu'avec l'autorisation écrite
+   préalable de l'Auteur, demandée par e-mail à contact@forgenet.fr. L'Auteur
+   reste libre d'accepter ou de refuser, et peut fixer des conditions. Une
+   autorisation ne vaut que pour le serveur et aux conditions qu'elle désigne.
+
+
+Article 9 – Contributions
+
+En proposant une contribution à Guildy (pull request, correctif, dessin,
+construction ou texte), vous garantissez en avoir le droit et vous autorisez
+l'Auteur, gratuitement, pour le monde entier et pour toute la durée du droit
+d'auteur, à l'utiliser, la modifier, l'intégrer à Guildy et la distribuer, sous
+la présente licence ou sous toute autre licence.
+
+
+Article 10 – Anciennes versions marquées MIT
+
+Les versions de Guildy publiées avant la présente licence contenaient un fichier
+indiquant la licence MIT. Cette mention était une erreur : il s'agissait du
+modèle proposé par défaut par l'éditeur de code, et Guildy n'a jamais été
+destiné à être diffusé sous licence MIT. Guildy n'est pas un projet sous licence
+MIT. Dans toute la mesure permise par la loi, la présente licence s'applique à
+toutes les versions de Guildy, y compris à celles qui portaient cette mention.
+
+
+Article 11 – Éléments de tiers
+
+Minecraft et ses éléments appartiennent à Mojang Studios et à Microsoft. Guildy
+n'est pas un produit officiel Minecraft : il n'est ni approuvé par Mojang ou
+Microsoft, ni associé à eux. Les bibliothèques incluses dans Guildy (SGUI,
+fabric-permissions-api) restent soumises à leur propre licence. La présente
+licence ne couvre pas ces éléments.
+
+
+Article 12 – Absence de garantie
+
+Guildy est fourni « tel quel », sans garantie d'aucune sorte, notamment de
+fonctionnement, de compatibilité ou d'absence de défauts. Dans toute la mesure
+permise par la loi, l'Auteur n'est responsable d'aucun dommage, direct ou
+indirect, lié à l'utilisation de Guildy ou à l'impossibilité de l'utiliser,
+notamment une perte de données ou de monde.
+
+
+Article 13 – Résiliation
+
+Toute violation de la présente licence met fin automatiquement, et sans préavis,
+aux autorisations qu'elle vous accorde. Vous devez alors cesser d'utiliser et de
+distribuer Guildy et supprimer les copies en votre possession. L'Auteur peut
+rétablir ces autorisations par écrit. La résiliation ne prive l'Auteur d'aucun
+autre droit ni recours.
+
+
+Article 14 – Autorisations particulières
+
+Toute autorisation qui n'est pas prévue par la présente licence (vente,
+distribution, monétisation, réutilisation d'éléments…) se demande par e-mail à
+contact@forgenet.fr. Seule une autorisation écrite de l'Auteur l'engage.
+
+
+Article 15 – Évolution de la licence
+
+L'Auteur peut publier de nouvelles versions de cette licence. Une nouvelle
+version s'applique aux versions de Guildy publiées après elle.
+
+
+Article 16 – Droit applicable
+
+La présente licence est régie par le droit français. Si l'une de ses clauses est
+jugée nulle ou inapplicable, les autres restent en vigueur.
+
+
+================================================================================
+
+GUILDY LICENSE – ENGLISH TRANSLATION
+Version 1.0 of 2 November 2026
+
+For information only. If the two versions differ, the French version above
+prevails.
+
+© 2026 NightFury. All rights reserved, except for the permissions granted by
+this license. Contact for any request: contact@forgenet.fr (Forge Network).
+
+
+Article 1 – Purpose
+
+Guildy is a Minecraft mod created by NightFury (“the Author”). This license sets
+out what you may do with Guildy. Anything it does not expressly allow is
+forbidden without the Author's written permission.
+
+
+Article 2 – Acceptance
+
+Downloading, installing, using, modifying or distributing Guildy, in whole or in
+part, means that you accept this license. If you do not accept it, you may not
+use Guildy.
+
+
+Article 3 – Definitions
+
+“Guildy”: the mod, in all its versions and with all its elements, including its
+source code and compiled files, its drawings, textures, icons and models, its
+builds (ruins, structures, buildings, schematics), its texts, names and content,
+its guide and documentation, its resource pack and its default configuration
+files.
+
+“Official version”: a file of Guildy published by the Author, without any
+modification.
+
+“Official page”: the repository https://github.com/softpython2884/Guildy and the
+Guildy pages published by the Author, in particular on CurseForge and Modrinth.
+
+“Public server”: a server open to players other than its operator and their
+private circle, in particular if it is publicly advertised (server list,
+website, social network, open Discord server).
+
+“Monetized server”: a server that asks for or receives money, or anything else
+of value, in connection with the server: paid access or whitelist, ranks, perks,
+items, cosmetics, in-game currency, subscriptions, donations, advertising, paid
+partnerships. Members of a private server sharing its hosting costs, with
+nothing in return in game, is not monetization.
+
+
+Article 4 – Ownership
+
+Guildy is a work protected by copyright. Its elements, including its drawings,
+textures, models and builds, are original creations of the Author, except for
+the third-party elements listed in article 11. The Author keeps all of their
+rights: this license grants permissions to use Guildy, it does not transfer any
+right.
+
+
+Article 5 – What you may do
+
+Provided that you comply with this license, you may:
+
+1. Download an official version, install and use it, in particular on your
+   Minecraft servers, private or public, and play on them.
+2. Host Guildy's official resource pack and send it to the players of your
+   server, for use on that server.
+3. Change the configuration files provided by Guildy and share those files. This
+   is not a modification of Guildy within the meaning of this license.
+4. Read and study Guildy's code, compile it and modify it for your own use,
+   including running your modified version on your servers, without ever
+   distributing it.
+5. Include an official version in a modpack, under the conditions of article 7.
+6. Show Guildy in videos, live streams, screenshots, articles or guides,
+   including monetized ones, as long as you do not present it as your creation.
+7. Fork the repository on GitHub, within GitHub's Terms of Service, to propose
+   contributions to the Author.
+8. Use the name “Guildy” to state that your server or modpack uses it, or to
+   talk about it.
+
+These permissions are free of charge, worldwide and for the whole term of
+copyright protection, unless terminated (article 13). They are non-exclusive and
+non-transferable.
+
+
+Article 6 – What is forbidden
+
+Unless the Author gives written permission, you may not:
+
+1. Sell or rent Guildy, charge for downloading or accessing it, or sublicense
+   it.
+2. Distribute a modified version of Guildy in any form (compiled file, source
+   code, patch), or a project that reuses its code.
+3. Distribute Guildy outside the cases provided for in article 5: republish it,
+   upload it to another website or platform, mirror it or share a copy of it.
+4. Reuse elements of Guildy outside Guildy, in particular its drawings,
+   textures, models, builds and texts, in another mod, a resource pack, a map, a
+   server or any other project.
+5. Appropriate Guildy: present it as your creation, remove or alter the author,
+   license or credit notices, claim any right over Guildy or any of its
+   elements, or register in your name a trademark, a domain name or any other
+   title using the name “Guildy”.
+6. Use the name “Guildy” for another project, or in a way that suggests that the
+   Author supports or endorses your project.
+7. Run Guildy on a monetized server without the permission required by
+   article 8.
+
+
+Article 7 – Modpacks
+
+You may include Guildy in a modpack if all of these conditions are met:
+
+1. The modpack contains an official, unmodified version. It may ship its own
+   configuration files.
+2. The modpack is free: neither downloading it nor accessing it is paid. The
+   rewards a platform pays its creators out of its own revenue, such as
+   CurseForge or Modrinth, do not make a modpack paid.
+3. The modpack's page or description credits Guildy and its author, with a link
+   to the official page, for example: “Guildy, a mod by NightFury: <link>”.
+4. The modpack does not present Guildy as part of its own content.
+
+
+Article 8 – Servers
+
+1. A public server that uses Guildy must say so clearly, somewhere its players
+   can see it: in its public presentation (website, server list page, Discord
+   server or server description). The notice names Guildy and its author and
+   links to the official page, for example: “This server uses Guildy, a mod by
+   NightFury: <link>”. If the server runs a modified version, the notice says
+   so.
+2. A monetized server may only use Guildy with the Author's prior written
+   permission, requested by email at contact@forgenet.fr. The Author is free to
+   accept or refuse and may set conditions. A permission only applies to the
+   server and under the conditions it names.
+
+
+Article 9 – Contributions
+
+By submitting a contribution to Guildy (pull request, patch, drawing, build or
+text), you guarantee that you have the right to do so, and you allow the Author,
+free of charge, worldwide and for the whole term of copyright, to use it, modify
+it, include it in Guildy and distribute it, under this license or any other
+license.
+
+
+Article 10 – Earlier versions marked MIT
+
+The versions of Guildy published before this license contained a file stating
+the MIT license. That notice was a mistake: it was the default template offered
+by the code editor, and Guildy was never meant to be distributed under the MIT
+license. Guildy is not an MIT-licensed project. To the fullest extent permitted
+by law, this license applies to all versions of Guildy, including those that
+carried that notice.
+
+
+Article 11 – Third-party elements
+
+Minecraft and its elements belong to Mojang Studios and Microsoft. Guildy is not
+an official Minecraft product: it is not approved by or associated with Mojang
+or Microsoft. The libraries included in Guildy (SGUI, fabric-permissions-api)
+remain under their own licenses. This license does not cover those elements.
+
+
+Article 12 – No warranty
+
+Guildy is provided “as is”, without any warranty, in particular as to its
+operation, its compatibility or the absence of defects. To the fullest extent
+permitted by law, the Author is not liable for any damage, direct or indirect,
+arising from the use of Guildy or the inability to use it, including any loss of
+data or worlds.
+
+
+Article 13 – Termination
+
+Any breach of this license automatically ends, without notice, the permissions
+it grants you. You must then stop using and distributing Guildy and delete the
+copies in your possession. The Author may reinstate those permissions in
+writing. Termination does not deprive the Author of any other right or remedy.
+
+
+Article 14 – Other permissions
+
+Any permission not provided for by this license (sale, distribution,
+monetization, reuse of elements, etc.) must be requested by email at
+contact@forgenet.fr. Only a written permission from the Author binds them.
+
+
+Article 15 – Changes to this license
+
+The Author may publish new versions of this license. A new version applies to
+the versions of Guildy published after it.
+
+
+Article 16 – Governing law
+
+This license is governed by French law. If any of its clauses is held void or
+unenforceable, the others remain in force.

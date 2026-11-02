@@ -1620,5 +1620,16 @@ Java 25 requis (`JAVA_HOME`). Architecture, décisions de conception et notes te
 
 ## Licence
 
-[Licence Guildy](LICENSE) : vous pouvez télécharger le mod, l'installer sur vos serveurs, y jouer et le
-modifier pour votre propre usage. Vous ne pouvez pas le redistribuer, modifié ou non, ni le vendre.
+Guildy n'est pas un logiciel libre : il est publié sous la [Licence Guildy](LICENSE) (texte en français, traduction
+anglaise incluse). En bref :
+
+- vous pouvez le télécharger, l'installer sur votre serveur, y jouer, changer sa configuration et modifier le mod pour
+  votre propre usage, sans distribuer la version modifiée ;
+- vous pouvez l'inclure, sans modification, dans un modpack gratuit, en créditant Guildy et son auteur ;
+- un serveur public doit indiquer clairement qu'il utilise Guildy, et un serveur monétisé doit d'abord en demander
+  l'autorisation à contact@forgenet.fr ;
+- vous ne pouvez ni le vendre, ni distribuer une version modifiée, ni réutiliser ailleurs ses dessins, textures,
+  modèles ou constructions, ni le présenter comme le vôtre.
+
+Les anciennes versions portaient par erreur la mention d'une licence MIT (modèle par défaut de l'éditeur de code) :
+Guildy n'est pas sous licence MIT (article 10 de la licence).
