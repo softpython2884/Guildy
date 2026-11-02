@@ -1620,4 +1620,5 @@ Java 25 requis (`JAVA_HOME`). Architecture, décisions de conception et notes te
 
 ## Licence
 
-[MIT](LICENSE).
+[Licence Guildy](LICENSE) : vous pouvez télécharger le mod, l'installer sur vos serveurs, y jouer et le
+modifier pour votre propre usage. Vous ne pouvez pas le redistribuer, modifié ou non, ni le vendre.

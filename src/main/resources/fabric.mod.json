@@ -12,7 +12,7 @@
 		"sources": "https://github.com/softpython2884/Guildy",
 		"issues": "https://github.com/softpython2884/Guildy/issues"
 	},
-	"license": "MIT",
+	"license": "LicenseRef-Guildy",
 	"environment": "server",
 	"entrypoints": {
 		"main": [

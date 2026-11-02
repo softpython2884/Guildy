@@ -1,21 +1,52 @@
-MIT License
+Licence Guildy
 
-Copyright (c) 2026 nightFury
+Copyright (c) 2026 NightFury. Tous droits réservés, sauf les autorisations ci-dessous.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+« Guildy » désigne ce mod : son code source, ses versions compilées, ses ressources
+(dont le pack de ressources facultatif) et sa documentation.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Ce que vous pouvez faire
+
+1. Télécharger Guildy depuis ce dépôt ou ses publications officielles, l'installer
+   sur vos serveurs Minecraft, privés ou publics, et y jouer.
+2. Héberger le pack de ressources de Guildy et l'envoyer aux joueurs de votre
+   serveur, pour qu'ils l'utilisent sur ce serveur.
+3. Lire le code, le compiler et le modifier pour votre propre usage, y compris pour
+   faire tourner votre version modifiée sur vos propres serveurs.
+4. Créer une copie (fork) sur GitHub, dans le cadre des conditions d'utilisation de
+   GitHub, pour proposer des modifications par pull request.
+
+
+Ce que vous ne pouvez pas faire sans l'accord écrit de l'auteur
+
+1. Distribuer Guildy, modifié ou non : le republier, le mettre en ligne ailleurs,
+   l'inclure dans un modpack ou en partager une copie, en dehors de ce qu'autorise la
+   partie précédente. Un fork ne donne pas le droit de publier des versions compilées.
+2. Vendre ou louer Guildy, ou faire payer son téléchargement.
+3. Retirer cette licence ou le nom de l'auteur, ou présenter Guildy comme votre
+   travail.
+
+
+Contributions
+
+En proposant une modification (pull request ou autre), vous autorisez l'auteur à
+l'intégrer à Guildy et à la diffuser sous cette licence ou sous toute autre licence.
+
+
+Bibliothèques tierces
+
+Les bibliothèques incluses dans le jar (SGUI, fabric-permissions-api) restent sous
+leur propre licence.
+
+
+Garantie
+
+Guildy est fourni « tel quel », sans aucune garantie. Dans les limites permises par
+la loi, l'auteur n'est responsable d'aucun dommage lié à son utilisation.
+
+
+Fin des droits
+
+Si vous ne respectez pas cette licence, les droits qu'elle vous accorde prennent fin
+automatiquement.
