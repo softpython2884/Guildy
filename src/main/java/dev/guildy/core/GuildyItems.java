@@ -26,6 +26,8 @@ public final class GuildyItems {
 	public static final String KIND_TREASURE_MAP = "treasure_map";
 	/** Work zone fanion of the villager module (banner): {"type": zone type, "guild": id, "zone": id when moving one}. */
 	public static final String KIND_ZONE_FLAG = "zone_flag";
+	/** Anchor flag (banner) keeping the chunks around it active: {"guild": id}. */
+	public static final String KIND_ANCHOR_FLAG = "anchor_flag";
 
 	private GuildyItems() {
 	}

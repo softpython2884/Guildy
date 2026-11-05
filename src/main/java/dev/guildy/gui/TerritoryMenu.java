@@ -1,5 +1,8 @@
 package dev.guildy.gui;
 
+import dev.guildy.anchor.AnchorFlags;
+import dev.guildy.anchor.AnchorMenu;
+import dev.guildy.anchor.AnchorTickets;
 import dev.guildy.claim.ClaimService;
 import dev.guildy.command.GuildActions.Denial;
 import dev.guildy.core.GuildyItems;
@@ -225,6 +228,11 @@ final class TerritoryMenu extends GuildGui {
 				close();
 				ClaimService.teleportHome(player, guild);
 			});
+		}
+		if (GuildyServer.config().anchors.enabled) {
+			button(28, icon(AnchorFlags.icon(), Lang.get("menu.territory.anchors.name"),
+							GuiUtil.lines("menu.territory.anchors.lore", guild.anchors.flags.size(), AnchorTickets.allowed(guild))),
+					null, () -> AnchorMenu.open(player, guild));
 		}
 		if (GuildyServer.config().fly.enabled) {
 			boolean on = GuildFly.preference(player);

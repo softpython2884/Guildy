@@ -19,7 +19,8 @@ ou à héberger pour les joueurs.
   100** (réglable jusqu'à 500) avec rangs, paliers et récompenses, **vol dans son territoire** (`/guild fly`) et
   raccourcis (`/home`, `/g`…).
 - **Territoire** : drapeau fondateur (le cœur de la base) et drapeaux d'extension par chunk, protections (explosions,
-  feu, pistons, fluides), limites affichées en particules, bannière tissée au métier à tisser et visible sur les cartes.
+  feu, pistons, fluides), limites affichées en particules, bannière tissée au métier à tisser et visible sur les cartes,
+  **drapeaux d'ancrage** qui gardent les chunks des fermes actifs comme si un joueur était là.
 - **Hordes nocturnes** : 7 thèmes (morts-vivants, arachnides, illageois, Nether, End, boss, élites), difficulté
   progressive, élites et boss avec bossbar ; il faut défendre le cœur jusqu'à l'aube.
 - **Événements** : nuit de sang, raid de pillards en plein jour, caravane marchande, marchand de livres enchantés.
@@ -138,6 +139,15 @@ tient une carte qui couvre la base. L'éditeur gratuit (sans ressources) peut ê
   l'air, la chute qui suit ne fait **aucun dégât**. Le réglage est mémorisé (reconnexion, mort) ; `/guild fly off`
   l'éteint. Le serveur peut exiger un niveau de guilde ou un rôle minimum (section `fly` de `config.json5`). Avec les
   Bottes de Zéphyr, le double saut reprend dès l'atterrissage hors du territoire.
+- **Drapeaux d'ancrage** (menu Territoire → *Drapeaux d'ancrage*, ou `/guild ancrage`) : planté dans le territoire, un
+  drapeau d'ancrage garde les chunks autour de lui actifs **comme si un joueur était là**, même quand personne n'est à
+  côté ou connecté : cultures, arbres, fours, entonnoirs, redstone, golems de fer, animaux, villageois. Les **monstres**
+  aussi : ils apparaissent et disparaissent autour du drapeau comme autour d'un joueur (fermes à monstres, cages à
+  monstres à moins de 16 blocs du drapeau, portails du Nether). Plantez-le là où vous vous tiendriez pour faire
+  tourner la ferme. Par défaut : 5×5 chunks par drapeau, 1 drapeau par guilde, 2 au niveau 25, 3 au niveau 50 ;
+  gratuits (permission CLAIM). Casser le drapeau (ou « retirer » dans le menu) vous le rend. Le menu montre chaque
+  drapeau planté et son état (actif, ou pourquoi il ne l'est pas). Tant qu'un drapeau est actif, le serveur vide ne se
+  met pas en pause. Tout se règle (ou se désactive) dans la section `anchors` de `config.json5`.
 - **Drapeaux d'extension** (achetés avec le trésor dans le menu Territoire ou `/guild flag buy`, gagnés en quête ou sur un boss) :
   plantés dans un chunk **voisin** du territoire, ils l'ajoutent. `/guild claim` utilise un drapeau de l'inventaire
   sur le chunk où vous êtes, `/guild unclaim` rend le chunk (et le drapeau).
@@ -1364,6 +1374,7 @@ affiche les raccourcis disponibles (cliquables).
 | `/guild claim` · `unclaim` · `show` | Territoire |
 | `/guild sethome` · `home` | Point de retour de la guilde |
 | `/guild fly` · `fly on\|off` | Vol de guilde dans son territoire (bascule / activer / désactiver) ; jamais pendant une horde. Permission `guildy.fly` (accordée par défaut) |
+| `/guild ancrage` | Drapeaux d'ancrage : en prendre un, voir ceux plantés et leur état, les retirer (alias `/guild ancrages`) |
 | `/guild waves` | Hordes : état, prochaine nuit, statistiques, règles |
 | `/guild build` | Constructions et plans |
 | `/guild quests` | Quêtes |
@@ -1394,6 +1405,7 @@ Permission **`guildy.admin`** (LuckPerms…) ; sans gestionnaire de permissions 
 | `/guild admin structure unlock <guilde> <id>` · `structure check <guilde>` | Constructions |
 | `/guild admin quest reroll <guilde>` · `quest complete <guilde> <slot>` · `quest map <guilde>` · `quest legendary <guilde> <slot>` | Quêtes (`legendary` : remplace la quête du panneau par un contrat légendaire) |
 | `/guild admin villager spawn <guilde>` · `villager chunks` | Faire venir un candidat villageois ; chunks gardés chargés pour les villageois (par guilde) |
+| `/guild admin ancrages` | Tous les drapeaux d'ancrage du serveur : guilde, position, état, chunks chargés |
 | `/guild admin upgrade unlock\|lock <guilde> <id>` | Arbre d'évolution : `unlock` débloque gratuitement (avec les prérequis manquants), `lock` retire l'amélioration et celles qui en dépendent |
 | `/guild admin event list` | Événements : réglages, nuit de sang prévue, raids en attente, marchands présents par guilde |
 | `/guild admin event start\|stop <événement> [guilde]` | `blood_night` (tout le serveur : la nuit en cours ou la prochaine), `pillager_raid` (immédiat si un membre est au cœur, sinon dès qu'il y en a un), `caravan`, `book_merchant`, `merchant` (visite du Carrefour) ; `stop` annule / renvoie le marchand |
@@ -1425,7 +1437,9 @@ Tout l'équilibrage est dans `config/guildy/` (fichiers commentés en français,
 |---|---|
 | `config.json5` | Guildes (noms, membres, invitations, home), territoire (rayon fondateur, extensions, distances, chunks max par niveau, prix des drapeaux), protections, économie, niveaux (`levels` : niveau max, seuils et formule d'XP, récompenses, paliers, rangs ; chunks au-delà du
 niveau 10), bannière (métier à tisser / éditeur gratuit, cœur sur les cartes), rôles, vol de guilde (`fly` : niveau, rôle,
-hordes, délai après un coup, avertissement de bord, protection de chute), raccourcis de commandes (`shortcuts`) |
+hordes, délai après un coup, avertissement de bord, protection de chute), drapeaux d'ancrage (`anchors` : activation, rayon,
+nombre par niveau, prix, monstres, seulement avec un membre connecté, hors du territoire, pas de pause du serveur vide),
+raccourcis de commandes (`shortcuts`) |
 | `waves.json5` | Horaires, jours entre deux hordes (1 à 3), formule de difficulté (et part du niveau au-delà de 10 : `perLevelAbove10`, `maxAbove10`), taille des hordes, élites, boss, buffs, intégrité du cœur, récompenses, défaite, trêve après plusieurs défaites, **thèmes** (liste pondérée : monstres, difficulté minimale, boss) |
 | `structures.json5` | Constructions : motifs (lignes + clé bloc/`#tag`/`*` = n'importe quel bloc plein), coûts, niveaux, panneaux |
 | `quests.json5` | Modèles de quêtes (17 types : cible, quantités, assortiments, récompenses, durée, poids, niveaux), contrats légendaires (chance, niveau, délai, multiplicateurs), niveau de calcul au-delà de 10 (`levelScalingAbove10`, `maxScalingLevel`), chance d'arme unique, cartes au trésor ; les nouveaux modèles par défaut sont ajoutés une fois aux fichiers existants (`knownTemplates`) |
@@ -1512,6 +1526,10 @@ Formules par défaut (modifiables) :
 - Dormir **avant** le début d'une horde saute la nuit (sans récompense) ; pendant une horde, c'est interdit.
 - Un monstre qui ne peut pas atteindre un cœur emmuré finit par être retiré puis réapparaît ailleurs.
 - Les villageois occupés à une tâche ne réapprovisionnent plus leurs échanges (ils ne vont plus à leur poste).
+- Un drapeau d'ancrage compte comme un joueur pour l'apparition naturelle des monstres, leur disparition, les cages à
+  monstres et les portails du Nether, pas pour le reste (phantoms, patrouilles, marchands ambulants, raids, chats,
+  générateurs d'épreuve). Comme près d'un joueur, aucun monstre n'apparaît à moins de 24 blocs du drapeau. Un drapeau
+  arraché par une explosion, l'eau ou un piston est perdu (la guilde est prévenue et peut en reprendre un).
 - Un fanion de zone arraché par une explosion, un piston ou la casse de son support tombe en bannière ordinaire :
   la zone continue de fonctionner (« Déplacer le fanion » pour en replanter un).
 - Mine réelle : déplacer son fanion fait creuser un nouvel escalier (l'ancien reste ouvert) ; les tunnels sont éclairés

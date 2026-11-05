@@ -28,7 +28,8 @@
 		"guildy.unique.mixins.json",
 		"guildy.stats.mixins.json",
 		"guildy.alchemy.mixins.json",
-		"guildy.rune.mixins.json"
+		"guildy.rune.mixins.json",
+		"guildy.anchor.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.19.5",

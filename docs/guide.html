@@ -338,8 +338,17 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<li><button class="cmd" type="button">/guild unclaim</button> : rend le chunk où vous êtes et vous redonne un drapeau. Impossible pour le chunk du cœur, ou si le territoire serait coupé en deux.</li>
 					<li><button class="cmd" type="button">/guild flag</button> : redonne le drapeau fondateur tant que la base n'est pas fondée.</li>
 					<li><button class="cmd" type="button">/guild fly</button> : vol de guilde (sautez deux fois pour décoller), seulement dans votre territoire et jamais pendant une horde.</li>
+					<li><button class="cmd" type="button">/guild ancrage</button> : drapeaux d'ancrage (en prendre un, voir leur état, les retirer).</li>
 				</ul>
 				<div class="note good"><p><strong>Voler chez soi :</strong> <button class="cmd" type="button">/guild fly</button> (ou « Vol de guilde » dans le menu Territoire) vous laisse voler comme en créatif dans les chunks de votre guilde. Le vol s'arrête au bord du territoire (vous êtes prévenu juste avant) et dès qu'une horde attaque ; s'il s'arrête en l'air, votre chute est sans danger.</p></div>
+				<h3>Drapeaux d'ancrage</h3>
+				<p>Planté dans le territoire, un drapeau d'ancrage garde les chunks autour de lui actifs <strong>comme si un joueur était là</strong>, même quand personne n'est connecté : cultures, fours, redstone, golems de fer, animaux, villageois. Les monstres aussi y apparaissent et disparaissent comme près d'un joueur : fermes à monstres, cages à monstres à moins de 16 blocs du drapeau, portails du Nether.</p>
+				<ol>
+					<li>Menu Territoire → <strong>Drapeaux d'ancrage</strong> (ou <button class="cmd" type="button">/guild ancrage</button>) → « Prendre un drapeau d'ancrage ».</li>
+					<li>Plantez-le là où vous vous tiendriez pour faire tourner la ferme (pour une ferme à monstres : à votre place d'attente, à plus de 24 blocs de la zone d'apparition).</li>
+					<li>Le menu montre chaque drapeau et son état. Cassez-le, ou cliquez dessus dans le menu, pour le récupérer.</li>
+				</ol>
+				<p class="hint">Par défaut : 5×5 chunks par drapeau, 1 drapeau par guilde, 2 au niveau 25, 3 au niveau 50, gratuits.</p>
 				<div class="note"><p><strong>Déménager :</strong> le chef peut utiliser « Abandonner le territoire » dans le menu Territoire. Tous les chunks sont libérés et le drapeau fondateur est rendu. Impossible pendant une horde.</p></div>
 			</section>
 
@@ -1051,6 +1060,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 						<tr><td><button class="cmd" type="button">/guild claim</button> · <button class="cmd" type="button">/guild unclaim</button> · <button class="cmd" type="button">/guild show</button></td><td>Ajouter ou rendre le chunk actuel, voir les limites</td></tr>
 						<tr><td><button class="cmd" type="button">/guild sethome</button> · <button class="cmd" type="button">/guild home</button></td><td>Point de retour de la guilde</td></tr>
 						<tr><td><button class="cmd" type="button">/guild fly</button></td><td>Vol de guilde dans votre territoire (jamais pendant une horde)</td></tr>
+						<tr><td><button class="cmd" type="button">/guild ancrage</button></td><td>Drapeaux d'ancrage : chunks des fermes gardés actifs</td></tr>
 						<tr><td><button class="cmd" type="button">/guild waves</button></td><td>Hordes : état, prochaine nuit, statistiques, règles</td></tr>
 						<tr><td><button class="cmd" type="button">/guild build</button></td><td>Constructions et plans</td></tr>
 						<tr><td><button class="cmd" type="button">/guild chantier</button> · <button class="cmd" type="button">/guild chantier list</button> · <button class="cmd" type="button">/guild chantier litematica</button></td><td>Chantiers des bâtisseurs (menu, liste dans le chat, placements partagés depuis Litematica)</td></tr>
@@ -1100,7 +1110,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 			<section id="admin">
 				<div class="eyebrow">Serveur</div>
 				<h2>Pour les admins</h2>
-				<p>Installation : <code>guildy-1.16.1.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>).</p>
+				<p>Installation : <code>guildy-1.17.0.jar</code> et Fabric API dans <code>mods/</code> (Minecraft 26.3, Java 25). Les joueurs n'installent rien. Tout se règle dans <code>config/guildy/</code> (fichiers commentés), et se recharge avec <button class="cmd" type="button">/guild admin reload</button>. Les commandes admin demandent la permission <code>guildy.admin</code> (LuckPerms), ou le niveau d'opérateur 2. Les raccourcis (<code>/home</code>, <code>/g</code>…) se règlent dans <code>config.json5 &gt; shortcuts</code> ; un nom déjà pris par un autre mod n'est jamais remplacé. Le vol de guilde se règle dans la section <code>fly</code> (niveau, rôle, permission <code>guildy.fly</code>), les drapeaux d'ancrage dans la section <code>anchors</code> (activation, rayon, nombre, prix, monstres, pause du serveur vide).</p>
 				<details><summary>Commandes d'administration</summary>
 					<div class="table-wrap"><table>
 						<thead><tr><th>Commande</th><th>Effet</th></tr></thead>
@@ -1121,6 +1131,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 							<tr><td><button class="cmd" type="button">/guild admin structure unlock &lt;guilde&gt; &lt;id&gt;</button></td><td>Débloquer une construction</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin quest reroll|complete|map &lt;guilde&gt;</button></td><td>Quêtes : tout renouveler, terminer un emplacement, donner une carte au trésor</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin villager spawn &lt;guilde&gt;</button> · <button class="cmd" type="button">/guild admin villager chunks</button></td><td>Faire venir un candidat villageois ; chunks gardés chargés pour les villageois</td></tr>
+							<tr><td><button class="cmd" type="button">/guild admin ancrages</button></td><td>Tous les drapeaux d'ancrage du serveur et leur état</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin upgrade unlock|lock &lt;guilde&gt; &lt;id&gt;</button></td><td>Donner ou retirer une évolution</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin event list</button></td><td>Événements en cours et prévus</td></tr>
 							<tr><td><button class="cmd" type="button">/guild admin event start|stop &lt;événement&gt; [guilde]</button></td><td>Déclencher ou arrêter <code>blood_night</code>, <code>pillager_raid</code>, <code>caravan</code>, <code>book_merchant</code>, <code>merchant</code></td></tr>
@@ -1143,7 +1154,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<div class="table-wrap"><table>
 						<thead><tr><th>Fichier</th><th>Contenu</th></tr></thead>
 						<tbody>
-							<tr><td><code>config.json5</code></td><td>Guildes, territoire, protections, économie, niveaux, bannière et cartes, rôles</td></tr>
+							<tr><td><code>config.json5</code></td><td>Guildes, territoire, protections, économie, niveaux, bannière et cartes, rôles, vol de guilde, drapeaux d'ancrage (<code>anchors</code>)</td></tr>
 							<tr><td><code>waves.json5</code></td><td>Horaires, difficulté, thèmes, boss, cœur, récompenses, défaite, trêve</td></tr>
 							<tr><td><code>structures.json5</code></td><td>Plans, coûts et niveaux des constructions</td></tr>
 							<tr><td><code>quests.json5</code></td><td>Modèles de quêtes et récompenses</td></tr>
@@ -1167,7 +1178,7 @@ footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line
 					<p>Sans pack, tout fonctionne : les armes gardent l'apparence de leur objet de base. Pour avoir leurs textures :</p>
 					<ul>
 						<li><strong>Avec Polymer</strong> (<code>customModels: "auto"</code>, le réglage par défaut) : installez <code>polymer-resource-pack</code> et <code>polymer-autohost</code>, puis mettez <code>"enabled": true</code> dans <code>config/polymer/auto-host.json</code>. Guildy ajoute ses modèles au pack envoyé aux joueurs.</li>
-						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.16.1.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
+						<li><strong>Sans Polymer</strong> : hébergez <code>guildy-resourcepack-1.17.0.zip</code> (lien de téléchargement direct), déclarez-le dans <code>server.properties</code> (<code>resource-pack</code>, <code>resource-pack-sha1</code>, <code>require-resource-pack=true</code>), puis mettez <code>customModels: "on"</code> dans <code>uniques.json5</code>.</li>
 						<li><code>customModels: "off"</code> : jamais de textures personnalisées.</li>
 					</ul>
 				</details>

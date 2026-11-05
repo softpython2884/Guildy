@@ -1,6 +1,7 @@
 package dev.guildy;
 
 import dev.guildy.alchemy.AlchemyModule;
+import dev.guildy.anchor.AnchorModule;
 import dev.guildy.builds.BuildModule;
 import dev.guildy.claim.ClaimModule;
 import dev.guildy.command.GuildCommand;
@@ -71,6 +72,7 @@ public final class Guildy implements ModInitializer {
 		TradeModule.init();
 		EventModule.init(); // after the wave and trade modules (hooks into both)
 		FlyModule.init(); // /guild fly: flight inside the own territory, never during a horde
+		AnchorModule.init(); // anchor flags: chunks kept active as if a player stood there (farms)
 		UniqueModule.init(); // unique weapons: implements the core UniqueDrops hook
 		ScrollModule.init(); // spell scrolls: implements the core ScrollDrops hook
 		AlchemyModule.init(); // potions and elixirs of the alchemists: implements the core MagicBoost hook

@@ -42,6 +42,13 @@ public final class GuildyConfig implements Validatable {
 	@Comment("Vol dans le territoire de sa guilde (/guild fly), jamais pendant une horde")
 	public Fly fly = new Fly();
 
+	@Comment({
+			"Drapeaux d'ancrage : plantes dans le territoire, ils gardent les chunks autour d'eux actifs comme si un joueur",
+			"etait la (fermes, fours, redstone, cultures, golems de fer, monstres). Peu par guilde. Obtenus dans le menu",
+			"Territoire -> Drapeaux d'ancrage (ou /guild ancrage). Etat de tous les ancrages : /guild admin ancrages"
+	})
+	public Anchors anchors = new Anchors();
+
 	@Comment("Banniere / drapeau de guilde et affichage sur les cartes")
 	public Banners banners = new Banners();
 
@@ -260,6 +267,51 @@ public final class GuildyConfig implements Validatable {
 	}
 
 	@Json5.Section
+	public static final class Anchors {
+		@Comment("Activer les drapeaux d'ancrage (false : plus aucun chunk n'est charge par eux, les drapeaux plantes restent en place)")
+		public boolean enabled = true;
+		@Comment("Chunks gardes actifs autour du chunk du drapeau : 0 = son chunk, 1 = 3x3, 2 = 5x5 (0 a 6)")
+		public int radius = 2;
+		@Comment({
+				"Drapeaux d'ancrage par guilde : baseCount, +1 tous les 'extraEveryLevels' niveaux de guilde (0 = jamais),",
+				"au plus maxCount (10 au plus). Par defaut : 1, puis 2 au niveau 25 et 3 au niveau 50"
+		})
+		public int baseCount = 1;
+		public int extraEveryLevels = 25;
+		public int maxCount = 3;
+		@Comment("Niveau de guilde minimum pour avoir un drapeau d'ancrage")
+		public int minGuildLevel = 1;
+		@Comment("Prix d'un drapeau d'ancrage (or du tresor, 0 = gratuit). Un drapeau retire par la guilde lui est rendu")
+		public int price = 0;
+		@Comment({
+				"Les monstres apparaissent et disparaissent autour d'un drapeau comme autour d'un joueur : fermes a monstres,",
+				"cages a monstres a portee (16 blocs), portails du Nether. false : les chunks tournent, sans apparition de monstres"
+		})
+		public boolean mobSpawning = true;
+		@Comment("true : un drapeau ne charge ses chunks que si un membre de sa guilde est connecte")
+		public boolean onlyWhenMemberOnline = false;
+		@Comment({
+				"true : drapeaux permis aussi hors du territoire, dans toutes les dimensions (jamais chez une autre guilde) ;",
+				"false : seulement dans le territoire de la guilde"
+		})
+		public boolean outsideTerritory = false;
+		@Comment({
+				"Le serveur vide ne se met pas en pause (pause-when-empty-seconds de server.properties) tant qu'un ancrage est",
+				"actif : sinon plus rien ne tourne, fermes comprises, peu apres le depart du dernier joueur"
+		})
+		public boolean keepServerAwake = true;
+
+		void validate() {
+			radius = Math.max(0, Math.min(6, radius));
+			maxCount = Math.max(0, Math.min(10, maxCount));
+			baseCount = Math.max(0, Math.min(10, baseCount));
+			extraEveryLevels = Math.max(0, Math.min(1000, extraEveryLevels));
+			minGuildLevel = Math.max(1, minGuildLevel);
+			price = Math.max(0, price);
+		}
+	}
+
+	@Json5.Section
 	public static final class Banners {
 		@Comment({
 				"false : la banniere se cree au METIER A TISSER avec de vrais colorants (on tisse le drapeau fondateur,",
@@ -414,6 +466,10 @@ public final class GuildyConfig implements Validatable {
 			fly = new Fly();
 		}
 		fly.validate();
+		if (anchors == null) {
+			anchors = new Anchors();
+		}
+		anchors.validate();
 		if (rolePermissions == null) {
 			rolePermissions = defaultRolePermissions();
 		}

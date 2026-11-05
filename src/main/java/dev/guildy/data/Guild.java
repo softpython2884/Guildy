@@ -1,5 +1,6 @@
 package dev.guildy.data;
 
+import dev.guildy.anchor.GuildAnchorData;
 import dev.guildy.builds.GuildBuildData;
 import dev.guildy.core.GuildyServer;
 import dev.guildy.event.GuildEventData;
@@ -63,6 +64,7 @@ public final class Guild {
 	public GuildEventData events = new GuildEventData();
 	public GuildTradeData trade = new GuildTradeData();
 	public GuildBuildData builds = new GuildBuildData();
+	public GuildAnchorData anchors = new GuildAnchorData();
 
 	public Guild() {
 	}
@@ -225,6 +227,10 @@ public final class Guild {
 		if (builds == null) {
 			builds = new GuildBuildData();
 		}
+		if (anchors == null) {
+			anchors = new GuildAnchorData();
+		}
+		anchors.fixNulls();
 		if (level < 1) {
 			level = 1;
 		}

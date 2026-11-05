@@ -712,6 +712,29 @@ schématiques) : `tools/ruins/`.
     seulement, bouton « Reprendre de Litematica ». Placements d'une guilde = origine dans son territoire ou partagés par
     un membre ; annonce à la guilde des nouveaux placements (ceux présents au démarrage ne sont pas annoncés).
     Sous-régions déplacées (`subregionData`) : ignorées (signalé).
+78. **Drapeaux d'ancrage** (1.17.0, `anchor/`, section `anchors` de config.json5) : bannière `custom_data` kind
+    `anchor_flag` liée à la guilde, prise dans le menu (gratuite par défaut, `price` sinon), plantée comme les fanions
+    (placement vanilla court-circuité, la bannière ne garde que motifs + nom), dans le territoire (`outsideTerritory` :
+    partout sauf chez une autre guilde, toutes dimensions). Données `Guild.anchors` (`GuildAnchorData`, ids jamais
+    réutilisés). Nombre = `AnchorRules.allowed` (base + 1 tous les N niveaux, plafonné ; les plus récents au-delà du
+    nombre permis restent plantés mais inactifs). `AnchorTickets` : toutes les 5 s et après chaque changement, état de
+    chaque ancrage (ACTIVE, DISABLED, DIMENSION, LEVEL, LIMIT, FOREIGN, OUTSIDE, OFFLINE) ; un actif tient un ticket
+    dédié non enregistré (chargement + simulation + dimension active, jamais sauvegardé, expire 15 s après le dernier
+    rafraîchissement) de rayon `radius` + 2 = carré entity-ticking de rayon `radius` (même mécanique que
+    `WorkChunkLoader`, type distinct pour ne jamais fusionner les tickets). Bannière absente d'un chunk chargé =
+    ancrage perdu (guilde prévenue) ; cassée par un membre CLAIM = drapeau rendu ; par un autre : refusé (sauf la
+    guilde qui a depuis pris le terrain). « Comme un joueur » pour les monstres (`mobSpawning`, mixins
+    `anchor/mixin`, alimentés par `AnchorPoints`, tableaux par niveau remplacés à chaque rafraîchissement) :
+    `ChunkMap.collectSpawningChunks` (+ chunks entity-ticking des ancrages), `anyPlayerCloseEnoughForSpawning`
+    (centre du chunk à moins de 128 blocs), `LocalMobCapCalculator` (un compte et un plafond par ancrage, comme par
+    joueur), `ServerChunkCache.tickChunks` (+ 17×17 chunks par ancrage au plafond global, sinon rien n'apparaît sans
+    joueur), `NaturalSpawner.spawnCategoryForPosition` et `Mob.checkDespawn` (distance = min(joueur le plus proche,
+    ancrage) si l'ancrage est à moins de 128 blocs ; sans joueur dans le niveau, le `FakePlayer` de Fabric sert de
+    remplaçant, sa distance étant remplacée par celle de l'ancrage), `BaseSpawner.isNearPlayer` (ancrage à portée
+    de la cage). `MinecraftServer.tickServer` : `pauseWhenEmptySeconds` vaut 0 tant qu'un ancrage est actif
+    (`keepServerAwake`). Tests : `AnchorRulesTest`, GameTests `AnchorGameTests` (chunks actifs avec tous les joueurs
+    à 2048 blocs, portée d'apparition, un monstre près du drapeau ne disparaît pas, retrait = drapeau rendu et chunks
+    arrêtés ; désactivation).
 
 ## Notes API Minecraft 26.3
 
